@@ -5,14 +5,176 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+# [6.2.0] - 2025-03-24 ([Github](https://github.com/phpredis/phpredis/releases/6.2.0), [PECL](https://pecl.php.net/package/redis/6.2.0))
+
+### Sponsors :sparkling_heart:
+
+- [A-VISION](https://github.com/A-VISION-BV)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Geoffrey Hoffman](https://github.com/phpguru)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Open LMS](https://openlms.net/)
+- [Salvatore Sanfilippo](https://github.com/antirez)
+- [Ty Karok](https://github.com/karock)
+- [Vanessa Santana](https://github.com/vanessa-dev)
+
+  Special thanks to [Jakub Onderka](https://github.com/jakubonderka) for nearly two dozen performance improvements in this release!
+
+## Fixed
+
+- Fix arguments order for `SET` command
+  [f73f5fc](https://github.com/phpredis/phpredis/commit/f73f5fcce55ab9268c4eb40bf93cccdae418c1d2)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix error length calculation and UB sanity check
+  [e73130fe](https://github.com/phpredis/phpredis/commit/e73130fee0c22a20e11ce1596579df3f6f826974)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Invalidate slot cache on failed cluster connections
+  [c7b87843](https://github.com/phpredis/phpredis/commit/c7b878431014789f35d2fb1834b95257ca6cbba5)
+  ([James Kennedy](https://github.com/jkenn99))
+- Don't cast a uint64_t to a long
+  [faa4bc20](https://github.com/phpredis/phpredis/commit/faa4bc20868c76be4ecc4265015104a8adafccc4)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix potential NULL dereference
+  [43e6cab8](https://github.com/phpredis/phpredis/commit/43e6cab8792dc01580894d85600add9b68c27a42)
+  ([peter15914](https://github.com/peter15914))
+- Print cursor as unsigned 64 bit integer
+  [138d07b6](https://github.com/phpredis/phpredis/commit/138d07b67c5537373834f1cae99804e092db1631)
+  ([Bentley O'Kane-Chase](https://github.com/bentleyo))
+- Fix XAUTOCLAIM argc when sending COUNT
+  [0fe45d24](https://github.com/phpredis/phpredis/commit/0fe45d24d4d8c115a5b52846be072ecb9bb43329)
+  ([michael-grunder](https://github.com/michael-grunder))
 
 ### Added
 
+- Added `serverName()` and `serverVersion()` introspection methods
+  [056c2dbe](https://github.com/phpredis/phpredis/commit/056c2dbee7f6379a9f546e46584ace59449847c7)
+  [cbaf095f](https://github.com/phpredis/phpredis/commit/cbaf095ff708caf2728541bd627399a4058d0f19)
+  [fa3eb006](https://github.com/phpredis/phpredis/commit/fa3eb00683a2c8d539b52c0738db6821c74fef54)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  ([michael-grunder](https://github.com/michael-grunder))
 - Added `getWithMeta` method
   [9036ffca](https://github.com/phpredis/phpredis/commit/9036ffca)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Implement `GETDEL` command for RedisCluster
+  [d342e4ac](https://github.com/phpredis/phpredis/commit/d342e4ac18723607b001deb593c8d45e40bbc4c8)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Introduce `Redis::OPT_PACK_IGNORE_NUMBERS` option
+  [f9ce9429](https://github.com/phpredis/phpredis/commit/f9ce9429ef9f14a3de2c3fe1d68d02fb7440093d)
+  [29e5cf0d](https://github.com/phpredis/phpredis/commit/29e5cf0d8c03069aa34c2a63322951fdf2c268c2)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement Valkey >= 8.1 `IFEQ` `SET` option
+  [a2eef77f](https://github.com/phpredis/phpredis/commit/a2eef77f4419cda815052e75def3af81b0ccd80f)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement KeyDB's EXPIREMEMBER[AT] commands
+  [4cd3f593](https://github.com/phpredis/phpredis/commit/4cd3f59356582a65aec1cceed44741bd5d161d9e)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Set priority to 60 (for PIE installations)
+  [9e504ede](https://github.com/phpredis/phpredis/commit/9e504ede34749326a39f997db6cc5c4201f6a9bc)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
+### Documentation
+
+- Fix phpdoc type of `$pattern`
+  [5cad2076](https://github.com/phpredis/phpredis/commit/5cad20763710d44f8efb8e537f8f84a812935604)
+  ([OHZEKI Naoki](https://github.com/zeek0x))
+- Better documentation for the `$tlsOptions` parameter of RedisCluster
+  [8144db37](https://github.com/phpredis/phpredis/commit/8144db374338006a316beb11549f37926bd40c5d)
+  ([Jacob Brown](https://github.com/JacobBrownAustin))
+
+### Tests/CI
+
+- Reorganize tests
+  [807f806f](https://github.com/phpredis/phpredis/commit/807f806f)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add details to the option doc block
+  [abb0f6cc](https://github.com/phpredis/phpredis/commit/abb0f6ccc827f240a1de53633225abbc2848fc3a)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Update CodeQL to v3
+  [41e11417](https://github.com/phpredis/phpredis/commit/41e114177a20a03e3013db2a3b90980a1f4f1635)
+  [a10bca35](https://github.com/phpredis/phpredis/commit/a10bca35bba32bb969cc1e473564695d3f8a8811)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add PHP 8.4 to CI
+  [6097e7ba](https://github.com/phpredis/phpredis/commit/6097e7ba50c0a300bc4f420f84c5d2665ef99d90)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Pin ubuntu version for KeyDB
+  [eb66fc9e](https://github.com/phpredis/phpredis/commit/eb66fc9e2fe60f13e5980ea2ecbe9457ca5ae8b4)
+  [985b0313](https://github.com/phpredis/phpredis/commit/985b0313fb664c9776c3d2c84e778ddd6733728e)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Windows CI: update setup-php-sdk to v0.10 and enable caching
+  [f89d4d8f](https://github.com/phpredis/phpredis/commit/f89d4d8f6eecbe223e158651ffffd77ffa27449b)
+  ([Christoph M. Becker](https://github.com/cmb69))
+
+### Internal/Performance
+
+- Reduce buffer size for signed integer
+  [044b3038](https://github.com/phpredis/phpredis/commit/044b30386f0418e9ed2a2bbc3b79582520d008d8)
+  [35c59880](https://github.com/phpredis/phpredis/commit/35c5988027eda663167a64decde4512957cae738)
+  ([Bentley O'Kane-Chase](https://github.com/bentleyo))
+- Create a strncmp wrapper
+  [085d61ec](https://github.com/phpredis/phpredis/commit/085d61ecfb0d484832547b46343a2e4b275a372e)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Refactor and avoid allocation in rawcommand method
+  [f68544f7](https://github.com/phpredis/phpredis/commit/f68544f70385e1d431fb0245fafe30b39ee7479a)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Switch from linked list to growing array for reply callbacks
+  [a551fdc9](https://github.com/phpredis/phpredis/commit/a551fdc94c14d7974f2303cd558f7bd3e0fd91d6)
+  [42a42769](https://github.com/phpredis/phpredis/commit/42a427695e89577a1f1a554dba268527f3995708)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Reuse redis_sock_append_auth method
+  [be388562](https://github.com/phpredis/phpredis/commit/be388562058a75ed8fd31926bb0e6a60e2d8cb08)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Switch pipeline_cmd from smart_str to smart_string
+  [571ffbc8](https://github.com/phpredis/phpredis/commit/571ffbc8e0a5da807a6cc4a2cc5aa90af72e23b0)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Remove unused redis_debug_response method from library.c
+  [7895636a](https://github.com/phpredis/phpredis/commit/7895636a3a7cd3cad396a83ebe3aa5fe0208f42d)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Optimise HMGET method
+  [2434ba29](https://github.com/phpredis/phpredis/commit/2434ba294cbb3b2f5b4ee581c37056906902d0d9)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Avoid unnecessary allocation in redis_hset_cmd
+  [aba09933](https://github.com/phpredis/phpredis/commit/aba09933db05a1a36e947c6fa9dca9889c6a77ff)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Avoid unnecessary allocation in redis_hdel_cmd
+  [4082dd07](https://github.com/phpredis/phpredis/commit/4082dd07f714fd2f6a0918b1845eb46c403a9edd)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Avoid unnecessary allocation in redis_key_varval_cmd
+  [99650e15](https://github.com/phpredis/phpredis/commit/99650e15453f03b5dd99284548514551fde4c812)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Use zval_get_tmp_string method that is faster when provided zval is string
+  [f6906470](https://github.com/phpredis/phpredis/commit/f6906470a52e2d24b1e1b9f2574726643edd7a64)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Optimise constructing Redis command string
+  [2a2f908f](https://github.com/phpredis/phpredis/commit/2a2f908f2b6b695a0e6705200160e592802f0e41)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- If no command is issued in multi mode, return immutable empty array
+  [5156e032](https://github.com/phpredis/phpredis/commit/5156e0320242ff05f327a3801667140069688c0e)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Test for empty pipeline and multi
+  [426de2bb](https://github.com/phpredis/phpredis/commit/426de2bb71372f665f5a5bb5a779a7b9c586892d)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Optimise method array_zip_values_and_scores
+  [400503b8](https://github.com/phpredis/phpredis/commit/400503b8718104b766ceb4a0b84e4a446dbee09b)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Faster parameter parsing in redis_key_cmd and redis_key_long_val_cmd
+  [83a19656](https://github.com/phpredis/phpredis/commit/83a19656f49aec8f354596099dbf97ba7375d7af)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Use immutable empty array in Redis::hKeys
+  [3a2f3f45](https://github.com/phpredis/phpredis/commit/3a2f3f45fc7bb01d1be2b9d97cf9d8bff0b0e818)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Use immutable empty array in Redis::exec
+  [60b5a886](https://github.com/phpredis/phpredis/commit/60b5a8860ae3ff2d02d7f06cc6f86b59cb53b2cf)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Do not allocate empty string or string with one character
+  [64da891e](https://github.com/phpredis/phpredis/commit/64da891e6fe5810b1aa2a47bc0632a2cd346659d)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Initialize arrays with known size
+  [99beb922](https://github.com/phpredis/phpredis/commit/99beb9221c815018f1d076654b033cafac22a6ce)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Use smart str for constructing pipeline cmd
+  [b665925e](https://github.com/phpredis/phpredis/commit/b665925eeddfdf6a6fc1de471c0789ffb60cd067)
+  ([JakubOnderka](https://github.com/JakubOnderka))
 
 ## [6.1.0] - 2024-10-04 ([Github](https://github.com/phpredis/phpredis/releases/6.1.0), [PECL](https://pecl.php.net/package/redis/6.1.0))
 

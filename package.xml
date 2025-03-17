@@ -22,10 +22,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2024-10-04</date>
+ <date>2025-03-24</date>
  <version>
-  <release>6.1.0</release>
-  <api>6.0.0</api>
+  <release>6.2.0</release>
+  <api>6.2.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -33,147 +33,75 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    Sponsors
+    --- Sponsors ---
 
+    A-VISION Advisering - https://a-vision.nu/
     Audiomack - https://audiomack.com
-    Open LMS - https://openlms.net
     Avtandil Kikabidze - https://github.com/akalongman
-    Ty Karok - https://github.com/karock
+    Geoffrey Hoffman - https://github.com/phpguru
     Object Cache Pro for WordPress - https://objectcache.pro
+    Open LMS - https://openlms.net
+    Salvatore Sanfilippo - https://github.com/antirez
+    Ty Karok - https://github.com/karock
+    Vanessa Santana - https://github.com/vanessa-dev
 
-    --- 6.1.0 ---
+    * A special thanks to Jakub Onderka for nearly two dozen performance improvements in this release!
 
-    NOTE: There were no changes to C code between 6.1.0RC2 and 6.1.0
-
-    Documentation:
-
-    * Update package.xml to make it clearer that we support many key-value stores
-      [52e69ede] (Remi Collet)
-    * Fix redis.io urls [0bae4bb0] (Vincent Langlet)
-
-    Tests/CI:
-
-    * Fix 2 tests with redis 6.2 [cc1be322] (Remi Collet)
-
-    --- 6.1.0RC2 ---
+    --- 6.2.0 ---
 
     Fixed:
-
-    * Fixed a `SIGABRT` error in PHP 8.4 [a75a7e5a] (Michael Grunder)
-    * Clean up code for unsupported versions of PHP [37cebdd7] (Remi Collet)
-    * Add `SessionHelpers.php` to `package.xml`[e9474b80] (Remi Collet)
-    * 8.4 implicit null fix, bump version [bff3a22e, 30c8f90c] [Remi Collet]
-
-    Changed:
-
-    * Raised minimum supported PHP version to 7.4 [8b519423] (Michael Grunder)
-
-    Removed:
-
-    * Removed erroneously duplicated changelog entries [40c89736] (Michael Grunder)
-
-    Tests/CI:
-
-    * Move to upload artifacts v4 [9d380500] (Michael Grunder)
+    * Fix arguments order for SET command [f73f5fc] (Pavlo Yatsukhnenko)
+    * Fix error length calculation and UB sanity check [e73130fe] (michael-grunder)
+    * Invalidate slot cache on failed cluster connections [c7b87843] (James Kennedy)
+    * Don't cast a uint64_t to a long [faa4bc20] (michael-grunder)
+    * Fix potential NULL dereference [43e6cab8] (peter15914)
+    * Print cursor as unsigned 64 bit integer [138d07b6] (Bentley O'Kane-Chase)
+    * Fix XAUTOCLAIM argc when sending COUNT [0fe45d24] (michael-grunder)
 
     Added:
-
-    * Added `composer.json` to support PIE (PHP Installer for Extensions) [b59e35a6]
-      (James Titcumb)
-
-    --- 6.1.0RC1 ---
-
-    Fixed:
-
-    * Fix random connection timeouts with Redis Cluster. [eb7f31e7] (Jozsef Koszo)
-    * Fix argument count issue in HSET with associative array [6ea5b3e0]
-      (Viktor Djupsjobacka)
-    * SRANDMEMBER can return any type because of serialization. [6673b5b2]
-      (Michael Grunder)
-    * Fix HRANDFIELD command when WITHVALUES is used. [99f9fd83] (Michael Grunder)
-    * Allow context array to be nullable [50529f56] (Michael Grunder)
-    * Fix a macOS (M1) compiler warning. [7de29d57] (Michael Grunder)
-    * `GETEX` documentation/updates and implentation in `RedisCluster` [981c6931]
-      (Michael Grunder)
-    * Refactor redis_script_cmd and fix to `flush` subcommand. [7c551424]
-      (Pavlo Yatsukhnenko)
-    * Update liveness check and fix PHP 8.4 compilation error. [c139de3a]
-      (Michael Grunder)
-    * Rework how we declare ZSTD min/max constants. [34b5bd81] (Michael Grunder)
-    * Fix memory leak if we fail in ps_open_redis. [0e926165] (Michael Grunder)
-    * Fix segfault and remove redundant macros [a9e53fd1] (Pavlo Yatsukhnenko)
-    * Fix PHP 8.4 includes [a51215ce] (Michael Grunder)
-    * Handle arbitrarily large `SCAN` cursors properly. [2612d444, e52f0afa]
-      (Michael Grunder)
-    * Improve warning when we encounter an invalid EXPIRY in SET [732e466a]
-      (Michael Grunder)
-    * Fix Arginfo / zpp mismatch for DUMP command [50e5405c] (Pavlo Yatsukhnenko)
-    * RedisCluster::publish returns a cluster_long_resp [14f93339] (Alexandre Choura)
-    * Fix segfault when passing just false to auth. [6dc0a0be] (Michael Grunder)
-    * the VALUE argument type for hSetNx must be the same as for hSet [df074dbe]
-      (Uladzimir Tsykun)
-    * Other fixes [e18f6c6d, 3d7be358, 2b555c89, fa1a283a, 37c5f8d4] (Michael Grunder, Viktor Szepe)
-
-    Added:
-
-    * Compression support for PHP sessions. [da4ab0a7] (bitactive)
-    * Support for early_refresh in Redis sessions to match cluster behavior
-      [b6989018] (Bitactive)
-    * Implement WAITAOF command. [ed7c9f6f] (Michael Grunder)
-
-    Removed:
-
-    * PHP 7.1, 7.2, and 7.3 CI jobs [d68c30f8, dc39bd55] (Michael Grunder)
-
-    Changed:
-
-    * Fix the time unit of retry_interval [3fdd52b4] (woodong)
+    * Added `serverName()` and `serverVersion()` [fa3eb006, cbaf095f, 056c2dbe]
+      (Pavlo Yatsukhnenko, Michael Grunder)
+    * Added getWithMeta method [9036ffca, 36ab5850] (Pavlo Yatsukhnenko)
+    * Implement GETDEL command for RedisCluster [d342e4ac] (michael-grunder)
+    * Introduce Redis::OPT_PACK_IGNORE_NUMBERS option [f9ce9429, 29e5cf0d] (michael-grunder)
+    * Implement Valkey >= 8.1 IFEQ SET option [a2eef77f] (michael-grunder)
+    * Implement KeyDB's EXPIREMEMBER[AT] commands [4cd3f593] (michael-grunder)
 
     Documentation:
-
-    * Many documentation fixes. [eeb51099] (Michael Dwyer)
-    * fix missing code tags [f865d5b9] (divinity76)
-    * Mention Valkey support [5f1eecfb] (PlavorSeol)
-    * Mention KeyDB support in README.md [37fa3592] (Tim Starling)
-    * Remove mention of pickle [c7a73abb] (David Baker)
-    * Add session.save_path examples [8a39caeb] (Martin Vancl)
-    * Tighter return types for Redis::(keys|hKeys|hVals|hGetAll) [77ab62bc]
-      (Benjamin Morel)
-    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a]
-      (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
-    * Fix config.m4 when using custom dep paths [ece3f7be] (Michael Grunder)
-    * Fix retry_internal documentation [142c1f4a] (SplotyCode)
-    * Fix anchor link [9b5cad31] (Git'Fellow)
-    * Fix typo in link [bfd379f0] (deiga)
-    * Fix Fedora package url [60b1ba14, 717713e1] (Dmitrii Kotov)
-    * Update Redis Sentinel documentation to reflect changes to constructor in 6.0
-      release [dc05d65c] (Pavlo Yatsukhnenko)
+    * Fix phpdoc type of $pattern [5cad2076] (OHZEKI Naoki)
+    * Better documentation for the $tlsOptions parameter of RedisCluster [8144db37] (Jacob Brown)
 
     Tests/CI:
+    * Add details to the option doc block [abb0f6cc] (michael-grunder)
+    * Update CodeQL to v3 [41e11417, a10bca35] (Pavlo Yatsukhnenko)
+    * Add PHP 8.4 to CI [6097e7ba] (Pavlo Yatsukhnenko)
+    * Pin ubuntu version for KeyDB [eb66fc9e, 985b0313] (michael-grunder)
+    * Windows CI: update setup-php-sdk to v0.10 and enable caching [f89d4d8f] (Christoph M. Becker)
 
-    * Avoid fatal error in test execution. [57304970] (Michael Grunder)
-    * Refactor unit test framework. [b1771def] (Michael Grunder)
-    * Get unit tests working in `php-cgi`. [b808cc60] (Michael Grunder)
-    * Switch to `ZEND_STRL` in more places. [7050c989, f8c762e7] (Michael Grunder)
-    * Workaround weird PHP compiler crash. [d3b2d87b] (Michael Grunder)
-    * Refactor tests (formatting, modernization, etc). [dab6a62d, c6cd665b, 78b70ca8,
-      3c125b09, 18b0da72, b88e72b1, 0f94d9c1, 59965971, 3dbc2bd8, 9b90c03b, c0d6f042]
-      (Michael Grunder)
-    * Spelling fixes [0d89e928] (Michael Grunder)
-    * Added Valkey support. [f350dc34] (Michael Grunder)
-    * Add a test for session compression. [9f3ca98c] (Michael Grunder)
-    * Test against valkey [a819a44b] (Michael Grunder)
-    * sessionSaveHandler injection. [9f8f80ca] (Pavlo Yatsukhnenko)
-    * KeyDB addiions [54d62c72, d9c48b78] (Michael Grunder)
-    * Add PHP 8.3 to CI [78d15140, e051a5db] (Robert Kelcak, Pavlo Yatsukhnenko)
-    * Use newInstance in RedisClusterTest [954fbab8] (Pavlo Yatsukhnenko)
-    * Use actions/checkout@v4 [f4c2ac26] (Pavlo Yatsukhnenko)
-    * Cluster nodes from ENV [eda39958, 0672703b] (Pavlo Yatsukhnenko)
-    * Ensure we're talking to redis-server in our high ports test. [7825efbc]
-      (Michael Grunder)
-    * Add missing option to installation example [2bddd84f] (Pavlo Yatsukhnenko)
-    * Fix typo in link [8f6bc98f] (Timo Sand)
-    * Update tests to allow users to use a custom class. [5f6ce414] (Michael Grunder)
+    Internal:
+    * Reduce buffer size for signed integer [044b3038, 35c59880] (Bentley O'Kane-Chase)
+    * Create a strncmp wrapper [085d61ec] (michael-grunder)
+    * Refactor and avoid allocation in rawcommand method [f68544f7] (Jakub Onderka)
+    * Use defines for callback growth + sanity check [42a42769] (michael-grunder)
+    * Switch from linked list to growing array for reply callbacks [a551fdc9] (Jakub Onderka)
+    * Reuse redis_sock_append_auth method [be388562] (Jakub Onderka)
+    * Switch pipeline_cmd from smart_str to smart_string [571ffbc8] (Jakub Onderka)
+    * Remove unused redis_debug_response method from library.c [7895636a] (Jakub Onderka)
+    * Optimise HMGET method [2434ba29] (Jakub Onderka)
+    * Avoid unnecessary allocation in redis_hset_cmd [aba09933] (Jakub Onderka)
+    * Avoid unnecessary allocation in redis_hdel_cmd [4082dd07] (Jakub Onderka)
+    * Avoid unnecessary allocation in redis_key_varval_cmd [99650e15] (Jakub Onderka)
+    * Use zval_get_tmp_string method that is faster when provided zval is string [f6906470] (Jakub Onderka)
+    * Optimise constructing Redis command string [2a2f908f] (Jakub Onderka)
+    * If no command is issued in multi mode, return immutable empty array [5156e032] (Jakub Onderka)
+    * Test for empty pipeline and multi [426de2bb] (Jakub Onderka)
+    * Optimise method array_zip_values_and_scores [400503b8] (Jakub Onderka)
+    * Faster parameter parsing in redis_key_cmd and redis_key_long_val_cmd [83a19656] (Jakub Onderka)
+    * Use immutable empty array in Redis::hKeys [3a2f3f45] (Jakub Onderka)
+    * Use immutable empty array in Redis::exec [60b5a886] (Jakub Onderka)
+    * Do not allocate empty string or string with one character [64da891e] (Jakub Onderka)
+    * Initialize arrays with known size [99beb922] (Jakub Onderka)
+    * Use smart str for constructing pipeline cmd [b665925e] (Jakub Onderka)
  </notes>
  <contents>
   <dir name="/">
@@ -266,6 +194,83 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="with-liblz4" prompt="use system liblz4?" default="yes"/>
  </extsrcrelease>
  <changelog>
+ <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>6.2.0</release><api>6.2.0</api></version>
+   <date>2025-03-24</date>
+   <notes>
+    --- Sponsors ---
+
+    A-VISION Advisering - https://a-vision.nu/
+    Audiomack - https://audiomack.com
+    Avtandil Kikabidze - https://github.com/akalongman
+    Geoffrey Hoffman - https://github.com/phpguru
+    Object Cache Pro for WordPress - https://objectcache.pro
+    Open LMS - https://openlms.net
+    Salvatore Sanfilippo - https://github.com/antirez
+    Ty Karok - https://github.com/karock
+    Vanessa Santana - https://github.com/vanessa-dev
+
+    * Special thanks to Jakub Onderka for nearly two dozen performance improvements in this release!
+
+    --- 6.2.0 ---
+
+    Fixed:
+    * Fix arguments order for SET command [f73f5fc] (Pavlo Yatsukhnenko)
+    * Fix error length calculation and UB sanity check [e73130fe] (michael-grunder)
+    * Invalidate slot cache on failed cluster connections [c7b87843] (James Kennedy)
+    * Don't cast a uint64_t to a long [faa4bc20] (michael-grunder)
+    * Fix potential NULL dereference [43e6cab8] (peter15914)
+    * Print cursor as unsigned 64 bit integer [138d07b6] (Bentley O'Kane-Chase)
+    * Fix XAUTOCLAIM argc when sending COUNT [0fe45d24] (michael-grunder)
+
+    Added:
+    * Added `serverName()` and `serverVersion()` [fa3eb006, cbaf095f, 056c2dbe]
+      (Pavlo Yatsukhnenko, Michael Grunder)
+    * Added getWithMeta method [9036ffca, 36ab5850] (Pavlo Yatsukhnenko)
+    * Implement GETDEL command for RedisCluster [d342e4ac] (michael-grunder)
+    * Introduce Redis::OPT_PACK_IGNORE_NUMBERS option [f9ce9429, 29e5cf0d] (michael-grunder)
+    * Implement Valkey >= 8.1 IFEQ SET option [a2eef77f] (michael-grunder)
+    * Implement KeyDB's EXPIREMEMBER[AT] commands [4cd3f593] (michael-grunder)
+    * Set priority to 60 (for PIE installations) [9e504ede] (Pavlo Yatsukhnenko)
+
+    Documentation:
+    * Fix phpdoc type of $pattern [5cad2076] (OHZEKI Naoki)
+    * Better documentation for the $tlsOptions parameter of RedisCluster [8144db37] (Jacob Brown)
+
+    Tests/CI:
+    * Add details to the option doc block [abb0f6cc] (michael-grunder)
+    * Update CodeQL to v3 [41e11417, a10bca35] (Pavlo Yatsukhnenko)
+    * Add PHP 8.4 to CI [6097e7ba] (Pavlo Yatsukhnenko)
+    * Pin ubuntu version for KeyDB [eb66fc9e, 985b0313] (michael-grunder)
+    * Windows CI: update setup-php-sdk to v0.10 and enable caching [f89d4d8f] (Christoph M. Becker)
+
+    Internal/Performance:
+    * Reduce buffer size for signed integer [044b3038, 35c59880] (Bentley O'Kane-Chase)
+    * Create a strncmp wrapper [085d61ec] (michael-grunder)
+    * Refactor and avoid allocation in rawcommand method [f68544f7] (Jakub Onderka)
+    * Use defines for callback growth + sanity check [42a42769] (michael-grunder)
+    * Switch from linked list to growing array for reply callbacks [a551fdc9] (Jakub Onderka)
+    * Reuse redis_sock_append_auth method [be388562] (Jakub Onderka)
+    * Switch pipeline_cmd from smart_str to smart_string [571ffbc8] (Jakub Onderka)
+    * Remove unused redis_debug_response method from library.c [7895636a] (Jakub Onderka)
+    * Optimise HMGET method [2434ba29] (Jakub Onderka)
+    * Avoid unnecessary allocation in redis_hset_cmd [aba09933] (Jakub Onderka)
+    * Avoid unnecessary allocation in redis_hdel_cmd [4082dd07] (Jakub Onderka)
+    * Avoid unnecessary allocation in redis_key_varval_cmd [99650e15] (Jakub Onderka)
+    * Use zval_get_tmp_string method that is faster when provided zval is string [f6906470] (Jakub Onderka)
+    * Optimise constructing Redis command string [2a2f908f] (Jakub Onderka)
+    * If no command is issued in multi mode, return immutable empty array [5156e032] (Jakub Onderka)
+    * Test for empty pipeline and multi [426de2bb] (Jakub Onderka)
+    * Optimise method array_zip_values_and_scores [400503b8] (Jakub Onderka)
+    * Faster parameter parsing in redis_key_cmd and redis_key_long_val_cmd [83a19656] (Jakub Onderka)
+    * Use immutable empty array in Redis::hKeys [3a2f3f45] (Jakub Onderka)
+    * Use immutable empty array in Redis::exec [60b5a886] (Jakub Onderka)
+    * Do not allocate empty string or string with one character [64da891e] (Jakub Onderka)
+    * Initialize arrays with known size [99beb922] (Jakub Onderka)
+    * Use smart str for constructing pipeline cmd [b665925e] (Jakub Onderka)
+   </notes>
+ </release>
  <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>6.1.0</release><api>6.0.0</api></version>
