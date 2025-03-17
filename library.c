@@ -2077,16 +2077,15 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS,
     zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("version"));
     redis_sock->hello.version = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
 
-    if (ctx != NULL) {
-        zval_dtor(&z_ret);
-        if (ctx == PHPREDIS_CTX_PTR) {
-            ZVAL_STR_COPY(&z_ret, redis_sock->hello.server);
-        } else if (ctx == PHPREDIS_CTX_PTR + 1) {
-            ZVAL_STR_COPY(&z_ret, redis_sock->hello.version);
-        } else {
-            ZEND_ASSERT(!"memory corruption?");
-            return FAILURE;
-        }
+    zval_dtor(&z_ret);
+
+    if (ctx == PHPREDIS_CTX_PTR) {
+        ZVAL_STR_COPY(&z_ret, redis_sock->hello.server);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        ZVAL_STR_COPY(&z_ret, redis_sock->hello.version);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
     }
 
     if (IS_ATOMIC(redis_sock)) {

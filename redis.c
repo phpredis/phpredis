@@ -2580,7 +2580,11 @@ PHP_METHOD(Redis, getPort) {
 PHP_METHOD(Redis, serverName) {
     RedisSock *rs;
 
-    if ((rs = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
+    if ((rs = redis_sock_get_instance(getThis(), 1)) == NULL) {
+        RETURN_FALSE;
+    } else if (!IS_ATOMIC(rs)) {
+        php_error_docref(NULL, E_ERROR,
+            "Can't call serverName in multi or pipeline mode!");
         RETURN_FALSE;
     } else if (rs->hello.server != NULL) {
         RETURN_STR_COPY(rs->hello.server);
@@ -2592,7 +2596,11 @@ PHP_METHOD(Redis, serverName) {
 PHP_METHOD(Redis, serverVersion) {
     RedisSock *rs;
 
-    if ((rs = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
+    if ((rs = redis_sock_get_instance(getThis(), 1)) == NULL) {
+        RETURN_FALSE;
+    } else if (!IS_ATOMIC(rs)) {
+        php_error_docref(NULL, E_ERROR,
+            "Can't call serverVersion in multi or pipeline mode!");
         RETURN_FALSE;
     } else if (rs->hello.version != NULL) {
         RETURN_STR_COPY(rs->hello.version);

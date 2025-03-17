@@ -1595,14 +1595,14 @@ class Redis {
      *
      * @return string|false
      */
-    public function serverName(): Redis|string|false;
+    public function serverName(): string|false;
 
     /**
      * Get the server version as reported by the `HELLO` response.
      *
      * @return string|false
      */
-    public function serverVersion(): Redis|string|false;
+    public function serverVersion(): string|false;
 
     /**
      * Retrieve a substring of a string by index.

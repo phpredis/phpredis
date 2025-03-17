@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 79376d7ada29d6f9bb873e7c59e64e22af3ca559 */
+ * Stub hash: 805a66c17b7c9972c73a979bdd67f98f7c1f6c74 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -363,7 +363,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_getPort arginfo_class_Redis_getDBNum
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_serverName, 0, 0, Redis, MAY_BE_STRING|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_serverName, 0, 0, MAY_BE_STRING|MAY_BE_FALSE)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_serverVersion arginfo_class_Redis_serverName
@@ -686,7 +686,8 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_rPop, 0, 1, Redi
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_randomKey arginfo_class_Redis_serverName
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_randomKey, 0, 0, Redis, MAY_BE_STRING|MAY_BE_FALSE)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_rawcommand, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, command, IS_STRING, 0)
