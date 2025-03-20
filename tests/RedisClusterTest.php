@@ -27,6 +27,8 @@ class Redis_Cluster_Test extends Redis_Test {
     private static array  $seed_messages = [];
     private static string $seed_source = '';
 
+    public function testServerInfo() { $this->markTestSkipped(); }
+    public function testServerInfoOldRedis() { $this->markTestSkipped(); }
 
     /* Tests we'll skip all together in the context of RedisCluster.  The
      * RedisCluster class doesn't implement specialized (non-redis) commands

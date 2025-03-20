@@ -2457,6 +2457,55 @@ class Redis_Test extends TestSuite {
         $this->assertTrue(is_array($res) && isset($res['redis_version']) && isset($res['used_memory']));
     }
 
+    private function execHello() {
+        $zipped = [];
+
+        $result = $this->redis->rawCommand('HELLO');
+        if ( ! is_array($result) || count($result) % 2 != 0)
+            return false;
+
+        for ($i = 0; $i < count($result); $i += 2) {
+            $zipped[$result[$i]] = $result[$i + 1];
+        }
+
+        return $zipped;
+    }
+
+    public function testServerInfo() {
+        if ( ! $this->minVersionCheck('6.0.0'))
+            $this->markTestSkipped();
+
+        $hello = $this->execHello();
+        if ( ! $this->assertArrayKey($hello, 'server') ||
+             ! $this->assertArrayKey($hello, 'version'))
+        {
+            return false;
+        }
+
+        $this->assertEquals($hello['server'], $this->redis->serverName());
+        $this->assertEquals($hello['version'], $this->redis->serverVersion());
+
+        $info = $this->redis->info();
+        $cmd1 = $info['total_commands_processed'];
+
+        /* Shouldn't hit the server */
+        $this->assertEquals($hello['server'], $this->redis->serverName());
+        $this->assertEquals($hello['version'], $this->redis->serverVersion());
+
+        $info = $this->redis->info();
+        $cmd2 = $info['total_commands_processed'];
+
+        $this->assertEquals(1 + $cmd1, $cmd2);
+    }
+
+    public function testServerInfoOldRedis() {
+        if ($this->minVersionCheck('6.0.0'))
+            $this->markTestSkipped();
+
+        $this->assertFalse($this->redis->serverName());
+        $this->assertFalse($this->redis->serverVersion());
+    }
+
     public function testInfoCommandStats() {
         // INFO COMMANDSTATS is new in 2.6.0
         if (version_compare($this->version, '2.5.0') < 0)
