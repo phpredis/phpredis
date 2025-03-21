@@ -2457,7 +2457,7 @@ class Redis_Test extends TestSuite {
         $this->assertTrue(is_array($res) && isset($res['redis_version']) && isset($res['used_memory']));
     }
 
-    private function execHello() {
+    protected function execHello() {
         $zipped = [];
 
         $result = $this->redis->rawCommand('HELLO');
