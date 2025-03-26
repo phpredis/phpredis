@@ -6185,6 +6185,7 @@ class Redis_Test extends TestSuite {
             // Use a unique ID so we can find our type keys
             $id = uniqid();
 
+            $keys = [];
             // Create some simple keys and lists
             for ($i = 0; $i < 3; $i++) {
                 $simple = "simple:{$id}:$i";

@@ -80,7 +80,7 @@ class Runner {
     ];
 
     private $prefix = NULL;
-    private $output_file;
+    private $output_file = NULL;
     private $exit_code = -1;
     private $cmd = NULL;
     private $pid;
@@ -88,6 +88,12 @@ class Runner {
 
     public function __construct() {
         $this->args['id'] = $this->createId();
+    }
+
+    public function __destruct() {
+        if ($this->output_file) {
+            unlink($this->output_file);
+        }
     }
 
     public function getExitCode(): int {
@@ -183,7 +189,6 @@ class Runner {
     }
 
     private function getTmpFileName() {
-        return '/tmp/sessiontmp.txt';
         return tempnam(sys_get_temp_dir(), 'session');
     }
 
