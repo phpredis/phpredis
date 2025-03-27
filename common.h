@@ -152,7 +152,6 @@ typedef enum {
 #define PIPELINE 2
 
 #define PHPREDIS_DEBUG_LOGGING 0
-#define PHPREDIS_WITH_METADATA 1
 
 #if PHP_VERSION_ID < 80000
 #define Z_PARAM_ARRAY_HT_OR_NULL(dest) \
