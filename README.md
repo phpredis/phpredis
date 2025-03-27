@@ -187,6 +187,7 @@ $redis = new Redis([
     'port' => 6379,
     'connectTimeout' => 2.5,
     'auth' => ['phpredis', 'phpredis'],
+    'database' => 2,
     'ssl' => ['verify_peer' => false],
     'backoff' => [
         'algorithm' => Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER,
@@ -203,8 +204,9 @@ $redis = new Redis([
 *connectTimeout*: float, value in seconds (default is 0 meaning unlimited)  
 *retryInterval*: int, value in milliseconds (optional)  
 *readTimeout*: float, value in seconds (default is 0 meaning unlimited)  
-*persistent*: mixed, if value is string then it used as persistend id, else value casts to boolean  
-*auth*: mixed, authentication information  
+*persistent*: mixed, if value is string then it used as persistent id, else value casts to boolean  
+*auth*: mixed, authentication information
+*database*: int, database number
 *ssl*: array, SSL context options  
 
 ### Class RedisException

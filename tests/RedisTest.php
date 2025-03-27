@@ -7836,6 +7836,27 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testConnectDatabaseSelect() {
+        $options = [
+            'host' => $this->getHost(),
+            'port' => $this->getPort(),
+            'database' => 2,
+        ];
+
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
+
+        $redis = new Redis($options);
+        $this->assertEquals(2, $redis->getDBNum());
+        $this->assertEquals(2, $redis->client('info')['db']);
+
+        $this->assertTrue($redis->select(1));
+
+        $this->assertEquals(1, $redis->getDBNum());
+        $this->assertEquals(1, $redis->client('info')['db']);
+    }
+
     public function testConnectException() {
         $host = 'github.com';
         if (gethostbyname($host) === $host)

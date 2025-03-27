@@ -239,6 +239,31 @@ redis_sock_get_instance(zval *id, int no_throw)
     return NULL;
 }
 
+static zend_never_inline ZEND_COLD void redis_sock_throw_exception(RedisSock *redis_sock) {
+    char *errmsg = NULL;
+    if (redis_sock->status == REDIS_SOCK_STATUS_AUTHENTICATED) {
+        if (redis_sock->err != NULL) {
+            spprintf(&errmsg, 0, "Could not select database %ld '%s'", redis_sock->dbNumber, ZSTR_VAL(redis_sock->err));
+        } else {
+            spprintf(&errmsg, 0, "Could not select database %ld", redis_sock->dbNumber);
+        }
+    } else if (redis_sock->status == REDIS_SOCK_STATUS_CONNECTED) {
+        if (redis_sock->err != NULL) {
+            spprintf(&errmsg, 0, "Could not authenticate '%s'", ZSTR_VAL(redis_sock->err));
+        } else {
+            spprintf(&errmsg, 0, "Could not authenticate");
+        }
+    } else {
+        if (redis_sock->port < 0) {
+            spprintf(&errmsg, 0, "Redis server %s went away", ZSTR_VAL(redis_sock->host));
+        } else {
+            spprintf(&errmsg, 0, "Redis server %s:%d went away", ZSTR_VAL(redis_sock->host), redis_sock->port);
+        }
+    }
+    REDIS_THROW_EXCEPTION(errmsg, 0);
+    efree(errmsg);
+}
+
 /**
  * redis_sock_get
  */
@@ -251,16 +276,9 @@ redis_sock_get(zval *id, int no_throw)
         return NULL;
     }
 
-    if (redis_sock_server_open(redis_sock) < 0) {
+    if (UNEXPECTED(redis_sock_server_open(redis_sock) < 0)) {
         if (!no_throw) {
-            char *errmsg = NULL;
-            if (redis_sock->port < 0) {
-                spprintf(&errmsg, 0, "Redis server %s went away", ZSTR_VAL(redis_sock->host));
-            } else {
-                spprintf(&errmsg, 0, "Redis server %s:%d went away", ZSTR_VAL(redis_sock->host), redis_sock->port);
-            }
-            REDIS_THROW_EXCEPTION(errmsg, 0);
-            efree(errmsg);
+            redis_sock_throw_exception(redis_sock);
         }
         return NULL;
     }
