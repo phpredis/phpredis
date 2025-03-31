@@ -1678,6 +1678,8 @@ static int cluster_bulk_resp_to_zval(redisCluster *c, zval *zdst) {
     if (c->reply_type != TYPE_BULK ||
         (resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
     {
+        if (c->reply_type != TYPE_BULK)
+            c->reply_len = 0;
         ZVAL_FALSE(zdst);
         return FAILURE;
     }

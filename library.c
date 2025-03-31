@@ -2746,17 +2746,17 @@ static int redis_bulk_resp_to_zval(RedisSock *redis_sock, zval *zdst, int *dstle
     resp = redis_sock_read(redis_sock, &len);
     if (dstlen) *dstlen = len;
 
-    if (resp != NULL) {
-        if (!redis_unpack(redis_sock, resp, len, zdst)) {
-            ZVAL_STRINGL_FAST(zdst, resp, len);
-        }
-
-        efree(resp);
-        return SUCCESS;
+    if (resp == NULL) {
+        ZVAL_FALSE(zdst);
+        return FAILURE;
     }
 
-    ZVAL_FALSE(zdst);
-    return FAILURE;
+    if (!redis_unpack(redis_sock, resp, len, zdst)) {
+        ZVAL_STRINGL_FAST(zdst, resp, len);
+    }
+
+    efree(resp);
+    return SUCCESS;
 }
 
 PHP_REDIS_API int
