@@ -778,17 +778,11 @@ PHP_METHOD(Redis, reset)
 }
 /* }}} */
 
-static void
-redis_get_passthru(INTERNAL_FUNCTION_PARAMETERS)
-{
-    REDIS_PROCESS_KW_CMD("GET", redis_key_cmd, redis_string_response);
-}
-
 /* {{{ proto string Redis::get(string key)
  */
 PHP_METHOD(Redis, get)
 {
-    redis_get_passthru(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+    REDIS_PROCESS_KW_CMD("GET", redis_key_cmd, redis_string_response);
 }
 /* }}} */
 
@@ -796,14 +790,7 @@ PHP_METHOD(Redis, get)
  */
 PHP_METHOD(Redis, getWithMeta)
 {
-    RedisSock *redis_sock;
-    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    REDIS_ENABLE_FLAG(redis_sock, PHPREDIS_WITH_METADATA);
-    redis_get_passthru(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-    REDIS_DISABLE_FLAG(redis_sock, PHPREDIS_WITH_METADATA);
+    REDIS_PROCESS_KW_CMD("GET", redis_key_cmd, redis_bulk_withmeta_response);
 }
 /* }}} */
 

@@ -5869,22 +5869,24 @@ class Redis_Test extends TestSuite {
             return true;
         });
 
-        $batch = $this->redis->pipeline()
-            ->get('key')
-            ->getWithMeta('key')
-            ->exec();
-        $this->assertIsArray($batch, 2);
-        $this->assertArrayKeyEquals($batch, 0, false);
-        $this->assertArrayKey($batch, 1, function ($result) {
-            $this->assertIsArray($result, 2);
-            $this->assertArrayKeyEquals($result, 0, false);
-            $this->assertArrayKey($result, 1, function ($metadata) {
-                $this->assertIsArray($metadata);
-                $this->assertArrayKeyEquals($metadata, 'length', -1);
+        if ($this->havePipeline()) {
+            $batch = $this->redis->pipeline()
+                ->get('key')
+                ->getWithMeta('key')
+                ->exec();
+            $this->assertIsArray($batch, 2);
+            $this->assertArrayKeyEquals($batch, 0, false);
+            $this->assertArrayKey($batch, 1, function ($result) {
+                $this->assertIsArray($result, 2);
+                $this->assertArrayKeyEquals($result, 0, false);
+                $this->assertArrayKey($result, 1, function ($metadata) {
+                    $this->assertIsArray($metadata);
+                    $this->assertArrayKeyEquals($metadata, 'length', -1);
+                    return true;
+                });
                 return true;
             });
-            return true;
-        });
+        }
 
         $batch = $this->redis->multi()
             ->set('key', 'value')

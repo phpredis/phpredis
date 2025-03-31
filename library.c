@@ -250,7 +250,6 @@ redis_sock_auth_cmd(RedisSock *redis_sock, int *cmdlen) {
 PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock) {
     char *cmd, inbuf[4096];
     int cmdlen;
-    size_t len;
 
     if ((cmd = redis_sock_auth_cmd(redis_sock, &cmdlen)) == NULL)
         return SUCCESS;
@@ -2740,35 +2739,59 @@ redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_ta
     return ret ? SUCCESS : FAILURE;
 }
 
-PHP_REDIS_API int redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
+static int redis_bulk_resp_to_zval(RedisSock *redis_sock, zval *zdst, int *dstlen) {
+    char *resp;
+    int len;
 
-    char *response;
-    int response_len;
-    zval z_unpacked, z_ret, *zv;
-    zend_bool ret;
+    resp = redis_sock_read(redis_sock, &len);
+    if (dstlen) *dstlen = len;
 
-    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL) {
-        ZVAL_FALSE(&z_unpacked);
-        ret = FAILURE;
-    } else {
-        if (!redis_unpack(redis_sock, response, response_len, &z_unpacked)) {
-            ZVAL_STRINGL_FAST(&z_unpacked, response, response_len);
-        }
-        efree(response);
-        ret = SUCCESS;
+    if (resp == NULL) {
+        ZVAL_FALSE(zdst);
+        return FAILURE;
     }
 
-    if (redis_sock->flags & PHPREDIS_WITH_METADATA) {
-        redis_with_metadata(&z_ret, &z_unpacked, response_len);
-        zv = &z_ret;
-    } else {
-        zv = &z_unpacked;
+    if (!redis_unpack(redis_sock, resp, len, zdst)) {
+        ZVAL_STRINGL_FAST(zdst, resp, len);
     }
+
+    efree(resp);
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      zval *z_tab, void *ctx)
+{
+    zval zret;
+    int ret;
+
+    ret = redis_bulk_resp_to_zval(redis_sock, &zret, NULL);
 
     if (IS_ATOMIC(redis_sock)) {
-        RETVAL_ZVAL(zv, 0, 1);
+        RETVAL_ZVAL(&zret, 0, 1);
     } else {
-        add_next_index_zval(z_tab, zv);
+        add_next_index_zval(z_tab, &zret);
+    }
+
+    return ret;
+}
+
+PHP_REDIS_API int
+redis_bulk_withmeta_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                             zval *z_tab, void *ctx)
+{
+    zval zret, zbulk;
+    int len, ret;
+
+    ret = redis_bulk_resp_to_zval(redis_sock, &zbulk, &len);
+
+    redis_with_metadata(&zret, &zbulk, len);
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(&zret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, &zret);
     }
 
     return ret;

@@ -1672,37 +1672,56 @@ cluster_single_line_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ct
     }
 }
 
+static int cluster_bulk_resp_to_zval(redisCluster *c, zval *zdst) {
+    char *resp;
+
+    if (c->reply_type != TYPE_BULK ||
+        (resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
+    {
+        if (c->reply_type != TYPE_BULK)
+            c->reply_len = 0;
+        ZVAL_FALSE(zdst);
+        return FAILURE;
+    }
+
+    if (!redis_unpack(c->flags, resp, c->reply_len, zdst)) {
+        ZVAL_STRINGL_FAST(zdst, resp, c->reply_len);
+    }
+
+    efree(resp);
+
+    return SUCCESS;
+}
+
 /* BULK response handler */
 PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                              void *ctx)
+                                     void *ctx)
 {
-    char *resp;
-    zval z_unpacked, z_ret, *zv;
+    zval zret;
 
-    // Make sure we can read the response
-    if (c->reply_type != TYPE_BULK) {
-        ZVAL_FALSE(&z_unpacked);
-        c->reply_len = 0;
-    } else if ((resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL) {
-        ZVAL_FALSE(&z_unpacked);
-    } else {
-        if (!redis_unpack(c->flags, resp, c->reply_len, &z_unpacked)) {
-            ZVAL_STRINGL_FAST(&z_unpacked, resp, c->reply_len);
-        }
-        efree(resp);
-    }
-
-    if (c->flags->flags & PHPREDIS_WITH_METADATA) {
-        redis_with_metadata(&z_ret, &z_unpacked, c->reply_len);
-        zv = &z_ret;
-    } else {
-        zv = &z_unpacked;
-    }
+    cluster_bulk_resp_to_zval(c, &zret);
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(zv, 0, 1);
+        RETVAL_ZVAL(&zret, 0, 1);
     } else {
-        add_next_index_zval(&c->multi_resp, zv);
+        add_next_index_zval(&c->multi_resp, &zret);
+    }
+}
+
+PHP_REDIS_API void
+cluster_bulk_withmeta_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                           void *ctx)
+{
+    zval zbulk, zmeta;
+
+    cluster_bulk_resp_to_zval(c, &zbulk);
+
+    redis_with_metadata(&zmeta, &zbulk, c->reply_len);
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETVAL_ZVAL(&zmeta, 0, 1);
+    } else {
+        add_next_index_zval(&c->multi_resp, &zmeta);
     }
 }
 
