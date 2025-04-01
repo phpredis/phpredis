@@ -48,6 +48,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testReset() { $this->markTestSkipped(); }
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
+    public function testConnectDatabaseSelect() { $this->markTestSkipped(); }
 
     /* These 'directed node' commands work differently in RedisCluster */
     public function testConfig() { $this->markTestSkipped(); }
