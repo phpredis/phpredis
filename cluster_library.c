@@ -2922,9 +2922,9 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
             } else {
                 zval zv, *z = &zv;
                 redis_unpack(redis_sock,key,key_len, z);
-                zend_string *zstr = zval_get_string(z);
+                zend_string *tmp, *zstr = zval_get_tmp_string(z, &tmp);
                 add_assoc_double_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), atof(line));
-                zend_string_release(zstr);
+                zend_tmp_string_release(tmp);
                 zval_dtor(z);
 
                 /* Free our key and line */
