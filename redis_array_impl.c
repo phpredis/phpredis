@@ -91,7 +91,7 @@ ra_init_function_table(RedisArray *ra)
     zend_hash_init(ra->pure_cmds, 0, NULL, NULL, 0);
 
     #define ra_add_pure_cmd(cmd) \
-        zend_hash_str_update_ptr(ra->pure_cmds, cmd, sizeof(cmd) - 1, NULL);
+        zend_hash_str_add_empty_element(ra->pure_cmds, cmd, sizeof(cmd) - 1);
 
     ra_add_pure_cmd("EXISTS");
     ra_add_pure_cmd("GET");
