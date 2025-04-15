@@ -121,8 +121,8 @@ jobs:
       - name: Install ValKey
         if: matrix.server == 'valkey'
         run: |
-          git clone --depth 1 --branch 7.2.5 https://github.com/valkey-io/valkey.git
-          cd valkey && BUILD_TLS=yes sudo make install
+          sudo apt-get update
+          sudo apt-get install valkey
 
       - name: Build phpredis
         run: |
