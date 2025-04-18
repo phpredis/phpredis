@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/phpredis/phpredis/actions/workflows/ci.yml/badge.svg)](https://github.com/phpredis/phpredis/actions/workflows/ci.yml)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
-[![PHP version](https://img.shields.io/badge/php-%3E%3D%207.0-8892BF.svg)](https://github.com/phpredis/phpredis)
+[![PHP version](https://img.shields.io/badge/php-%3E%3D%207.4-8892BF.svg)](https://github.com/phpredis/phpredis)
 
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It also supports [KeyDB](https://docs.keydb.dev/) and [Valkey](https://valkey.io/), which are open source alternatives to Redis.
 
