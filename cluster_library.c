@@ -3128,11 +3128,13 @@ PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes) {
     redis_register_persistent_resource(cc->hash, cc, le_cluster_slot_cache);
 }
 
-void cluster_cache_clear(redisCluster *c)
+zend_bool cluster_cache_clear(redisCluster *c)
 {
     if (c->cache_key) {
-        zend_hash_del(&EG(persistent_list), c->cache_key);
+        return zend_hash_del(&EG(persistent_list), c->cache_key) == SUCCESS;
     }
+
+    return false;
 }
 
 

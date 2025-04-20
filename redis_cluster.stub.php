@@ -89,6 +89,12 @@ class RedisCluster {
     public function _redir(): string|null;
 
     /**
+     * Flush the persistent slot cache, if one exists.
+     * @return bool Whether the slot cache was flushed.
+     */
+    public function flushSlotCache(): bool;
+
+    /**
      * @see Redis::acl
      */
     public function acl(string|array $key_or_address, string $subcmd, string ...$args): mixed;

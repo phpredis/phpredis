@@ -1768,6 +1768,14 @@ static void redisClearNodeBytes(redisClusterNode *node) {
     }
 }
 
+PHP_METHOD(RedisCluster, flushSlotCache) {
+    redisCluster *c = GET_CONTEXT();
+
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    RETURN_BOOL(cluster_cache_clear(c));
+}
+
 PHP_METHOD(RedisCluster, gettransferredbytes) {
     redisCluster *c = GET_CONTEXT();
     zend_long rx = 0, tx = 0;

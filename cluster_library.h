@@ -392,7 +392,7 @@ PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, in
 
 PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes);
 PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash);
-void cluster_cache_clear(redisCluster *c);
+zend_bool cluster_cache_clear(redisCluster *c);
 
 /*
  * Redis Cluster response handlers.  Our response handlers generally take the
