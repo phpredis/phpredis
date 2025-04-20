@@ -1597,29 +1597,27 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         timedout = c->waitms ? mstime() - msstart >= c->waitms : 0;
     } while (!c->clusterdown && !timedout);
 
-    // If we've detected the cluster is down, throw an exception
-    if (c->clusterdown) {
-        cluster_cache_clear(c);
-        CLUSTER_THROW_EXCEPTION("The Redis Cluster is down (CLUSTERDOWN)", 0);
-        return -1;
-    } else if (timedout || resp == -1) {
-        // Make sure the socket is reconnected, it such that it is in a clean state
+    if (c->clusterdown || (timedout || resp == -1)) {
+        /* Flush slot cache and ensure a reconnection to reread the topology */
         redis_sock_disconnect(c->cmd_sock, 1, 1);
         cluster_cache_clear(c);
 
-        if (timedout) {
-            CLUSTER_THROW_EXCEPTION("Timed out attempting to find data in the correct node!", 0);
+        if (c->clusterdown) {
+            cluster_map_keyspace(c);
+            CLUSTER_THROW_EXCEPTION("The Redis Cluster is down (CLUSTERDOWN)", 0);
+        } else if (timedout) {
+            CLUSTER_THROW_EXCEPTION(
+                "Timed out attempting to find data in the correct node!", 0);
         } else {
-            CLUSTER_THROW_EXCEPTION("Error processing response from Redis node!", 0);
+            CLUSTER_THROW_EXCEPTION(
+                "Error processing response from Redis node!", 0);
         }
 
         return -1;
     }
 
-    /* Clear redirection flag */
+    /* Clear redirection flag and return success */
     c->redir_type = REDIR_NONE;
-
-    // Success, return the slot where data exists.
     return 0;
 }
 
