@@ -1733,7 +1733,7 @@ class Redis {
      * Read every field and value from a hash.
      *
      * @param string $key The hash to query.
-     * @return Redis|array<string, mixed>|false All fields and values or false if the key didn't exist.
+     * @return Redis|array<string|int, mixed>|false All fields and values or false if the key didn't exist.
      *
      * @see https://redis.io/commands/hgetall
      *
