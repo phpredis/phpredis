@@ -883,6 +883,16 @@ cluster_free(redisCluster *c, int free_ctx)
     if (free_ctx) efree(c);
 }
 
+static zend_long cluster_slot_cache_expiry(void) {
+    zend_long expiry;
+
+    expiry = INI_INT("redis.clusters.slot_cache_expiry");
+    if (expiry <= 0)
+        return 0;
+
+    return time(NULL) + expiry;
+}
+
 /* Create a cluster slot cache structure */
 PHP_REDIS_API
 redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
@@ -892,6 +902,7 @@ redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
 
     cc = pecalloc(1, sizeof(*cc), 1);
     cc->hash = zend_string_dup(hash, 1);
+    cc->expiry = cluster_slot_cache_expiry();
 
     /* Copy nodes */
     cc->master = pecalloc(zend_hash_num_elements(nodes), sizeof(*cc->master), 1);
@@ -3103,22 +3114,26 @@ zend_string *cluster_hash_seeds(zend_string **seeds, uint32_t count) {
 }
 
 PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
+    redisCachedCluster *cc;
     zend_resource *le;
 
     /* Look for cached slot information */
     le = zend_hash_find_ptr(&EG(persistent_list), hash);
 
-    if (le != NULL) {
-        /* Sanity check on our list type */
-        if (le->type == le_cluster_slot_cache) {
-            /* Success, return the cached entry */
-            return le->ptr;
-        }
+    if (le == NULL)
+        return NULL;
+
+    if (le->type != le_cluster_slot_cache) {
         php_error_docref(0, E_WARNING, "Invalid slot cache resource");
+        return NULL;
     }
 
-    /* Not found */
-    return NULL;
+    cc = le->ptr;
+    if (cc->expiry != 0 && cc->expiry <= time(NULL)) {
+        return NULL;
+    }
+
+    return cc;
 }
 
 /* Cache a cluster's slot information in persistent_list if it's enabled */
@@ -3128,13 +3143,14 @@ PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes) {
     redis_register_persistent_resource(cc->hash, cc, le_cluster_slot_cache);
 }
 
-zend_bool cluster_cache_clear(redisCluster *c)
-{
+/* Flush the slot cache for the provided cluster, if one exists. Success and
+ * failure in this context just means "did we remove it" */
+int cluster_cache_clear(redisCluster *c) {
     if (c->cache_key) {
-        return zend_hash_del(&EG(persistent_list), c->cache_key) == SUCCESS;
+        return zend_hash_del(&EG(persistent_list), c->cache_key);
     }
 
-    return false;
+    return FAILURE;
 }
 
 

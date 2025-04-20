@@ -1773,7 +1773,7 @@ PHP_METHOD(RedisCluster, flushSlotCache) {
 
     ZEND_PARSE_PARAMETERS_NONE();
 
-    RETURN_BOOL(cluster_cache_clear(c));
+    RETURN_BOOL(cluster_cache_clear(c) == SUCCESS);
 }
 
 PHP_METHOD(RedisCluster, gettransferredbytes) {

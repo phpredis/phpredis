@@ -161,6 +161,7 @@ typedef struct redisCachedCluster {
     zend_string *hash;         /* What we're cached by */
     redisCachedMaster *master; /* Array of masters */
     size_t count;              /* Number of masters */
+    uint64_t expiry;           /* Expiry time (if any) */
 } redisCachedCluster;
 
 /* A Redis Cluster master node */
@@ -392,7 +393,7 @@ PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, in
 
 PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes);
 PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash);
-zend_bool cluster_cache_clear(redisCluster *c);
+int cluster_cache_clear(redisCluster *c);
 
 /*
  * Redis Cluster response handlers.  Our response handlers generally take the
