@@ -2867,8 +2867,8 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
                            long long count, void *ctx)
 {
     char *line, *key = NULL;
-    int line_len, key_len = 0;
     long long idx = 0;
+    int line_len;
 
     // Our count will need to be divisible by 2
     if (count % 2 != 0) {
@@ -2884,7 +2884,6 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
         if (idx++ % 2 == 0) {
             // Save our key and length
             key = line;
-            key_len = line_len;
         } else {
             /* Attempt unpacking */
             zval z_unpacked;
