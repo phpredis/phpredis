@@ -94,6 +94,16 @@ class RedisCluster {
      */
     public function flushSlotCache(): bool;
 
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+    /**
+     * Invaalidate all slot caches for across all workers. Only available on
+     * linux like systems with c11 atomics and shared memory allocation
+     *
+     * @return bool Whether we could invalidate any cache(es)
+     */
+    public static function invalidateSlotCaches(): bool;
+#endif
+
     /**
      * @see Redis::acl
      */

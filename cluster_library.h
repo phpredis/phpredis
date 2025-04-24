@@ -7,6 +7,10 @@
 #include "TSRM.h"
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* Redis cluster hash slots and N-1 which we'll use to find it */
 #define REDIS_CLUSTER_SLOTS 16384
 #define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
@@ -157,11 +161,13 @@ typedef struct redisCachedMaster {
 } redisCachedMaster;
 
 typedef struct redisCachedCluster {
-    // int rsrc_id;               /* Zend resource ID */
     zend_string *hash;         /* What we're cached by */
     redisCachedMaster *master; /* Array of masters */
     size_t count;              /* Number of masters */
     uint64_t expiry;           /* Expiry time (if any) */
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+    uint64_t generation;       /* Shared invalidation generation */
+#endif
 } redisCachedCluster;
 
 /* A Redis Cluster master node */
@@ -386,6 +392,13 @@ PHP_REDIS_API void cluster_free_node(redisClusterNode *node);
 PHP_REDIS_API redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes);
 PHP_REDIS_API void cluster_cache_free(redisCachedCluster *rcc);
 PHP_REDIS_API void cluster_init_cache(redisCluster *c, redisCachedCluster *rcc);
+
+/* Conditionally compiled shared slot cache invalidation functions */
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+void cluster_cache_gen_init(void);
+void cluster_cache_gen_free(void);
+int cluster_cache_gen_invalidate(void);
+#endif
 
 /* Functions to facilitate cluster slot caching */
 

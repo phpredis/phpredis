@@ -6,6 +6,14 @@
 #include "crc16.h"
 #include <zend_exceptions.h>
 
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+#include <stdatomic.h>
+#include <sys/mman.h>
+
+static _Atomic uint64_t *g_cluster_cache_gen;
+static pid_t g_cluster_cache_pid;
+#endif
+
 extern zend_class_entry *redis_cluster_exception_ce;
 int le_cluster_slot_cache;
 
@@ -883,7 +891,7 @@ cluster_free(redisCluster *c, int free_ctx)
     if (free_ctx) efree(c);
 }
 
-static zend_long cluster_slot_cache_expiry(void) {
+static zend_long cluster_cache_expiry(void) {
     zend_long expiry;
 
     expiry = INI_INT("redis.clusters.slot_cache_expiry");
@@ -892,6 +900,38 @@ static zend_long cluster_slot_cache_expiry(void) {
 
     return time(NULL) + expiry;
 }
+
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+void cluster_cache_gen_init(void) {
+    g_cluster_cache_pid = getpid();
+    g_cluster_cache_gen = mmap(NULL, sizeof(uint64_t), PROT_READ | PROT_WRITE,
+                               MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+}
+
+void cluster_cache_gen_free(void) {
+    if (g_cluster_cache_gen && g_cluster_cache_pid == getpid()) {
+        munmap(g_cluster_cache_gen, sizeof(uint64_t));
+        g_cluster_cache_gen = NULL;
+    }
+}
+
+int cluster_cache_gen_invalidate(void) {
+    if (g_cluster_cache_gen == NULL)
+        return FAILURE;
+
+    atomic_fetch_add_explicit(g_cluster_cache_gen, 1, memory_order_relaxed);
+
+    return SUCCESS;
+}
+
+static uint64_t cluster_cache_gen(void) {
+    if (g_cluster_cache_gen == NULL)
+        return 0;
+
+    return atomic_load(g_cluster_cache_gen);
+}
+
+#endif
 
 /* Create a cluster slot cache structure */
 PHP_REDIS_API
@@ -902,7 +942,10 @@ redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
 
     cc = pecalloc(1, sizeof(*cc), 1);
     cc->hash = zend_string_dup(hash, 1);
-    cc->expiry = cluster_slot_cache_expiry();
+    cc->expiry = cluster_cache_expiry();
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+    cc->generation = cluster_cache_gen();
+#endif
 
     /* Copy nodes */
     cc->master = pecalloc(zend_hash_num_elements(nodes), sizeof(*cc->master), 1);
@@ -3119,7 +3162,6 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
 
     /* Look for cached slot information */
     le = zend_hash_find_ptr(&EG(persistent_list), hash);
-
     if (le == NULL)
         return NULL;
 
@@ -3129,9 +3171,15 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
     }
 
     cc = le->ptr;
-    if (cc->expiry != 0 && cc->expiry <= time(NULL)) {
+    /* Short circuit if it should be expired */
+    if (cc->expiry != 0 && cc->expiry <= time(NULL))
         return NULL;
-    }
+
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+    /* Short circuit if it has been globally invalidated */
+    if (cluster_cache_gen() != cc->generation)
+        return NULL;
+#endif
 
     return cc;
 }
