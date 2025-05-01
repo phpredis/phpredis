@@ -6,6 +6,12 @@
 #include "crc16.h"
 #include <zend_exceptions.h>
 
+#if PHP_VERSION_ID < 80300
+#include "ext/standard/hrtime.h"
+#else
+#include "Zend/zend_hrtime.h"
+#endif
+
 #ifdef HAVE_REDIS_ATOMICS_MMAP
 #include <stdatomic.h>
 #include <sys/mman.h>
@@ -891,6 +897,18 @@ cluster_free(redisCluster *c, int free_ctx)
     if (free_ctx) efree(c);
 }
 
+static inline uint64_t redis_time(void) {
+    #define REDIS_NANO_IN_SEC ((uint64_t)1000000000)
+
+#if PHP_VERSION_ID < 80300
+    return php_hrtime_current() / REDIS_NANO_IN_SEC;
+#else
+    return zend_hrtime() / REDIS_NANO_IN_SEC;
+#endif
+
+    #undef REDIS_NANO_IN_SEC
+}
+
 static zend_long cluster_cache_expiry(void) {
     zend_long expiry;
 
@@ -898,7 +916,7 @@ static zend_long cluster_cache_expiry(void) {
     if (expiry <= 0)
         return 0;
 
-    return time(NULL) + expiry;
+    return redis_time() + expiry;
 }
 
 #ifdef HAVE_REDIS_ATOMICS_MMAP
@@ -3172,7 +3190,7 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
 
     cc = le->ptr;
     /* Short circuit if it should be expired */
-    if (cc->expiry != 0 && cc->expiry <= time(NULL))
+    if (cc->expiry != 0 && cc->expiry <= redis_time())
         return NULL;
 
 #ifdef HAVE_REDIS_ATOMICS_MMAP
