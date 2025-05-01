@@ -3191,15 +3191,19 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
     cc = le->ptr;
     /* Short circuit if it should be expired */
     if (cc->expiry != 0 && cc->expiry <= redis_time())
-        return NULL;
+        goto invalidated;
 
 #ifdef HAVE_REDIS_ATOMICS_MMAP
     /* Short circuit if it has been globally invalidated */
     if (cluster_cache_gen() != cc->generation)
-        return NULL;
+        goto invalidated;
 #endif
 
     return cc;
+
+invalidated:
+    zend_hash_del(&EG(persistent_list), hash);
+    return NULL;
 }
 
 /* Cache a cluster's slot information in persistent_list if it's enabled */
