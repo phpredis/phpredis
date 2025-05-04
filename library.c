@@ -2018,26 +2018,31 @@ static int
 redis_hello_response(INTERNAL_FUNCTION_PARAMETERS,
                      RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
-    int numElems;
     zval z_ret, *zv;
+    int numElems;
 
-    if (read_mbulk_header(redis_sock, &numElems) < 0) {
-        if (IS_ATOMIC(redis_sock)) {
-            RETVAL_FALSE;
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
-        return FAILURE;
-    }
+    if (read_mbulk_header(redis_sock, &numElems) < 0)
+        goto fail;
 
     array_init(&z_ret);
-    redis_mbulk_reply_zipped_raw_variant(redis_sock, &z_ret, numElems);
+
+    if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS ||
+        array_zip_values_recursive(&z_ret) != SUCCESS) 
+    {
+        zval_dtor(&z_ret);
+        goto fail;
+    }
 
     if (redis_sock->hello.server) {
         zend_string_release(redis_sock->hello.server);
     }
-    zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("server"));
-    redis_sock->hello.server = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
+
+    if ((zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("dragonfly_version")))) {
+        redis_sock->hello.server = zend_string_init(ZEND_STRL("dragonfly"), 0);
+    } else {
+        zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("server"));
+        redis_sock->hello.server = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
+    }
 
     if (redis_sock->hello.version) {
         zend_string_release(redis_sock->hello.version);
@@ -2063,6 +2068,14 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     return SUCCESS;
+
+fail:
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_FALSE;
+    } else {
+        add_next_index_bool(z_tab, 0);
+    }
+    return FAILURE;
 }
 
 
@@ -4302,7 +4315,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
         elements--;
     }
 
-    return 0;
+    return SUCCESS;
 }
 
 static int
