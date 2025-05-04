@@ -2476,6 +2476,7 @@ class Redis_Test extends TestSuite {
             $this->markTestSkipped();
 
         $hello = $this->execHello();
+
         if ( ! $this->assertArrayKey($hello, 'server') ||
              ! $this->assertArrayKey($hello, 'version'))
         {
@@ -2486,6 +2487,7 @@ class Redis_Test extends TestSuite {
         $this->assertEquals($hello['version'], $this->redis->serverVersion());
 
         $info = $this->redis->info();
+
         $cmd1 = $info['total_commands_processed'];
 
         /* Shouldn't hit the server */

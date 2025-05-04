@@ -2131,7 +2131,7 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
 
         int num = atol(inbuf + 1);
 
-        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, 0, &z_ret) < 0) {
+        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, 0, &z_ret) != SUCCESS) {
             return FAILURE;
         }
     }
