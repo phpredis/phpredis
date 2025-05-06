@@ -1203,6 +1203,49 @@ PHP_METHOD(RedisCluster, hmset) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, hexpire) {
+    CLUSTER_PROCESS_KW_CMD("HEXPIRE",
+                           redis_hexpire_cmd, cluster_variant_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, hpexpire) {
+    CLUSTER_PROCESS_KW_CMD("HPEXPIRE",
+                           redis_hexpire_cmd, cluster_variant_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, hexpireat) {
+    CLUSTER_PROCESS_KW_CMD("HEXPIREAT",
+                           redis_hexpire_cmd, cluster_variant_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, hpexpireat) {
+    CLUSTER_PROCESS_KW_CMD("HPEXPIREAT",
+                           redis_hexpire_cmd, cluster_variant_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, httl) {
+    CLUSTER_PROCESS_KW_CMD("HTTL", redis_httl_cmd, cluster_variant_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, hpttl) {
+    CLUSTER_PROCESS_KW_CMD("HPTTL", redis_httl_cmd, cluster_variant_resp, 1);
+}
+
+
+PHP_METHOD(RedisCluster, hexpiretime) {
+    CLUSTER_PROCESS_KW_CMD("HEXPIRETIME", redis_httl_cmd,
+                           cluster_variant_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, hpexpiretime) {
+    CLUSTER_PROCESS_KW_CMD("HPEXPIRETIME", redis_httl_cmd,
+                           cluster_variant_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, hpersist) {
+    CLUSTER_PROCESS_KW_CMD("HPERSIST", redis_httl_cmd, cluster_variant_resp, 0);
+}
+
 /* {{{ proto bool RedisCluster::hrandfield(string key, [array $options]) */
 PHP_METHOD(RedisCluster, hrandfield) {
     CLUSTER_PROCESS_CMD(hrandfield, cluster_hrandfield_resp, 1);

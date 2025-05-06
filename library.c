@@ -2027,7 +2027,7 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS,
     array_init(&z_ret);
 
     if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS ||
-        array_zip_values_recursive(&z_ret) != SUCCESS) 
+        array_zip_values_recursive(&z_ret) != SUCCESS)
     {
         zval_dtor(&z_ret);
         goto fail;

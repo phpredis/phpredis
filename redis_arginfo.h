@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3a08bc16dd5a73e721e0df8f7843acdbbb585df5 */
+ * Stub hash: c6205649cd23ff2b9fcc63a034b601ee566ef236 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -463,6 +463,39 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hStrLen, 0, 2, R
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_hVals arginfo_class_Redis_getWithMeta
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hexpire, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, ttl, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, fields, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mode, IS_STRING, 1, "NULL")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_hpexpire arginfo_class_Redis_hexpire
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hexpireat, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, time, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, fields, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mode, IS_STRING, 1, "NULL")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hpexpireat, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, mstime, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, fields, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mode, IS_STRING, 1, "NULL")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_httl arginfo_class_Redis_hMget
+
+#define arginfo_class_Redis_hpttl arginfo_class_Redis_hMget
+
+#define arginfo_class_Redis_hexpiretime arginfo_class_Redis_hMget
+
+#define arginfo_class_Redis_hpexpiretime arginfo_class_Redis_hMget
+
+#define arginfo_class_Redis_hpersist arginfo_class_Redis_hMget
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hscan, 0, 2, Redis, MAY_BE_ARRAY|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -1292,6 +1325,15 @@ ZEND_METHOD(Redis, hSet);
 ZEND_METHOD(Redis, hSetNx);
 ZEND_METHOD(Redis, hStrLen);
 ZEND_METHOD(Redis, hVals);
+ZEND_METHOD(Redis, hexpire);
+ZEND_METHOD(Redis, hpexpire);
+ZEND_METHOD(Redis, hexpireat);
+ZEND_METHOD(Redis, hpexpireat);
+ZEND_METHOD(Redis, httl);
+ZEND_METHOD(Redis, hpttl);
+ZEND_METHOD(Redis, hexpiretime);
+ZEND_METHOD(Redis, hpexpiretime);
+ZEND_METHOD(Redis, hpersist);
 ZEND_METHOD(Redis, hscan);
 ZEND_METHOD(Redis, expiremember);
 ZEND_METHOD(Redis, expirememberat);
@@ -1553,6 +1595,15 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, hSetNx, arginfo_class_Redis_hSetNx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hStrLen, arginfo_class_Redis_hStrLen, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hVals, arginfo_class_Redis_hVals, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hexpire, arginfo_class_Redis_hexpire, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hpexpire, arginfo_class_Redis_hpexpire, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hexpireat, arginfo_class_Redis_hexpireat, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hpexpireat, arginfo_class_Redis_hpexpireat, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, httl, arginfo_class_Redis_httl, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hpttl, arginfo_class_Redis_hpttl, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hexpiretime, arginfo_class_Redis_hexpiretime, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hpexpiretime, arginfo_class_Redis_hpexpiretime, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hpersist, arginfo_class_Redis_hpersist, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hscan, arginfo_class_Redis_hscan, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, expiremember, arginfo_class_Redis_expiremember, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, expirememberat, arginfo_class_Redis_expirememberat, ZEND_ACC_PUBLIC)
