@@ -1913,6 +1913,121 @@ class Redis {
      */
     public function hVals(string $key): Redis|array|false;
 
+    /**
+     * Set the expiration on one or more fields in a hash.
+     *
+     * @param string $key    The hash to update.
+     * @param int    $ttl    The time to live in seconds.
+     * @param array  $fields The fields to set the expiration on.
+     * @param string|null $option An optional mode (NX, XX, ETC)
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/hexpire
+     */
+    public function hexpire(string $key, int $ttl, array $fields,
+                            ?string $mode = NULL): Redis|array|false;
+
+    /**
+     * Set the expiration on one or more fields in a hash in milliseconds.
+     *
+     * @param string $key    The hash to update.
+     * @param int    $ttl    The time to live in milliseconds.
+     * @param array  $fields The fields to set the expiration on.
+     * @param string|null $option An optional mode (NX, XX, ETC)
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/hexpire
+     */
+    public function hpexpire(string $key, int $ttl, array $fields,
+                            ?string $mode = NULL): Redis|array|false;
+
+    /**
+     * Set the expiration time on one or more fields of a hash.
+     *
+     * @param string $key    The hash to update.
+     * @param int    $time   The time to live in seconds.
+     * @param array  $fields The fields to set the expiration on.
+     * @param string|null $option An optional mode (NX, XX, ETC)
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/hexpire
+     */
+    public function hexpireat(string $key, int $time, array $fields,
+                              ?string $mode = NULL): Redis|array|false;
+
+    /**
+     * Set the expiration time on one or more fields of a hash in milliseconds.
+     *
+     * @param string $key    The hash to update.
+     * @param int    $mstime The time to live in milliseconds.
+     * @param array  $fields The fields to set the expiration on.
+     * @param string|null $option An optional mode (NX, XX, ETC)
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/hexpire
+     */
+    public function hpexpireat(string $key, int $mstime, array $fields,
+                               ?string $mode = NULL): Redis|array|false;
+
+    /**
+     * Get the TTL of one or more fields in a hash
+     *
+     * @param string $key    The hash to query.
+     * @param array  $fields The fields to query.
+     *
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/httl
+     */
+    public function httl(string $key, array $fields): Redis|array|false;
+
+    /**
+     * Get the millisecond TTL of one or more fields in a hash
+     *
+     * @param string $key    The hash to query.
+     * @param array  $fields The fields to query.
+     *
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/hpttl
+     */
+    public function hpttl(string $key, array $fields): Redis|array|false;
+
+    /**
+     * Get the expiration time of one or more fields in a hash
+     *
+     * @param string $key    The hash to query.
+     * @param array  $fields The fields to query.
+     *
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/hexpiretime
+     */
+    public function hexpiretime(string $key, array $fields): Redis|array|false;
+
+    /**
+     * Get the expiration time in milliseconds of one or more fields in a hash
+     *
+     * @param string $key    The hash to query.
+     * @param array  $fields The fields to query.
+     *
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/hpexpiretime
+     */
+    public function hpexpiretime(string $key, array $fields): Redis|array|false;
+
+    /**
+     * Persist one or more hash fields
+     *
+     * @param string $key    The hash to query.
+     * @param array  $fields The fields to query.
+     *
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/commands/hpersist
+     */
+    public function hpersist(string $key, array $fields): Redis|array|false;
 
     /**
      * Iterate over the fields and values of a hash in an incremental fashion.

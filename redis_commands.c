@@ -2375,7 +2375,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Calculate argc based on options set */
-    int argc = 2 + (ifeq ? 2 : 0) + (exp_type ? 2 : 0) + (set_type != NULL) + 
+    int argc = 2 + (ifeq ? 2 : 0) + (exp_type ? 2 : 0) + (set_type != NULL) +
         (keep_ttl != 0) + get;
 
     /* Initial SET <key> <value> */
@@ -4633,6 +4633,92 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     Starting with Redis version 4.0.7: Added the AUTH option.
     Starting with Redis version 6.0.0: Added the AUTH2 option.
 */
+
+int redis_httl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    zend_string *key, *field, *tmp;
+    HashTable *fields;
+    int argc;
+    zval *zv;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_ARRAY_HT(fields)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(fields) < 1) {
+        php_error_docref(NULL, E_WARNING, "Must pass at least one field");
+        return FAILURE;
+    }
+
+    // 3 because <key> FIELDS <num_fields>
+    argc = 3 + zend_hash_num_elements(fields);
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(fields));
+
+    ZEND_HASH_FOREACH_VAL(fields, zv)
+        field = zval_get_tmp_string(zv, &tmp);
+        redis_cmd_append_sstr_zstr(&cmdstr, field);
+        zend_tmp_string_release(tmp);
+    ZEND_HASH_FOREACH_END();
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+int redis_hexpire_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char *kw, char **cmd, int *cmd_len, short *slot,
+                      void **ctx)
+{
+    zend_string *key, *option = NULL, *tmp, *field;
+    smart_string cmdstr = {0};
+    HashTable *fields;
+    zend_long ttl;
+    zval *zv;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(3, 4)
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(ttl)
+        Z_PARAM_ARRAY_HT(fields)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(option)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(fields) < 1) {
+        php_error_docref(NULL, E_WARNING, "Must pass at least one field");
+        return FAILURE;
+    }
+
+    // 4 because <key> <ttl> FIELDS <num_fields>
+    argc = 4 + zend_hash_num_elements(fields) + (option ? 1 : 0);
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_long(&cmdstr, ttl);
+    if (option) redis_cmd_append_sstr_zstr(&cmdstr, option);
+
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(fields));
+
+    ZEND_HASH_FOREACH_VAL(fields, zv)
+        field = zval_get_tmp_string(zv, &tmp);
+        redis_cmd_append_sstr_zstr(&cmdstr, field);
+        zend_tmp_string_release(tmp);
+    ZEND_HASH_FOREACH_END();
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
 
 /* MIGRATE */
 int redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,

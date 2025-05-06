@@ -6288,6 +6288,68 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testHashExpiration() {
+        if ( ! $this->minVersionCheck('7.4.0'))
+            $this->markTestSkipped();
+
+        $hexpire_cmds = [
+            'hexpire' => 10,
+            'hpexpire' => 10000,
+            'hexpireat' => time() + 10,
+            'hpexpireat' => time() * 1000 + 10000,
+        ];
+
+        $httl_cmds = ['httl', 'hpttl', 'hexpiretime', 'hpexpiretime'];
+
+        $hash = ['Picard' => 'Enterprise', 'Sisko' => 'Defiant'];
+        $keys = array_keys($hash);
+
+        foreach ($hexpire_cmds as $exp_cmd => $ttl) {
+            $this->redis->del('hash');
+            $this->redis->hmset('hash', $hash);
+
+            /* Set a TTL on one existing and one non-existing field */
+            $res = $this->redis->{$exp_cmd}('hash', $ttl, ['Picard', 'nofield']);
+
+            $this->assertEquals($res, [1, -2]);
+
+            foreach ($httl_cmds as $ttl_cmd) {
+                $res = $this->redis->{$ttl_cmd}('hash', $keys);
+                $this->assertIsArray($res);
+                $this->assertEquals(count($keys), count($res));
+
+                /* Picard: has an expiry (>0), Siskto does not (<0) */
+                $this->assertTrue($res[0] > 0);
+                $this->assertTrue($res[1] < 0);
+            }
+
+            $this->redis->del('m');
+            $this->redis->hmset('m', ['F' => 'V']);
+
+            // NX - Only set expiry if it doesn't have one
+            foreach ([[1], [0]] as $expected) {
+                $res = $this->redis->{$exp_cmd}('m', $ttl, ['F'], 'NX');
+                $this->assertEquals($expected, $res);
+            }
+
+            // XX - Set if it has one
+            $res = $this->redis->{$exp_cmd}('m', $ttl, ['F'], 'XX');
+            $this->assertEquals([1], $res);
+            $this->redis->hpersist('m', ['F']);
+            $res = $this->redis->{$exp_cmd}('m', $ttl, ['F'], 'XX');
+            $this->assertEquals([0], $res);
+
+            // GT - should set if the new expiration is larger
+            $res = $this->redis->{$exp_cmd}('m', $ttl, ['F']);
+            $res = $this->redis->{$exp_cmd}('m', $ttl + 100, ['F'], 'GT');
+            $this->assertEquals([1], $res);
+
+            // LT - should not set if the new expiration is smaller
+            $res = $this->redis->{$exp_cmd}('m', $ttl / 2, ['F'], 'LT');
+            $this->assertTrue(is_array($res) && $res[0] > 0);
+        }
+    }
+
     public function testHScan() {
         if (version_compare($this->version, '2.8.0') < 0)
             $this->markTestSkipped();

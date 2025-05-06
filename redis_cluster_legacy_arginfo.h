@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 43a43fa735ced4b48a361078ac8a10fb62cb1244 */
+ * Stub hash: 5788cd1d12611ef1ff5747efe07b99f66f07fa05 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -395,6 +395,42 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_hstrlen, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, field)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_hexpire, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, ttl)
+	ZEND_ARG_INFO(0, fields)
+	ZEND_ARG_INFO(0, mode)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_hpexpire arginfo_class_RedisCluster_hexpire
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_hexpireat, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, time)
+	ZEND_ARG_INFO(0, fields)
+	ZEND_ARG_INFO(0, mode)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_hpexpireat, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, mstime)
+	ZEND_ARG_INFO(0, fields)
+	ZEND_ARG_INFO(0, mode)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_httl, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, fields)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_hpttl arginfo_class_RedisCluster_httl
+
+#define arginfo_class_RedisCluster_hexpiretime arginfo_class_RedisCluster_httl
+
+#define arginfo_class_RedisCluster_hpexpiretime arginfo_class_RedisCluster_httl
+
+#define arginfo_class_RedisCluster_hpersist arginfo_class_RedisCluster_httl
 
 #define arginfo_class_RedisCluster_hvals arginfo_class_RedisCluster__prefix
 
@@ -1002,6 +1038,15 @@ ZEND_METHOD(RedisCluster, hrandfield);
 ZEND_METHOD(RedisCluster, hset);
 ZEND_METHOD(RedisCluster, hsetnx);
 ZEND_METHOD(RedisCluster, hstrlen);
+ZEND_METHOD(RedisCluster, hexpire);
+ZEND_METHOD(RedisCluster, hpexpire);
+ZEND_METHOD(RedisCluster, hexpireat);
+ZEND_METHOD(RedisCluster, hpexpireat);
+ZEND_METHOD(RedisCluster, httl);
+ZEND_METHOD(RedisCluster, hpttl);
+ZEND_METHOD(RedisCluster, hexpiretime);
+ZEND_METHOD(RedisCluster, hpexpiretime);
+ZEND_METHOD(RedisCluster, hpersist);
 ZEND_METHOD(RedisCluster, hvals);
 ZEND_METHOD(RedisCluster, incr);
 ZEND_METHOD(RedisCluster, incrby);
@@ -1233,6 +1278,15 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, hset, arginfo_class_RedisCluster_hset, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hsetnx, arginfo_class_RedisCluster_hsetnx, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hstrlen, arginfo_class_RedisCluster_hstrlen, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hexpire, arginfo_class_RedisCluster_hexpire, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hpexpire, arginfo_class_RedisCluster_hpexpire, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hexpireat, arginfo_class_RedisCluster_hexpireat, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hpexpireat, arginfo_class_RedisCluster_hpexpireat, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, httl, arginfo_class_RedisCluster_httl, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hpttl, arginfo_class_RedisCluster_hpttl, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hexpiretime, arginfo_class_RedisCluster_hexpiretime, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hpexpiretime, arginfo_class_RedisCluster_hpexpiretime, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hpersist, arginfo_class_RedisCluster_hpersist, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hvals, arginfo_class_RedisCluster_hvals, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, incr, arginfo_class_RedisCluster_incr, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, incrby, arginfo_class_RedisCluster_incrby, ZEND_ACC_PUBLIC)

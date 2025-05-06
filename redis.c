@@ -1878,6 +1878,51 @@ PHP_METHOD(Redis, hMset)
 }
 /* }}} */
 
+PHP_METHOD(Redis, hexpire) {
+    REDIS_PROCESS_KW_CMD("HEXPIRE", redis_hexpire_cmd,
+                         redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, hpexpire) {
+    REDIS_PROCESS_KW_CMD("HPEXPIRE", redis_hexpire_cmd,
+                         redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, hexpireat) {
+    REDIS_PROCESS_KW_CMD("HEXPIREAT", redis_hexpire_cmd,
+                         redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, hpexpireat) {
+    REDIS_PROCESS_KW_CMD("HPEXPIREAT", redis_hexpire_cmd,
+                         redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, httl) {
+    REDIS_PROCESS_KW_CMD("HTTL", redis_httl_cmd,
+                         redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, hpttl) {
+    REDIS_PROCESS_KW_CMD("HPTTL", redis_httl_cmd,
+                         redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, hexpiretime) {
+    REDIS_PROCESS_KW_CMD("HEXPIRETIME", redis_httl_cmd,
+                         redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, hpexpiretime) {
+    REDIS_PROCESS_KW_CMD("HPEXPIRETIME", redis_httl_cmd,
+                         redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, hpersist) {
+    REDIS_PROCESS_KW_CMD("HPERSIST", redis_httl_cmd,
+                         redis_read_variant_reply);
+}
+
 /* {{{ proto bool Redis::hRandField(string key, [array $options]) */
 PHP_METHOD(Redis, hRandField)
 {

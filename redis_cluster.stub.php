@@ -536,6 +536,55 @@ class RedisCluster {
     public function hstrlen(string $key, string $field): RedisCluster|int|false;
 
     /**
+     * @see Redis::hexpire
+     */
+    public function hexpire(string $key, int $ttl, array $fields,
+                            ?string $mode = NULL): RedisCluster|array|false;
+
+    /**
+     * @see Redis::hpexpire
+     */
+    public function hpexpire(string $key, int $ttl, array $fields,
+                            ?string $mode = NULL): RedisCluster|array|false;
+
+    /**
+     * @see Redis::hexpireat
+     */
+    public function hexpireat(string $key, int $time, array $fields,
+                              ?string $mode = NULL): RedisCluster|array|false;
+
+    /**
+     * @see Redis::hpexpireat
+     */
+    public function hpexpireat(string $key, int $mstime, array $fields,
+                               ?string $mode = NULL): RedisCluster|array|false;
+
+    /**
+     * @see Redis::httl
+     */
+    public function httl(string $key, array $fields): RedisCluster|array|false;
+
+    /**
+     * @see Redis::hpttl
+     */
+    public function hpttl(string $key, array $fields): RedisCluster|array|false;
+
+    /**
+     * @see Redis::hexpiretime
+     */
+    public function hexpiretime(string $key, array $fields): RedisCluster|array|false;
+
+    /**
+     * @see Redis::hpexpiretime
+     */
+    public function hpexpiretime(string $key, array $fields): RedisCluster|array|false;
+
+    /**
+     * @see Redis::hpexpiretime
+     */
+    public function hpersist(string $key, array $fields): RedisCluster|array|false;
+
+    /**
      * @see Redis::hvals
      */
     public function hvals(string $key): RedisCluster|array|false;
