@@ -139,14 +139,86 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->is_valkey = $this->detectValkey($info);
     }
 
+    private function findCliExe() {
+        foreach (['redis-cli', 'valkey-cli'] as $candidate) {
+            $path = trim(shell_exec("command -v $candidate 2>/dev/null"));
+            if (is_executable($path)) {
+                return $path;
+            }
+        }
+
+        return NULL;
+    }
+
+    private function getServerReply($host, $port, $cmd) {
+        $cli = $this->findCliExe();
+        if ( ! $cli) {
+            return '(no redis-cli or valkey-cli found)';
+        }
+
+        $args = [$cli, '-h', $host, '-p', $port];
+
+        $this->getAuthParts($user, $pass);
+
+        if ($user) $args = array_merge($args, ['--user', $user]);
+        if ($pass) $args = array_merge($args, ['-a', $pass]);
+
+        $resp = shell_exec(implode(' ', $args) . ' ' . $cmd . ' 2>/dev/null');
+
+        return is_string($resp) ? trim($resp) : $resp;
+    }
+
+    /* Try to gat a new RedisCluster instance. The strange logic is an attempt
+       to solve a problem where this sometimes fails but only ever on GitHub
+       runners. If we're not on a runner we just get a new instance. Otherwise
+       we allow for two tries to get the instance. */
+    private function getNewInstance() {
+        if (getenv('GITHUB_ACTIONS') === 'true') {
+            try {
+                return new RedisCluster(NULL, self::$seeds, 30, 30, true,
+                                        $this->getAuth());
+            } catch (Exception $ex) {
+                TestSuite::errorMessage("Failed to connect: %s", $ex->getMessage());
+            }
+        }
+
+        return new RedisCluster(NULL, self::$seeds, 30, 30, true, $this->getAuth());
+    }
+
     /* Override newInstance as we want a RedisCluster object */
     protected function newInstance() {
         try {
-            return new RedisCluster(NULL, self::$seeds, 30, 30, true, $this->getAuth());
+            return $this->getNewInstance();
         } catch (Exception $ex) {
-            TestSuite::errorMessage("Fatal error: %s\n", $ex->getMessage());
-            TestSuite::errorMessage("Seeds: %s\n", implode(' ', self::$seeds));
-            TestSuite::errorMessage("Seed source: %s\n", self::$seed_source);
+            TestSuite::errorMessage("");
+            TestSuite::errorMessage("Fatal error: %s", $ex->getMessage());
+            TestSuite::errorMessage("Seeds: %s", implode(' ', self::$seeds));
+            TestSuite::errorMessage("Seed source: %s", self::$seed_source);
+            TestSuite::errorMessage("");
+
+            TestSuite::errorMessage("Backtrace:");
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $i => $frame) {
+                $file = isset($frame['file']) ? basename($frame['file']) : '[internal]';
+                $line = $frame['line'] ?? '?';
+                $func = $frame['function'] ?? 'unknown';
+                TestSuite::errorMessage("  %s:%d [%s]", $file, $line, $func);
+            }
+
+            TestSuite::errorMessage("\nServer responses:");
+
+            /* See if we can shed some light on whether Redis is available */
+            foreach (self::$seeds as $seed) {
+                list($host, $port) = explode(':', $seed);
+
+                $st = microtime(true);
+                $reply = $this->getServerReply($host, $port, 'PING');
+                $et = microtime(true);
+
+                TestSuite::errorMessage("  [%s:%d] PING -> %s (%.4f)", $host,
+                                        $port, var_export($reply, true),
+                                        $et - $st);
+            }
+
             exit(1);
         }
     }
