@@ -6345,7 +6345,7 @@ class Redis_Test extends TestSuite {
             $this->assertEquals([1], $res);
 
             // LT - should not set if the new expiration is smaller
-            $res = $this->redis->{$exp_cmd}('m', $ttl / 2, ['F'], 'LT');
+            $res = $this->redis->{$exp_cmd}('m', intval($ttl / 2), ['F'], 'LT');
             $this->assertTrue(is_array($res) && $res[0] > 0);
         }
     }
