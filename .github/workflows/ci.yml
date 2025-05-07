@@ -190,12 +190,12 @@ jobs:
           for PORT in {6379..6382} {7000..7005} {32767..32768} {26379..26380}; do
             until echo PING | ${{ matrix.server }}-cli -p "$PORT" 2>&1 | grep -qE 'PONG|NOAUTH'; do
               echo "Still waiting for ${{ matrix.server }} on port $PORT"
-              sleep .05
+              sleep .5
             done
           done
           until echo PING | ${{ matrix.server }}-cli -s /tmp/redis.sock 2>&1 | grep -qE 'PONG|NOAUTH'; do
             echo "Still waiting for ${{ matrix.server }} at /tmp/redis.sock"
-            sleep .05
+            sleep .5
           done
 
       - name: Initialize ${{ matrix.server }} cluster
