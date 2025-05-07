@@ -95,6 +95,12 @@ PHP_INI_BEGIN()
 
     /* redis cluster */
     PHP_INI_ENTRY("redis.clusters.cache_slots", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.clusters.slot_cache_expiry", "0", PHP_INI_ALL, NULL)
+
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+    PHP_INI_ENTRY("redis.clusters.shared_slot_cache_invalidation", "0", 
+                  PHP_INI_ALL, NULL)
+#endif
     PHP_INI_ENTRY("redis.clusters.auth", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.persistent", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.read_timeout", "0", PHP_INI_ALL, NULL)
@@ -144,7 +150,7 @@ zend_module_entry redis_module_entry = {
      "redis",
      NULL,
      PHP_MINIT(redis),
-     NULL,
+     PHP_MSHUTDOWN(redis),
      NULL,
      NULL,
      PHP_MINFO(redis),
@@ -379,6 +385,11 @@ PHP_MINIT_FUNCTION(redis)
                                                               "Redis cluster slot cache",
                                                               module_number);
 
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+    /* Initialize shared slot cache invalidation */
+    cluster_cache_gen_init();
+#endif
+
     /* RedisException class */
     redis_exception_ce = register_class_RedisException(spl_ce_RuntimeException);
 
@@ -390,6 +401,14 @@ PHP_MINIT_FUNCTION(redis)
     /* Register resource destructors */
     le_redis_pconnect = zend_register_list_destructors_ex(NULL, redis_connections_pool_dtor,
         "phpredis persistent connections pool", module_number);
+
+    return SUCCESS;
+}
+
+PHP_MSHUTDOWN_FUNCTION(redis) {
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+    cluster_cache_gen_free();
+#endif
 
     return SUCCESS;
 }

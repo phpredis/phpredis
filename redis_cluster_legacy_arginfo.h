@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 43a43fa735ced4b48a361078ac8a10fb62cb1244 */
+ * Stub hash: b1d3eb09f86ccffaa4cf0cc6885550e7d4b6da04 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -33,6 +33,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster__masters, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster__redir arginfo_class_RedisCluster__masters
+
+#define arginfo_class_RedisCluster_flushSlotCache arginfo_class_RedisCluster__masters
+
+#if defined(HAVE_REDIS_ATOMICS_MMAP)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_invalidateSlotCaches, 0, 0, 0)
+ZEND_END_ARG_INFO()
+#endif
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_acl, 0, 0, 2)
 	ZEND_ARG_INFO(0, key_or_address)
@@ -904,7 +911,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zdiff, 0, 0, 1)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
-
 ZEND_METHOD(RedisCluster, __construct);
 ZEND_METHOD(RedisCluster, _compress);
 ZEND_METHOD(RedisCluster, _uncompress);
@@ -915,6 +921,10 @@ ZEND_METHOD(RedisCluster, _unpack);
 ZEND_METHOD(RedisCluster, _prefix);
 ZEND_METHOD(RedisCluster, _masters);
 ZEND_METHOD(RedisCluster, _redir);
+ZEND_METHOD(RedisCluster, flushSlotCache);
+#if defined(HAVE_REDIS_ATOMICS_MMAP)
+ZEND_METHOD(RedisCluster, invalidateSlotCaches);
+#endif
 ZEND_METHOD(RedisCluster, acl);
 ZEND_METHOD(RedisCluster, append);
 ZEND_METHOD(RedisCluster, bgrewriteaof);
@@ -1134,7 +1144,6 @@ ZEND_METHOD(RedisCluster, zdiffstore);
 ZEND_METHOD(RedisCluster, zunion);
 ZEND_METHOD(RedisCluster, zdiff);
 
-
 static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, __construct, arginfo_class_RedisCluster___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _compress, arginfo_class_RedisCluster__compress, ZEND_ACC_PUBLIC)
@@ -1146,6 +1155,10 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, _prefix, arginfo_class_RedisCluster__prefix, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _masters, arginfo_class_RedisCluster__masters, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _redir, arginfo_class_RedisCluster__redir, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, flushSlotCache, arginfo_class_RedisCluster_flushSlotCache, ZEND_ACC_PUBLIC)
+#if defined(HAVE_REDIS_ATOMICS_MMAP)
+	ZEND_ME(RedisCluster, invalidateSlotCaches, arginfo_class_RedisCluster_invalidateSlotCaches, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+#endif
 	ZEND_ME(RedisCluster, acl, arginfo_class_RedisCluster_acl, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, append, arginfo_class_RedisCluster_append, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bgrewriteaof, arginfo_class_RedisCluster_bgrewriteaof, ZEND_ACC_PUBLIC)
@@ -1367,17 +1380,16 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_FE_END
 };
 
-
-static const zend_function_entry class_RedisClusterException_methods[] = {
-	ZEND_FE_END
-};
-
 static zend_class_entry *register_class_RedisCluster(void)
 {
 	zend_class_entry ce, *class_entry;
 
 	INIT_CLASS_ENTRY(ce, "RedisCluster", class_RedisCluster_methods);
+#if (PHP_VERSION_ID >= 80400)
+	class_entry = zend_register_internal_class_with_flags(&ce, NULL, 0);
+#else
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#endif
 
 	zval const_OPT_SLAVE_FAILOVER_value;
 	ZVAL_LONG(&const_OPT_SLAVE_FAILOVER_value, REDIS_OPT_FAILOVER);
@@ -1416,8 +1428,12 @@ static zend_class_entry *register_class_RedisClusterException(zend_class_entry *
 {
 	zend_class_entry ce, *class_entry;
 
-	INIT_CLASS_ENTRY(ce, "RedisClusterException", class_RedisClusterException_methods);
+	INIT_CLASS_ENTRY(ce, "RedisClusterException", NULL);
+#if (PHP_VERSION_ID >= 80400)
+	class_entry = zend_register_internal_class_with_flags(&ce, class_entry_RuntimeException, 0);
+#else
 	class_entry = zend_register_internal_class_ex(&ce, class_entry_RuntimeException);
+#endif
 
 	return class_entry;
 }

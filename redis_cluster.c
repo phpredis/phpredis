@@ -1768,6 +1768,27 @@ static void redisClearNodeBytes(redisClusterNode *node) {
     }
 }
 
+PHP_METHOD(RedisCluster, flushSlotCache) {
+    redisCluster *c = GET_CONTEXT();
+   
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    RETURN_BOOL(cluster_cache_clear(c) == SUCCESS);
+}
+
+#ifdef HAVE_REDIS_ATOMICS_MMAP
+PHP_METHOD(RedisCluster, invalidateSlotCaches) {
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    if (INI_INT("redis.clusters.shared_slot_cache_invalidation") == 0) {
+        php_error_docref(NULL, E_WARNING, "Shared slot cache invalidation disabled");
+        RETURN_FALSE;
+    }
+
+    RETURN_BOOL(cluster_cache_gen_invalidate() == SUCCESS);
+}
+#endif
+
 PHP_METHOD(RedisCluster, gettransferredbytes) {
     redisCluster *c = GET_CONTEXT();
     zend_long rx = 0, tx = 0;

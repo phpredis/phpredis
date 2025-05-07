@@ -319,6 +319,25 @@ if test "$PHP_REDIS" != "no"; then
     fi
   fi
 
+  dnl Check if we can use C11 atomics and anonymous shared mmap
+  AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[
+      #include <stddef.h>
+      #include <stdatomic.h>
+      #include <sys/mman.h>
+    ]], [[
+      static _Atomic int test = 0;
+      void *ptr = mmap(NULL, 8, PROT_READ | PROT_WRITE,
+                       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+      if (ptr == (void *)-1) return 1;
+      atomic_fetch_add(&test, 1);
+      return 0;
+    ]])],
+    [AC_DEFINE([HAVE_REDIS_ATOMICS_MMAP], [1],
+               [Define if C11 atomics and MAP_SHARED|MAP_ANONYMOUS mmap are usable])],
+    []
+  )
+
   AC_CHECK_PROG([GIT], [git], [yes], [no])
   if test "$GIT" = "yes" && test -d "$srcdir/.git"; then
     AC_DEFINE_UNQUOTED(GIT_REVISION, ["$(git log -1 --format=%H)"], [ ])
