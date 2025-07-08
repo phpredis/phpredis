@@ -777,9 +777,14 @@ PS_READ_FUNC(redis)
     }
 
     if (lock_acquire(redis_sock, &pool->lock_status) != SUCCESS) {
-        php_error_docref(NULL, E_WARNING, "Failed to acquire session lock");
-        efree(cmd);
-        return FAILURE;
+        if (INI_INT("redis.session.lock_failure_readonly")) {
+            // opt-in legacy behavior: readonly session
+            php_error_docref(NULL, E_WARNING, "Failed to acquire session lock, session will be read only");
+        } else {
+            php_error_docref(NULL, E_WARNING, "Failed to acquire session lock");
+            efree(cmd);
+            return FAILURE;
+        }
     }
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
