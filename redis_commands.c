@@ -2647,13 +2647,27 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+static inline zval *coerce_hash_field(zval *zv, zval *aux) {
+    zend_long lv;
+
+    if (UNEXPECTED(Z_TYPE_P(zv) == IS_STRING &&
+                   is_numeric_string(Z_STRVAL_P(zv),
+                                     Z_STRLEN_P(zv), &lv, NULL, 1) == IS_LONG))
+    {
+        ZVAL_LONG(aux, lv);
+        return aux;
+    }
+
+    return zv;
+}
+
 /* A helper function to build HMGET, HGETEX, HGETDEL context arrays we curry
  * to the reply side to return to the user fields and values */
 static HashTable *
 build_hash_context_ht(HashTable *htsrc, zend_bool (*cb)(zval*)) {
     zend_string *key;
     HashTable *ht;
-    zval *zv;
+    zval *zv, aux;
 
     ALLOC_HASHTABLE(ht);
     zend_hash_init(ht, zend_hash_num_elements(htsrc),
@@ -2664,9 +2678,16 @@ build_hash_context_ht(HashTable *htsrc, zend_bool (*cb)(zval*)) {
         if (cb && !cb(zv))
             continue;
 
-        key = zval_get_string(zv);
-        zend_hash_add_empty_element(ht, key);
-        zend_string_release(key);
+        /* Legacy behavior: Integer strings become integer keys */
+        zv = coerce_hash_field(zv, &aux);
+
+        if (Z_TYPE_P(zv) == IS_LONG) {
+            zend_hash_index_add_empty_element(ht, Z_LVAL_P(zv));
+        } else {
+            key = zval_get_string(zv);
+            zend_hash_add_empty_element(ht, key);
+            zend_string_release(key);
+        }
     ZEND_HASH_FOREACH_END();
 
     /* Sanity check that we have at least one value */
@@ -2683,6 +2704,21 @@ build_hash_context_ht(HashTable *htsrc, zend_bool (*cb)(zval*)) {
 static zend_bool hmget_filter(zval *zv) {
     return (Z_TYPE_P(zv) == IS_STRING && Z_STRLEN_P(zv) > 0) ||
            (Z_TYPE_P(zv) == IS_LONG);
+}
+
+static void
+redis_cmd_append_sstr_hash_fields(smart_string *cmdstr, HashTable *ht) {
+    zend_string *key;
+    zend_ulong idx;
+
+    ZEND_HASH_FOREACH_KEY(ht, idx, key) {
+        if (key) {
+            redis_cmd_append_sstr_zstr(cmdstr, key);
+        } else {
+            redis_cmd_append_sstr_long(cmdstr, idx);
+        }
+    } ZEND_HASH_FOREACH_END();
+
 }
 
 /* HMGET */
@@ -2712,10 +2748,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "HMGET");
     redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
-    /* Invariant: All keys are strings */
-    ZEND_HASH_FOREACH_STR_KEY(htctx, key) {
-        redis_cmd_append_sstr_zstr(&cmdstr, key);
-    } ZEND_HASH_FOREACH_END();
+    redis_cmd_append_sstr_hash_fields(&cmdstr, htctx);
 
     // Push out command, length, and key context
     *cmd     = cmdstr.c;
@@ -4794,11 +4827,7 @@ int redis_hgetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
     redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(htctx));
-
-    /* Invariant: All keys are strings */
-    ZEND_HASH_FOREACH_STR_KEY(htctx, key) {
-        redis_cmd_append_sstr_zstr(&cmdstr, key);
-    } ZEND_HASH_FOREACH_END();
+    redis_cmd_append_sstr_hash_fields(&cmdstr, htctx);
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
@@ -4840,11 +4869,7 @@ int redis_hgetdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
     redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(htctx));
-
-    /* Invariant: All keys are strings */
-    ZEND_HASH_FOREACH_STR_KEY(htctx, key) {
-        redis_cmd_append_sstr_zstr(&cmdstr, key);
-    } ZEND_HASH_FOREACH_END();
+    redis_cmd_append_sstr_hash_fields(&cmdstr, htctx);
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;

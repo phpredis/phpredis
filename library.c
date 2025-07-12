@@ -3480,7 +3480,6 @@ PHP_REDIS_API int
 redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         zval *z_tab, void *ctx)
 {
-    zend_string *zkey;
     HashTable *htctx;
     int numElems;
     zval *zfield;
@@ -3500,11 +3499,7 @@ redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     zval z_multi_result, zunpacked;
 
-    ZEND_HASH_FOREACH_STR_KEY_VAL(htctx, zkey, zfield) {
-        /* Should never happen */
-        if (zkey == NULL)
-            continue;
-
+    ZEND_HASH_FOREACH_VAL(htctx, zfield) {
         rresp = redis_sock_read(redis_sock, &len);
 
         if (rresp != NULL) {
