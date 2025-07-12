@@ -2296,6 +2296,8 @@ cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     if (c->reply_len == -1 && c->flags->null_mbulk_as_null) {
         ZVAL_NULL(&z_result);
+    } else if (c->reply_len <= 0) {
+        array_init(&z_result);
     } else {
         if (init_array)
             array_init(&z_result);
