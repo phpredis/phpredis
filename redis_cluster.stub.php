@@ -496,6 +496,16 @@ class RedisCluster {
     public function hmget(string $key, array $keys): RedisCluster|array|false;
 
     /**
+     * @see Redis::hgetex
+     */
+    public function hgetex(string $key, array $fields, string|array|null $expiry = null): RedisCluster|array|false;
+
+    /**
+     * @see Redis::hgetdel
+     */
+    public function hgetdel(string $key, array $fields): RedisCluster|array|false;
+
+    /**
      * @see Redis::hmset
      */
     public function hmset(string $key, array $key_values): RedisCluster|bool;

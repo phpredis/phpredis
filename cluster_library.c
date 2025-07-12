@@ -87,6 +87,22 @@ static void dump_reply(clusterReply *reply, int indent) {
 }
 */
 
+/* MULTI BULK processing callbacks */
+static int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
+    long long count, void *ctx);
+static int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
+    long long count, void *ctx);
+static int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
+    long long count, void *ctx);
+static int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
+    long long count, void *ctx);
+static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
+    long long count, void *ctx);
+static int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
+    long long count, void *ctx);
+
+
+
 
 /* Recursively free our reply object.  If free_data is non-zero we'll also free
  * the payload data (strings) themselves.  If not, we just free the structs */
@@ -2267,8 +2283,9 @@ PHP_REDIS_API void cluster_variant_resp_strings(INTERNAL_FUNCTION_PARAMETERS, re
 }
 
 /* Generic MULTI BULK response processor */
-PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
-                                   redisCluster *c, mbulk_cb cb, void *ctx)
+static void
+cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                       zend_bool init_array, mbulk_cb cb, void *ctx)
 {
     zval z_result;
 
@@ -2280,7 +2297,8 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     if (c->reply_len == -1 && c->flags->null_mbulk_as_null) {
         ZVAL_NULL(&z_result);
     } else {
-        array_init(&z_result);
+        if (init_array)
+            array_init(&z_result);
 
         if (c->reply_len > 0) {
             /* Push serialization settings from the cluster into our socket */
@@ -2745,7 +2763,7 @@ PHP_REDIS_API void
 cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-        mbulk_resp_loop_raw, NULL);
+                           1, mbulk_resp_loop_raw, NULL);
 }
 
 /* Unserialize all the things */
@@ -2753,7 +2771,7 @@ PHP_REDIS_API void
 cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-        mbulk_resp_loop, NULL);
+                           1, mbulk_resp_loop, NULL);
 }
 
 /* For handling responses where we get key, value, key, value that
@@ -2763,7 +2781,7 @@ cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                           void *ctx)
 {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-        mbulk_resp_loop_zipstr, NULL);
+                           1, mbulk_resp_loop_zipstr, NULL);
 }
 
 /* Handling key,value to key=>value where the values are doubles */
@@ -2772,7 +2790,7 @@ cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                           void *ctx)
 {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-        mbulk_resp_loop_zipdbl, NULL);
+                           1, mbulk_resp_loop_zipdbl, NULL);
 }
 
 PHP_REDIS_API void
@@ -2780,7 +2798,7 @@ cluster_mbulk_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                        void *ctx)
 {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-        mbulk_resp_loop_dbl, ctx);
+                           1, mbulk_resp_loop_dbl, ctx);
 }
 
 /* Associate multi bulk response (for HMGET really) */
@@ -2789,15 +2807,15 @@ cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                          void *ctx)
 {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-        mbulk_resp_loop_assoc, ctx);
+                           0, mbulk_resp_loop_assoc, ctx);
 }
 
 /*
  * Various MULTI BULK reply callback functions
  */
 
-int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
-                        long long count, void *ctx)
+static int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
+                               long long count, void *ctx)
 {
     char *line;
     int line_len;
@@ -2816,8 +2834,8 @@ int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
 }
 
 /* MULTI BULK response where we don't touch the values (e.g. KEYS) */
-int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
-                        long long count, void *ctx)
+static int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
+                               long long count, void *ctx)
 {
     char *line;
     int line_len;
@@ -2838,8 +2856,8 @@ int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
 }
 
 /* MULTI BULK response where we unserialize everything */
-int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
-                    long long count, void *ctx)
+static int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
+                           long long count, void *ctx)
 {
     char *line;
     int line_len;
@@ -2863,8 +2881,8 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
 }
 
 /* MULTI BULK response where we turn key1,value1 into key1=>value1 */
-int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
-                           long long count, void *ctx)
+static int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
+                                  long long count, void *ctx)
 {
     char *line, *key = NULL;
     long long idx = 0;
@@ -2899,8 +2917,8 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
 }
 
 /* MULTI BULK loop processor where we expect key,score key, score */
-int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
-                           long long count, void *ctx)
+static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
+                                  long long count, void *ctx)
 {
     char *line, *key = NULL;
     int line_len, key_len = 0;
@@ -2937,36 +2955,28 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
 }
 
 /* MULTI BULK where we're passed the keys, and we attach vals */
-int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
-                          long long count, void *ctx)
+static int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
+                                 long long count, void *ctx)
 {
+    zval *zfield, z_unpacked;
+    HashTable *htctx = ctx;
+    int line_len;
     char *line;
-    int line_len, i;
-    zval *z_keys = ctx;
 
-    // Loop while we've got replies
-    for (i = 0; i < count; ++i) {
-        zend_string *zstr = zval_get_string(&z_keys[i]);
+    ZEND_HASH_FOREACH_VAL(htctx, zfield) {
         line = redis_sock_read(redis_sock, &line_len);
-
         if (line != NULL) {
-            zval z_unpacked;
             redis_unpack(redis_sock, line, line_len, &z_unpacked);
-            add_assoc_zval_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), &z_unpacked);
             efree(line);
         } else {
-            add_assoc_bool_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), 0);
+            ZVAL_FALSE(&z_unpacked);
         }
 
-        // Clean up key context
-        zend_string_release(zstr);
-        zval_dtor(&z_keys[i]);
-    }
+        ZVAL_COPY_VALUE(zfield, &z_unpacked);
+    } ZEND_HASH_FOREACH_END();
 
-    // Clean up our keys overall
-    efree(z_keys);
+    ZVAL_ARR(z_result, htctx);
 
-    // Success!
     return SUCCESS;
 }
 

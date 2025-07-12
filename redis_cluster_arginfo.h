@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 5788cd1d12611ef1ff5747efe07b99f66f07fa05 */
+ * Stub hash: 1660110af25a3ba9fd353c6dbb5b0132e33bcd77 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -408,6 +408,17 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hmget, 0,
 	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hgetex, 0, 2, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, fields, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_MASK(0, expiry, MAY_BE_STRING|MAY_BE_ARRAY|MAY_BE_NULL, "null")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hgetdel, 0, 2, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, fields, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hmset, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key_values, IS_ARRAY, 0)
@@ -478,18 +489,15 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hpexpirea
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mode, IS_STRING, 1, "NULL")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_httl, 0, 2, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, fields, IS_ARRAY, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_httl arginfo_class_RedisCluster_hgetdel
 
-#define arginfo_class_RedisCluster_hpttl arginfo_class_RedisCluster_httl
+#define arginfo_class_RedisCluster_hpttl arginfo_class_RedisCluster_hgetdel
 
-#define arginfo_class_RedisCluster_hexpiretime arginfo_class_RedisCluster_httl
+#define arginfo_class_RedisCluster_hexpiretime arginfo_class_RedisCluster_hgetdel
 
-#define arginfo_class_RedisCluster_hpexpiretime arginfo_class_RedisCluster_httl
+#define arginfo_class_RedisCluster_hpexpiretime arginfo_class_RedisCluster_hgetdel
 
-#define arginfo_class_RedisCluster_hpersist arginfo_class_RedisCluster_httl
+#define arginfo_class_RedisCluster_hpersist arginfo_class_RedisCluster_hgetdel
 
 #define arginfo_class_RedisCluster_hvals arginfo_class_RedisCluster_getWithMeta
 
@@ -1188,6 +1196,8 @@ ZEND_METHOD(RedisCluster, hincrbyfloat);
 ZEND_METHOD(RedisCluster, hkeys);
 ZEND_METHOD(RedisCluster, hlen);
 ZEND_METHOD(RedisCluster, hmget);
+ZEND_METHOD(RedisCluster, hgetex);
+ZEND_METHOD(RedisCluster, hgetdel);
 ZEND_METHOD(RedisCluster, hmset);
 ZEND_METHOD(RedisCluster, hscan);
 ZEND_METHOD(RedisCluster, expiremember);
@@ -1428,6 +1438,8 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, hkeys, arginfo_class_RedisCluster_hkeys, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hlen, arginfo_class_RedisCluster_hlen, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hmget, arginfo_class_RedisCluster_hmget, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hgetex, arginfo_class_RedisCluster_hgetex, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hgetdel, arginfo_class_RedisCluster_hgetdel, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hmset, arginfo_class_RedisCluster_hmset, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hscan, arginfo_class_RedisCluster_hscan, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, expiremember, arginfo_class_RedisCluster_expiremember, ZEND_ACC_PUBLIC)
