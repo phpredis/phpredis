@@ -3476,48 +3476,53 @@ redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zret, int coun
 
 /* Specialized multibulk processing for HMGET where we need to pair requested
  * keys with their returned values */
-PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+PHP_REDIS_API int
+redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        zval *z_tab, void *ctx)
 {
-    char *response;
-    int response_len, retval;
-    int i, numElems;
+    HashTable *htctx;
+    int len, retval;
+    int numElems;
+    zval *zfield;
+    char *rresp;
 
-    zval *z_keys = ctx;
+    htctx = ctx;
 
-    if (read_mbulk_header(redis_sock, &numElems) < 0) {
+    if (read_mbulk_header(redis_sock, &numElems) < 0 ||
+        zend_hash_num_elements(htctx) != numElems)
+    {
         REDIS_RESPONSE_ERROR(redis_sock, z_tab);
         retval = FAILURE;
         goto end;
     }
 
-    zval z_multi_result;
-    array_init_size(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
+    zval z_multi_result, zunpacked;
+    array_init_size(&z_multi_result, numElems);
 
-    for(i = 0; i < numElems; ++i) {
-        zend_string *tmp_str;
-        zend_string *zstr = zval_get_tmp_string(&z_keys[i], &tmp_str);
-        response = redis_sock_read(redis_sock, &response_len);
-        zval z_unpacked;
-        if (response != NULL) {
-            redis_unpack(redis_sock, response, response_len, &z_unpacked);
-            efree(response);
+    ZEND_HASH_FOREACH_VAL(htctx, zfield) {
+        zend_string *tmp, *field;
+
+        field = zval_get_tmp_string(zfield, &tmp);
+        rresp = redis_sock_read(redis_sock, &len);
+
+        if (rresp != NULL) {
+            redis_unpack(redis_sock, rresp, len, &zunpacked);
+            efree(rresp);
         } else {
-            ZVAL_FALSE(&z_unpacked);
+            ZVAL_FALSE(&zunpacked);
         }
-        zend_symtable_update(Z_ARRVAL(z_multi_result), zstr, &z_unpacked);
-        zend_tmp_string_release(tmp_str);
-    }
+
+        zend_symtable_update(Z_ARRVAL(z_multi_result), field, &zunpacked);
+        zend_tmp_string_release(tmp);
+    } ZEND_HASH_FOREACH_END();
 
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_multi_result);
 
     retval = SUCCESS;
 
 end:
-    // Cleanup z_keys
-    for (i = 0; Z_TYPE(z_keys[i]) != IS_NULL; ++i) {
-        zval_dtor(&z_keys[i]);
-    }
-    efree(z_keys);
+    zend_hash_destroy(htctx);
+    FREE_HASHTABLE(htctx);
 
     return retval;
 }
