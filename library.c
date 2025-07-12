@@ -3480,29 +3480,31 @@ PHP_REDIS_API int
 redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         zval *z_tab, void *ctx)
 {
+    zend_string *zkey;
     HashTable *htctx;
-    int len, retval;
     int numElems;
     zval *zfield;
     char *rresp;
+    int len;
 
     htctx = ctx;
 
     if (read_mbulk_header(redis_sock, &numElems) < 0 ||
         zend_hash_num_elements(htctx) != numElems)
     {
+        zend_hash_destroy(htctx);
+        FREE_HASHTABLE(htctx);
         REDIS_RESPONSE_ERROR(redis_sock, z_tab);
-        retval = FAILURE;
-        goto end;
+        return FAILURE;
     }
 
     zval z_multi_result, zunpacked;
-    array_init_size(&z_multi_result, numElems);
 
-    ZEND_HASH_FOREACH_VAL(htctx, zfield) {
-        zend_string *tmp, *field;
+    ZEND_HASH_FOREACH_STR_KEY_VAL(htctx, zkey, zfield) {
+        /* Should never happen */
+        if (zkey == NULL)
+            continue;
 
-        field = zval_get_tmp_string(zfield, &tmp);
         rresp = redis_sock_read(redis_sock, &len);
 
         if (rresp != NULL) {
@@ -3512,19 +3514,13 @@ redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             ZVAL_FALSE(&zunpacked);
         }
 
-        zend_symtable_update(Z_ARRVAL(z_multi_result), field, &zunpacked);
-        zend_tmp_string_release(tmp);
+        ZVAL_COPY_VALUE(zfield, &zunpacked);
     } ZEND_HASH_FOREACH_END();
 
+    ZVAL_ARR(&z_multi_result, htctx);
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_multi_result);
 
-    retval = SUCCESS;
-
-end:
-    zend_hash_destroy(htctx);
-    FREE_HASHTABLE(htctx);
-
-    return retval;
+    return SUCCESS;
 }
 
 /**
