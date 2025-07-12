@@ -4793,7 +4793,53 @@ int redis_hgetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
-    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(fields));
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(htctx));
+
+    /* Invariant: All keys are strings */
+    ZEND_HASH_FOREACH_STR_KEY(htctx, key) {
+        redis_cmd_append_sstr_zstr(&cmdstr, key);
+    } ZEND_HASH_FOREACH_END();
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    *ctx = htctx;
+
+    return SUCCESS;
+}
+
+int redis_hgetdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    HashTable *fields, *htctx;
+    smart_string cmdstr = {0};
+    zend_string *key;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key);
+        Z_PARAM_ARRAY_HT(fields);
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(fields) == 0) {
+        php_error_docref(NULL, E_WARNING, "Must pass at least one field");
+        return FAILURE;
+    }
+
+    htctx = build_hash_context_ht(fields, hmget_filter);
+    if (htctx == NULL) {
+        php_error_docref(NULL, E_WARNING,
+            "Failed to build context hash table");
+        return FAILURE;
+    }
+
+    // HGETDEL <hash> FIELDS <numfields> <field1>...
+    argc = 3 + zend_hash_num_elements(htctx);
+
+    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("HGETDEL"));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(htctx));
 
     /* Invariant: All keys are strings */
     ZEND_HASH_FOREACH_STR_KEY(htctx, key) {

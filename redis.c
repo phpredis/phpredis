@@ -1876,6 +1876,10 @@ PHP_METHOD(Redis, hgetex) {
     REDIS_PROCESS_CMD(hgetex, redis_mbulk_reply_assoc);
 }
 
+PHP_METHOD(Redis, hgetdel) {
+    REDIS_PROCESS_CMD(hgetdel, redis_mbulk_reply_assoc);
+}
+
 /* {{{ proto bool Redis::hmset(string key, array keyvals) */
 PHP_METHOD(Redis, hMset)
 {

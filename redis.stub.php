@@ -1827,6 +1827,16 @@ class Redis {
     public function hgetex(string $key, array $fields, string|array|null $expiry = null): Redis|array|false;
 
     /**
+     * Get one or more fields and delete them
+     *
+     * @param string $key         The hash in question
+     * @param array $fields       One or more fields
+     *
+     * @return Redis|array|false  The field and values or false on failure
+     */
+    public function hgetdel(string $key, array $fields): Redis|array|false;
+
+    /**
      * Add or update one or more hash fields and values
      *
      * @param string $key        The hash to create/update
