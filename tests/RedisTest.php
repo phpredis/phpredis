@@ -6350,6 +6350,53 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testHGetEx() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $now = time();
+
+        $tests = [
+            [['EX' => 10], 'httl', 0, 10],
+            [['PX' => 10000], 'hpttl', 0, 10000],
+            [['EXAT' => $now + 10], 'hexpiretime', $now, $now + 10],
+            [['PXAT' => $now * 1000 + 10000], 'hpexpiretime', $now * 1000, $now * 1000 + 10000],
+            ['PERSIST', 'httl', -1, -1],
+            [['PERSIST'], 'httl', -1,-1],
+        ];
+
+        $hash = ['ship' => 'Defiant', 'captain' => 'Sisko'];
+
+        foreach ($tests as [$expireArg, $ttlFn, $minTtl, $maxTtl]) {
+            $this->redis->del('hash');
+            $this->assertTrue($this->redis->hmset('hash', $hash));
+
+            $v = $this->redis->hgetex('hash', ['ship', 'captain'], $expireArg);
+            $this->assertEquals($hash, $v);
+
+            $ttls = $this->redis->{$ttlFn}('hash', ['ship', 'captain']);
+            $this->assertIsArray($ttls);
+
+            foreach ($ttls as $val) {
+                $this->assertBetween($val, $minTtl, $maxTtl);
+            }
+        }
+    }
+
+    public function testHGetDel() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('hash'));
+        $hash = ['ship' => 'Defiant', 'captain' => 'Sisko'];
+
+        $this->assertTrue($this->redis->hmset('hash', $hash));
+        $this->assertEquals($hash, $this->redis->hgetall('hash'));
+
+        $this->assertEquals(['captain' => 'Sisko'], $this->redis->hgetdel('hash', ['captain']));
+        $this->assertEquals(['ship' => 'Defiant'], $this->redis->hgetall('hash'));
+    }
+
     public function testHScan() {
         if (version_compare($this->version, '2.8.0') < 0)
             $this->markTestSkipped();
