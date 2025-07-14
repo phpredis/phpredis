@@ -1268,6 +1268,10 @@ PHP_METHOD(RedisCluster, hgetex) {
     CLUSTER_PROCESS_CMD(hgetex, cluster_mbulk_assoc_resp, 0);
 }
 
+PHP_METHOD(RedisCluster, hsetex) {
+    CLUSTER_PROCESS_CMD(hsetex, cluster_long_resp, 0);
+}
+
 PHP_METHOD(RedisCluster, hgetdel) {
     CLUSTER_PROCESS_CMD(hgetdel, cluster_mbulk_assoc_resp, 0);
 }

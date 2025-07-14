@@ -1827,6 +1827,17 @@ class Redis {
     public function hgetex(string $key, array $fields, string|array|null $expiry = null): Redis|array|false;
 
     /**
+     * Set one or more fields in a hash with optional expiration information.
+     *
+     * @param string $key         The hash to create/update.
+     * @param array $fields       An array with fields values.
+     * @param array|null $expiry  Info about the expiration
+     *
+     * @return Redis|int|false One if fields were set zero if not.
+     */
+    public function hsetex(string $key, array $fields, ?array $expiry = null): Redis|int|false;
+
+    /**
      * Get one or more fields and delete them
      *
      * @param string $key         The hash in question

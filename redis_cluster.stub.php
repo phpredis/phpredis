@@ -501,6 +501,11 @@ class RedisCluster {
     public function hgetex(string $key, array $fields, string|array|null $expiry = null): RedisCluster|array|false;
 
     /**
+     * @see Redis::hsetex
+     */
+    public function hsetex(string $key, array $fields, ?array $expiry = null): RedisCluster|int|false;
+
+    /**
      * @see Redis::hgetdel
      */
     public function hgetdel(string $key, array $fields): RedisCluster|array|false;

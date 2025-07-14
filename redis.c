@@ -1876,6 +1876,10 @@ PHP_METHOD(Redis, hgetex) {
     REDIS_PROCESS_CMD(hgetex, redis_mbulk_reply_assoc);
 }
 
+PHP_METHOD(Redis, hsetex) {
+    REDIS_PROCESS_CMD(hsetex, redis_long_response);
+}
+
 PHP_METHOD(Redis, hgetdel) {
     REDIS_PROCESS_CMD(hgetdel, redis_mbulk_reply_assoc);
 }

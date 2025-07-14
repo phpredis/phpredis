@@ -6383,6 +6383,72 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testHSetEx(): void {
+        if ( ! $this->minVersionCheck('8.0')) {
+            $this->markTestSkipped('HSETEX requires Redis 8+');
+        }
+
+        $now  = time();
+        $nowMs = $now * 1000;
+        $hash = ['a' => 'foo', 'b' => 'bar'];
+
+        $cases = [
+            [['EX', 5], 'httl'],
+            [['PX', 1234], 'hpttl'],
+            [['EXAT', $now + 5], 'hexpiretime'],
+            [['PXAT', $nowMs + 5000], 'hpexpiretime'],
+        ];
+
+        foreach ($cases as [[$ex, $n], $ttlFn]) {
+            $this->redis->del('hash');
+            $this->assertTrue($this->redis->hMSet('hash', $hash));
+
+            $expireArg = [$ex => $n];
+            $result = $this->redis->hsetex('hash', $hash, $expireArg);
+            $this->assertLTE(count($hash), $result);
+
+            $got = $this->redis->hMGet('hash', array_keys($hash));
+            $this->assertEquals($hash, $got);
+
+            $ttls = $this->redis->{$ttlFn}('hash', array_keys($hash));
+            $this->assertIsArray($ttls);
+
+            foreach ($ttls as $ttl) {
+                $this->assertLTE($n, $ttl);
+            }
+        }
+
+        $this->assertIsInt($this->redis->del('hash'));
+        $this->assertEquals(
+            1, $this->redis->hsetex('hash', ['a' => 'v'], ['EX' => 20])
+        );
+        $this->assertEquals(
+            1, $this->redis->hsetex('hash', ['a' => 'v2'], ['KEEPTTL'])
+        );
+
+        $ttl = $this->redis->httl('hash', ['a']);
+        $this->assertLTE(20, $ttl[0]);
+
+        $this->assertIsInt($this->redis->del('hash'));
+
+        // FNX - Only if none exist
+        foreach ([1, 0] as $expected) {
+            $ex = ['EX' => 20, 'FNX'];
+            $result = $this->redis->hsetex('hash', $hash, $ex);
+            $this->assertEquals($expected, $result);
+        }
+
+        // FXX - Only if they all exist
+        foreach ([1, 0] as $expected) {
+            $ex = ['EX' => 20, 'FXX'];
+            $result = $this->redis->hsetex('hash', $hash, $ex);
+            $this->assertEquals($expected, $result);
+
+            $k = array_rand($hash);
+            $this->redis->hdel('hash', $k);
+        }
+    }
+
     public function testHGetDel() {
         if ( ! $this->minVersionCheck('8.0'))
             $this->markTestSkipped();
