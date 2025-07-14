@@ -2665,7 +2665,7 @@ static inline zval *coerce_hash_field(zval *zv, zval *aux) {
  * to the reply side to return to the user fields and values */
 static HashTable *
 build_hash_context_ht(HashTable *htsrc, zend_bool (*cb)(zval*)) {
-    zend_string *key;
+    zend_string *key, *tmp;
     HashTable *ht;
     zval *zv, aux;
 
@@ -2684,9 +2684,9 @@ build_hash_context_ht(HashTable *htsrc, zend_bool (*cb)(zval*)) {
         if (Z_TYPE_P(zv) == IS_LONG) {
             zend_hash_index_add_empty_element(ht, Z_LVAL_P(zv));
         } else {
-            key = zval_get_string(zv);
+            key = zval_get_tmp_string(zv, &tmp);
             zend_hash_add_empty_element(ht, key);
-            zend_string_release(key);
+            zend_tmp_string_release(tmp);
         }
     ZEND_HASH_FOREACH_END();
 
