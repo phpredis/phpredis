@@ -6350,6 +6350,119 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testHGetEx() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $now = time();
+
+        $tests = [
+            [['EX' => 10], 'httl', 0, 10],
+            [['PX' => 10000], 'hpttl', 0, 10000],
+            [['EXAT' => $now + 10], 'hexpiretime', $now, $now + 10],
+            [['PXAT' => $now * 1000 + 10000], 'hpexpiretime', $now * 1000, $now * 1000 + 10000],
+            ['PERSIST', 'httl', -1, -1],
+            [['PERSIST'], 'httl', -1,-1],
+        ];
+
+        $hash = ['ship' => 'Defiant', 'captain' => 'Sisko'];
+
+        foreach ($tests as [$expireArg, $ttlFn, $minTtl, $maxTtl]) {
+            $this->redis->del('hash');
+            $this->assertTrue($this->redis->hmset('hash', $hash));
+
+            $v = $this->redis->hgetex('hash', ['ship', 'captain'], $expireArg);
+            $this->assertEquals($hash, $v);
+
+            $ttls = $this->redis->{$ttlFn}('hash', ['ship', 'captain']);
+            $this->assertIsArray($ttls);
+
+            foreach ($ttls as $val) {
+                $this->assertBetween($val, $minTtl, $maxTtl);
+            }
+        }
+    }
+
+    public function testHSetEx(): void {
+        if ( ! $this->minVersionCheck('8.0')) {
+            $this->markTestSkipped('HSETEX requires Redis 8+');
+        }
+
+        $now  = time();
+        $nowMs = $now * 1000;
+        $hash = ['a' => 'foo', 'b' => 'bar'];
+
+        $cases = [
+            [['EX', 5], 'httl'],
+            [['PX', 1234], 'hpttl'],
+            [['EXAT', $now + 5], 'hexpiretime'],
+            [['PXAT', $nowMs + 5000], 'hpexpiretime'],
+        ];
+
+        foreach ($cases as [[$ex, $n], $ttlFn]) {
+            $this->redis->del('hash');
+            $this->assertTrue($this->redis->hMSet('hash', $hash));
+
+            $expireArg = [$ex => $n];
+            $result = $this->redis->hsetex('hash', $hash, $expireArg);
+            $this->assertLTE(count($hash), $result);
+
+            $got = $this->redis->hMGet('hash', array_keys($hash));
+            $this->assertEquals($hash, $got);
+
+            $ttls = $this->redis->{$ttlFn}('hash', array_keys($hash));
+            $this->assertIsArray($ttls);
+
+            foreach ($ttls as $ttl) {
+                $this->assertLTE($n, $ttl);
+            }
+        }
+
+        $this->assertIsInt($this->redis->del('hash'));
+        $this->assertEquals(
+            1, $this->redis->hsetex('hash', ['a' => 'v'], ['EX' => 20])
+        );
+        $this->assertEquals(
+            1, $this->redis->hsetex('hash', ['a' => 'v2'], ['KEEPTTL'])
+        );
+
+        $ttl = $this->redis->httl('hash', ['a']);
+        $this->assertLTE(20, $ttl[0]);
+
+        $this->assertIsInt($this->redis->del('hash'));
+
+        // FNX - Only if none exist
+        foreach ([1, 0] as $expected) {
+            $ex = ['EX' => 20, 'FNX'];
+            $result = $this->redis->hsetex('hash', $hash, $ex);
+            $this->assertEquals($expected, $result);
+        }
+
+        // FXX - Only if they all exist
+        foreach ([1, 0] as $expected) {
+            $ex = ['EX' => 20, 'FXX'];
+            $result = $this->redis->hsetex('hash', $hash, $ex);
+            $this->assertEquals($expected, $result);
+
+            $k = array_rand($hash);
+            $this->redis->hdel('hash', $k);
+        }
+    }
+
+    public function testHGetDel() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('hash'));
+        $hash = ['ship' => 'Defiant', 'captain' => 'Sisko'];
+
+        $this->assertTrue($this->redis->hmset('hash', $hash));
+        $this->assertEquals($hash, $this->redis->hgetall('hash'));
+
+        $this->assertEquals(['captain' => 'Sisko'], $this->redis->hgetdel('hash', ['captain']));
+        $this->assertEquals(['ship' => 'Defiant'], $this->redis->hgetall('hash'));
+    }
+
     public function testHScan() {
         if (version_compare($this->version, '2.8.0') < 0)
             $this->markTestSkipped();

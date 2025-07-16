@@ -462,8 +462,6 @@ PHP_REDIS_API void cluster_variant_resp_strings(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 
 /* MULTI BULK response functions */
-PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
-    redisCluster *c, mbulk_cb func, void *ctx);
 PHP_REDIS_API void cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHP_REDIS_API void cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
@@ -519,20 +517,6 @@ PHP_REDIS_API void cluster_mpop_resp(INTERNAL_FUNCTION_PARAMETERS,
 /* Custom ACL handlers */
 PHP_REDIS_API void cluster_acl_getuser_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx);
 PHP_REDIS_API void cluster_acl_log_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx);
-
-/* MULTI BULK processing callbacks */
-int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
-    long long count, void *ctx);
-int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
-    long long count, void *ctx);
-int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
-    long long count, void *ctx);
-int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
-    long long count, void *ctx);
-int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
-    long long count, void *ctx);
-int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
-    long long count, void *ctx);
 
 #endif
 

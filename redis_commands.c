@@ -2647,15 +2647,88 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+static inline zval *coerce_hash_field(zval *zv, zval *aux) {
+    zend_long lv;
+
+    if (UNEXPECTED(Z_TYPE_P(zv) == IS_STRING &&
+                   is_numeric_string(Z_STRVAL_P(zv),
+                                     Z_STRLEN_P(zv), &lv, NULL, 1) == IS_LONG))
+    {
+        ZVAL_LONG(aux, lv);
+        return aux;
+    }
+
+    return zv;
+}
+
+/* A helper function to build HMGET, HGETEX, HGETDEL context arrays we curry
+ * to the reply side to return to the user fields and values */
+static HashTable *
+build_hash_context_ht(HashTable *htsrc, zend_bool (*cb)(zval*)) {
+    zend_string *key, *tmp;
+    HashTable *ht;
+    zval *zv, aux;
+
+    ALLOC_HASHTABLE(ht);
+    zend_hash_init(ht, zend_hash_num_elements(htsrc),
+                   NULL, ZVAL_PTR_DTOR, 0);
+
+    ZEND_HASH_FOREACH_VAL(htsrc, zv)
+        ZVAL_DEREF(zv);
+        if (cb && !cb(zv))
+            continue;
+
+        /* Legacy behavior: Integer strings become integer keys */
+        zv = coerce_hash_field(zv, &aux);
+
+        if (Z_TYPE_P(zv) == IS_LONG) {
+            zend_hash_index_add_empty_element(ht, Z_LVAL_P(zv));
+        } else {
+            key = zval_get_tmp_string(zv, &tmp);
+            zend_hash_add_empty_element(ht, key);
+            zend_tmp_string_release(tmp);
+        }
+    ZEND_HASH_FOREACH_END();
+
+    /* Sanity check that we have at least one value */
+    if (zend_hash_num_elements(ht) == 0) {
+        zend_hash_destroy(ht);
+        FREE_HASHTABLE(ht);
+        return NULL;
+    }
+
+    return ht;
+}
+
+/* Legacy HMGET behavior predicate */
+static zend_bool hmget_filter(zval *zv) {
+    return (Z_TYPE_P(zv) == IS_STRING && Z_STRLEN_P(zv) > 0) ||
+           (Z_TYPE_P(zv) == IS_LONG);
+}
+
+static void
+redis_cmd_append_sstr_hash_fields(smart_string *cmdstr, HashTable *ht) {
+    zend_string *key;
+    zend_ulong idx;
+
+    ZEND_HASH_FOREACH_KEY(ht, idx, key) {
+        if (key) {
+            redis_cmd_append_sstr_zstr(cmdstr, key);
+        } else {
+            redis_cmd_append_sstr_long(cmdstr, idx);
+        }
+    } ZEND_HASH_FOREACH_END();
+
+}
+
 /* HMGET */
 int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    zval *field = NULL, *zctx = NULL;
+    HashTable *fields = NULL, *htctx = NULL;
     smart_string cmdstr = {0};
-    HashTable *fields = NULL;
     zend_string *key = NULL;
-    zend_ulong valid = 0, i;
+    int argc;
 
     ZEND_PARSE_PARAMETERS_START(2, 2)
         Z_PARAM_STR(key)
@@ -2665,34 +2738,22 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (zend_hash_num_elements(fields) == 0)
         return FAILURE;
 
-    zctx = ecalloc(1 + zend_hash_num_elements(fields), sizeof(*zctx));
-
-    ZEND_HASH_FOREACH_VAL(fields, field) {
-        ZVAL_DEREF(field);
-        if (!((Z_TYPE_P(field) == IS_STRING && Z_STRLEN_P(field) > 0) || Z_TYPE_P(field) == IS_LONG))
-            continue;
-
-        ZVAL_COPY(&zctx[valid++], field);
-    } ZEND_HASH_FOREACH_END();
-
-    if (valid == 0) {
-        efree(zctx);
+    htctx = build_hash_context_ht(fields, hmget_filter);
+    if (htctx == NULL) {
+        php_error_docref(NULL, E_WARNING, "No valid fields provided");
         return FAILURE;
     }
 
-    ZVAL_NULL(&zctx[valid]);
-
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + valid, "HMGET");
+    argc = 1 + zend_hash_num_elements(htctx);
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "HMGET");
     redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
-    for (i = 0; i < valid; i++) {
-        redis_cmd_append_sstr_zval(&cmdstr, &zctx[i], NULL);
-    }
+    redis_cmd_append_sstr_hash_fields(&cmdstr, htctx);
 
     // Push out command, length, and key context
     *cmd     = cmdstr.c;
     *cmd_len = cmdstr.len;
-    *ctx     = zctx;
+    *ctx     = htctx;
 
     return SUCCESS;
 }
@@ -4669,6 +4730,252 @@ int redis_httl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+typedef struct redisHGetExOptions {
+    zend_string *exp_type;
+    zend_long exp_arg;
+} redisHGetExOptions;
+
+static int get_hgetex_expiry_opts(redisHGetExOptions *dst, zval *zv) {
+    zend_string *zkey;
+    HashTable *ht;
+    zval *zexp;
+
+    *dst = (redisHGetExOptions) {
+        .exp_type = NULL,
+        .exp_arg = -1
+    };
+
+    if (zv == NULL)
+        return SUCCESS;
+
+    if (Z_TYPE_P(zv) != IS_STRING && Z_TYPE_P(zv) != IS_ARRAY) {
+        php_error_docref(NULL, E_WARNING,
+            "Expiry value must be a string or an array of strings");
+        return FAILURE;
+    }
+
+    if (Z_TYPE_P(zv) == IS_STRING) {
+        dst->exp_type = Z_STR_P(zv);
+        dst->exp_arg = -1;
+        return SUCCESS;
+    }
+
+    ht = Z_ARRVAL_P(zv);
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, zkey, zexp)
+        if (zkey == NULL)
+            continue;
+
+        if (Z_TYPE_P(zexp) != IS_LONG || Z_LVAL_P(zexp) < 0) {
+            php_error_docref(NULL, E_WARNING,
+                "Expiry must be an integer >= 0");
+            return FAILURE;
+        }
+
+        dst->exp_type = zkey;
+        dst->exp_arg = Z_LVAL_P(zexp);
+    ZEND_HASH_FOREACH_END();
+
+    return SUCCESS;
+}
+
+int redis_hgetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    redisHGetExOptions opts = {0};
+    smart_string cmdstr = {0};
+    HashTable *fields, *htctx;
+    zval *zexpiry = NULL;
+    zend_string *key;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_ARRAY_HT(fields)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(zexpiry);
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(fields) == 0) {
+        php_error_docref(NULL, E_WARNING, "Must pass at least one field");
+        return FAILURE;
+    } else if (get_hgetex_expiry_opts(&opts, zexpiry) == FAILURE) {
+        return FAILURE;
+    }
+
+    htctx = build_hash_context_ht(fields, hmget_filter);
+    if (htctx == NULL) {
+        php_error_docref(NULL, E_WARNING,
+            "Failed to build context hash table");
+        return FAILURE;
+    }
+
+    argc = 3 + (opts.exp_type != NULL) + (opts.exp_arg >= 0) +
+           zend_hash_num_elements(fields);
+
+    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("HGETEX"));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    if (opts.exp_type) {
+        redis_cmd_append_sstr_zstr(&cmdstr, opts.exp_type);
+        if (opts.exp_arg >= 0)
+            redis_cmd_append_sstr_long(&cmdstr, opts.exp_arg);
+    }
+
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(htctx));
+    redis_cmd_append_sstr_hash_fields(&cmdstr, htctx);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    *ctx = htctx;
+
+    return SUCCESS;
+}
+
+typedef struct redisHSetExOptions {
+    zend_string *set_mode;
+    zend_string *exp_type;
+    zend_long exp_arg;
+} redisHSetExOptions;
+
+void get_hsetex_expiry_options(redisHSetExOptions *dst, zval *zsrc) {
+    zend_string *key;
+    zend_long lval;
+    zval *zv;
+
+    *dst = (redisHSetExOptions) {
+        .exp_arg = -1,
+    };
+
+    if (zsrc == NULL)
+        return;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(zsrc), key, zv) {
+        if (key == NULL) {
+            if (Z_TYPE_P(zv) == IS_STRING) {
+                key = Z_STR_P(zv);
+                if (zend_string_equals_literal_ci(key, "FNX") ||
+                    zend_string_equals_literal_ci(key, "FXX"))
+                {
+                    dst->set_mode = Z_STR_P(zv);
+                } else if (zend_string_equals_literal_ci(key, "KEEPTTL")) {
+                    dst->exp_type = key;
+                    dst->exp_arg = -1;
+                }
+            }
+        } else if (zend_string_equals_literal_ci(key, "EX") ||
+                   zend_string_equals_literal_ci(key, "PX") ||
+                   zend_string_equals_literal_ci(key, "EXAT") ||
+                   zend_string_equals_literal_ci(key, "PXAT"))
+        {
+            lval = zval_get_long(zv);
+            if (lval >= 0) {
+                dst->exp_type = key;
+                dst->exp_arg = lval;
+            } else {
+                php_error_docref(NULL, E_WARNING, "Timeouts must be >= 0");
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
+int redis_hsetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    redisHSetExOptions opts = {0};
+    zval *zexpiry = NULL, *zv;
+    smart_string cmdstr = {0};
+    HashTable *fields;
+    zend_string *key;
+    zend_ulong idx;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_ARRAY_HT(fields)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(zexpiry);
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(fields) == 0) {
+        php_error_docref(NULL, E_WARNING, "Must pass at least one field");
+        return FAILURE;
+    }
+
+    get_hsetex_expiry_options(&opts, zexpiry);
+
+    argc = 3 + !!opts.set_mode + !!opts.exp_type + (opts.exp_arg >= 0) +
+           zend_hash_num_elements(fields) * 2;
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "HSETEX");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    if (opts.set_mode)
+        redis_cmd_append_sstr_zstr(&cmdstr, opts.set_mode);
+    if (opts.exp_type) {
+        redis_cmd_append_sstr_zstr(&cmdstr, opts.exp_type);
+        if (opts.exp_arg >= 0)
+            redis_cmd_append_sstr_long(&cmdstr, opts.exp_arg);
+    }
+
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(fields));
+
+    ZEND_HASH_FOREACH_KEY_VAL(fields, idx, key, zv)
+        if (key) {
+            redis_cmd_append_sstr_zstr(&cmdstr, key);
+        } else {
+            redis_cmd_append_sstr_long(&cmdstr, idx);
+        }
+        redis_cmd_append_sstr_zval(&cmdstr, zv, redis_sock);
+    ZEND_HASH_FOREACH_END();
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+int redis_hgetdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    HashTable *fields, *htctx;
+    smart_string cmdstr = {0};
+    zend_string *key;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key);
+        Z_PARAM_ARRAY_HT(fields);
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(fields) == 0) {
+        php_error_docref(NULL, E_WARNING, "Must pass at least one field");
+        return FAILURE;
+    }
+
+    htctx = build_hash_context_ht(fields, hmget_filter);
+    if (htctx == NULL) {
+        php_error_docref(NULL, E_WARNING,
+            "Failed to build context hash table");
+        return FAILURE;
+    }
+
+    argc = 3 + zend_hash_num_elements(htctx);
+
+    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("HGETDEL"));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FIELDS");
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(htctx));
+    redis_cmd_append_sstr_hash_fields(&cmdstr, htctx);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    *ctx = htctx;
 
     return SUCCESS;
 }

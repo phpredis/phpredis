@@ -1815,6 +1815,39 @@ class Redis {
     public function hMget(string $key, array $fields): Redis|array|false;
 
     /**
+     * Get one or more fields of a hash while optionally setting expiration
+     * information
+     *
+     * @param string $key          The hash to query.
+     * @param array $fields        One or more fields to query in the hash.
+     * @param string|array $expiry Info about the expiration
+     *
+     * @return Redis|array|false The fields and values or false if the key didn't exist.
+     */
+    public function hgetex(string $key, array $fields, string|array|null $expiry = null): Redis|array|false;
+
+    /**
+     * Set one or more fields in a hash with optional expiration information.
+     *
+     * @param string $key         The hash to create/update.
+     * @param array $fields       An array with fields values.
+     * @param array|null $expiry  Info about the expiration
+     *
+     * @return Redis|int|false One if fields were set zero if not.
+     */
+    public function hsetex(string $key, array $fields, ?array $expiry = null): Redis|int|false;
+
+    /**
+     * Get one or more fields and delete them
+     *
+     * @param string $key         The hash in question
+     * @param array $fields       One or more fields
+     *
+     * @return Redis|array|false  The field and values or false on failure
+     */
+    public function hgetdel(string $key, array $fields): Redis|array|false;
+
+    /**
      * Add or update one or more hash fields and values
      *
      * @param string $key        The hash to create/update
