@@ -1983,7 +1983,7 @@ PHP_METHOD(Redis, multi)
 
         /* Enable PIPELINE if we're not already in one */
         if (IS_ATOMIC(redis_sock)) {
-            REDIS_ENABLE_MODE(redis_sock, PIPELINE);
+            redis_sock->mode |= PIPELINE;
         }
     } else if (multi_value == MULTI) {
         /* Don't want to do anything if we're already in MULTI mode */
@@ -1991,7 +1991,7 @@ PHP_METHOD(Redis, multi)
             if (IS_PIPELINE(redis_sock)) {
                 PIPELINE_ENQUEUE_COMMAND(RESP_MULTI_CMD, sizeof(RESP_MULTI_CMD) - 1);
                 REDIS_SAVE_CALLBACK(NULL, NULL);
-                REDIS_ENABLE_MODE(redis_sock, MULTI);
+                redis_sock->mode |= MULTI;
             } else {
                 if (redis_sock_write(redis_sock, ZEND_STRL(RESP_MULTI_CMD)) < 0) {
                     RETURN_FALSE;
@@ -2003,7 +2003,7 @@ PHP_METHOD(Redis, multi)
                     RETURN_FALSE;
                 }
                 efree(resp);
-                REDIS_ENABLE_MODE(redis_sock, MULTI);
+                redis_sock->mode |= MULTI;
             }
         }
     } else {
@@ -2091,7 +2091,7 @@ PHP_METHOD(Redis, exec)
         if (IS_PIPELINE(redis_sock)) {
             PIPELINE_ENQUEUE_COMMAND(RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD) - 1);
             REDIS_SAVE_CALLBACK(NULL, NULL);
-            REDIS_DISABLE_MODE(redis_sock, MULTI);
+            redis_sock->mode &= ~MULTI;
             RETURN_ZVAL(getThis(), 1, 0);
         }
         if (redis_sock_write(redis_sock, ZEND_STRL(RESP_EXEC_CMD)) < 0) {
@@ -2100,7 +2100,7 @@ PHP_METHOD(Redis, exec)
         ret = redis_sock_read_multibulk_multi_reply(
             INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_ret);
         redis_free_reply_callbacks(redis_sock);
-        REDIS_DISABLE_MODE(redis_sock, MULTI);
+        redis_sock->mode &= ~MULTI;
         redis_sock->watching = 0;
         if (ret < 0) {
             zval_dtor(&z_ret);
@@ -2127,7 +2127,7 @@ PHP_METHOD(Redis, exec)
             smart_string_free(&redis_sock->pipeline_cmd);
         }
         redis_free_reply_callbacks(redis_sock);
-        REDIS_DISABLE_MODE(redis_sock, PIPELINE);
+        redis_sock->mode &= ~PIPELINE;
     }
     RETURN_ZVAL(&z_ret, 0, 1);
 }
@@ -2217,10 +2217,7 @@ PHP_METHOD(Redis, pipeline)
     /* Enable pipeline mode unless we're already in that mode in which case this
      * is just a NO OP */
     if (IS_ATOMIC(redis_sock)) {
-        /* NB : we keep the function fold, to detect the last function.
-         * We need the response format of the n - 1 command. So, we can delete
-         * when n > 2, the { 1 .. n - 2} commands */
-        REDIS_ENABLE_MODE(redis_sock, PIPELINE);
+        redis_sock->mode |= PIPELINE;
     }
 
     RETURN_ZVAL(getThis(), 1, 0);

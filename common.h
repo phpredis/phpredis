@@ -264,12 +264,6 @@ static inline int redis_strncmp(const char *s1, const char *s2, size_t n) {
 #define ZSTR_STRICMP_STATIC(zs, sstr) \
     REDIS_STRICMP_STATIC(ZSTR_VAL(zs), ZSTR_LEN(zs), sstr)
 
-#define REDIS_ENABLE_MODE(redis_sock, m) (redis_sock->mode |= m)
-#define REDIS_DISABLE_MODE(redis_sock, m) (redis_sock->mode &= ~m)
-
-#define REDIS_ENABLE_FLAG(redis_sock, f) (redis_sock->flags |= f)
-#define REDIS_DISABLE_FLAG(redis_sock, f) (redis_sock->flags &= ~f)
-
 /* HOST_NAME_MAX doesn't exist everywhere */
 #ifndef HOST_NAME_MAX
     #if defined(_POSIX_HOST_NAME_MAX)
