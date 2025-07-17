@@ -116,4 +116,45 @@ class Redis_Sentinel_Test extends TestSuite
             $this->checkFields($slave);
         }
     }
+
+    protected function getClients(Redis $redis, string $cmd)
+    {
+        $result = [];
+
+        foreach ($redis->client('list') as $client) {
+            if ($client['cmd'] !== $cmd)
+                continue;
+
+            $result[] = $client['id'];
+        }
+
+        return $result;
+    }
+
+    public function testPersistent() {
+        /* I think the tests just use the default port */
+        $redis = new Redis;
+        $redis->connect($this->getHost(), 26379);
+
+        $id = null;
+
+        for ($i = 0; $i < 3; $i++) {
+            $sentinel = new RedisSentinel([
+                'host' => $this->getHost(),
+                'persistent' => 'sentinel',
+            ]);
+
+            $this->assertTrue($sentinel->ping());
+
+            $clients = $this->getClients($redis, 'ping');
+
+            /* Capture the ping client */
+            $id ??= $clients[0];
+
+            unset($sentinel);
+        }
+
+        /* The same client should have been reused */
+        $this->assertEquals($id, $clients[0]);
+    }
 }
