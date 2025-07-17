@@ -2946,10 +2946,30 @@ static int redis_stream_detect_dirty(php_stream *stream) {
     return rv == 0 ? SUCCESS : FAILURE;
 }
 
+static inline zend_bool
+redis_check_echo_response(RedisSock *redis_sock, char *hdr, const char *id,
+                          size_t idlen)
+{
+    char buf[256] = {0};
+    size_t len;
+
+    /* Sentinel doesn't have ECHO but it will contain the ID in the error
+     * message so just check that */
+    if (redis_sock->sentinel) {
+        return redis_strncmp(hdr, ZEND_STRL("-ERR unknown command")) == 0 &&
+               strstr(hdr, id) != NULL;
+    }
+
+    /* Non-sentinel: Read and verify the ID */
+    return *hdr == TYPE_BULK && atoi(hdr + 1) == idlen &&
+           redis_sock_gets(redis_sock, buf, sizeof(buf) - 1, &len) == 0 &&
+           redis_strncmp(buf, id, idlen) == 0;
+}
+
 static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
-    char id[64], inbuf[4096];
+    char id[64], inbuf[256] = {0};
     int idlen, auth;
     smart_string cmd = {0};
     size_t len;
@@ -3015,18 +3035,10 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         }
     }
 
-    /* check echo response */
-    if ((redis_sock->sentinel && (
-        redis_strncmp(inbuf, ZEND_STRL("-ERR unknown command")) != 0 ||
-        strstr(inbuf, id) == NULL
-    )) || *inbuf != TYPE_BULK || atoi(inbuf + 1) != idlen ||
-        redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
-        redis_strncmp(inbuf, id, idlen) != 0
-    ) {
-        goto failure;
+    if (redis_check_echo_response(redis_sock, inbuf, id, idlen)) {
+        return SUCCESS;
     }
 
-    return SUCCESS;
 failure:
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     if (redis_sock->stream) {
