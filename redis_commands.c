@@ -3547,7 +3547,7 @@ int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(args), idx, zkey, z_ele) {
             ZVAL_DEREF(z_ele);
             if (zkey == NULL) {
-                redis_cmd_append_sstr_zstr(&cmdstr, key);
+                redis_cmd_append_sstr_long(&cmdstr, idx);
             } else {
                 redis_cmd_append_sstr_zstr(&cmdstr, zkey);
             }
