@@ -4842,7 +4842,7 @@ typedef struct redisHSetExOptions {
     zend_long exp_arg;
 } redisHSetExOptions;
 
-void get_hsetex_expiry_options(redisHSetExOptions *dst, zval *zsrc) {
+void get_hsetex_expiry_options(redisHSetExOptions *dst, HashTable *src) {
     zend_string *key;
     zend_long lval;
     zval *zv;
@@ -4851,10 +4851,10 @@ void get_hsetex_expiry_options(redisHSetExOptions *dst, zval *zsrc) {
         .exp_arg = -1,
     };
 
-    if (zsrc == NULL)
+    if (src == NULL)
         return;
 
-    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(zsrc), key, zv) {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(src, key, zv) {
         if (key == NULL) {
             if (Z_TYPE_P(zv) == IS_STRING) {
                 key = Z_STR_P(zv);
@@ -4887,18 +4887,18 @@ int redis_hsetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     redisHSetExOptions opts = {0};
-    zval *zexpiry = NULL, *zv;
     smart_string cmdstr = {0};
-    HashTable *fields;
+    HashTable *fields, *expiry = NULL;
     zend_string *key;
     zend_ulong idx;
+    zval *zv;
     int argc;
 
     ZEND_PARSE_PARAMETERS_START(2, 3)
         Z_PARAM_STR(key)
         Z_PARAM_ARRAY_HT(fields)
         Z_PARAM_OPTIONAL
-        Z_PARAM_ZVAL_OR_NULL(zexpiry);
+        Z_PARAM_ARRAY_HT_OR_NULL(expiry);
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
     if (zend_hash_num_elements(fields) == 0) {
@@ -4906,7 +4906,7 @@ int redis_hsetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    get_hsetex_expiry_options(&opts, zexpiry);
+    get_hsetex_expiry_options(&opts, expiry);
 
     argc = 3 + !!opts.set_mode + !!opts.exp_type + (opts.exp_arg >= 0) +
            zend_hash_num_elements(fields) * 2;
