@@ -3526,6 +3526,7 @@ int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zend_string *key, *zkey;
     zval *args, *z_ele;
+    zend_ulong idx;
 
     ZEND_PARSE_PARAMETERS_START(2, -1)
         Z_PARAM_STR(key)
@@ -3543,12 +3544,14 @@ int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         /* Append key */
         redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
-        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(args), zkey, z_ele) {
-            if (zkey != NULL) {
-                ZVAL_DEREF(z_ele);
-                redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zkey), ZSTR_LEN(zkey));
-                redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
+        ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(args), idx, zkey, z_ele) {
+            ZVAL_DEREF(z_ele);
+            if (zkey == NULL) {
+                redis_cmd_append_sstr_zstr(&cmdstr, key);
+            } else {
+                redis_cmd_append_sstr_zstr(&cmdstr, zkey);
             }
+            redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
         } ZEND_HASH_FOREACH_END();
     } else {
         if (argc % 2 != 0) {
