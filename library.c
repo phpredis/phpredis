@@ -160,8 +160,7 @@ static int redis_sock_response_ok(RedisSock *redis_sock, char *buf, int buf_size
     }
     if (UNEXPECTED(redis_strncmp(buf, ZEND_STRL("+OK")))) {
         if (buf[0] == '-') {
-            // Set error message in case of error
-            redis_sock_set_err(redis_sock, buf + 1, len);
+            redis_sock_set_err(redis_sock, buf + 1, len - 1);
         }
         return 0;
     }
