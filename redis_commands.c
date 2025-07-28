@@ -4999,7 +4999,7 @@ int redis_hexpire_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_LONG(ttl)
         Z_PARAM_ARRAY_HT(fields)
         Z_PARAM_OPTIONAL
-        Z_PARAM_STR(option)
+        Z_PARAM_STR_OR_NULL(option)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
     if (zend_hash_num_elements(fields) < 1) {
