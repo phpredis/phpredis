@@ -4197,6 +4197,18 @@ class Redis {
     public function xrevrange(string $key, string $end, string $start, int $count = -1): Redis|array|bool;
 
     /**
+     * Add to a vector set
+     *
+     * @param string $key         The vector set to add to.
+     * @param array $values       A non-empty array of floating point values
+     * @param mixed $element      The element to add to the vector set.
+     * @param array|null $options An optional options array
+     *
+     * @return Redis|int|false One if the key was added zero if not.
+     */
+    public function vadd(string $key, array $values, mixed $element, array|null $options = null): Redis|int|false;
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.

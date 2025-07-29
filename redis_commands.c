@@ -30,6 +30,10 @@
 #include <winsock.h>
 #endif
 
+#ifdef HAVE_REDIS_JSON
+#include <ext/json/php_json.h>
+#endif
+
 #include <zend_exceptions.h>
 
 /* Georadius sort type */
@@ -670,6 +674,34 @@ void redis_get_zcmd_options(redisZcmdOptions *dst, zval *src, int flags) {
                 dst->withscores = 1;
         }
     } ZEND_HASH_FOREACH_END();
+}
+
+#if defined(__clang__) || \
+    (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)))
+#define PHPREDIS_HAVE_BSWAP32 1
+#endif
+
+static void redis_copy_fp32(char *dst, float src) {
+#ifdef PHPREDIS_BIG_ENDIAN
+#ifdef PHPREDIS_HAVE_BSWAP32
+    uint32_t val;
+    memcpy(&val, &src, sizeof(val));
+    val = __builtin_bswap32(val);
+    memcpy(dst, &val, sizeof(val));
+#else
+    union {
+        float f;
+        unsigned char b[4];
+    } u;
+    u.f = src;
+    dst[0] = u.b[3];
+    dst[1] = u.b[2];
+    dst[2] = u.b[1];
+    dst[3] = u.b[0];
+#endif
+#else
+    memcpy(dst, &src, sizeof(src));
+#endif
 }
 
 // + ZRANGE               key start stop [BYSCORE | BYLEX] [REV] [LIMIT offset count] [WITHSCORES]
@@ -6510,6 +6542,226 @@ redis_sentinel_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
     *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SENTINEL", "sS", kw, strlen(kw), name);
+    return SUCCESS;
+}
+
+typedef enum redisVAddQuant {
+    REDIS_QUANT_NONE,
+    REDIS_QUANT_NOQUANT,
+    REDIS_QUANT_Q8,
+    REDIS_QUANT_BIN,
+} redisVAddQuant;
+
+typedef struct redisVAddOptions {
+    enum redisVAddQuant quant;
+    zend_long reduce;
+    zend_bool values;
+    zend_bool cas;
+    zend_long ef;
+    zend_string *attributes;
+    zend_long numlinks;
+} redisVAddOptions;
+
+static zend_bool validate_vadd_integer(zend_string *name, zval *zv, zend_long min) {
+    if (Z_TYPE_P(zv) != IS_LONG || Z_LVAL_P(zv) < min) {
+        php_error_docref(NULL, E_WARNING, "%s must be >= "
+            ZEND_LONG_FMT, ZSTR_VAL(name), min);
+        return 0;
+    }
+
+    return 1;
+}
+
+static zend_string *get_vadd_attributes(zval *zv) {
+    if (Z_TYPE_P(zv) == IS_STRING) {
+        return zval_get_string(zv);
+#ifdef HAVE_REDIS_JSON
+    } else if (Z_TYPE_P(zv) == IS_ARRAY) {
+        smart_str aux = {0};
+        php_json_encode(&aux, zv, PHP_JSON_OBJECT_AS_ARRAY);
+        return aux.s;
+    } else {
+        php_error_docref(NULL, E_WARNING, "SETATTR must be a string or array");
+    }
+#else
+    } else {
+        php_error_docref(NULL, E_WARNING, "SETATTR must be a string");
+    }
+#endif
+
+    return NULL;
+}
+
+static void parse_vadd_options(redisVAddOptions *dst, HashTable *ht) {
+    zend_string *key;
+    zval *zv;
+
+    *dst = (redisVAddOptions){
+        .ef = -1,
+        .numlinks = -1,
+        .reduce = -1,
+    };
+
+    if (ht == NULL)
+        return;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        if (key != NULL) {
+            if (zend_string_equals_literal_ci(key, "REDUCE")) {
+                if (validate_vadd_integer(key, zv, 1))
+                    dst->reduce = Z_LVAL_P(zv);
+            } else if (zend_string_equals_literal_ci(key, "M")) {
+                if (validate_vadd_integer(key, zv, 1))
+                    dst->numlinks = Z_LVAL_P(zv);
+            } else if (zend_string_equals_literal_ci(key, "EF")) {
+                if (validate_vadd_integer(key, zv, 1))
+                    dst->ef = Z_LVAL_P(zv);
+            } else if (zend_string_equals_literal_ci(key, "CAS")) {
+                dst->cas = zval_is_true(zv);
+            } else if (zend_string_equals_literal_ci(key, "VALUES")) {
+                dst->values = zval_is_true(zv);
+            } else if (zend_string_equals_literal_ci(key, "SETATTR")) {
+                dst->attributes = get_vadd_attributes(zv);
+            }
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            if (zend_string_equals_literal_ci(Z_STR_P(zv), "VALUES")) {
+                dst->values = 1;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "FP32")) {
+                dst->values = 0;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "NOQUANT")) {
+                dst->quant = REDIS_QUANT_NOQUANT;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "Q8")) {
+                dst->quant = REDIS_QUANT_Q8;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "BIN")) {
+                dst->quant = REDIS_QUANT_BIN;
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
+static void free_vadd_options(redisVAddOptions *o) {
+    if (o->attributes)
+        zend_string_release(o->attributes);
+}
+
+static void
+redis_cmd_append_sstr_fp32(smart_string *dst, HashTable *ht) {
+    uint32_t i = 0;
+    char *aux;
+    zval *zv;
+
+    aux = ecalloc(1, zend_hash_num_elements(ht) * sizeof(float));
+
+    ZEND_HASH_FOREACH_VAL(ht, zv) {
+        redis_copy_fp32(&aux[4 * i++], zval_get_double(zv));
+    } ZEND_HASH_FOREACH_END();
+
+    redis_cmd_append_sstr(dst, aux, 4 * i);
+
+    efree(aux);
+}
+
+static void redis_cmd_append_sstr_fp32_values(smart_string *dst, HashTable *ht) {
+    zval *zv;
+
+    ZEND_HASH_FOREACH_VAL(ht, zv) {
+        redis_cmd_append_sstr_dbl(dst, zval_get_double(zv));
+    } ZEND_HASH_FOREACH_END();
+}
+
+int
+redis_vadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+               char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    HashTable *options = NULL, *vector;
+    smart_string cmdstr = {0};
+    redisVAddOptions opts;
+    zend_string *key;
+    zval *element;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(3, 4)
+        Z_PARAM_STR(key)
+        Z_PARAM_ARRAY_HT(vector)
+        Z_PARAM_ZVAL(element)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(options)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(vector) < 1) {
+        php_error_docref(NULL, E_WARNING,
+            "At least one vector element is required");
+        return FAILURE;
+    }
+
+    parse_vadd_options(&opts, options);
+
+    // Two formulations:
+    //   VADD <key> FP32 [vector] <element>
+    //   VADD <key> VALUES <n> <v1>..<vn> <element>
+    // So <key> and <element> are always present and we need to calculate the
+    // other arguments dynamically.
+    argc = 2 +
+        (opts.reduce > -1 ? 2 : 0) +
+        (opts.values ? 2 + zend_hash_num_elements(vector) : 2) +
+        !!opts.cas +
+        (opts.attributes != NULL ? 2 : 0) +
+        (opts.numlinks > 0 ? 2 : 0) +
+        (opts.ef > 0 ? 2 : 0) +
+        !!(opts.quant != REDIS_QUANT_NONE);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "VADD");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+
+    if (opts.reduce > -1) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "REDUCE");
+        redis_cmd_append_sstr_long(&cmdstr, opts.reduce);
+    }
+
+    if (opts.values) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "VALUES");
+        redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(vector));
+        redis_cmd_append_sstr_fp32_values(&cmdstr, vector);
+    } else {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FP32");
+        redis_cmd_append_sstr_fp32(&cmdstr, vector);
+    }
+
+    redis_cmd_append_sstr_zval(&cmdstr, element, redis_sock);
+
+    if (opts.cas)
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "CAS");
+
+    if (opts.quant != REDIS_QUANT_NONE) {
+        if (opts.quant == REDIS_QUANT_Q8) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "Q8");
+        } else if (opts.quant == REDIS_QUANT_BIN) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BIN");
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NOQUANT");
+        }
+    }
+
+    if (opts.ef > -1) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "EF");
+        redis_cmd_append_sstr_long(&cmdstr, opts.ef);
+    }
+
+    if (opts.attributes != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "SETATTR");
+        redis_cmd_append_sstr_zstr(&cmdstr, opts.attributes);
+    }
+
+    if (opts.numlinks > -1) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "M");
+        redis_cmd_append_sstr_long(&cmdstr, opts.numlinks);
+    }
+
+    free_vadd_options(&opts);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
     return SUCCESS;
 }
 

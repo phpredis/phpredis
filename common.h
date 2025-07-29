@@ -31,6 +31,16 @@
 #define NULL   ((void *) 0)
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+# define PHPREDIS_LITTLE_ENDIAN
+#elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+# define PHPREDIS_BIG_ENDIAN
+#elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+# define PHPREDIS_LITTLE_ENDIAN
+#else
+# error "Unknown endianness"
+#endif
+
 #include "backoff.h"
 
 typedef enum {
