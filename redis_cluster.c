@@ -3062,6 +3062,10 @@ PHP_METHOD(RedisCluster, ping) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, vadd) {
+    CLUSTER_PROCESS_CMD(vadd, cluster_long_resp, 0);
+}
+
 /* {{{ proto long RedisCluster::xack(string key, string group, array ids) }}} */
 PHP_METHOD(RedisCluster, xack) {
     CLUSTER_PROCESS_CMD(xack, cluster_long_resp, 0);

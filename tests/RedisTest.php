@@ -7546,6 +7546,28 @@ class Redis_Test extends TestSuite {
         $this->assertNull($info['last-entry']);
     }
 
+    public function testVAdd() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('v'));
+
+        foreach ([1, 0] as $expected) {
+            $this->assertEquals($expected, $this->redis->vadd('v', [0.5, 1.0], 'e'));
+        }
+
+        $this->assertEquals(1, $this->redis->del('v'));
+
+        foreach ([1, 0] as $expected) {
+            /* With tons of options */
+            $res = $this->redis->vadd('v', [3.14, 2.71], 'e', [
+                'REDUCE' => 2, 'EF' => 16, 'M' => 28, 'CAS', 'VALUES', 'Q8',
+                'SETATTR' => ['foo' => 'bar'],
+            ]);
+            $this->assertEquals($expected, $res);
+        }
+    }
+
     public function testInvalidAuthArgs() {
         $client = $this->newInstance();
 

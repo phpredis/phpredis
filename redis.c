@@ -3051,6 +3051,14 @@ PHP_METHOD(Redis, geosearchstore) {
 }
 
 /*
+ * Vectors
+ */
+
+PHP_METHOD(Redis, vadd) {
+    REDIS_PROCESS_CMD(vadd, redis_long_response);
+}
+
+/*
  * Streams
  */
 

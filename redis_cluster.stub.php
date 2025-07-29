@@ -1054,6 +1054,11 @@ class RedisCluster {
     public function watch(string $key, string ...$other_keys): RedisCluster|bool;
 
     /**
+     * @see Redis::vadd
+     */
+    public function vadd(string $key, array $values, mixed $element, array|null $options = null): RedisCluster|int|false;
+
+    /**
      * @see Redis::xack
      */
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;
