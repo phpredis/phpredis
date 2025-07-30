@@ -7568,6 +7568,87 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testVSim() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $captains = [
+            'Archer'  => [[0.7628, 0.5403, 0.0729], 'Enterprise-NX01'],
+            'Janeway' => [[0.7073, 0.2171, 0.2673], 'Voyager'],
+            'Kirk'    => [[0.2555, 0.4938, 0.6968], 'Enterprise'],
+            'Picard'  => [[0.0570, 0.3547, 0.0721], 'Enterprise-D'],
+            'Pike'    => [[0.7916, 0.8514, 0.2733], 'Enterprise'],
+            'Sisko'   => [[0.0697, 0.1455, 0.2886], 'Defiant'],
+        ];
+
+        $this->redis->del('captains');
+
+        foreach ($captains as $captain => [$vector, $ship]) {
+            $opt = ['SETATTR' => ['ship' => $ship]];
+            $res = $this->redis->vadd('captains', $vector, $captain, $opt);
+            $this->assertEquals(1, $res);
+        }
+
+        /* We should infer ELE mode */
+        $res = $this->redis->vSim('captains', 'Archer');
+        $this->assertIsArray($res);
+        $this->assertEquals($res[0], 'Archer');
+
+        /* We should infer FP32 mode */
+        $res = $this->redis->vsim('captains', $captains['Archer'][0]);
+        $this->assertIsArray($res);
+        $this->assertEquals($res[0], 'Archer');
+
+        /* Reject FP32/VALUE mode with non-arrays */
+        foreach (['Archer', 3.14, 42, new stdClass] as $e) {
+            foreach (['FP32', 'VALUES'] as $mode) {
+                $res = @$this->redis->vsim('captains', $e, [$mode]);
+                $this->assertFalse($res);
+            }
+        }
+
+        /* VALUES */
+        $opt = ['VALUES'];
+        $res = $this->redis->vsim('captains', $captains['Kirk'][0], $opt);
+        $this->assertIsArray($res);
+        $this->assertEquals($res[0], 'Kirk');
+
+        /* EF */
+        $opt = ['EF' => 24];
+        $res = $this->redis->vsim('captains', $captains['Pike'][0], $opt);
+        $this->assertIsArray($res);
+        $this->assertEquals($res[0], 'Pike');
+
+        /* FILTER + FILTER-EF */
+        $opt = ['FILTER' => '.ship == "Defiant"', 'FILTER-EF' => 24];
+        $res = $this->redis->vsim('captains', 'Archer', $opt);
+        $this->assertIsArray($res);
+        $this->assertEquals($res[0], 'Sisko');
+
+        /* COUNT */
+        $opt = ['COUNT' => 1];
+        $res = $this->redis->vsim('captains', 'Sisko', $opt);
+        $this->assertIsArray($res);
+        $this->assertEquals($res[0], 'Sisko');
+        $this->assertEquals(1, count($res));
+
+        /* WITHSCORES */
+        $opt = ['WITHSCORES'];
+        $res = $this->redis->vsim('captains', 'Janeway', $opt);
+        $this->assertIsArray($res);
+        $this->assertGT(1, count($res));
+
+        foreach ($res as $captain => $score) {
+            $this->assertIsString($captain);
+            $this->assertIsFloat($score);
+        }
+
+        /* NOTHREAD + TRUTH */
+        $opt = ['NOTHREAD', 'TRUTH'];
+        $res = $this->redis->vsim('captains', 'Picard', $opt);
+        $this->assertEquals($res[0], 'Picard');
+    }
+
     public function testInvalidAuthArgs() {
         $client = $this->newInstance();
 

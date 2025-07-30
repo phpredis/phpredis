@@ -1059,6 +1059,12 @@ class RedisCluster {
     public function vadd(string $key, array $values, mixed $element, array|null $options = null): RedisCluster|int|false;
 
     /**
+     * @see Redis::vsim
+     */
+    public function vsim(string $key, mixed $member, array|null $options = null): Redis|array|false;
+
+
+    /**
      * @see Redis::xack
      */
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;

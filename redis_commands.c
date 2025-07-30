@@ -6765,6 +6765,187 @@ redis_vadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+typedef enum redisVSimMemberType {
+    REDIS_VSIM_NONE,
+    REDIS_VSIM_FP32,
+    REDIS_VSIM_VALUES,
+    REDIS_VSIM_ELE,
+} redisVSimMemberType;
+
+typedef struct redisVSimOptions {
+    redisVSimMemberType type;
+    zend_long count;
+    zend_long ef;
+    zend_string *filter;
+    zend_long filter_ef;
+    zend_bool truth;
+    zend_bool nothread;
+    zend_bool withscores;
+} redisVSimOptions;
+
+static void free_vsim_options(redisVSimOptions *opts) {
+    if (opts->filter != NULL)
+        zend_string_release(opts->filter);
+}
+
+static void parse_vsim_options(redisVSimOptions *dst, HashTable *ht) {
+    zend_string *key;
+    zval *zv;
+
+    *dst = (redisVSimOptions){
+        .filter_ef = -1,
+        .ef = -1,
+    };
+
+    if (ht == NULL)
+        return;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        if (key != NULL) {
+            if (zend_string_equals_literal_ci(key, "EF")) {
+                if (validate_vadd_integer(key, zv, 1))
+                    dst->ef = Z_LVAL_P(zv);
+            } else if (zend_string_equals_literal_ci(key, "FILTER")) {
+                dst->filter = zval_get_string(zv);
+            } else if (zend_string_equals_literal_ci(key, "FILTER-EF")) {
+                if (validate_vadd_integer(key, zv, 1))
+                    dst->filter_ef = Z_LVAL_P(zv);
+            } else if (zend_string_equals_literal_ci(key, "COUNT")) {
+                if (validate_vadd_integer(key, zv, 1))
+                    dst->count = Z_LVAL_P(zv);
+            } else if (zend_string_equals_literal_ci(key, "WITHSCORES")) {
+                dst->withscores = zval_is_true(zv);
+            }
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            if (zend_string_equals_literal_ci(Z_STR_P(zv), "FP32")) {
+                dst->type = REDIS_VSIM_FP32;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "VALUES")) {
+                dst->type = REDIS_VSIM_VALUES;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "ELE")) {
+                dst->type = REDIS_VSIM_ELE;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "NOTHREAD")) {
+                dst->nothread = 1;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "TRUTH")) {
+                dst->truth = 1;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "WITHSCORES")) {
+                dst->withscores = 1;
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
+static redisVSimMemberType detect_vsim_type(zval *zv) {
+    zval *ele;
+
+    if (Z_TYPE_P(zv) != IS_ARRAY)
+        return REDIS_VSIM_ELE;
+
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(zv), ele) {
+        if (Z_TYPE_P(ele) != IS_LONG && Z_TYPE_P(ele) != IS_DOUBLE)
+            return REDIS_VSIM_ELE;
+    } ZEND_HASH_FOREACH_END();
+
+    return REDIS_VSIM_FP32;
+}
+
+int
+redis_vsim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+               char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    HashTable *options = NULL;
+    smart_string cmdstr = {0};
+    redisVSimOptions opts;
+    zend_string *key;
+    zval *member;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3) {
+        Z_PARAM_STR(key)
+        Z_PARAM_ZVAL(member)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(options)
+    } ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    parse_vsim_options(&opts, options);
+
+    if (opts.type == REDIS_VSIM_NONE)
+        opts.type = detect_vsim_type(member);
+
+    /* Sanity check on the member type */
+    if (opts.type != REDIS_VSIM_ELE && Z_TYPE_P(member) != IS_ARRAY) {
+        php_error_docref(NULL, E_WARNING,
+            "member must be an array when not querying in ELE mode");
+        return FAILURE;
+    }
+
+    argc = 1 + (opts.count > 0 ? 2 : 0) + (opts.ef > 0 ? 2 : 0)
+             + (opts.filter != NULL ? 2 : 0) + (opts.filter_ef > 0 ? 2 : 0)
+             + !!opts.truth + !!opts.nothread + !!opts.withscores;
+
+    if (opts.type == REDIS_VSIM_ELE || opts.type == REDIS_VSIM_FP32) {
+        // ELE <element> or FP32 <fp32 blob>
+        argc += 2;
+    } else if (opts.type == REDIS_VSIM_VALUES) {
+        // VALUES <num> <num values>
+        argc += 2 + zend_hash_num_elements(Z_ARRVAL_P(member));
+    } else {
+        zend_error_noreturn(E_ERROR,
+            "Internal error. type shouldn't be REDIS_VSIM_NONE!");
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "VSIM");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+
+    if (opts.type == REDIS_VSIM_FP32) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FP32");
+        redis_cmd_append_sstr_fp32(&cmdstr, Z_ARRVAL_P(member));
+    } else if (opts.type == REDIS_VSIM_VALUES) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "VALUES");
+        redis_cmd_append_sstr_long(&cmdstr,
+                                   zend_hash_num_elements(Z_ARRVAL_P(member)));
+        redis_cmd_append_sstr_fp32_values(&cmdstr, Z_ARRVAL_P(member));
+    } else {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ELE");
+        redis_cmd_append_sstr_zval(&cmdstr, member, redis_sock);
+    }
+
+    if (opts.withscores) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHSCORES");
+        *ctx = PHPREDIS_CTX_PTR;
+    }
+
+    if (opts.count > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_long(&cmdstr, opts.count);
+    }
+
+    if (opts.ef > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "EF");
+        redis_cmd_append_sstr_long(&cmdstr, opts.ef);
+    }
+
+    if (opts.filter != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FILTER");
+        redis_cmd_append_sstr_zstr(&cmdstr, opts.filter);
+    }
+
+    if (opts.filter_ef > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FILTER-EF");
+        redis_cmd_append_sstr_long(&cmdstr, opts.filter_ef);
+    }
+
+    if (opts.truth)
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "TRUTH");
+    if (opts.nothread)
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NOTHREAD");
+
+    free_vsim_options(&opts);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
 /*
  * Redis commands that don't deal with the server at all.  The RedisSock*
  * pointer is the only thing retrieved differently, so we just take that
