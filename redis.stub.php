@@ -4209,6 +4209,22 @@ class Redis {
     public function vadd(string $key, array $values, mixed $element, array|null $options = null): Redis|int|false;
 
     /**
+     * Query similarity of a vector by element or scores
+     *
+     * @param string $key          The vector set to query.
+     * @param mixed $member        Either an element or array of scores. PhpRedis
+     *                             will attempt to infer which it is, but since
+     *                             there can be some ambiguity here due to
+     *                             serialization you can also explicitly specify
+     *                             `ELE`, `VALUES`, or `FP32` in the options
+     *                             array.
+     * @param array|null $options  An optional options array
+     *
+     * @return Redis|array|false   An array of elements and their similarity scores, or false on failure.
+     */
+    public function vsim(string $key, mixed $member, array|null $options = null): Redis|array|false;
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.

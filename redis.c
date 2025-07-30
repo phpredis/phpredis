@@ -3058,6 +3058,10 @@ PHP_METHOD(Redis, vadd) {
     REDIS_PROCESS_CMD(vadd, redis_long_response);
 }
 
+PHP_METHOD(Redis, vsim) {
+    REDIS_PROCESS_CMD(vsim, redis_zrange_response);
+}
+
 /*
  * Streams
  */
