@@ -14,7 +14,7 @@
 #if PHP_VERSION_ID < 70200
 #include <ext/standard/php_smart_string.h>
 #else
-#include "zend_string.h"
+#include "Zend/zend_smart_string.h"
 #endif
 
 
