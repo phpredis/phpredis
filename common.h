@@ -11,7 +11,12 @@
 #include <ext/standard/php_var.h>
 #include <ext/standard/php_math.h>
 #include <zend_smart_str.h>
+#if PHP_VERSION_ID < 70200
 #include <ext/standard/php_smart_string.h>
+#else
+#include "zend_string.h"
+#endif
+
 
 #define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - XtOffsetOf(class_entry, std))
 #define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, Z_OBJ_P(z))
