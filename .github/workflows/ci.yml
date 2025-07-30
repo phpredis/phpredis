@@ -73,7 +73,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         server: ['redis', 'keydb', 'valkey']
 
     steps:
@@ -135,8 +135,7 @@ jobs:
             --enable-redis-lz4 \
             --with-liblz4
           sudo make -j"$(nproc)" install
-
-          echo 'extension = redis.so' | sudo tee -a "$(php --ini | grep 'Scan for additional .ini files' | awk '{print $7}')"/90-redis.ini
+          echo 'extension = redis.so' | sudo tee -a "$(php-config --ini-dir)"/90-redis.ini
 
       - name: Attempt to shutdown default server
         run: ${{ matrix.server }}-cli SHUTDOWN NOSAVE || true
@@ -254,7 +253,7 @@ jobs:
           phpize
           ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
           sudo make install
-          echo 'extension = redis.so' | sudo tee -a "$(php --ini | grep 'Scan for additional .ini files' | awk '{print $7}')/90-redis.ini"
+          echo 'extension = redis.so' | sudo tee -a "$(php-config --ini-dir)/90-redis.ini"
 
   windows:
     runs-on: windows-latest
