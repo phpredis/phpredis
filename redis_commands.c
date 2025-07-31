@@ -7007,6 +7007,38 @@ redis_vsim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     return SUCCESS;
 }
+
+int
+redis_vemb_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+               char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    zend_bool raw = 0;
+    zend_string *key;
+    zval *member;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3) {
+        Z_PARAM_STR(key)
+        Z_PARAM_ZVAL(member);
+        Z_PARAM_OPTIONAL
+        Z_PARAM_BOOL(raw)
+    } ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + !!raw, "VEMB");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_zval(&cmdstr, member, redis_sock);
+
+    if (raw) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "RAW");
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+
 /*
  * Redis commands that don't deal with the server at all.  The RedisSock*
  * pointer is the only thing retrieved differently, so we just take that

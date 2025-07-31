@@ -7754,6 +7754,25 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(1, $this->redis->del('v'));
     }
 
+    public function testVEmb() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('v'));
+
+        $this->assertEquals(1, $this->redis->vadd('v', [0.5, 1.0], 'e'));
+
+        $res = $this->redis->vemb('v', 'e');
+        $this->assertIsArray($res);
+        $this->assertTrue(filter_var($res[0], FILTER_VALIDATE_FLOAT) !== false);
+
+        $res = $this->redis->vemb('v', 'e', true);
+        $this->assertIsArray($res);
+        $this->assertEquals('int8', $res[0]);
+
+        $this->assertEquals(1, $this->redis->del('v'));
+    }
+
     public function testInvalidAuthArgs() {
         $client = $this->newInstance();
 

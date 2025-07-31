@@ -4271,6 +4271,17 @@ class Redis {
     public function vinfo(string $key): Redis|array|false;
 
     /**
+     * Get the embeddings for a specific member
+     *
+     * @param string $key   The vector set to query.
+     * @param mixed $member The member to query.
+     * @param bool $raw     If set to `true`, the raw embeddings will be returned
+     *
+     * @return Redis|array|false An array of embeddings for the member or false on failure.
+     */
+    public function vemb(string $key, mixed $member, bool $raw = false): Redis|array|false;
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.
