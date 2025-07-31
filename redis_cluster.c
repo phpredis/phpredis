@@ -3209,6 +3209,10 @@ PHP_METHOD(RedisCluster, vrandmember) {
                            cluster_randmember_resp, 1);
 }
 
+PHP_METHOD(RedisCluster, vrem) {
+    CLUSTER_PROCESS_CMD(vrem, cluster_long_resp, 0);
+}
+
 /* {{{ proto long RedisCluster::xack(string key, string group, array ids) }}} */
 PHP_METHOD(RedisCluster, xack) {
     CLUSTER_PROCESS_CMD(xack, cluster_long_resp, 0);
