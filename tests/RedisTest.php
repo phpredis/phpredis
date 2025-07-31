@@ -7710,6 +7710,50 @@ class Redis_Test extends TestSuite {
         $this->assertEquals($res[0], 'Picard');
     }
 
+    public function testVCard() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('v'));
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertEquals(1, $this->redis->vadd('v', [0.5, 1.0], "e{$i}"));
+            $this->assertEquals($i + 1, $this->redis->vcard('v'));
+        }
+
+        $this->assertEquals(1, $this->redis->del('v'));
+        $this->assertEquals(0, $this->redis->vcard('v'));
+    }
+
+    public function testVDim() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        foreach ([[0.5, 1.0], [0.5, 1.0, 1.5]] as $v) {
+            $this->assertIsInt($this->redis->del('v'));
+            $this->assertEquals(1, $this->redis->vadd('v', $v, 'e'));
+            $this->assertEquals(count($v), $this->redis->vdim('v'));
+        }
+
+        $this->assertEquals(1, $this->redis->del('v'));
+    }
+
+    public function testVInfo() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('v'));
+        $this->assertEquals(1, $this->redis->vadd('v', [0.5, 1.0, 1.5], 'e'));
+
+        $res = $this->redis->vinfo('v');
+        $this->assertIsArray($res);
+        $this->assertArrayKey($res, 'vector-dim', function ($v) {
+            return $v === 3;
+        });
+
+        $this->assertEquals(1, $this->redis->del('v'));
+    }
+
     public function testInvalidAuthArgs() {
         $client = $this->newInstance();
 
