@@ -292,7 +292,6 @@ class TestSuite
         if (($exists = isset($arr[$key])) && $cb($arr[$key]))
             return true;
 
-
         if ($exists) {
             $msg = sprintf("%s is invalid in %s", $this->printArg($arr[$key]),
                                                   $this->printArg($arr));
