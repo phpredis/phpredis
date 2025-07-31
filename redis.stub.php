@@ -4282,6 +4282,14 @@ class Redis {
     public function vemb(string $key, mixed $member, bool $raw = false): Redis|array|false;
 
     /**
+     * Get one or more random members from a vector set
+     *
+     * @param string $key   The vector set to query.
+     * @param int $count    The number of random members to return.
+     */
+    public function vrandmember(string $key, int $count = 0): Redis|array|string|false;
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.

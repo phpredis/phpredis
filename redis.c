@@ -1278,7 +1278,8 @@ PHP_METHOD(Redis, sPop)
 /* {{{ proto string Redis::sRandMember(string key [int count]) */
 PHP_METHOD(Redis, sRandMember)
 {
-    REDIS_PROCESS_CMD(srandmember, redis_srandmember_response);
+    REDIS_PROCESS_KW_CMD("SRANDMEMBER", redis_randmember_cmd,
+                         redis_randmember_response);
 }
 /* }}} */
 
@@ -3197,6 +3198,11 @@ PHP_METHOD(Redis, vinfo) {
 
 PHP_METHOD(Redis, vemb) {
     REDIS_PROCESS_CMD(vemb, redis_vemb_reply);
+}
+
+PHP_METHOD(Redis, vrandmember) {
+    REDIS_PROCESS_KW_CMD("VRANDMEMBER", redis_randmember_cmd,
+                         redis_randmember_response);
 }
 
 /*
