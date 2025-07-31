@@ -4244,6 +4244,33 @@ class Redis {
     public function vsim(string $key, mixed $member, array|null $options = null): Redis|array|false;
 
     /**
+     * Get the length of a vector set
+     *
+     * @param string $key The vector set to query.
+     *
+     * @return Redis|int|false The number of elements in the vector set or false on failure.
+     */
+    public function vcard(string $key): Redis|int|false;
+
+    /**
+     * Get the dimensions of a vector set
+     *
+     * @param string $key The vector set to query.
+     *
+     * @return Redis|int|false The number of dimensions in the vector set or false on failure.
+     */
+    public function vdim(string $key): Redis|int|false;
+
+    /**
+     * Get various bits of information about a vector set
+     *
+     * @param string $key The vector set to query.
+     *
+     * @return Redis|array|false An array of information about the vector set or false on failure.
+     */
+    public function vinfo(string $key): Redis|array|false;
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.

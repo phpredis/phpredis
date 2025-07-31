@@ -2485,6 +2485,80 @@ failure:
 }
 
 PHP_REDIS_API int
+redis_read_vinfo_response(RedisSock *redis_sock, zval *z_ret, long long count) {
+    char kbuf[256], vbuf[256];
+    REDIS_REPLY_TYPE type;
+    size_t klen, vlen;
+    long lval;
+
+    if (count < 0 || count % 2 != 0) {
+        zend_error_noreturn(E_ERROR, "Internal finfo handler error");
+    }
+
+    for (long long i = 0; i < count; i += 2) {
+        if (redis_read_reply_type(redis_sock, &type, &lval) < 0 ||
+            type != TYPE_LINE)
+        {
+            return FAILURE;
+        }
+
+        if (redis_sock_gets(redis_sock, kbuf, sizeof(kbuf), &klen) < 0) {
+            return FAILURE;
+        }
+
+        if (redis_read_reply_type(redis_sock, &type, &lval) < 0) {
+            return FAILURE;
+        }
+
+        switch (type) {
+            case TYPE_LINE:
+                if (redis_sock_gets(redis_sock, vbuf, sizeof(vbuf), &vlen) < 0) {
+                    return FAILURE;
+                }
+                add_assoc_stringl_ex(z_ret, kbuf, klen, vbuf, vlen);
+                break;
+            case TYPE_INT:
+                add_assoc_long_ex(z_ret, kbuf, klen, lval);
+                break;
+            default:
+                add_assoc_null_ex(z_ret, kbuf, klen);
+                break;
+
+        }
+    }
+
+    return SUCCESS;
+}
+
+
+PHP_REDIS_API int
+redis_vinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                  zval *z_tab, void *ctx)
+{
+    zval z_ret;
+    int count;
+
+    if (read_mbulk_header(redis_sock, &count) < 0 ||
+        count < 0 || count % 2 != 0)
+    {
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
+
+    array_init_size(&z_ret, count / 2);
+
+    if (redis_read_vinfo_response(redis_sock, &z_ret, count) != SUCCESS) {
+        zval_dtor(&z_ret);
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
+
+    REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
 redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     zval z_ret;

@@ -1071,8 +1071,22 @@ class RedisCluster {
     /**
      * @see Redis::vsim
      */
-    public function vsim(string $key, mixed $member, array|null $options = null): Redis|array|false;
+    public function vsim(string $key, mixed $member, array|null $options = null): RedisCluster|array|false;
 
+    /**
+     * @see Redis::vcard
+     */
+    public function vcard(string $key): RedisCluster|int|false;
+
+    /**
+     * @see Redis::vdim
+     */
+    public function vdim(string $key): RedisCluster|int|false;
+
+    /**
+     * @see Redis::vinfo
+     */
+    public function vinfo(string $key): RedisCluster|array|false;
 
     /**
      * @see Redis::xack
