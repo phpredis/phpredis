@@ -3714,8 +3714,9 @@ int redis_select_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* SRANDMEMBER */
-int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char **cmd, int *cmd_len, short *slot, void **ctx)
+int redis_randmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char *kw, char **cmd, int *cmd_len, short *slot,
+                         void **ctx)
 {
     uint32_t argc = ZEND_NUM_ARGS();
     smart_string cmdstr = {0};
@@ -3728,7 +3729,7 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_LONG(count)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, ZEND_NUM_ARGS(), "SRANDMEMBER");
+    redis_cmd_init_sstr(&cmdstr, 1 + (argc == 2), kw, strlen(kw));
     redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
     if (argc == 2)
         redis_cmd_append_sstr_long(&cmdstr, count);

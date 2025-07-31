@@ -1003,7 +1003,8 @@ PHP_METHOD(RedisCluster, spop) {
 
 /* {{{ proto string|array RedisCluster::srandmember(string key, [long count]) */
 PHP_METHOD(RedisCluster, srandmember) {
-    CLUSTER_PROCESS_CMD(srandmember, cluster_srandmember_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("SRANDMEMBER", redis_randmember_cmd,
+                           cluster_randmember_resp, 1);
 }
 
 /* {{{ proto string RedisCluster::strlen(string key) */
@@ -3201,6 +3202,11 @@ PHP_METHOD(RedisCluster, vinfo) {
 
 PHP_METHOD(RedisCluster, vemb) {
     CLUSTER_PROCESS_CMD(vemb, cluster_variant_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, vrandmember) {
+    CLUSTER_PROCESS_KW_CMD("VRANDMEMBER", redis_randmember_cmd,
+                           cluster_randmember_resp, 1);
 }
 
 /* {{{ proto long RedisCluster::xack(string key, string group, array ids) }}} */

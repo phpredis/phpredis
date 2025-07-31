@@ -1277,7 +1277,9 @@ redis_zrange_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
 }
 
 PHP_REDIS_API int
-redis_srandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
+redis_randmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          zval *z_tab, void *ctx)
+{
     FailableResultCallback cb;
 
     /* Whether or not we have a COUNT argument */
