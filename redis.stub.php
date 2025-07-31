@@ -4290,6 +4290,16 @@ class Redis {
     public function vrandmember(string $key, int $count = 0): Redis|array|string|false;
 
     /**
+     * Remove an element from a vector set
+     *
+     * @param string $key     The vector set to remove from.
+     * @param mixed  $member  The member to remove.
+     *
+     * @return Redis|int|faslse 1 if the member was removed, 0 if it was not.
+     */
+    public function vrem(string $key, mixed $member): Redis|int|false;
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.

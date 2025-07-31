@@ -3205,6 +3205,10 @@ PHP_METHOD(Redis, vrandmember) {
                          redis_randmember_response);
 }
 
+PHP_METHOD(Redis, vrem) {
+    REDIS_PROCESS_CMD(vrem, redis_long_response);
+}
+
 /*
  * Streams
  */
