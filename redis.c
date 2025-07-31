@@ -3195,6 +3195,10 @@ PHP_METHOD(Redis, vinfo) {
     REDIS_PROCESS_KW_CMD("VINFO", redis_key_cmd, redis_vinfo_reply);
 }
 
+PHP_METHOD(Redis, vemb) {
+    REDIS_PROCESS_CMD(vemb, redis_vemb_reply);
+}
+
 /*
  * Streams
  */

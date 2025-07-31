@@ -2491,18 +2491,15 @@ redis_read_vinfo_response(RedisSock *redis_sock, zval *z_ret, long long count) {
     size_t klen, vlen;
     long lval;
 
-    if (count < 0 || count % 2 != 0) {
+    if (count < 0 || count % 2 != 0 || Z_TYPE_P(z_ret) != IS_ARRAY) {
         zend_error_noreturn(E_ERROR, "Internal finfo handler error");
     }
 
     for (long long i = 0; i < count; i += 2) {
         if (redis_read_reply_type(redis_sock, &type, &lval) < 0 ||
-            type != TYPE_LINE)
+            type != TYPE_LINE ||
+            redis_sock_gets(redis_sock, kbuf, sizeof(kbuf), &klen) < 0)
         {
-            return FAILURE;
-        }
-
-        if (redis_sock_gets(redis_sock, kbuf, sizeof(kbuf), &klen) < 0) {
             return FAILURE;
         }
 
@@ -2521,10 +2518,8 @@ redis_read_vinfo_response(RedisSock *redis_sock, zval *z_ret, long long count) {
                 add_assoc_long_ex(z_ret, kbuf, klen, lval);
                 break;
             default:
-                add_assoc_null_ex(z_ret, kbuf, klen);
-                break;
-
-        }
+                return FAILURE;
+       }
     }
 
     return SUCCESS;
@@ -2558,8 +2553,77 @@ redis_vinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Unfortunately VEMB decided to use +string\r\n for the encoding when RAW is
+ * sent which PhpRedis will parse as `(true)` so we need a specific handler for
+ * it */
 PHP_REDIS_API int
-redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+redis_read_vemb_response(RedisSock *redis_sock, zval *z_ret, long long count) {
+    REDIS_REPLY_TYPE type;
+    char kbuf[256], *str;
+    size_t klen;
+    double dval;
+    long tlen;
+
+    if (count < 0 || Z_TYPE_P(z_ret) != IS_ARRAY) {
+        zend_error_noreturn(E_ERROR, "Internal vemb handler error");
+    }
+
+    for (long long i = 0; i < count; i++) {
+        if (redis_read_reply_type(redis_sock, &type, &tlen) < 0) {
+            return FAILURE;
+        }
+
+        if (type == TYPE_LINE) {
+            if (redis_sock_gets(redis_sock, kbuf, sizeof(kbuf), &klen) < 0)
+                return FAILURE;
+            add_next_index_stringl(z_ret, kbuf, klen);
+        } else if (type == TYPE_BULK) {
+            if ((str = redis_sock_read_bulk_reply(redis_sock, tlen)) == NULL)
+                return FAILURE;
+
+            if (is_numeric_string(str, tlen, NULL, &dval, 0) == IS_DOUBLE) {
+                add_next_index_double(z_ret, dval);
+            } else {
+                add_next_index_stringl(z_ret, str, tlen);
+            }
+
+            efree(str);
+        } else {
+            return FAILURE;
+        }
+    }
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_vemb_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                 zval *z_tab, void *ctx)
+{
+    zval z_ret;
+    int count;
+
+    if (read_mbulk_header(redis_sock, &count) < 0 || count < 1) {
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
+
+    array_init_size(&z_ret, count);
+
+    if (redis_read_vemb_response(redis_sock, &z_ret, count) != SUCCESS) {
+        zval_dtor(&z_ret);
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
+
+    REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                  zval *z_tab, void *ctx)
 {
     zval z_ret;
     int elements;

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: ef50011ff095df387f4b0f043d381e092253c8e8 */
+ * Stub hash: 8cbcd94f8610fdfd08566cdf137ce63dbcfbf609 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -962,6 +962,12 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_vinfo arginfo_class_Redis__prefix
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_vemb, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, member)
+	ZEND_ARG_INFO(0, raw)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xtrim, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, threshold)
@@ -1336,6 +1342,7 @@ ZEND_METHOD(Redis, vsim);
 ZEND_METHOD(Redis, vcard);
 ZEND_METHOD(Redis, vdim);
 ZEND_METHOD(Redis, vinfo);
+ZEND_METHOD(Redis, vemb);
 ZEND_METHOD(Redis, xtrim);
 ZEND_METHOD(Redis, zAdd);
 ZEND_METHOD(Redis, zCard);
@@ -1617,6 +1624,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, vcard, arginfo_class_Redis_vcard, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vdim, arginfo_class_Redis_vdim, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vinfo, arginfo_class_Redis_vinfo, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, vemb, arginfo_class_Redis_vemb, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xtrim, arginfo_class_Redis_xtrim, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zAdd, arginfo_class_Redis_zAdd, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zCard, arginfo_class_Redis_zCard, ZEND_ACC_PUBLIC)

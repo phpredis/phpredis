@@ -1089,6 +1089,11 @@ class RedisCluster {
     public function vinfo(string $key): RedisCluster|array|false;
 
     /**
+     * @see Redis::vemb
+     */
+    public function vemb(string $key, mixed $member, bool $raw = false): RedisCluster|array|false;
+
+    /**
      * @see Redis::xack
      */
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;
