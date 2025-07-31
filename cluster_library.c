@@ -2506,6 +2506,27 @@ cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
 
 }
 
+PHP_REDIS_API void
+cluster_vinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    zval z_ret;
+
+    if (c->reply_len < 2 || c->reply_len % 2 != 0) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    array_init_size(&z_ret, c->reply_len / 2);
+    if (redis_read_vinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
+        zval_dtor(&z_ret);
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETURN_ZVAL(&z_ret, 0, 1);
+    }
+
+    add_next_index_zval(&c->multi_resp, &z_ret);
+}
+
 /* XINFO */
 PHP_REDIS_API void
 cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)

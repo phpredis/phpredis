@@ -3187,6 +3187,18 @@ PHP_METHOD(RedisCluster, vsim) {
     CLUSTER_PROCESS_CMD(vsim, cluster_zrange_resp, 1);
 }
 
+PHP_METHOD(RedisCluster, vcard) {
+    CLUSTER_PROCESS_KW_CMD("VCARD", redis_key_cmd, cluster_long_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, vdim) {
+    CLUSTER_PROCESS_KW_CMD("VDIM", redis_key_cmd, cluster_long_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, vinfo) {
+    CLUSTER_PROCESS_KW_CMD("VINFO", redis_key_cmd, cluster_vinfo_resp, 1);
+}
+
 /* {{{ proto long RedisCluster::xack(string key, string group, array ids) }}} */
 PHP_METHOD(RedisCluster, xack) {
     CLUSTER_PROCESS_CMD(xack, cluster_long_resp, 0);

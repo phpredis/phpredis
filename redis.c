@@ -3183,6 +3183,18 @@ PHP_METHOD(Redis, vsim) {
     REDIS_PROCESS_CMD(vsim, redis_zrange_response);
 }
 
+PHP_METHOD(Redis, vcard) {
+    REDIS_PROCESS_KW_CMD("VCARD", redis_key_cmd, redis_long_response);
+}
+
+PHP_METHOD(Redis, vdim) {
+    REDIS_PROCESS_KW_CMD("VDIM", redis_key_cmd, redis_long_response);
+}
+
+PHP_METHOD(Redis, vinfo) {
+    REDIS_PROCESS_KW_CMD("VINFO", redis_key_cmd, redis_vinfo_reply);
+}
+
 /*
  * Streams
  */

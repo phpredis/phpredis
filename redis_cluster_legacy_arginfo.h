@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 0f01437681bc6df1d6e2b39e6a0c7c5c77f6237e */
+ * Stub hash: 6833953df5e7260f7791abe42c5ae9cd9a0125d2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -755,6 +755,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_vsim, 0, 0, 2)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
+#define arginfo_class_RedisCluster_vcard arginfo_class_RedisCluster__prefix
+
+#define arginfo_class_RedisCluster_vdim arginfo_class_RedisCluster__prefix
+
+#define arginfo_class_RedisCluster_vinfo arginfo_class_RedisCluster__prefix
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_xack, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, group)
@@ -1164,6 +1170,9 @@ ZEND_METHOD(RedisCluster, unwatch);
 ZEND_METHOD(RedisCluster, watch);
 ZEND_METHOD(RedisCluster, vadd);
 ZEND_METHOD(RedisCluster, vsim);
+ZEND_METHOD(RedisCluster, vcard);
+ZEND_METHOD(RedisCluster, vdim);
+ZEND_METHOD(RedisCluster, vinfo);
 ZEND_METHOD(RedisCluster, xack);
 ZEND_METHOD(RedisCluster, xadd);
 ZEND_METHOD(RedisCluster, xclaim);
@@ -1410,6 +1419,9 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, watch, arginfo_class_RedisCluster_watch, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, vadd, arginfo_class_RedisCluster_vadd, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, vsim, arginfo_class_RedisCluster_vsim, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, vcard, arginfo_class_RedisCluster_vcard, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, vdim, arginfo_class_RedisCluster_vdim, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, vinfo, arginfo_class_RedisCluster_vinfo, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xack, arginfo_class_RedisCluster_xack, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xadd, arginfo_class_RedisCluster_xadd, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xclaim, arginfo_class_RedisCluster_xclaim, ZEND_ACC_PUBLIC)
