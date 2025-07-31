@@ -3206,7 +3206,7 @@ PHP_METHOD(Redis, vrandmember) {
 }
 
 PHP_METHOD(Redis, vrem) {
-    REDIS_PROCESS_CMD(vrem, redis_long_response);
+    REDIS_PROCESS_KW_CMD("VREM", redis_kv_cmd, redis_long_response);
 }
 
 /*
