@@ -7773,6 +7773,30 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(1, $this->redis->del('v'));
     }
 
+    public function testVRem() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('v'));
+
+        $captains = ['Sisko', 'Janeway'];
+        foreach ($captains as $captain) {
+            $v = [mt_rand() / mt_getrandmax(), mt_rand() / mt_getrandmax()];
+            $this->assertEquals(1, $this->redis->vadd('v', $v, $captain));
+        }
+
+        while ($captains) {
+            $captain = array_shift($captains);
+            foreach ([1, 0] as $e) {
+                $this->assertEquals($e, $this->redis->vrem('v', $captain));
+            }
+
+            $this->assertEquals(count($captains), $this->redis->vcard('v'));
+        }
+
+        $this->assertEquals(0, $this->redis->vcard('v'));
+    }
+
     public function testInvalidAuthArgs() {
         $client = $this->newInstance();
 
