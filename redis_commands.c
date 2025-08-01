@@ -6634,7 +6634,7 @@ static zend_bool validate_vadd_integer(zend_string *name, zval *zv, zend_long mi
     return 1;
 }
 
-static zend_string *get_vadd_attributes(zval *zv) {
+static zend_string *zval_to_vattr(zval *zv) {
     if (Z_TYPE_P(zv) == IS_STRING) {
         return zval_get_string(zv);
 #ifdef HAVE_REDIS_JSON
@@ -6683,7 +6683,7 @@ static void parse_vadd_options(redisVAddOptions *dst, HashTable *ht) {
             } else if (zend_string_equals_literal_ci(key, "VALUES")) {
                 dst->values = zval_is_true(zv);
             } else if (zend_string_equals_literal_ci(key, "SETATTR")) {
-                dst->attributes = get_vadd_attributes(zv);
+                dst->attributes = zval_to_vattr(zv);
             }
         } else if (Z_TYPE_P(zv) == IS_STRING) {
             if (zend_string_equals_literal_ci(Z_STR_P(zv), "VALUES")) {
@@ -7032,6 +7032,37 @@ redis_vemb_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (raw) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "RAW");
     }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+int
+redis_vsetattr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    zend_string *key, *attr;
+    zval *member, *zattr;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3) {
+        Z_PARAM_STR(key)
+        Z_PARAM_ZVAL(member)
+        Z_PARAM_ZVAL(zattr)
+    } ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    attr = zval_to_vattr(zattr);
+    if (zattr == NULL)
+        return FAILURE;
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 3, "VSETATTR");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_zval(&cmdstr, member, redis_sock);
+    redis_cmd_append_sstr_zstr(&cmdstr, attr);
+
+    zend_string_release(attr);
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;

@@ -4300,6 +4300,19 @@ class Redis {
     public function vrem(string $key, mixed $member): Redis|int|false;
 
     /**
+     * Set the attributes of a vector set element
+     *
+     * @param string $key              The vector set to modify.
+     * @param mixed $member            The member to modify.
+     * @param array|string $attributes The attributes to set. This should either
+     *                                 be a json encoded string or an array which
+     *                                 will be json encoded.
+     *
+     * @return Redis|int|false 1 if the attributes were set, 0 if they were not.
+     */
+    public function vsetattr(string $key, mixed $member, array|string $attributes): Redis|int|false;
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.

@@ -3209,6 +3209,10 @@ PHP_METHOD(Redis, vrem) {
     REDIS_PROCESS_KW_CMD("VREM", redis_kv_cmd, redis_long_response);
 }
 
+PHP_METHOD(Redis, vsetattr) {
+    REDIS_PROCESS_CMD(vsetattr, redis_long_response);
+}
+
 /*
  * Streams
  */
