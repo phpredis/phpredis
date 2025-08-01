@@ -4313,6 +4313,17 @@ class Redis {
     public function vsetattr(string $key, mixed $member, array|string $attributes): Redis|int|false;
 
     /**
+     * Get any adajcent values for a member of a vector set.
+     *
+     * @param string $key     The vector set to query.
+     * @param mixed  $member  The member to query.
+     * @param bool   $withscores If set to `true`, the scores of the adjacent values will be returned.
+     *
+     * @return Redis|array|false An array of adjacent values and their scores, or false on failure.
+     */
+    public function vlinks(string $key, mixed $member, bool $withscores = false): Redis|array|false;
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.

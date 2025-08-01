@@ -3213,6 +3213,10 @@ PHP_METHOD(RedisCluster, vrem) {
     CLUSTER_PROCESS_KW_CMD("VREM", redis_kv_cmd, cluster_long_resp, 0);
 }
 
+PHP_METHOD(RedisCluster, vlinks) {
+    CLUSTER_PROCESS_CMD(vlinks, cluster_vlinks_resp, 1);
+}
+
 /* {{{ proto long RedisCluster::xack(string key, string group, array ids) }}} */
 PHP_METHOD(RedisCluster, xack) {
     CLUSTER_PROCESS_CMD(xack, cluster_long_resp, 0);

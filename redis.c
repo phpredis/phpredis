@@ -3213,6 +3213,10 @@ PHP_METHOD(Redis, vsetattr) {
     REDIS_PROCESS_CMD(vsetattr, redis_long_response);
 }
 
+PHP_METHOD(Redis, vlinks) {
+    REDIS_PROCESS_CMD(vlinks, redis_vlinks_reply);
+}
+
 /*
  * Streams
  */

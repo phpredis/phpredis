@@ -133,6 +133,11 @@ PHP_REDIS_API int redis_vemb_reply(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API int redis_read_vemb_response(RedisSock *redis_sock, zval *z_ret,
     long long count);
 
+PHP_REDIS_API int redis_read_vlinks_response(RedisSock *redis_sock, zval *z_ret,
+    long long elements, void *ctx);
+PHP_REDIS_API int redis_vlinks_reply(INTERNAL_FUNCTION_PARAMETERS,
+    RedisSock *redis_sock, zval *z_tab, void *ctx);
+
 PHP_REDIS_API int redis_pubsub_response(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,

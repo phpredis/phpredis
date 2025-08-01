@@ -2624,6 +2624,63 @@ redis_vemb_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 PHP_REDIS_API int
+redis_read_vlinks_response(RedisSock *redis_sock, zval *z_ret,
+                           long long elements, void *ctx)
+{
+    long long i;
+    zval z_ele;
+    int links;
+
+    array_init_size(z_ret, elements);
+
+    for (i = 0; i < elements; i++) {
+        if (read_mbulk_header(redis_sock, &links) < 0)
+            return FAILURE;
+
+        array_init(&z_ele);
+        redis_mbulk_reply_loop(redis_sock, &z_ele, links, UNSERIALIZE_KEYS);
+
+        if (ctx == PHPREDIS_CTX_PTR) {
+            array_zip_values_and_scores(redis_sock, &z_ele, SCORE_DECODE_DOUBLE);
+        }
+
+        add_next_index_zval(z_ret, &z_ele);
+    }
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_vlinks_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   zval *z_tab, void *ctx)
+{
+    int elements;
+    zval z_ret;
+
+    ZVAL_FALSE(&z_ret);
+
+    if (read_mbulk_header(redis_sock, &elements) < 0)
+        goto fail;
+
+    /* TODO: Figure out if we want `false` or `[]` here */
+    if (elements < 0) {
+        REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
+        return  SUCCESS;
+    }
+
+    if (redis_read_vlinks_response(redis_sock, &z_ret, elements, ctx) != SUCCESS)
+        goto fail;
+
+    REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
+    return SUCCESS;
+
+fail:
+    zval_dtor(&z_ret);
+    REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+    return FAILURE;
+}
+
+PHP_REDIS_API int
 redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   zval *z_tab, void *ctx)
 {

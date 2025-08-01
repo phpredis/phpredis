@@ -1104,6 +1104,11 @@ class RedisCluster {
     public function vrem(string $key, mixed $member): RedisCluster|int|false;
 
     /**
+     * @see Redis::vlinks
+     */
+    public function vlinks(string $key, mixed $member, bool $withscores = false): RedisCluster|array|false;
+
+    /**
      * @see Redis::xack
      */
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;
