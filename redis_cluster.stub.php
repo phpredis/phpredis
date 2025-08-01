@@ -1109,6 +1109,16 @@ class RedisCluster {
     public function vlinks(string $key, mixed $member, bool $withscores = false): RedisCluster|array|false;
 
     /**
+     * @see Redis::vgetattr
+     */
+    public function vgetattr(string $key, mixed $member, bool $decode = true): Redis|array|string|false;
+
+    /**
+     * @see Redis::vsetattr
+     */
+    public function vsetattr(string $key, mixed $member, array|string $attributes): Redis|int|false;
+
+    /**
      * @see Redis::xack
      */
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;

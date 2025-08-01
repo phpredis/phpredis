@@ -7069,6 +7069,33 @@ redis_vlinks_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_vgetattr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                       char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    zend_bool raw = 0;
+    zend_string *key;
+    zval *member;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3) {
+        Z_PARAM_STR(key)
+        Z_PARAM_ZVAL(member)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_BOOL(raw)
+    } ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2, "VGETATTR");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_zval(&cmdstr, member, redis_sock);
+
+    *ctx = raw ? NULL : PHPREDIS_CTX_PTR;
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 int
 redis_vsetattr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
