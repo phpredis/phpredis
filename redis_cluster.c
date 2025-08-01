@@ -3217,6 +3217,14 @@ PHP_METHOD(RedisCluster, vlinks) {
     CLUSTER_PROCESS_CMD(vlinks, cluster_vlinks_resp, 1);
 }
 
+PHP_METHOD(RedisCluster, vgetattr) {
+    CLUSTER_PROCESS_CMD(vgetattr, cluster_vgetattr_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, vsetattr) {
+    CLUSTER_PROCESS_CMD(vsetattr, cluster_long_resp, 0);
+}
+
 /* {{{ proto long RedisCluster::xack(string key, string group, array ids) }}} */
 PHP_METHOD(RedisCluster, xack) {
     CLUSTER_PROCESS_CMD(xack, cluster_long_resp, 0);

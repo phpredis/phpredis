@@ -2528,6 +2528,34 @@ cluster_vinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
 }
 
 PHP_REDIS_API void
+cluster_vgetattr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
+{
+    zval z_ret;
+    char *str;
+
+    if (c->reply_type != TYPE_BULK || c->reply_len <= 0 ||
+        (str = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
+    {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (ctx != PHPREDIS_CTX_PTR ||
+        redis_deserialize_vgetattr_reply(&z_ret, str, c->reply_len) != SUCCESS)
+    {
+        ZVAL_STRINGL(&z_ret, str, c->reply_len);
+    }
+
+    efree(str);
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETURN_ZVAL(&z_ret, 0, 1);
+    } else {
+        add_next_index_zval(&c->multi_resp, &z_ret);
+    }
+}
+
+
+PHP_REDIS_API void
 cluster_vlinks_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     zval z_ret;
 

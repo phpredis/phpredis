@@ -4313,6 +4313,19 @@ class Redis {
     public function vsetattr(string $key, mixed $member, array|string $attributes): Redis|int|false;
 
     /**
+     * Get the attributes of a vector set element
+     *
+     * @param string $key     The vector set to query.
+     * @param mixed  $member  The member to query.
+     * @param bool   $decode  Whether to automatically deserialize any returned json.
+     *
+     *
+     *
+     * @return Redis|array|false An array of attributes for the member or false on failure.
+     */
+    public function vgetattr(string $key, mixed $member, bool $decode = true): Redis|array|string|false;
+
+    /**
      * Get any adajcent values for a member of a vector set.
      *
      * @param string $key     The vector set to query.

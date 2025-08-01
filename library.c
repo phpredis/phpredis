@@ -123,6 +123,9 @@ extern int le_redis_pconnect;
 
 static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zret, int count);
 
+static int redis_bulk_resp_to_zval(RedisSock *redis_sock, zval *zdst,
+    int *dstlen) ;
+
 /* Register a persistent resource in a a way that works for every PHP 7 version. */
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
     zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
@@ -2681,6 +2684,55 @@ fail:
 }
 
 PHP_REDIS_API int
+redis_deserialize_vgetattr_reply(zval *zret, const char *str, size_t len) {
+#ifdef HAVE_REDIS_JSON
+    if (php_json_decode(zret, str, len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH)
+                        == FAILURE)
+    {
+        php_error_docref(NULL, E_WARNING, "Failed to deserialize attributes");
+        return FAILURE;
+    }
+
+    return SUCCESS;
+#else
+    php_error_docref(NULL, E_WARNING,
+        "PhpRedis is not compiled with JSON support");
+    return FAILURE;
+#endif
+}
+
+PHP_REDIS_API int
+redis_vgetattr_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     zval *z_tab, void *ctx)
+{
+    zval z_ret;
+    char *attr;
+    int len;
+
+    attr = redis_sock_read(redis_sock, &len);
+    if (attr == NULL) {
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
+
+    if (len == 0) {
+        ZVAL_FALSE(&z_ret);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        if (redis_deserialize_vgetattr_reply(&z_ret, attr, len) != SUCCESS) {
+            ZVAL_STRINGL(&z_ret, attr, len);
+        }
+    } else {
+        ZVAL_STRINGL(&z_ret, attr, len);
+    }
+
+    efree(attr);
+
+    REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
 redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   zval *z_tab, void *ctx)
 {
@@ -4270,13 +4322,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             break;
         case REDIS_SERIALIZER_JSON:
 #ifdef HAVE_REDIS_JSON
-    #if (PHP_MAJOR_VERSION == 7 && PHP_MINOR_VERSION < 1)
-            JSON_G(error_code) = PHP_JSON_ERROR_NONE;
-            php_json_decode(z_ret, (char*)val, val_len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH);
-            ret = JSON_G(error_code) == PHP_JSON_ERROR_NONE;
-    #else
             ret = !php_json_decode(z_ret, (char *)val, val_len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH);
-    #endif
 #endif
             break;
         EMPTY_SWITCH_DEFAULT_CASE()
