@@ -3201,7 +3201,7 @@ PHP_METHOD(RedisCluster, vinfo) {
 }
 
 PHP_METHOD(RedisCluster, vemb) {
-    CLUSTER_PROCESS_CMD(vemb, cluster_variant_resp, 1);
+    CLUSTER_PROCESS_CMD(vemb, cluster_vemb_resp, 1);
 }
 
 PHP_METHOD(RedisCluster, vrandmember) {
