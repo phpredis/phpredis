@@ -7797,6 +7797,35 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(0, $this->redis->vcard('v'));
     }
 
+    public function testVGetAttr() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $attr = ['foo' => 'bar'];
+        $json = json_encode($attr);
+
+        $this->assertIsInt($this->redis->del('v'));
+        $this->assertEquals(1, $this->redis->vadd(
+            'v', [1.5, 2.5], 'e1', ['SETATTR' => $attr])
+        );
+
+        $this->assertEquals(1, $this->redis->vadd('v', [1.5, 2.5], 'e2'));
+
+        if (defined('Redis::SERIALIZER_JSON')) {
+            $expected = [false => $attr, true => $json];
+        } else {
+            $expected = [false => $json, true => $json];
+        }
+
+        foreach ($expected as $raw => $e) {
+            $this->assertEquals($e, $this->redis->vgetattr('v', 'e1', $raw));
+        }
+
+        foreach ([[], [false], [true]] as $arg) {
+            $this->assertEquals(false, $this->redis->vgetattr('v', 'e2', ...$arg));
+        }
+    }
+
     public function testVSetAttr() {
         if ( ! $this->minVersionCheck('8.0'))
             $this->markTestSkipped();
