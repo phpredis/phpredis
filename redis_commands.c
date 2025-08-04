@@ -1770,6 +1770,9 @@ int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
     redis_cmd_append_sstr(&cmdstr, lua, lua_len);
     redis_cmd_append_sstr_long(&cmdstr, num_keys);
 
+    /* Pick a random slot up front. Any provided key(s) will override this */
+    CMD_RAND_SLOT(slot);
+
     // Iterate over our args if we have any
     if (argc > 0) {
         ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
@@ -1794,9 +1797,6 @@ int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
 
             zend_string_release(zstr);
         } ZEND_HASH_FOREACH_END();
-    } else {
-        /* Any slot will do */
-        CMD_RAND_SLOT(slot);
     }
 
     *cmd = cmdstr.c;
