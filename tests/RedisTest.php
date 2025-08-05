@@ -5735,6 +5735,15 @@ class Redis_Test extends TestSuite {
             $this->assertEquals(1, $this->redis->evalsha_ro($sha));
     }
 
+    /* Regression test for #2681 where there was undefined behavior when sending
+       one or more arguments but no keys in cluster mode. */
+    public function testEvalNoKeys() {
+        for ($i = 0; $i < 10; $i++) {
+            $this->assertEqualsWeak($i, $this->redis->eval("return $i", [42], 0));
+            $this->assertEqualsWeak($i, $this->redis->eval('return ARGV[1]', [$i], 0));
+        }
+    }
+
     public function testSerialize() {
         $vals = [1, 1.5, 'one', ['here', 'is', 'an', 'array']];
 
