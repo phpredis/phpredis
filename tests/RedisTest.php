@@ -79,6 +79,11 @@ class Redis_Test extends TestSuite {
         $this->is_valkey = $this->detectValKey($info);
     }
 
+    protected function haveCommand(string $cmd): bool {
+        $info = $this->redis->command('info', $cmd);
+        return !empty(array_filter($info));
+    }
+
     protected function minVersionCheck($version) {
         return version_compare($this->version, $version) >= 0;
     }
@@ -6298,13 +6303,13 @@ class Redis_Test extends TestSuite {
     }
 
     public function testHashExpiration() {
-        if ( ! $this->minVersionCheck('7.4.0'))
+        if ( ! $this->haveCommand('HEXPIRE'))
             $this->markTestSkipped();
 
         $hexpire_cmds = [
-            'hexpire' => 10,
-            'hpexpire' => 10000,
-            'hexpireat' => time() + 10,
+            'hexpire'    => 10,
+            'hpexpire'   => 10000,
+            'hexpireat'  => time() + 10,
             'hpexpireat' => time() * 1000 + 10000,
         ];
 
