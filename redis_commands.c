@@ -1742,62 +1742,58 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *lua;
     int argc = 0;
-    zval *z_arr = NULL, *z_ele;
-    HashTable *ht_arr;
+    zval *zv;
+    HashTable *ht = NULL;
     zend_long num_keys = 0;
     smart_string cmdstr = {0};
-    size_t lua_len;
-    zend_string *zstr;
+    zend_string *arg, *lua, *tmp;
     short prevslot = -1;
 
-    /* Parse args */
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|al", &lua, &lua_len,
-                             &z_arr, &num_keys) == FAILURE)
-    {
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 3)
+        Z_PARAM_STR(lua)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(ht)
+        Z_PARAM_LONG(num_keys)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    /* Grab arg count */
-    if (z_arr != NULL) {
-        ht_arr = Z_ARRVAL_P(z_arr);
-        argc = zend_hash_num_elements(ht_arr);
-    }
+    if (ht == NULL)
+        ht = (HashTable*)&zend_empty_array;
+
+    argc = zend_hash_num_elements(ht);
 
     /* EVAL[SHA] {script || sha1} {num keys}  */
     redis_cmd_init_sstr(&cmdstr, 2 + argc, kw, strlen(kw));
-    redis_cmd_append_sstr(&cmdstr, lua, lua_len);
+    redis_cmd_append_sstr_zstr(&cmdstr, lua);
     redis_cmd_append_sstr_long(&cmdstr, num_keys);
 
     /* Pick a random slot up front. Any provided key(s) will override this */
     CMD_RAND_SLOT(slot);
 
     // Iterate over our args if we have any
-    if (argc > 0) {
-        ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
-            zstr = zval_get_string(z_ele);
+    ZEND_HASH_FOREACH_VAL(ht, zv) {
+        arg = zval_get_tmp_string(zv, &tmp);
 
-            /* If we're still on a key, prefix it check slot */
-            if (num_keys-- > 0) {
-                redis_cmd_append_sstr_key(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr), redis_sock, slot);
+        /* If we're still on a key, prefix it check slot */
+        if (num_keys-- > 0) {
+            redis_cmd_append_sstr_key_zstr(&cmdstr, arg, redis_sock, slot);
 
-                /* If we have been passed a slot, all keys must match */
-                if (slot) {
-                    if (prevslot != -1 && prevslot != *slot) {
-                        zend_string_release(zstr);
-                        php_error_docref(0, E_WARNING, "All keys do not map to the same slot");
-                        return FAILURE;
-                    }
-                    prevslot = *slot;
+            /* If we have been passed a slot, all keys must match */
+            if (slot) {
+                if (prevslot != -1 && prevslot != *slot) {
+                    zend_tmp_string_release(tmp);
+                    php_error_docref(0, E_WARNING,
+                        "All keys do not map to the same slot");
+                    return FAILURE;
                 }
-            } else {
-                redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+                prevslot = *slot;
             }
+        } else {
+            redis_cmd_append_sstr_zstr(&cmdstr, arg);
+        }
 
-            zend_string_release(zstr);
-        } ZEND_HASH_FOREACH_END();
-    }
+        zend_tmp_string_release(tmp);
+    } ZEND_HASH_FOREACH_END();
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
