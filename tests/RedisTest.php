@@ -81,9 +81,9 @@ class Redis_Test extends TestSuite {
 
     protected function haveCommand(string $cmd): bool {
         $info = $this->redis->command('info', $cmd);
-        $cmd  = $info[0][0] ?? null;
+        $name = $info[0][0] ?? null;
 
-        return $cmd && strcasecmp($cmd, $cmd) === 0;
+        return $name && strcasecmp($cmd, $name) === 0;
     }
 
     protected function minVersionCheck($version) {
