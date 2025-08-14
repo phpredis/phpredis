@@ -14,24 +14,6 @@
     redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, \
                        &cmd_len, &slot)
 
-/* Append information required to handle MULTI commands to the tail of our MULTI
- * linked list. */
-#define CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx) \
-    clusterFoldItem *_item; \
-    _item = emalloc(sizeof(clusterFoldItem)); \
-    _item->callback = cb; \
-    _item->slot = slot; \
-    _item->ctx = ctx; \
-    _item->next = NULL; \
-    _item->flags = c->flags->flags; \
-    if(c->multi_head == NULL) { \
-        c->multi_head = _item; \
-        c->multi_curr = _item; \
-    } else { \
-        c->multi_curr->next = _item; \
-        c->multi_curr = _item; \
-    } \
-
 /* Simple macro to free our enqueued callbacks after we EXEC */
 #define CLUSTER_FREE_QUEUE(c) \
     clusterFoldItem *_item = c->multi_head, *_tmp; \

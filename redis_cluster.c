@@ -43,6 +43,27 @@ zend_class_entry *redis_cluster_exception_ce;
 #include "redis_cluster_arginfo.h"
 #endif
 
+static void
+cluster_enqueue_response(redisCluster *c, short slot, cluster_cb cb, void *ctx)
+{
+    clusterFoldItem *item;
+
+    item = emalloc(sizeof(clusterFoldItem));
+    item->callback = cb;
+    item->slot = slot;
+    item->ctx = ctx;
+    item->next = NULL;
+    item->flags = c->flags->flags;
+
+    if (UNEXPECTED(c->multi_head == NULL)) {
+        c->multi_head = item;
+        c->multi_curr = item;
+    } else {
+        c->multi_curr->next = item;
+        c->multi_curr = item;
+    }
+}
+
 void
 cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                     redis_cmd_cb cmd_cb, cluster_cb resp_cb, int readonly)
@@ -68,7 +89,7 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     efree(cmd);
 
     if (c->flags->mode == MULTI) {
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_cb, ctx);
+        cluster_enqueue_response(c, slot, resp_cb, ctx);
         RETURN_ZVAL(getThis(), 1, 0);
     }
 
@@ -87,7 +108,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
 
-    /* TODO: Update kw commands to take a const char * */
+    /* TODO: Update kw commands to take a const char * (and len to avoid strlen) */
     if (cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, (char*)kw, &cmd, &cmd_len,
                &slot, &ctx) == FAILURE)
     {
@@ -102,7 +123,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     efree(cmd);
 
     if (c->flags->mode == MULTI) {
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_cb, ctx);
+        cluster_enqueue_response(c, slot, resp_cb, ctx);
         RETURN_ZVAL(getThis(), 1, 0);
     }
 
@@ -392,7 +413,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
         // Process response now
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, (void*)ctx);
     } else {
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+        cluster_enqueue_response(c, slot, cb, ctx);
     }
 
     // Clear out our command but retain allocated memory
@@ -2573,7 +2594,7 @@ PHP_METHOD(RedisCluster, acl) {
     if (CLUSTER_IS_ATOMIC(c)) {
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+        cluster_enqueue_response(c, slot, cb, ctx);
     }
 
     efree(cmdstr.c);
@@ -2778,7 +2799,7 @@ PHP_METHOD(RedisCluster, info) {
     if (CLUSTER_IS_ATOMIC(c)) {
         cluster_info_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_info_resp, ctx);
+        cluster_enqueue_response(c, slot, cluster_info_resp, ctx);
     }
 
     efree(cmdstr.c);
@@ -2853,7 +2874,7 @@ PHP_METHOD(RedisCluster, client) {
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
         void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+        cluster_enqueue_response(c, slot, cb, ctx);
     }
 
     efree(cmd);
@@ -3056,7 +3077,7 @@ PHP_METHOD(RedisCluster, waitaof) {
     if (CLUSTER_IS_ATOMIC(c)) {
         cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+        cluster_enqueue_response(c, slot, cluster_variant_resp, ctx);
     }
 
     smart_string_free(&cmdstr);
@@ -3118,9 +3139,9 @@ PHP_METHOD(RedisCluster, ping) {
         }
     } else {
         if (arg != NULL) {
-            CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_bulk_resp, ctx);
+            cluster_enqueue_response(c, slot, cluster_bulk_resp, ctx);
         } else {
-            CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+            cluster_enqueue_response(c, slot, cluster_variant_resp, ctx);
         }
 
         RETURN_ZVAL(getThis(), 1, 0);
@@ -3243,7 +3264,7 @@ PHP_METHOD(RedisCluster, echo) {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
         void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_bulk_resp, ctx);
+        cluster_enqueue_response(c, slot, cluster_bulk_resp, ctx);
     }
 
     efree(cmd);
@@ -3296,7 +3317,7 @@ PHP_METHOD(RedisCluster, rawcommand) {
         cluster_variant_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
         void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_raw_resp, ctx);
+        cluster_enqueue_response(c, slot, cluster_variant_raw_resp, ctx);
     }
 
     efree(cmd);
