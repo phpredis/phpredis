@@ -4213,6 +4213,9 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
 
         /* Set our size response */
         *reply_info = atol(inbuf);
+    } else {
+        /* Always initialize to prevent UB */
+        *reply_info = 0;
     }
 
     /* Success! */

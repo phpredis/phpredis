@@ -2081,7 +2081,7 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
                                redisCluster *c, void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval z_tab, *z_chan, *z_flag;
+    zval z_tab = {0}, *z_chan, *z_flag;
     int pull = 0, argc = sctx->argc;
 
     efree(sctx);
@@ -2287,7 +2287,7 @@ static void
 cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                        zend_bool init_array, mbulk_cb cb, void *ctx)
 {
-    zval z_result;
+    zval z_result = {0};
 
     /* Abort if the reply isn't MULTIBULK or has an invalid length */
     if (c->reply_type != TYPE_MULTIBULK || c->reply_len < -1) {
@@ -3031,6 +3031,10 @@ static zend_string **get_valid_seeds(HashTable *input, uint32_t *nseeds) {
     /* Populate our return array */
     seeds = ecalloc(count, sizeof(*seeds));
     ZEND_HASH_FOREACH_STR_KEY(valid, zkey) {
+        /* Should not actually be possible but satisfy static analyzer */
+        if (zkey == NULL) {
+            zend_error_noreturn(E_ERROR, "Invalid seed key in valid seeds hash");
+        }
         seeds[idx++] = zend_string_copy(zkey);
     } ZEND_HASH_FOREACH_END();
 
