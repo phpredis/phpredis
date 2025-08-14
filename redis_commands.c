@@ -4583,7 +4583,7 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
     }
 
-    if ((argc = gopts.withcoord + gopts.withdist + gopts.withhash) > 0) {
+    if (gopts.withcoord + gopts.withdist + gopts.withhash > 0) {
         *ctx = PHPREDIS_CTX_PTR;
     }
 
