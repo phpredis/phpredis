@@ -43,6 +43,38 @@ zend_class_entry *redis_cluster_exception_ce;
 #include "redis_cluster_arginfo.h"
 #endif
 
+void
+cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                    redis_cmd_cb cmd_cb, cluster_cb resp_cb, int readonly)
+{
+    void *ctx = NULL;
+    int cmd_len;
+    short slot;
+    char *cmd;
+
+    c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
+
+    if (cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, &cmd_len, &slot,
+               &ctx) == FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    if (cluster_send_command(c, slot, cmd, cmd_len) < 0 || c->err != NULL) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    efree(cmd);
+
+    if (c->flags->mode == MULTI) {
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_cb, ctx);
+        RETURN_ZVAL(getThis(), 1, 0);
+    }
+
+    resp_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
+}
+
 PHP_MINIT_FUNCTION(redis_cluster)
 {
     redis_cluster_ce = register_class_RedisCluster();
@@ -3245,7 +3277,7 @@ PHP_METHOD(RedisCluster, command) {
 }
 
 PHP_METHOD(RedisCluster, copy) {
-    CLUSTER_PROCESS_CMD(copy, cluster_1_resp, 0)
+    CLUSTER_PROCESS_CMD(copy, cluster_1_resp, 0);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

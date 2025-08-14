@@ -31,6 +31,13 @@ int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len);
 /* Construct a script command */
 smart_string *redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args);
 
+typedef int (*redis_cmd_cb)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                            char **cmd, int *cmd_len, short *slot, void **ctx);
+
+typedef int (*redis_kw_cmd_cb)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                            char *kw, char **cmd, int *cmd_len, short *slot,
+                            void **ctx);
+
 /* Redis command generics.  Many commands share common prototypes meaning that
  * we can write one function to handle all of them.  For example, there are
  * many COMMAND key value commands, or COMMAND key commands. */

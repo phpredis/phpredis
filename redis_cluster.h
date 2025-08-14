@@ -2,6 +2,7 @@
 #define REDIS_CLUSTER_H
 
 #include "cluster_library.h"
+#include "redis_commands.h"
 #include <php.h>
 #include <stddef.h>
 
@@ -52,25 +53,12 @@
     c->flags->watching = 0; \
     c->flags->mode     = ATOMIC; \
 
-/* Simple 1-1 command -> response macro */
+void cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    redis_cmd_cb cmd_cb, cluster_cb resp_cb, int readonly);
+
 #define CLUSTER_PROCESS_CMD(cmdname, resp_func, readcmd) \
-    redisCluster *c = GET_CONTEXT(); \
-    c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
-    char *cmd; int cmd_len; short slot; void *ctx=NULL; \
-    if(redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,c->flags, &cmd, \
-                             &cmd_len, &slot, &ctx)==FAILURE) { \
-        RETURN_FALSE; \
-    } \
-    if(cluster_send_command(c,slot,cmd,cmd_len)<0 || c->err!=NULL) {\
-        efree(cmd); \
-        RETURN_FALSE; \
-    } \
-    efree(cmd); \
-    if(c->flags->mode == MULTI) { \
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
-        RETURN_ZVAL(getThis(), 1, 0); \
-    } \
-    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
+    cluster_process_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), \
+                        redis_##cmdname##_cmd, resp_func, readcmd)
 
 /* More generic processing, where only the keyword differs */
 #define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
