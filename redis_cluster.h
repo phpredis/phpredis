@@ -60,25 +60,12 @@ void cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     cluster_process_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), \
                         redis_##cmdname##_cmd, resp_func, readcmd)
 
-/* More generic processing, where only the keyword differs */
-#define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
-    redisCluster *c = GET_CONTEXT(); \
-    c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
-    char *cmd; int cmd_len; short slot; void *ctx=NULL; \
-    if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
-               &slot,&ctx)==FAILURE) { \
-        RETURN_FALSE; \
-    } \
-    if(cluster_send_command(c,slot,cmd,cmd_len)<0 || c->err!=NULL) { \
-        efree(cmd); \
-        RETURN_FALSE; \
-    } \
-    efree(cmd); \
-    if(c->flags->mode == MULTI) { \
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
-        RETURN_ZVAL(getThis(), 1, 0); \
-    } \
-    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
+void cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    const char *kw, redis_kw_cmd_cb cmd_cb, cluster_cb resp_cb, int readonly);
+
+#define CLUSTER_PROCESS_KW_CMD(kw, cmd_cb, resp_cb, readonly) \
+    cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), \
+                           kw, cmd_cb, resp_cb, readonly)
 
 extern zend_class_entry *redis_cluster_ce;
 extern zend_class_entry *redis_cluster_exception_ce;
