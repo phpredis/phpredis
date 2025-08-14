@@ -75,6 +75,40 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     resp_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
 }
 
+void
+cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                       const char *kw, redis_kw_cmd_cb cmd_cb, cluster_cb resp_cb,
+                       int readonly)
+{
+    void *ctx = NULL;
+    int cmd_len;
+    short slot;
+    char *cmd;
+
+    c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
+
+    /* TODO: Update kw commands to take a const char * */
+    if (cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, (char*)kw, &cmd, &cmd_len,
+               &slot, &ctx) == FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    if (cluster_send_command(c, slot, cmd, cmd_len) < 0 || c->err != NULL) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    efree(cmd);
+
+    if (c->flags->mode == MULTI) {
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_cb, ctx);
+        RETURN_ZVAL(getThis(), 1, 0);
+    }
+
+    resp_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
+}
+
 PHP_MINIT_FUNCTION(redis_cluster)
 {
     redis_cluster_ce = register_class_RedisCluster();
