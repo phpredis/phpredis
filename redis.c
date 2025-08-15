@@ -629,6 +629,39 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     return SUCCESS;
 }
 
+static void
+redis_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redis_cmd_cb cmd_cb,
+                  FailableResultCallback resp_cb)
+{
+    RedisSock *redis_sock;
+    void *ctx = NULL;
+    int cmd_len;
+    char *cmd;
+
+    redis_sock = redis_sock_get(getThis(), 0);
+    if (UNEXPECTED(redis_sock == NULL)) {
+        RETURN_FALSE;
+    }
+
+    if (UNEXPECTED(cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &cmd,
+                   &cmd_len, NULL, &ctx) == FAILURE))
+    {
+        RETURN_FALSE;
+    }
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+
+    if (IS_ATOMIC(redis_sock)) {
+        resp_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx);
+    } else {
+        REDIS_PROCESS_RESPONSE_CLOSURE(resp_cb, ctx);
+    }
+}
+
+#define REDIS_PROCESS_CMD(cmdname, resp_func) \
+    redis_process_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, \
+                      redis_##cmdname##_cmd, resp_func)
+
 /* {{{ proto long Redis::bitop(string op, string key, ...) */
 PHP_METHOD(Redis, bitop) {
     REDIS_PROCESS_CMD(bitop, redis_long_response);
@@ -1467,7 +1500,7 @@ PHP_METHOD(Redis, flushAll)
 /* {{{ proto mixed Redis::function(string op, mixed ...args) */
 PHP_METHOD(Redis, function)
 {
-    REDIS_PROCESS_CMD(function, redis_function_response)
+    REDIS_PROCESS_CMD(function, redis_function_response);
 }
 
 /* {{{ proto int Redis::dbSize() */
@@ -2806,7 +2839,7 @@ PHP_METHOD(Redis, command) {
 
 /* {{{ proto array Redis::copy(string $source, string $destination, array $options = null) */
 PHP_METHOD(Redis, copy) {
-    REDIS_PROCESS_CMD(copy, redis_1_response)
+    REDIS_PROCESS_CMD(copy, redis_1_response);
 }
 /* }}} */
 
