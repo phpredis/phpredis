@@ -64,6 +64,19 @@ cluster_enqueue_response(redisCluster *c, short slot, cluster_cb cb, void *ctx)
     }
 }
 
+static void cluster_free_queue(redisCluster *c) {
+    clusterFoldItem *item = c->multi_head, *tmp;
+
+    while (item) {
+        tmp = item->next;
+        efree(item);
+        item = tmp;
+    }
+
+    c->multi_head = NULL;
+    c->multi_curr = NULL;
+}
+
 void
 cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                     redis_cmd_cb cmd_cb, cluster_cb resp_cb, int readonly)
@@ -2187,7 +2200,7 @@ PHP_METHOD(RedisCluster, exec) {
                 CLUSTER_THROW_EXCEPTION("Error processing EXEC across the cluster", 0);
 
                 // Free our queue, reset MULTI state
-                CLUSTER_FREE_QUEUE(c);
+                cluster_free_queue(c);
                 CLUSTER_RESET_MULTI(c);
 
                 RETURN_FALSE;
@@ -2203,7 +2216,7 @@ PHP_METHOD(RedisCluster, exec) {
 
     // Free our callback queue, any enqueued distributed command context items
     // and reset our MULTI state.
-    CLUSTER_FREE_QUEUE(c);
+    cluster_free_queue(c);
     CLUSTER_RESET_MULTI(c);
 }
 
@@ -2220,7 +2233,7 @@ PHP_METHOD(RedisCluster, discard) {
         CLUSTER_RESET_MULTI(c);
     }
 
-    CLUSTER_FREE_QUEUE(c);
+    cluster_free_queue(c);
 
     RETURN_TRUE;
 }
