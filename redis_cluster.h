@@ -9,16 +9,6 @@
 /* Get attached object context */
 #define GET_CONTEXT() PHPREDIS_ZVAL_GET_OBJECT(redisCluster, getThis())
 
-/* Simple macro to free our enqueued callbacks after we EXEC */
-#define CLUSTER_FREE_QUEUE(c) \
-    clusterFoldItem *_item = c->multi_head, *_tmp; \
-    while(_item) { \
-        _tmp = _item->next; \
-        efree(_item); \
-        _item = _tmp; \
-    } \
-    c->multi_head = c->multi_curr = NULL; \
-
 /* Reset anything flagged as MULTI */
 #define CLUSTER_RESET_MULTI(c) \
     redisClusterNode *_node; \
