@@ -9,11 +9,6 @@
 /* Get attached object context */
 #define GET_CONTEXT() PHPREDIS_ZVAL_GET_OBJECT(redisCluster, getThis())
 
-/* Command building/processing is identical for every command */
-#define CLUSTER_BUILD_CMD(name, c, cmd, cmd_len, slot) \
-    redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, \
-                       &cmd_len, &slot)
-
 /* Simple macro to free our enqueued callbacks after we EXEC */
 #define CLUSTER_FREE_QUEUE(c) \
     clusterFoldItem *_item = c->multi_head, *_tmp; \
