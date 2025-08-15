@@ -77,6 +77,19 @@ static void cluster_free_queue(redisCluster *c) {
     c->multi_curr = NULL;
 }
 
+static void cluster_reset_multi(redisCluster *c) {
+    redisClusterNode *node;
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node == NULL)
+            break;
+        node->sock->watching = 0;
+        node->sock->mode = ATOMIC;
+    } ZEND_HASH_FOREACH_END();
+
+    c->flags->watching = 0;
+    c->flags->mode = ATOMIC;
+}
+
 void
 cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                     redis_cmd_cb cmd_cb, cluster_cb resp_cb, int readonly)
@@ -2201,7 +2214,7 @@ PHP_METHOD(RedisCluster, exec) {
 
                 // Free our queue, reset MULTI state
                 cluster_free_queue(c);
-                CLUSTER_RESET_MULTI(c);
+                cluster_reset_multi(c);
 
                 RETURN_FALSE;
             }
@@ -2217,7 +2230,7 @@ PHP_METHOD(RedisCluster, exec) {
     // Free our callback queue, any enqueued distributed command context items
     // and reset our MULTI state.
     cluster_free_queue(c);
-    CLUSTER_RESET_MULTI(c);
+    cluster_reset_multi(c);
 }
 
 /* {{{ proto bool RedisCluster::discard() */
@@ -2230,7 +2243,7 @@ PHP_METHOD(RedisCluster, discard) {
     }
 
     if (cluster_abort_exec(c) < 0) {
-        CLUSTER_RESET_MULTI(c);
+        cluster_reset_multi(c);
     }
 
     cluster_free_queue(c);

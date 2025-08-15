@@ -9,17 +9,6 @@
 /* Get attached object context */
 #define GET_CONTEXT() PHPREDIS_ZVAL_GET_OBJECT(redisCluster, getThis())
 
-/* Reset anything flagged as MULTI */
-#define CLUSTER_RESET_MULTI(c) \
-    redisClusterNode *_node; \
-    ZEND_HASH_FOREACH_PTR(c->nodes, _node) { \
-        if (_node == NULL) break; \
-        _node->sock->watching = 0; \
-        _node->sock->mode = ATOMIC; \
-    } ZEND_HASH_FOREACH_END(); \
-    c->flags->watching = 0; \
-    c->flags->mode     = ATOMIC; \
-
 void cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     redis_cmd_cb cmd_cb, cluster_cb resp_cb, int readonly);
 
