@@ -222,7 +222,7 @@ typedef enum {
 
 /* Process a command but with a specific command building function
  * and keyword which is passed to us*/
-#define REDIS_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
+#define REDIS_PROCESS_KW_CMD_OLD(kw, cmdfunc, resp_func) \
     RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
     if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL || \
        cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd, \

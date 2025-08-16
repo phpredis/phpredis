@@ -662,6 +662,34 @@ redis_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redis_cmd_cb cmd_cb,
     redis_process_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, \
                       redis_##cmdname##_cmd, resp_func)
 
+void
+redis_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
+                     redis_kw_cmd_cb cmd_cb, FailableResultCallback resp_cb,
+                     void *ctx)
+{
+    RedisSock *redis_sock;
+    int cmd_len;
+    char *cmd;
+
+    redis_sock = redis_sock_get(getThis(), 0);
+    if (UNEXPECTED(redis_sock == NULL)) {
+        RETURN_FALSE;
+    }
+
+    if (UNEXPECTED(cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, (char*)kw, &cmd,
+                   &cmd_len, NULL, &ctx) == FAILURE))
+    {
+        RETURN_FALSE;
+    }
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    if (IS_ATOMIC(redis_sock)) {
+        resp_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx);
+    } else {
+        REDIS_PROCESS_RESPONSE_CLOSURE(resp_cb, ctx);
+    }
+}
+
 /* {{{ proto long Redis::bitop(string op, string key, ...) */
 PHP_METHOD(Redis, bitop) {
     REDIS_PROCESS_CMD(bitop, redis_long_response);
