@@ -38,6 +38,16 @@ typedef int (*redis_kw_cmd_cb)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
                                char *kw, char **cmd, int *cmd_len, short *slot,
                                void **ctx);
 
+/* Process a command but with a specific command building function
+ * and keyword which is passed to us*/
+void redis_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
+    redis_kw_cmd_cb cmd_cb, FailableResultCallback resp_cb,
+    void *ctx);
+
+#define REDIS_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
+    redis_process_kw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, kw, \
+                         cmdfunc, resp_func, NULL)
+
 /* Redis command generics.  Many commands share common prototypes meaning that
  * we can write one function to handle all of them.  For example, there are
  * many COMMAND key value commands, or COMMAND key commands. */
