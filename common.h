@@ -220,22 +220,6 @@ typedef enum {
     REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL) \
 }
 
-/* Process a command but with a specific command building function
- * and keyword which is passed to us*/
-#define REDIS_PROCESS_KW_CMD_OLD(kw, cmdfunc, resp_func) \
-    RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
-    if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL || \
-       cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd, \
-               &cmd_len, NULL, &ctx)==FAILURE) { \
-            RETURN_FALSE; \
-    } \
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
-    if (IS_ATOMIC(redis_sock)) { \
-        resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
-    } else { \
-        REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
-    }
-
 /* Case sensitive compare against compile-time static string */
 #define REDIS_STRCMP_STATIC(s, len, sstr) \
     (len == sizeof(sstr) - 1 && !strncmp(s, sstr, len))
