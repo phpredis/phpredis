@@ -187,25 +187,12 @@ typedef enum {
 #define IS_MULTI(redis_sock) (redis_sock->mode & MULTI)
 #define IS_PIPELINE(redis_sock) (redis_sock->mode & PIPELINE)
 
-#define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
-    smart_string_appendl(&redis_sock->pipeline_cmd, cmd, cmd_len); \
-} while (0)
-
 #define REDIS_SAVE_CALLBACK(callback, closure_context) do { \
     fold_item *fi = redis_add_reply_callback(redis_sock); \
     fi->fun = callback; \
     fi->flags = redis_sock->flags; \
     fi->ctx = closure_context; \
 } while (0)
-
-#define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) \
-    if (IS_PIPELINE(redis_sock)) { \
-        PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
-    } else if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
-        efree(cmd); \
-        RETURN_FALSE; \
-    } \
-    efree(cmd);
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
     if (!IS_PIPELINE(redis_sock)) { \
