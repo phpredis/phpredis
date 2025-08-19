@@ -203,10 +203,6 @@ typedef enum {
     REDIS_SAVE_CALLBACK(function, closure_context); \
     RETURN_ZVAL(getThis(), 1, 0); \
 
-#define REDIS_PROCESS_RESPONSE(function) else { \
-    REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL) \
-}
-
 /* Case sensitive compare against compile-time static string */
 #define REDIS_STRCMP_STATIC(s, len, sstr) \
     (len == sizeof(sstr) - 1 && !strncmp(s, sstr, len))
