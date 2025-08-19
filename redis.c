@@ -1424,8 +1424,9 @@ generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, int desc, int alpha)
         {
             RETURN_FALSE;
         }
+    } else {
+        REDIS_PROCESS_RESPONSE_CLOSURE(redis_read_variant_reply, NULL);
     }
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
 /* {{{ proto array Redis::sortAsc(string key, string pattern, string get,
@@ -2883,9 +2884,9 @@ PHP_METHOD(Redis, rawcommand) {
     if (IS_ATOMIC(redis_sock)) {
         redis_read_raw_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                      redis_sock,NULL,NULL);
+    } else {
+        REDIS_PROCESS_RESPONSE_CLOSURE(redis_read_variant_reply, NULL);
     }
-
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 /* }}} */
 
