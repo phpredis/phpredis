@@ -1970,7 +1970,7 @@ PHP_REDIS_API void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                              void *ctx)
 {
-    subscribeContext *sctx = (subscribeContext*)ctx;
+    subscribeContext *sctx = ctx;
     zval z_tab, *z_tmp;
     int pull = 0;
 
@@ -2080,7 +2080,7 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
 PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
                                redisCluster *c, void *ctx)
 {
-    subscribeContext *sctx = (subscribeContext*)ctx;
+    subscribeContext *sctx = ctx;
     zval z_tab = {0}, *z_chan, *z_flag;
     int pull = 0, argc = sctx->argc;
 
@@ -2631,7 +2631,7 @@ PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
                                     redisCluster *c, void *ctx)
 {
-    clusterMultiCtx *mctx = (clusterMultiCtx*)ctx;
+    clusterMultiCtx *mctx = ctx;
 
     /* Protect against an invalid response type, -1 response length, and failure
      * to consume the responses. */
@@ -2667,7 +2667,7 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                 void *ctx)
 {
-    clusterMultiCtx *mctx = (clusterMultiCtx*)ctx;
+    clusterMultiCtx *mctx = ctx;
     int real_argc = mctx->count/2;
 
     // Protect against an invalid response type
@@ -2703,7 +2703,7 @@ PHP_REDIS_API void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluste
 PHP_REDIS_API void cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                              void *ctx)
 {
-    clusterMultiCtx *mctx = (clusterMultiCtx*)ctx;
+    clusterMultiCtx *mctx = ctx;
 
     // If we get an invalid reply, inform the client
     if (c->reply_type != TYPE_INT) {
@@ -2732,7 +2732,7 @@ PHP_REDIS_API void cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
 PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                               void *ctx)
 {
-    clusterMultiCtx *mctx = (clusterMultiCtx*)ctx;
+    clusterMultiCtx *mctx = ctx;
 
     // If we get an invalid reply type something very wrong has happened,
     // and we have to abort.

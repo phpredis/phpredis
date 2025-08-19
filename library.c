@@ -509,7 +509,7 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
 {
     HashTable *subs;
     subscribeCallback *cb;
-    subscribeContext *sctx = (subscribeContext*)ctx;
+    subscribeContext *sctx = ctx;
     zval *z_tmp, z_resp;
     int i;
 
@@ -663,7 +663,7 @@ PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
                                       RedisSock *redis_sock, zval *z_tab,
                                       void *ctx)
 {
-    subscribeContext *sctx = (subscribeContext*)ctx;
+    subscribeContext *sctx = ctx;
     zval *z_chan, z_ret, z_resp;
     int i;
 

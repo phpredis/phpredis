@@ -437,7 +437,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
 
     if (CLUSTER_IS_ATOMIC(c)) {
         // Process response now
-        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, (void*)ctx);
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
     } else {
         cluster_enqueue_response(c, slot, cb, ctx);
     }
