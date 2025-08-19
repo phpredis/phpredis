@@ -1622,7 +1622,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Push values out
     *cmd_len = cmdstr.len;
     *cmd     = cmdstr.c;
-    *ctx     = (void*)sctx;
+    *ctx     = sctx;
 
     if (shardslot != REDIS_CLUSTER_SLOTS) {
         if (slot) *slot = shardslot;
