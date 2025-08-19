@@ -244,8 +244,8 @@ typedef struct {
     int                 max_retries;
     struct RedisBackoff backoff;
     redis_sock_status   status;
-    int                 persistent;
-    int                 watching;
+    zend_bool           persistent;
+    zend_bool           watching;
     zend_string         *persistent_id;
     HashTable           *subs[REDIS_SUBS_BUCKETS];
     redis_serializer    serializer;
@@ -264,11 +264,11 @@ typedef struct {
     zend_string         *err;
     int                 scan;
 
-    int                 readonly;
-    int                 reply_literal;
-    int                 null_mbulk_as_null;
-    int                 tcp_keepalive;
-    int                 sentinel;
+    zend_bool           readonly;
+    zend_bool           reply_literal;
+    zend_bool           null_mbulk_as_null;
+    zend_bool           tcp_keepalive;
+    zend_bool           sentinel;
     size_t              txBytes;
     size_t              rxBytes;
     uint8_t             flags;
