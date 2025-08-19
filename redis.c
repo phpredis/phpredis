@@ -634,6 +634,27 @@ pipeline_enqueue_command(RedisSock *redis_sock, const char *cmd, int cmd_len) {
     smart_string_appendl(&redis_sock->pipeline_cmd, cmd, cmd_len);
 }
 
+static void
+redis_save_callback(RedisSock *redis_sock, FailableResultCallback cb, void *ctx)
+{
+    fold_item *fi;
+
+    fi = redis_add_reply_callback(redis_sock);
+    fi->fun = cb;
+    fi->flags = redis_sock->flags;
+    fi->ctx = ctx;
+}
+
+#define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
+    if (!IS_PIPELINE(redis_sock)) { \
+        if (redis_response_enqueued(redis_sock) != SUCCESS) { \
+            RETURN_FALSE; \
+        } \
+    } \
+    redis_save_callback(redis_sock, function, closure_context); \
+    RETURN_ZVAL(getThis(), 1, 0); \
+
+
 static int redis_process_request(RedisSock *redis_sock, char *cmd, int cmdlen) {
     int res = SUCCESS;
 
@@ -2080,7 +2101,7 @@ PHP_METHOD(Redis, multi)
         if (!IS_MULTI(redis_sock)) {
             if (IS_PIPELINE(redis_sock)) {
                 pipeline_enqueue_command(redis_sock, ZEND_STRL(RESP_MULTI_CMD));
-                REDIS_SAVE_CALLBACK(NULL, NULL);
+                redis_save_callback(redis_sock, NULL, NULL);
                 redis_sock->mode |= MULTI;
             } else {
                 if (redis_sock_write(redis_sock, ZEND_STRL(RESP_MULTI_CMD)) < 0) {
@@ -2180,7 +2201,7 @@ PHP_METHOD(Redis, exec)
     if (IS_MULTI(redis_sock)) {
         if (IS_PIPELINE(redis_sock)) {
             pipeline_enqueue_command(redis_sock, ZEND_STRL(RESP_EXEC_CMD));
-            REDIS_SAVE_CALLBACK(NULL, NULL);
+            redis_save_callback(redis_sock, NULL, NULL);
             redis_sock->mode &= ~MULTI;
             RETURN_ZVAL(getThis(), 1, 0);
         }

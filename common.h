@@ -187,22 +187,6 @@ typedef enum {
 #define IS_MULTI(redis_sock) (redis_sock->mode & MULTI)
 #define IS_PIPELINE(redis_sock) (redis_sock->mode & PIPELINE)
 
-#define REDIS_SAVE_CALLBACK(callback, closure_context) do { \
-    fold_item *fi = redis_add_reply_callback(redis_sock); \
-    fi->fun = callback; \
-    fi->flags = redis_sock->flags; \
-    fi->ctx = closure_context; \
-} while (0)
-
-#define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
-    if (!IS_PIPELINE(redis_sock)) { \
-        if (redis_response_enqueued(redis_sock) != SUCCESS) { \
-            RETURN_FALSE; \
-        } \
-    } \
-    REDIS_SAVE_CALLBACK(function, closure_context); \
-    RETURN_ZVAL(getThis(), 1, 0); \
-
 /* Case sensitive compare against compile-time static string */
 #define REDIS_STRCMP_STATIC(s, len, sstr) \
     (len == sizeof(sstr) - 1 && !strncmp(s, sstr, len))
