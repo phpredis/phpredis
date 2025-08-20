@@ -2407,7 +2407,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         (keep_ttl != 0) + get;
 
     /* Initial SET <key> <value> */
-    redis_cmd_init_sstr(&cmdstr, argc, "SET", 3);
+    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("SET"));
     redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
     redis_cmd_append_sstr_zval(&cmdstr, z_value, redis_sock);
 
