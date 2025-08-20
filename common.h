@@ -276,8 +276,10 @@ typedef struct {
 /* }}} */
 
 /* Redis response handler function callback prototype */
-typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
-typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock*, zval*, void*);
+typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
+    RedisSock *redis_sock, zval *z_tab, void *ctx);
+typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
+    RedisSock*, zval*, void*);
 
 typedef struct fold_item {
     FailableResultCallback fun;
