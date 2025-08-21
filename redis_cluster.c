@@ -81,7 +81,7 @@ static void cluster_reset_multi(redisCluster *c) {
     redisClusterNode *node;
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
         if (node == NULL)
-            break;
+            continue;
         node->sock->watching = 0;
         node->sock->mode = ATOMIC;
     } ZEND_HASH_FOREACH_END();
