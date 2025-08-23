@@ -1093,6 +1093,16 @@ class Redis_Test extends TestSuite {
         $this->genericDelUnlink('DEL');
     }
 
+    public function testDelIfEq() {
+        if ( ! $this->haveCommand('DELIFEQ'))
+            $this->markTestSkipped();
+
+        $this->assertTrue($this->redis->set('key', 'value'));
+        $this->assertEquals(0, $this->redis->delifeq('key', 'notvalue'));
+        $this->assertEquals(1, $this->redis->delifeq('key', 'value'));
+        $this->assertEquals(0, $this->redis->exists('key'));
+    }
+
     public function testUnlink() {
         if (version_compare($this->version, '4.0.0') < 0)
             $this->markTestSkipped();

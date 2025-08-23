@@ -988,6 +988,16 @@ class Redis {
     public function del(array|string $key, string ...$other_keys): Redis|int|false;
 
     /**
+     * Delete a key if it's equal to the specified value. This command is
+     * specific to Valkey >= 9.0
+     *
+     * @param string $key   The key to delete
+     * @param mixed  $value The value to compare against the key's value.
+     * @return Redis|int|false Returns 1 if the key was deleted, 0 if it was not.
+     */
+    public function delifeq(string $key, mixed $value): Redis|int|false;
+
+    /**
      * @deprecated
      * @alias Redis::del
      */

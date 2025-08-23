@@ -988,6 +988,10 @@ PHP_METHOD(Redis, del) {
 }
 /* }}} */
 
+PHP_METHOD(Redis, delifeq) {
+    REDIS_PROCESS_KW_CMD("DELIFEQ", redis_kv_cmd, redis_long_response);
+}
+
 /* {{{ proto long Redis::unlink(string $key1, string $key2 [, string $key3...]) }}}
  * {{{ proto long Redis::unlink(array $keys) */
 PHP_METHOD(Redis, unlink)
