@@ -800,6 +800,10 @@ PHP_METHOD(RedisCluster, del) {
     cluster_generic_delete(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DEL", sizeof("DEL") - 1);
 }
 
+PHP_METHOD(RedisCluster, delifeq) {
+    CLUSTER_PROCESS_KW_CMD("DELIFEQ", redis_kv_cmd, cluster_long_resp, 0);
+}
+
 /* {{{ proto array RedisCluster::unlink(string key1, string key2, ... keyN) */
 PHP_METHOD(RedisCluster, unlink) {
     cluster_generic_delete(INTERNAL_FUNCTION_PARAM_PASSTHRU, "UNLINK", sizeof("UNLINK") - 1);
