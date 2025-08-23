@@ -137,6 +137,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->version  = $info['redis_version'] ?? '0.0.0';
         $this->is_keydb = $this->detectKeyDB($info);
         $this->is_valkey = $this->detectValkey($info);
+        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
     }
 
     private function findCliExe() {

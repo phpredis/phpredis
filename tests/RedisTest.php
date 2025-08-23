@@ -77,6 +77,7 @@ class Redis_Test extends TestSuite {
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
         $this->is_keydb = $this->detectKeyDB($info);
         $this->is_valkey = $this->detectValKey($info);
+        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
     }
 
     protected function haveCommand(string $cmd): bool {
@@ -88,6 +89,10 @@ class Redis_Test extends TestSuite {
 
     protected function minVersionCheck($version) {
         return version_compare($this->version, $version) >= 0;
+    }
+
+    protected function minValkeyVersionCheck($version) {
+        return $this->is_valkey && version_compare($this->valkey_version, $version) >= 0;
     }
 
     protected function mstime() {
@@ -6901,6 +6906,31 @@ class Redis_Test extends TestSuite {
             $this->assertArrayKey($v['Chico'], 2, 'is_array');
             return true;
         });
+    }
+
+    public function testGeoSearchByPolygon() {
+        if ( ! $this->minValkeyVersionCheck('9.0.0'))
+            $this->markTestSkipped();
+
+        $this->addCities('ca:cities');
+
+        $res = $this->redis->geosearch('ca:cities', '', [
+            -121.90, 39.65, -121.77, 39.65, -121.77, 39.80, -121.90, 39.80
+        ], '');
+
+        $this->assertEquals(['Chico'], $res);
+    }
+
+    public function testGeoSearchStoreByPolygon() {
+        if ( ! $this->minValkeyVersionCheck('9.0.0'))
+            $this->markTestSkipped();
+
+        $this->addCities('ca:cities');
+        $this->assertEquals(1, $this->redis->geosearchstore('{gk}dst', 'ca:cities', '', [
+            -121.90, 39.65, -121.77, 39.65, -121.77, 39.80, -121.90, 39.80
+        ], ''));
+
+        $this->assertEquals(['Chico'], $this->redis->geosearch('{gk}dst', 'Chico', 1, 'm'));
     }
 
     public function testGeoSearchStore() {

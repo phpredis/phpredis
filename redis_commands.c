@@ -4475,37 +4475,55 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key, *unit;
-    int argc = 2;
+    int argc = 0;
     size_t keylen, unitlen;
     geoOptions gopts = {0};
     smart_string cmdstr = {0};
     zval *position, *shape, *opts = NULL, *z_ele;
     zend_string *zkey, *zstr;
+    zend_bool bypolygon = 0;
+    HashTable *ht;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "szzs|a",
-                              &key, &keylen, &position, &shape,
-                              &unit, &unitlen, &opts) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "szzs|a", &key, &keylen,
+                              &position, &shape, &unit, &unitlen,
+                              &opts) == FAILURE)
     {
-        return FAILURE;
-    }
-
-    if (Z_TYPE_P(position) == IS_STRING && Z_STRLEN_P(position) > 0) {
-        argc += 2;
-    } else if (Z_TYPE_P(position) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(position)) == 2) {
-        argc += 3;
-    } else {
-        php_error_docref(NULL, E_WARNING, "Invalid position");
         return FAILURE;
     }
 
     if (Z_TYPE_P(shape) == IS_LONG || Z_TYPE_P(shape) == IS_DOUBLE) {
         argc += 2;
-    } else if (Z_TYPE_P(shape) == IS_ARRAY) {
+    } else if (Z_TYPE_P(shape) == IS_ARRAY &&
+               zend_hash_num_elements(Z_ARRVAL_P(shape)) == 2)
+    {
+        // BYBOX
         argc += 3;
+    } else if (Z_TYPE_P(shape) == IS_ARRAY &&
+               zend_hash_num_elements(Z_ARRVAL_P(shape)) >= 6 &&
+               zend_hash_num_elements(Z_ARRVAL_P(shape)) % 2 == 0)
+    {
+        // BYPOLYGON N verticies
+        argc += 2 + zend_hash_num_elements(Z_ARRVAL_P(shape));
+        bypolygon = 1;
     } else {
         php_error_docref(NULL, E_WARNING, "Invalid shape dimensions");
         return FAILURE;
     }
+
+    if (!bypolygon) {
+        if (Z_TYPE_P(position) == IS_STRING && Z_STRLEN_P(position) > 0) {
+            argc += 2;
+        } else if (Z_TYPE_P(position) == IS_ARRAY &&
+                   zend_hash_num_elements(Z_ARRVAL_P(position)) == 2)
+        {
+            argc += 3;
+        } else {
+            php_error_docref(NULL, E_WARNING, "Invalid position");
+            return FAILURE;
+        }
+    }
+
+    argc += bypolygon ? 1 : 2;
 
     /* Attempt to parse our options array */
     if (opts != NULL) {
@@ -4539,20 +4557,29 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEOSEARCH");
     redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
 
-    if (Z_TYPE_P(position) == IS_ARRAY) {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMLONLAT");
-        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(position), z_ele) {
-            ZVAL_DEREF(z_ele);
-            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
-        } ZEND_HASH_FOREACH_END();
-    } else {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMMEMBER");
-        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(position), Z_STRLEN_P(position));
+    if (!bypolygon) {
+        if (Z_TYPE_P(position) == IS_ARRAY) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMLONLAT");
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(position), z_ele) {
+                ZVAL_DEREF(z_ele);
+                redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
+            } ZEND_HASH_FOREACH_END();
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMMEMBER");
+            redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(position), Z_STRLEN_P(position));
+        }
     }
 
     if (Z_TYPE_P(shape) == IS_ARRAY) {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYBOX");
-        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(shape), z_ele) {
+        ht = Z_ARRVAL_P(shape);
+        if (bypolygon) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYPOLYGON");
+            redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(ht) / 2);
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYBOX");
+        }
+
+        ZEND_HASH_FOREACH_VAL(ht, z_ele) {
             ZVAL_DEREF(z_ele);
             redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
         } ZEND_HASH_FOREACH_END();
@@ -4560,7 +4587,10 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYRADIUS");
         redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(shape));
     }
-    redis_cmd_append_sstr(&cmdstr, unit, unitlen);
+
+    if (!bypolygon) {
+        redis_cmd_append_sstr(&cmdstr, unit, unitlen);
+    }
 
     /* Append optional arguments */
     if (gopts.withcoord) REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHCOORD");
@@ -4597,14 +4627,16 @@ int
 redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    int argc = 3;
     char *dest, *src, *unit;
     size_t destlen, srclen, unitlen;
     geoOptions gopts = {0};
     smart_string cmdstr = {0};
     zval *position, *shape, *opts = NULL, *z_ele;
+    zend_bool bypolygon = 0;
     zend_string *zkey;
+    HashTable *ht;
     short s2 = 0;
+    int argc = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "sszzs|a",
                               &dest, &destlen, &src, &srclen, &position, &shape,
@@ -4613,22 +4645,36 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (Z_TYPE_P(position) == IS_STRING && Z_STRLEN_P(position) > 0) {
-        argc += 2;
-    } else if (Z_TYPE_P(position) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(position)) == 2) {
-        argc += 3;
-    } else {
-        php_error_docref(NULL, E_WARNING, "Invalid position");
-        return FAILURE;
-    }
-
     if (Z_TYPE_P(shape) == IS_LONG || Z_TYPE_P(shape) == IS_DOUBLE) {
         argc += 2;
-    } else if (Z_TYPE_P(shape) == IS_ARRAY) {
+    } else if (Z_TYPE_P(shape) == IS_ARRAY &&
+               zend_hash_num_elements(Z_ARRVAL_P(shape)) == 2)
+    {
         argc += 3;
+    } else if (Z_TYPE_P(shape) == IS_ARRAY &&
+               zend_hash_num_elements(Z_ARRVAL_P(shape)) >= 6 &&
+               zend_hash_num_elements(Z_ARRVAL_P(shape)) % 2 == 0)
+    {
+        argc += 2 + zend_hash_num_elements(Z_ARRVAL_P(shape));
+        bypolygon = 1;
     } else {
         php_error_docref(NULL, E_WARNING, "Invalid shape dimensions");
         return FAILURE;
+    }
+
+    argc += bypolygon ? 2 : 3;
+
+    if (!bypolygon) {
+        if (Z_TYPE_P(position) == IS_STRING && Z_STRLEN_P(position) > 0) {
+            argc += 2;
+        } else if (Z_TYPE_P(position) == IS_ARRAY &&
+                   zend_hash_num_elements(Z_ARRVAL_P(position)) == 2)
+        {
+            argc += 3;
+        } else {
+            php_error_docref(NULL, E_WARNING, "Invalid position");
+            return FAILURE;
+        }
     }
 
     /* Attempt to parse our options array */
@@ -4671,20 +4717,28 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (Z_TYPE_P(position) == IS_ARRAY) {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMLONLAT");
-        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(position), z_ele) {
-            ZVAL_DEREF(z_ele);
-            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
-        } ZEND_HASH_FOREACH_END();
-    } else {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMMEMBER");
-        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(position), Z_STRLEN_P(position));
+    if (!bypolygon) {
+        if (Z_TYPE_P(position) == IS_ARRAY) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMLONLAT");
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(position), z_ele) {
+                ZVAL_DEREF(z_ele);
+                redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
+            } ZEND_HASH_FOREACH_END();
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMMEMBER");
+            redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(position), Z_STRLEN_P(position));
+        }
     }
 
     if (Z_TYPE_P(shape) == IS_ARRAY) {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYBOX");
-        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(shape), z_ele) {
+        ht = Z_ARRVAL_P(shape);
+        if (bypolygon) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYPOLYGON");
+            redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(ht) / 2);
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYBOX");
+        }
+        ZEND_HASH_FOREACH_VAL(ht, z_ele) {
             ZVAL_DEREF(z_ele);
             redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
         } ZEND_HASH_FOREACH_END();
@@ -4692,7 +4746,10 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYRADIUS");
         redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(shape));
     }
-    redis_cmd_append_sstr(&cmdstr, unit, unitlen);
+
+    if (!bypolygon) {
+        redis_cmd_append_sstr(&cmdstr, unit, unitlen);
+    }
 
     /* Append sort if it's not GEO_NONE */
     if (gopts.sort == SORT_ASC) {
