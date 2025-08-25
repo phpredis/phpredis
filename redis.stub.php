@@ -4104,13 +4104,14 @@ class Redis {
      * @param string $group    The user group we want to see pending messages from.
      * @param string $start    The minimum ID to consider.
      * @param string $string   The maximum ID to consider.
-     * @param string $count    Optional maximum number of messages to return.
+     * @param int $count       Optional maximum number of messages to return.
      * @param string $consumer If provided, limit the returned messages to a specific consumer.
+     * @param int $idle        Optional idle-time in milliseconds to filter pending messages.
      *
      * @return Redis|array|false The pending messages belonging to the stream or false on failure.
      *
      */
-    public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null): Redis|array|false;
+    public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null, int $idle = 0): Redis|array|false;
 
     /**
      * Get a range of entries from a STREAM key.
