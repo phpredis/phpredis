@@ -658,6 +658,8 @@ class Redis_Cluster_Test extends Redis_Test {
                 return "hash";
             case Redis::REDIS_STREAM:
                 return "stream";
+            case Redis::REDIS_VECTORSET:
+                return "vectorset";
             default:
                 return "unknown($key_type)";
         }
