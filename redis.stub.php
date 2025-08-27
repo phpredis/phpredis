@@ -66,6 +66,14 @@ class Redis {
     /**
      *
      * @var int
+     * @cvalue REDIS_VECTORSET
+     *
+     */
+    public const REDIS_VECTORSET = UNKNOWN;
+
+    /**
+     *
+     * @var int
      * @cvalue ATOMIC
      *
      */
@@ -3733,6 +3741,7 @@ class Redis {
      *     Redis::REDIS_ZSET
      *     Redis::REDIS_HASH
      *     Redis::REDIS_STREAM
+     *     Redis::REDIS_VECTORSET
      *
      * @example
      * foreach ($redis->keys('*') as $key) {

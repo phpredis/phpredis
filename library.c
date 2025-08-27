@@ -1239,6 +1239,8 @@ PHP_REDIS_API int redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
         l = REDIS_HASH;
     } else if (redis_strncmp(response, ZEND_STRL("+stream")) == 0) {
         l = REDIS_STREAM;
+    } else if (redis_strncmp(response, ZEND_STRL("+vectorset")) == 0) {
+        l = REDIS_VECTORSET;
     } else {
         l = REDIS_NOT_FOUND;
     }

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d5f56120b09dc6a8240d87efa53dc5749c031f38 */
+ * Stub hash: e1643951a097b7a2f1bb3c0b6afd2c29f746a0d6 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1855,6 +1855,12 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string *const_REDIS_STREAM_name = zend_string_init_interned("REDIS_STREAM", sizeof("REDIS_STREAM") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_REDIS_STREAM_name, &const_REDIS_STREAM_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_REDIS_STREAM_name);
+
+	zval const_REDIS_VECTORSET_value;
+	ZVAL_LONG(&const_REDIS_VECTORSET_value, REDIS_VECTORSET);
+	zend_string *const_REDIS_VECTORSET_name = zend_string_init_interned("REDIS_VECTORSET", sizeof("REDIS_VECTORSET") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_REDIS_VECTORSET_name, &const_REDIS_VECTORSET_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_REDIS_VECTORSET_name);
 
 	zval const_ATOMIC_value;
 	ZVAL_LONG(&const_ATOMIC_value, ATOMIC);

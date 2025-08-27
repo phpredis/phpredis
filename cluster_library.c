@@ -1948,7 +1948,7 @@ PHP_REDIS_API void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 
 /* TYPE response handler */
 PHP_REDIS_API void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                              void *ctx)
+                                     void *ctx)
 {
     // Make sure we got the right kind of response
     if (c->reply_type != TYPE_LINE) {
@@ -1968,7 +1968,10 @@ PHP_REDIS_API void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
         CLUSTER_RETURN_LONG(c, REDIS_ZSET);
     } else if (redis_strncmp(c->line_reply, ZEND_STRL("stream")) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_STREAM);
+    } else if (redis_strncmp(c->line_reply, ZEND_STRL("vectorset")) == 0) {
+        CLUSTER_RETURN_LONG(c, REDIS_VECTORSET);
     } else {
+
         CLUSTER_RETURN_LONG(c, REDIS_NOT_FOUND);
     }
 }

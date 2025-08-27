@@ -1155,10 +1155,15 @@ class Redis_Test extends TestSuite {
             $this->assertEquals(Redis::REDIS_STREAM, $this->redis->type('stream'));
         }
 
+        if ($this->haveCommand('vadd')) {
+            $this->redis->del('vset');
+            $this->assertEquals(1, $this->redis->vadd('vset', [1.5, 2.5], 'foo'));
+            $this->assertEquals(Redis::REDIS_VECTORSET, $this->redis->type('vset'));
+        }
+
         // None
         $this->redis->del('keyNotExists');
         $this->assertEquals(Redis::REDIS_NOT_FOUND, $this->redis->type('keyNotExists'));
-
     }
 
     public function testStr() {
