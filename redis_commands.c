@@ -1295,6 +1295,7 @@ int redis_replicaof_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char *kw, char **cmd, int *cmd_len, short *slot,
                         void **ctx)
 {
+    smart_string cmdstr = {0};
     zend_string *host = NULL;
     zend_long port = 6379;
 
@@ -1309,11 +1310,18 @@ int redis_replicaof_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
+    redis_cmd_init_sstr(&cmdstr, 2, kw, strlen(kw));
+
     if (ZEND_NUM_ARGS() == 2) {
-        *cmd_len = REDIS_SPPRINTF(cmd, kw, "Sd", host, (int)port);
+        redis_cmd_append_sstr_zstr(&cmdstr, host);
+        redis_cmd_append_sstr_long(&cmdstr, port);
     } else {
-        *cmd_len = REDIS_SPPRINTF(cmd, kw, "ss", ZEND_STRL("NO"), ZEND_STRL("ONE"));
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NO");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ONE");
     }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
 
     return SUCCESS;
 }
