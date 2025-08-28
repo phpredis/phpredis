@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 0f01437681bc6df1d6e2b39e6a0c7c5c77f6237e */
+ * Stub hash: 7ac98647c48842c7a53249001d0600763f375305 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -818,6 +818,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_xpending, 0, 0, 2)
 	ZEND_ARG_INFO(0, end)
 	ZEND_ARG_INFO(0, count)
 	ZEND_ARG_INFO(0, consumer)
+	ZEND_ARG_INFO(0, idle)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_xrange, 0, 0, 3)

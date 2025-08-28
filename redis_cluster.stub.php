@@ -1118,7 +1118,7 @@ class RedisCluster {
     /**
      * @see Redis::xpending
      */
-    public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null): RedisCluster|array|false;
+    public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null, int $idle = 0): RedisCluster|array|false;
 
     /**
      * @see Redis::xrange
