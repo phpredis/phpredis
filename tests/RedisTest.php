@@ -7754,6 +7754,17 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(1, $this->redis->del('v'));
     }
 
+    public function testVIsMember() {
+        if ( ! $this->minVersionCheck('8.0'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('v'));
+        $this->assertEquals(1, $this->redis->vadd('v', [0.5, 1.0], 'exists'));
+
+        $this->assertEquals(1, $this->redis->vismember('v', 'exists'));
+        $this->assertEquals(0, $this->redis->vismember('v', 'doesnotexist'));
+    }
+
     public function testVEmb() {
         if ( ! $this->minVersionCheck('8.0'))
             $this->markTestSkipped();

@@ -3200,6 +3200,10 @@ PHP_METHOD(RedisCluster, vinfo) {
     CLUSTER_PROCESS_KW_CMD("VINFO", redis_key_cmd, cluster_vinfo_resp, 1);
 }
 
+PHP_METHOD(RedisCluster, vismember) {
+    CLUSTER_PROCESS_KW_CMD("VISMEMBER", redis_kv_cmd, cluster_1_resp, 1);
+}
+
 PHP_METHOD(RedisCluster, vemb) {
     CLUSTER_PROCESS_CMD(vemb, cluster_vemb_resp, 1);
 }

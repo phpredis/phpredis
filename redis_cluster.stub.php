@@ -1089,6 +1089,16 @@ class RedisCluster {
     public function vinfo(string $key): RedisCluster|array|false;
 
     /**
+     * Check if an element is a member of a vectorset
+     *
+     * @param string $key    The vector set to query.
+     * @param mixed  $member The member to check for.
+     *
+     * @return RedisCluster|int|false 1 if the member exists, 0 if it does not.
+     */
+    public function vismember(string $key, mixed $member): RedisCluster|int|false;
+
+    /**
      * @see Redis::vemb
      */
     public function vemb(string $key, mixed $member, bool $raw = false): RedisCluster|array|false;
