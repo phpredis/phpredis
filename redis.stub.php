@@ -4271,6 +4271,16 @@ class Redis {
     public function vinfo(string $key): Redis|array|false;
 
     /**
+     * Check if an element is a member of a vectorset
+     *
+     * @param string $key    The vector set to query.
+     * @param mixed  $member The member to check for.
+     *
+     * @return Redis|int|false 1 if the member exists, 0 if it does not.
+     */
+    public function vismember(string $key, mixed $member): Redis|int|false;
+
+    /**
      * Get the embeddings for a specific member
      *
      * @param string $key   The vector set to query.
