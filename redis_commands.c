@@ -7043,8 +7043,8 @@ int
 redis_vlinks_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                  char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    zend_bool withscores = false;
     smart_string cmdstr = {0};
+    zend_bool withscores = 0;
     zend_string *key;
     zval *member;
 

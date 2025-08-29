@@ -2686,14 +2686,22 @@ fail:
 PHP_REDIS_API int
 redis_deserialize_vgetattr_reply(zval *zret, const char *str, size_t len) {
 #ifdef HAVE_REDIS_JSON
-    if (php_json_decode(zret, str, len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH)
-                        == FAILURE)
+    #if PHP_VERSION_ID < 80000
+        #define PHP_JSON_IN(s) ((char*)s)
+    #else
+        #define PHP_JSON_IN(s) (s)
+    #endif
+
+    if (php_json_decode(zret, PHP_JSON_IN(str), len, 1,
+                        PHP_JSON_PARSER_DEFAULT_DEPTH) == FAILURE)
     {
         php_error_docref(NULL, E_WARNING, "Failed to deserialize attributes");
         return FAILURE;
     }
 
     return SUCCESS;
+
+    #undef PHP_JSON_IN
 #else
     php_error_docref(NULL, E_WARNING,
         "PhpRedis is not compiled with JSON support");
