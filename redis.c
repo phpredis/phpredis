@@ -3197,7 +3197,7 @@ PHP_METHOD(Redis, vinfo) {
 }
 
 PHP_METHOD(Redis, vismember) {
-    REDIS_PROCESS_KW_CMD("VISMEMBER", redis_kv_cmd, redis_long_response);
+    REDIS_PROCESS_KW_CMD("VISMEMBER", redis_kv_cmd, redis_1_response);
 }
 
 PHP_METHOD(Redis, vemb) {

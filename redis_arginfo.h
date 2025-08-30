@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 44ceaf06991ed7aa445c0106df591416a9437a77 */
+ * Stub hash: 26d337d9f4984fe9e2c15c4245620494cb6ac24e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1082,7 +1082,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_vinfo arginfo_class_Redis_getWithMeta
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vismember, 0, 2, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vismember, 0, 2, Redis, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
@@ -1098,7 +1098,10 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vrandmember, 0, 
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_vrem arginfo_class_Redis_vismember
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vrem, 0, 2, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, member, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vsetattr, 0, 3, Redis, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -1200,7 +1203,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zRandMember, 0, 
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRank arginfo_class_Redis_vismember
+#define arginfo_class_Redis_zRank arginfo_class_Redis_vrem
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zRem, 0, 2, Redis, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_MIXED, 0)
@@ -1244,7 +1247,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zRevRangeByScore
 	ZEND_ARG_TYPE_MASK(0, options, MAY_BE_ARRAY|MAY_BE_BOOL, "[]")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRevRank arginfo_class_Redis_vismember
+#define arginfo_class_Redis_zRevRank arginfo_class_Redis_vrem
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zScore, 0, 2, Redis, MAY_BE_DOUBLE|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
