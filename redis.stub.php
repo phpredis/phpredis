@@ -4276,9 +4276,9 @@ class Redis {
      * @param string $key    The vector set to query.
      * @param mixed  $member The member to check for.
      *
-     * @return Redis|int|false 1 if the member exists, 0 if it does not.
+     * @return Redis|bool true if the member exists, false if it does not.
      */
-    public function vismember(string $key, mixed $member): Redis|int|false;
+    public function vismember(string $key, mixed $member): Redis|bool;
 
     /**
      * Get the embeddings for a specific member
