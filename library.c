@@ -2497,7 +2497,7 @@ redis_read_vinfo_response(RedisSock *redis_sock, zval *z_ret, long long count) {
     long lval;
 
     if (count < 0 || count % 2 != 0 || Z_TYPE_P(z_ret) != IS_ARRAY) {
-        zend_error_noreturn(E_ERROR, "Internal finfo handler error");
+        zend_error_noreturn(E_ERROR, "Internal vinfo handler error");
     }
 
     for (long long i = 0; i < count; i += 2) {
