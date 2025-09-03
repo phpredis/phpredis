@@ -1072,8 +1072,15 @@ int redis_cmd_append_sstr_int(smart_string *str, int append) {
  * Append a long to a smart string command
  */
 int redis_cmd_append_sstr_long(smart_string *str, long append) {
+    return redis_cmd_append_sstr_zend_long(str, (zend_long) append);
+}
+
+/*
+ * Append a zend_long to a smart string command
+ */
+int redis_cmd_append_sstr_zend_long(smart_string *str, zend_long lval) {
     char long_buf[32];
-    char *result = zend_print_long_to_buf(long_buf + sizeof(long_buf) - 1, append);
+    char *result = zend_print_long_to_buf(long_buf + sizeof(long_buf) - 1, lval);
     int int_len = long_buf + sizeof(long_buf) - 1 - result;
     return redis_cmd_append_sstr(str, result, int_len);
 }
