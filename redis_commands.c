@@ -1208,7 +1208,7 @@ static int redis_cmd_append_sstr_score(smart_string *dst, zval *score) {
     cmdlen = dst->len;
 
     if (Z_TYPE_P(score) == IS_LONG) {
-        redis_cmd_append_sstr_long(dst, Z_LVAL_P(score));
+        redis_cmd_append_sstr_zend_long(dst, Z_LVAL_P(score));
     } else if (Z_TYPE_P(score) == IS_DOUBLE) {
         redis_cmd_append_sstr_dbl(dst, Z_DVAL_P(score));
     } else if (Z_TYPE_P(score) == IS_STRING) {
