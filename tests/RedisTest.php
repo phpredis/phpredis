@@ -2658,9 +2658,10 @@ class Redis_Test extends TestSuite {
     }
 
     public function testZAddFirstArg() {
-        $this->redis->del('key');
-
         $zsetName = 100; // not a string!
+
+        $this->redis->del($zsetName);
+
         $this->assertEquals(1, $this->redis->zAdd($zsetName, 0, 'val0'));
         $this->assertEquals(1, $this->redis->zAdd($zsetName, 1, 'val1'));
 
@@ -2674,6 +2675,17 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(20.0, $this->redis->zAdd('zset', ['incr'], 10, 'value'));
 
         $this->assertFalse($this->redis->zAdd('zset', ['incr'], 10, 'value', 20, 'value2'));
+    }
+
+    /* Regression test for GitHub issue #2697 */
+    public function testZAddLargeLong() {
+        $this->redis->del('key');
+
+        $val = 5000000000;
+
+        $this->assertEquals(1, $this->redis->zAdd('key', $val, 'val0'));
+
+        $this->assertEquals($this->redis->zscore('key', 'val0'), (float)$val);
     }
 
     public function testZX() {
