@@ -3105,7 +3105,7 @@ static zend_string **get_valid_seeds(HashTable *input, uint32_t *nseeds) {
     zval *z_seed;
     zend_string *zkey, **seeds = NULL;
 
-    /* Short circuit if we don't have any sees */
+    /* Short circuit if we don't have any seeds */
     count = zend_hash_num_elements(input);
     if (count == 0)
         return NULL;
