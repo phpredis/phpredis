@@ -106,6 +106,7 @@ library.lo: /home/runner/work/phpredis/phpredis/library.c \
  /usr/include/php/20230831/ext/igbinary/src/php7/igbinary.h \
  /usr/include/php/20230831/ext/msgpack/php_msgpack.h \
  /usr/include/php/20230831/Zend/zend_smart_str.h \
+ /usr/include/liblzf/lzf.h \
  /usr/include/php/20230831/Zend/zend_exceptions.h \
  /home/runner/work/phpredis/phpredis/library.h \
  /home/runner/work/phpredis/phpredis/redis_commands.h \

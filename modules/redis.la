@@ -17,7 +17,7 @@ old_library=''
 inherited_linker_flags=''
 
 # Libraries that this one depends upon.
-dependency_libs=' -llz4 -lzstd'
+dependency_libs=' -llzf -llz4 -lzstd'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''
