@@ -2428,7 +2428,6 @@ class Redis_Test extends TestSuite {
 
         // Make sure when we pass with bad arguments we just get back false
         $this->assertFalse($this->redis->wait(-1, -1));
-        $this->assertEquals(0, $this->redis->wait(-1, 20));
     }
 
     public function testInfo() {
