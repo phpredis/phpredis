@@ -6951,12 +6951,12 @@ class Redis_Test extends TestSuite {
         if ( ! $this->minValkeyVersionCheck('9.0.0'))
             $this->markTestSkipped();
 
-        $this->addCities('ca:cities');
-        $this->assertEquals(1, $this->redis->geosearchstore('{gk}dst', 'ca:cities', '', [
+        $this->addCities('{geo}:cities');
+        $this->assertEquals(1, $this->redis->geosearchstore('{geo}:dst', '{geo}:cities', '', [
             -121.90, 39.65, -121.77, 39.65, -121.77, 39.80, -121.90, 39.80
         ], ''));
 
-        $this->assertEquals(['Chico'], $this->redis->geosearch('{gk}dst', 'Chico', 1, 'm'));
+        $this->assertEquals(['Chico'], $this->redis->geosearch('{geo}:dst', 'Chico', 1, 'm'));
     }
 
     public function testGeoSearchStore() {
