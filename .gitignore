@@ -22,3 +22,10 @@ tags
 compile_commands.json
 doctum.phar
 run-tests.php
+# Test artifacts  
+tests/nodes/
+tests/dump.rdb
+modules/
+*.dep
+*.la
+*.so
