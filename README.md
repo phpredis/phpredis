@@ -645,7 +645,7 @@ $redis->flushdb(?bool $sync = NULL): Redis|bool;
 ~~~
 
 ##### *Return value*
-*BOOL*: This command returns true on success and false on failure.
+*BOOL*: This command returns `TRUE` on success and `FALSE` on failure.
 
 ##### *Example*
 ~~~php
@@ -4361,7 +4361,7 @@ $redis->script('exists', $script1, [$script2, $script3, ...]);
 ##### *Return value*
 * SCRIPT LOAD will return the SHA1 hash of the passed script on success, and FALSE on failure.
 * SCRIPT FLUSH should always return TRUE
-* SCRIPT KILL will return true if a script was able to be killed and false if not
+* SCRIPT KILL will return `TRUE` if a script was able to be killed and `FALSE` if not
 * SCRIPT EXISTS will return an array with TRUE or FALSE for each passed script
 
 ### client
@@ -4386,9 +4386,9 @@ $redis->client('kill', <ip:port>); // Kill the process at ip:port
 This will vary depending on which client command was executed.
 
 * CLIENT LIST will return an array of arrays with client information.
-* CLIENT GETNAME will return the client name or false if none has been set
-* CLIENT SETNAME will return true if it can be set and false if not
-* CLIENT KILL will return true if the client can be killed, and false if not
+* CLIENT GETNAME will return the client name or `FALSE` if none has been set
+* CLIENT SETNAME will return `TRUE` if it can be set and `FALSE` if not
+* CLIENT KILL will return `TRUE` if the client can be killed, and `FALSE` if not
 
 Note: phpredis will attempt to reconnect so you can actually kill your own connection
 but may not notice losing it!
