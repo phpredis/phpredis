@@ -3049,6 +3049,12 @@ redis_sock_configure(RedisSock *redis_sock, HashTable *opts)
             } else {
                 redis_sock->persistent = zval_is_true(val);
             }
+        } else if (zend_string_equals_literal_ci(zkey, "maxRetries")) {
+            if (Z_TYPE_P(val) != IS_LONG || Z_LVAL_P(val) < 0) {
+                REDIS_VALUE_EXCEPTION("Max retries must be a non-negative integer");
+                return FAILURE;
+            }
+            redis_sock->max_retries = zval_get_long(val);
         } else if (zend_string_equals_literal_ci(zkey, "retryInterval")) {
             if (Z_TYPE_P(val) != IS_LONG && Z_TYPE_P(val) != IS_DOUBLE) {
                 REDIS_VALUE_EXCEPTION("Invalid retry interval");
