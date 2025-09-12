@@ -177,7 +177,7 @@ $redis = new Redis();
 ~~~
 
 Starting from version 6.0.0 it's possible to specify configuration options.
-This allows to connect lazily to the server without explicitly invoking `connect` command.
+This allows to connect lazily to the server without explicitly invoking `connect` / `pconnect`.
 
 ##### *Example*
 
@@ -197,10 +197,10 @@ $redis = new Redis([
 ]);
 ~~~
 
-##### *Parameters*
+##### *Parameters* (optional)
 
-*host*: string. can be a host, or the path to a unix domain socket.  
-*port*: int (default is 6379, should be -1 for unix domain socket)  
+*host*: string, the hostname/FQDN/IP address or the path to a unix domain socket; since v5.0.0 it is possible to specify schema  
+*port*: int, actual port (e.g. `6379`) or `-1` (or `0`) for unix domain socket; setting to < `0` with non-UDS will assume default of `6379`  
 *connectTimeout*: float, value in seconds (default is 0 meaning unlimited)  
 *retryInterval*: int, value in milliseconds (optional)  
 *readTimeout*: float, value in seconds (default is 0 meaning unlimited)  
@@ -250,11 +250,11 @@ _**Description**_: Connects to a Redis instance.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema  
-*port*: int, optional  
+*host*: string, *host*: string, the hostname/FQDN/IP address or the path to a unix domain socket; since v5.0.0 it is possible to specify schema  
+*port*: int, actual port (e.g. `6379`) or `-1` (or `0`) for unix domain socket; setting to < `0` with non-UDS will assume default of `6379`, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 *reserved*: should be '' if retry_interval is specified  
-*retry_interval*: int, value in milliseconds (optional)  
+*retry_interval*: int, value in milliseconds, optional  
 *read_timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 *others*: array, with PhpRedis >= 5.3.0, it allows setting _auth_ and [_stream_](https://www.php.net/manual/en/context.ssl.php) configuration.  
 
@@ -291,15 +291,15 @@ connections on many servers connecting to one redis server.
 Also more than one persistent connection can be made identified by either host + port + timeout
 or host + persistent_id or unix socket + timeout.
 
-Starting from version 4.2.1, it became possible to use connection pooling by setting INI variable `redis.pconnect.pooling_enabled` to 1.
+Since v4.2.1, it became possible to use connection pooling by setting INI variable `redis.pconnect.pooling_enabled` to 1.
 
 This feature is not available in threaded versions. `pconnect` and `popen` then working like their non
 persistent equivalents.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema  
-*port*: int, optional  
+*host*: string, *host*: string, the hostname/FQDN/IP address or the path to a unix domain socket; since v5.0.0 it is possible to specify schema  
+*port*: int, actual port (e.g. `6379`) or `-1` (or `0`) for unix domain socket; setting to < `0` with non-UDS will assume default of `6379`, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 *persistent_id*: string. identity for the requested persistent connection  
 *retry_interval*: int, value in milliseconds (optional)  
@@ -812,7 +812,7 @@ $redis->slowLog('len');
 * [exists](#exists) - Determine if a key exists
 * [expire, pexpire](#expire-pexpire) - Set a key's time to live in seconds
 * [expireAt, pexpireAt](#expireat-pexpireat) - Set the expiration for a key as a UNIX timestamp
-* [keys](#keys) - Find all keys matching the given pattern
+* [keys](#keys-1) - Find all keys matching the given pattern
 * [scan](#scan) - Scan for keys in the keyspace (Redis >= 2.8.0)
 * [migrate](#migrate) - Atomically transfer a key from a Redis instance to another one
 * [move](#move) - Move a key to another database
@@ -836,7 +836,7 @@ _**Description**_: Get the value related to the specified key
 *key*
 
 ##### *Return value*
-*String* or *Bool*: If key didn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
+*String* or *Bool*: If key doesn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
 
 ##### *Examples*
 
@@ -858,7 +858,7 @@ _**Description**_: Get the value related to the specified key and set its expira
   * `PERSIST` - remove the expiration from the key
 
 ##### *Return value*
-*String* or *Bool*: If key didn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
+*String* or *Bool*: If key doesn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
 
 ##### *Examples*
 
@@ -873,7 +873,7 @@ _**Description**_: Set the string value in argument as value of the key.  If you
 ##### *Parameters*
 *Key*  
 *Value*  
-*Timeout or Options Array* (optional). If you pass an integer, phpredis will redirect to SETEX, and will try to use Redis >= 2.6.12 extended options if you pass an array with valid values
+*Timeout or Options Array* (optional). If you pass an integer, phpredis will redirect to SETEX, and will try to use Redis >= 2.6.12 extended options if you pass an array with valid values  
 
 ##### *Return value*
 *Bool* `TRUE` if the command is successful.
@@ -899,12 +899,12 @@ $redis->set('key', 'value', ['xx', 'px'=>1000]);
 _**Description**_: Set the string value in argument as value of the key, with a time to live. PSETEX uses a TTL in milliseconds.
 
 ##### *Parameters*
-*Key*
-*TTL*
-*Value*
+*Key*  
+*TTL*  
+*Value*  
 
 ##### *Return value*
-*Bool* `TRUE` if the command is successful.
+*Bool* `TRUE` if the command is successful, `FALSE` in case of failure.
 
 ##### *Examples*
 
@@ -918,11 +918,11 @@ $redis->pSetEx('key', 100, 'value'); // sets key → value, with 0.1 sec TTL.
 _**Description**_: Set the string value in argument as value of the key if the key doesn't already exist in the database.
 
 ##### *Parameters*
-*key*
-*value*
+*Key*  
+*Value*  
 
 ##### *Return value*
-*Bool* `TRUE` in case of success, `FALSE` in case of failure.
+*Bool* `TRUE` if the command is successful, `FALSE` in case of failure.
 
 ##### *Examples*
 ~~~php
@@ -940,7 +940,7 @@ An array of keys, or an undefined number of parameters, each a key: *key1* *key2
 *Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
 
 ##### *Return value*
-*Long* Number of keys deleted.
+*Long* Number of keys deleted (`0` if none existed to start with), `FALSE` in case of unexpected failure (i.e. connection, etc.)
 
 ##### *Examples*
 ~~~php
@@ -967,7 +967,7 @@ _**Description**_: Verify if the specified key exists.
 *key*
 
 ##### *Return value*
-*long*: The number of keys tested that do exist.
+*Long* Number of keys tested that exist (`0` if none do), `FALSE` in case of failure.
 
 ##### *Examples*
 ~~~php
@@ -980,7 +980,7 @@ $redis->exists(['foo', 'bar', 'baz']); /* 3 */
 $redis->exists('foo', 'bar', 'baz'); /* 3 */
 ~~~
 
-**Note**: This function took a single argument and returned TRUE or FALSE in phpredis versions < 4.0.0.
+**Note**: This function took a single argument and returned TRUE or FALSE <v4.0.0.
 
 ### incr, incrBy
 -----
