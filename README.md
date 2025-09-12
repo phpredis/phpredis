@@ -106,7 +106,7 @@ session.save_path = "tcp://127.0.0.1:6379?auth[]=user&auth[]=password&prefix=use
 **Support**: Locking feature is currently only supported for Redis setup with single master instance (e.g. classic master/slave Sentinel environment).
 So locking may not work properly in RedisArray or RedisCluster environments.
 
-Following INI variables can be used to configure session locking:
+The following INI variables can be used to configure session locking:
 ~~~
 ; Should the locking be enabled? Defaults to: 0.
 redis.session.locking_enabled = 1
@@ -120,7 +120,7 @@ redis.session.lock_retries = 2000
 
 ### Session compression
 
-Following INI variables can be used to configure session compression:
+The following INI variables can be used to configure session compression:
 ~~~
 ; Should session compression be enabled? Possible values are zstd, lzf, lz4, none. Defaults to: none
 redis.session.compression = zstd
@@ -204,7 +204,7 @@ $redis = new Redis([
 *connectTimeout*: float, value in seconds (default is 0 meaning unlimited)  
 *retryInterval*: int, value in milliseconds (optional)  
 *readTimeout*: float, value in seconds (default is 0 meaning unlimited)  
-*persistent*: mixed, if value is string then it used as persistent id, else value casts to boolean  
+*persistent*: mixed, if value is string then it is used as persistent id, else value casts to boolean  
 *auth*: mixed, authentication information
 *database*: int, database number
 *ssl*: array, SSL context options  
@@ -288,12 +288,12 @@ The connection will not be closed on end of request until the php process ends.
 So be prepared for too many open FD's errors (specially on redis server side) when using persistent
 connections on many servers connecting to one redis server.
 
-Also more than one persistent connection can be made identified by either host + port + timeout
+Also more than one persistent connection can be made, identified by either host + port + timeout
 or host + persistent_id or unix socket + timeout.
 
 Since v4.2.1, it became possible to use connection pooling by setting INI variable `redis.pconnect.pooling_enabled` to 1.
 
-This feature is not available in threaded versions. `pconnect` and `popen` then working like their non
+This feature is not available in threaded versions. `pconnect` and `popen` then work like their non
 persistent equivalents.
 
 ##### *Parameters*
@@ -1087,7 +1087,7 @@ A string, the previous value located at this key.
 ~~~php
 $redis->set('x', '42');
 $exValue = $redis->getSet('x', 'lol');	// return '42', replaces x by 'lol'
-$newValue = $redis->get('x')'		// return 'lol'
+$newValue = $redis->get('x');		// return 'lol'
 ~~~
 
 ### randomKey
@@ -1170,7 +1170,7 @@ $redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 
 ### expireAt, pexpireAt
 -----
-_**Description**_: Seta specific timestamp for a key to expire in seconds or milliseconds.
+_**Description**_: Set a specific timestamp for a key to expire in seconds or milliseconds.
 
 ##### *Prototype*
 ~~~php
@@ -1215,7 +1215,7 @@ _**Description**_:  Scan the keyspace for keys
 *LONG, Optional*: Count of keys per iteration (only a suggestion to Redis)
 
 ##### *Return value*
-*Array, boolean*:  This function will return an array of keys or FALSE if Redis returned zero keys
+*Array, boolean*:  This function will return an array of keys or FALSE if Redis returns zero keys
 
 *Note*: SCAN is a "directed node" command in [RedisCluster](cluster.md#directed-node-commands)
 
@@ -2443,7 +2443,7 @@ key1, key2, keyN: keys identifying the different sets on which we will apply the
 
 ##### *Return value*
 
-Array, contain the result of the intersection between those keys. If the intersection between the different sets is empty, the return value will be empty array.
+Array, containing the result of the intersection between those keys. If the intersection between the different sets is empty, the return value will be an empty array.
 
 ##### *Examples*
 ~~~php
@@ -4104,7 +4104,7 @@ $obj_redis->xRevRange('mystream', '+', '-');
 $obj_redis->xTrim($str_stream, $i_max_len [, $boo_approximate]);
 ~~~
 
-_**Description**_:  Trim the stream length to a given maximum.  If the "approximate" flag is pasesed, Redis will use your size as a hint but only trim trees in whole nodes (this is more efficient).
+_**Description**_:  Trim the stream length to a given maximum.  If the "approximate" flag is passed, Redis will use your size as a hint but only trim trees in whole nodes (this is more efficient).
 
 ##### *Return value*
 *long*:  The number of messages trimmed from the stream.
@@ -4218,7 +4218,7 @@ _**Description**_: A method to execute any arbitrary command against the a Redis
 This method is variadic and takes a dynamic number of arguments of various types (string, long, double), but must be passed at least one argument (the command keyword itself).
 
 ##### *Return value*
-The return value can be various types depending on what the server itself returns.   No post processing is done to the returned value and must be handled by the client code.
+The return value can be various types depending on what the server itself returns. No post processing is done to the returned value and it must be handled by the client code.
 
 ##### *Example*
 ```php
