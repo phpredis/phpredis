@@ -70,9 +70,9 @@ phpredis can be used to store PHP sessions. To do this, configure `session.save_
 
 `session.save_path` can have a simple `host:port` format too, but you need to provide the `tcp://` scheme if you want to use the parameters. The following parameters are available:
 
-* weight (integer): the weight of a host is used in comparison with the others in order to customize the session distribution on several hosts. If host A has twice the weight of host B, it will get twice the amount of sessions. In the example, *host1* stores 20% of all the sessions (1/(1+2+2)) while *host2* and *host3* each store 40% (2/(1+2+2)). The target host is determined once and for all at the start of the session, and doesn't change. The default weight is 1.
+* weight (integer): the weight of a host is used in comparison with the others in order to customize the session distribution on several hosts. If host A has twice the weight of host B, it will get twice the amount of sessions. In the example, *host1* stores 20% of all the sessions (1/(1+2+2)) while *host2* and *host3* each store 40% (2/(1+2+2)). The target host is determined once and for all at the start of the session, and does not change. The default weight is 1.
 * timeout (float): the connection timeout to a redis host, expressed in seconds. If the host is unreachable in that amount of time, the session storage will be unavailable for the client. The default timeout is very high (86400 seconds).
-* persistent (integer, should be 1 or 0): defines if a persistent connection should be used.
+* persistent (integer, 1 or 0): defines if a persistent connection should be used.
 * prefix (string, defaults to "PHPREDIS_SESSION:"): used as a prefix to the Redis key in which the session is stored. The key is composed of the prefix followed by the session ID.
 * auth (string, or an array with one or two elements): used to authenticate with the server prior to sending commands.
 * database (integer): selects a different database.
@@ -256,7 +256,7 @@ _**Description**_: Connects to a Redis instance.
 *reserved*: should be '' if retry_interval is specified  
 *retry_interval*: int, value in milliseconds (optional)  
 *read_timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
-*others*: array, with PhpRedis >= 5.3.0, it allows setting _auth_ and [_stream_](https://www.php.net/manual/en/context.ssl.php) configuration.  
+*others*: array, with PhpRedis >= 5.3.0, this allows setting _auth_ and [_stream_](https://www.php.net/manual/en/context.ssl.php) configuration.  
 
 ##### *Return value*
 
@@ -416,9 +416,9 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);  // Use JSON t
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 
 /* Options for the SCAN family of commands, indicating whether to abstract
-   empty results from the user.  If set to SCAN_NORETRY (the default), phpredis
+   empty results from the user. If set to SCAN_NORETRY (the default), phpredis
    will just issue one SCAN command at a time, sometimes returning an empty
-   array of results.  If set to SCAN_RETRY, phpredis will retry the scan command
+   array of results. If set to SCAN_RETRY, phpredis will retry the scan command
    until keys come back OR Redis returns an iterator of zero
 */
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
@@ -465,7 +465,7 @@ $redis->ping([string $message]);
 /* When called without an argument, PING returns `TRUE` */
 $redis->ping();
 
-/* If passed an argument, that argument is returned.  Here 'hello' will be returned */
+/* If an argument is passed, that argument is returned.  Here 'hello' will be returned */
 $redis->ping('hello');
 ~~~
 
@@ -1425,7 +1425,7 @@ _**Description**_: Count bits in a string.
 *key*
 
 ##### *Return value*
-*LONG*: The number of bits set to 1 in the value behind the input key.
+*LONG*: The number of bits set to 1 in the value stored at the input key.
 
 ### sort
 -----
@@ -1865,7 +1865,7 @@ _**Description**_:  Scan a HASH value for members, with an optional pattern and 
 ##### *Examples*
 ~~~php
 $it = NULL;
-/* Don't ever return an empty array until we're done iterating */
+/* Do not ever return an empty array until we are done iterating */
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 while($arr_keys = $redis->hScan('hash', $it)) {
     foreach($arr_keys as $str_field => $str_value) {
@@ -2202,7 +2202,7 @@ $redis->rPop('key1'); /* key1 => [ 'A', 'B' ] */
 
 ### rPopLPush
 -----
-_**Description**_: Pops a value from the tail of a list, and pushes it to the front of another list. Also return this value. (redis >= 1.1)
+_**Description**_: Pops a value from the tail of a list and pushes it to the front of another list. Also returns this value. (redis >= 1.1)
 
 ##### *Parameters*
 *Key*: srckey  
@@ -2752,12 +2752,12 @@ _**Description**_: Scan a set for members
 *count*: How many members to return at a time (Redis might return a different amount)
 
 ##### *Return value*
-*Array, boolean*: PHPRedis will return an array of keys or FALSE when we're done iterating
+*Array, boolean*: PHPRedis will return an array of keys or FALSE when we are done iterating
 
 ##### *Example*
 ~~~php
 $it = NULL;
-$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); /* don't return empty results until we're done */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); /* do not return empty results until we are done */
 while($arr_mems = $redis->sScan('set', $it, "*pattern*")) {
     foreach($arr_mems as $str_mem) {
         echo "Member: $str_mem\n";
@@ -4453,7 +4453,7 @@ _**Description**_: A utility method to serialize values manually.
 This method allows you to serialize a value manually with whatever serializer is configured.
 This can be useful for serialization/unserialization of data going in and out of EVAL commands
 as phpredis cannot automatically do this itself. Note that if no serializer is set, phpredis
-will change Array values to 'Array', and Objects to 'Object'.
+will convert Array values to the string 'Array', and Objects to the string 'Object'.
 
 ##### *Parameters*
 *value*:  Mixed.  The value to be serialized
