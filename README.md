@@ -8,7 +8,7 @@ The phpredis extension provides an API for communicating with the [Redis](http:/
 
 It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 
-You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to michael.grunder@gmail.com ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)).
+You can send comments, patches, questions [here on GitHub](https://github.com/phpredis/phpredis/issues), to michael.grunder@gmail.com ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)).
 
 
 ## [API Documentation](https://phpredis.github.io/phpredis)
@@ -17,7 +17,7 @@ These are a work in progress, but will eventually replace our **ONE README TO RU
 ## Supporting the project
 PhpRedis will always be free and open source software, but if you or your company has found it useful please consider supporting the project.  Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support would be appreciated! :heart:
 
-The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder).  Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions.  Additionally this will allow you to provide feedback on which fixes and new features to prioritize.
+The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder).  Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [Pavlo](https://github.com/yatsukhnenko) and I are regularly available to answer questions.  Additionally, this will allow you to provide feedback on which fixes and new features to prioritize.
 
 You can also make a one-time contribution with [![PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
 
@@ -176,8 +176,8 @@ _**Description**_: Creates a Redis client
 $redis = new Redis();
 ~~~
 
-Starting from version 6.0.0 it's possible to specify configuration options.
-This allows to connect lazily to the server without explicitly invoking `connect` command.
+Starting from version 6.0.0 it is possible to specify configuration options.
+This allows you to connect lazily to the server without explicitly invoking the `connect` command.
 
 ##### *Example*
 
@@ -548,7 +548,7 @@ $redis->acl('USERS'); /* Get a list of users */
 $redis->acl('LOG');   /* See log of Redis' ACL subsystem */
 ~~~
 
-*Note*:  In order to user the `ACL` command you must be communicating with Redis >= 6.0 and be logged into an account that has access to administration commands such as ACL.  Please reference [this tutorial](https://redis.io/topics/acl) for an overview of Redis 6 ACLs and [the redis command reference](https://redis.io/commands) for every ACL subcommand.
+*Note*:  In order to use the `ACL` command you must be communicating with Redis >= 6.0 and be logged into an account that has access to administration commands such as ACL.  Please reference [this tutorial](https://redis.io/topics/acl) for an overview of Redis 6 ACLs and [the redis command reference](https://redis.io/commands) for every ACL subcommand.
 
 *Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
 
@@ -2779,7 +2779,7 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 
 ## Sorted sets
 
-* [bzPop](#bzpop) - Block until Redis can pop the highest or lowest scoring member from one or more ZSETs.
+* [bzPop](#bzpop) - Block until you can pop the highest or lowest scoring member from one or more ZSETs.
 * [zAdd](#zadd) - Add one or more members to a sorted set or update its score if it already exists
 * [zCard](#zcard) - Get the number of members in a sorted set
 * [zCount](#zcount) - Count the members in a sorted set with scores within the given values
@@ -2789,7 +2789,7 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zInter](#zinter) - Intersect multiple sorted sets and return the resulting sorted set
 * [zinterstore](#zinterstore) - Intersect multiple sorted sets and store the resulting sorted set in a new key
 * [zMscore](#zmscore) - Get the scores associated with the given members in a sorted set
-* [zPop](#zpop) - Redis can pop the highest or lowest scoring member from one a ZSET.
+* [zPop](#zpop) - Pop the highest or lowest scoring member from a ZSET.
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
 * [zRangeByLex](#zrangebylex) - Return a lexicographical range from members that share the same score
@@ -2805,7 +2805,7 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 
 ### bzPop
 -----
-_**Description**_: Block until Redis can pop the highest or lowest scoring members from one or more ZSETs.  There are two commands (`BZPOPMIN` and `BZPOPMAX` for popping the lowest and highest scoring elements respectively.)
+_**Description**_: Block until you can pop the highest or lowest scoring members from one or more ZSETs. There are two commands (`BZPOPMIN` and `BZPOPMAX` for popping the lowest and highest scoring elements respectively.)
 
 ##### *Prototype*
 ~~~php
@@ -2817,7 +2817,7 @@ $redis->bzPopMax(string $key1, string $key2, ... int $timeout): array
 ~~~
 
 ##### *Return value*
-*ARRAY:* Either an array with the key member and score of the highest or lowest element or an empty array if the timeout was reached without an element to pop.
+*ARRAY:* Either an array with the key, member, and score of the highest or lowest element or an empty array if the timeout was reached without an element to pop.
 
 ##### *Example*
 ~~~php
@@ -2860,7 +2860,7 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 5, 'val5');
 $redis->zRange('key', 0, -1); // [val0, val1, val5]
 
-// From Redis 3.0.2 it's possible to add options like XX, NX, CH, INCR
+// From Redis 3.0.2 it is possible to add options like XX, NX, CH, INCR
 $redis->zAdd('key', ['CH'], 5, 'val5', 10, 'val10', 15, 'val15');
 ~~~
 
@@ -3090,7 +3090,7 @@ $redis->zMscore('key', 'val2', 'val3', 'val4'); /* [2.5, false, 4.5] */
 
 ### zPop
 -----
-_**Description**_: Can pop the highest or lowest scoring members from one ZSETs. There are two commands (`ZPOPMIN` and `ZPOPMAX` for popping the lowest and highest scoring elements respectively.)
+_**Description**_: Pop the highest or lowest scoring members from ZSETs. There are two commands (`ZPOPMIN` and `ZPOPMAX` for popping the lowest and highest scoring elements respectively.)
 
 ##### *Prototype*
 ~~~php
@@ -3102,7 +3102,7 @@ $redis->zPopMax(string $key, int $count): array
 ~~~
 
 ##### *Return value*
-*ARRAY:* Either an array with the key member and score of the highest or lowest element or an empty array if there is no element available.
+*ARRAY:* Either an array with the key, member, and score of the highest or lowest element or an empty array if there is no element available.
 
 ##### *Example*
 ~~~php
@@ -3606,7 +3606,7 @@ _**Description**_:  Return the distance between two members in a geospatial set.
 * 'ft' => Feet
 
 ##### *Return value*
-*Double*:  The distance between the two passed members in the units requested (meters by default).  
+*Double*: The distance between the two passed members in the units requested (meters by default).  
 
 ##### *Example*
 ~~~php
@@ -4212,13 +4212,13 @@ $redis->pubSub("numpat"); /* Get the number of pattern subscribers */
 
 ### rawCommand
 -----
-_**Description**_: A method to execute any arbitrary command against the a Redis server
+_**Description**_: A method to execute any arbitrary command against a Redis server
 
 ##### *Parameters*
 This method is variadic and takes a dynamic number of arguments of various types (string, long, double), but must be passed at least one argument (the command keyword itself).
 
 ##### *Return value*
-The return value can be various types depending on what the server itself returns.   No post processing is done to the returned value and must be handled by the client code.
+The return value can be various types depending on what the server itself returns. No post-processing is done to the returned value and must be handled by the client code.
 
 ##### *Example*
 ```php
@@ -4289,8 +4289,8 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 
 ## Scripting
 
-* [eval](#eval) - Evaluate a LUA script serverside
-* [evalSha](#evalsha) - Evaluate a LUA script serverside, from the SHA1 hash of the script instead of the script itself
+* [eval](#eval) - Evaluate a LUA script server-side
+* [evalSha](#evalsha) - Evaluate a LUA script server-side, from the SHA1 hash of the script instead of the script itself
 * [script](#script) - Execute the Redis SCRIPT command to perform various operations on the scripting subsystem
 * [getLastError](#getlasterror) - The last error message (if any)
 * [clearLastError](#clearlasterror) - Clear the last error message
@@ -4300,7 +4300,7 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 
 ### eval
 -----
-_**Description**_: Evaluate a LUA script serverside
+_**Description**_: Evaluate a LUA script server-side
 
 ##### *Parameters*
 *script* string.  
@@ -4308,8 +4308,8 @@ _**Description**_: Evaluate a LUA script serverside
 *num_keys* int, optional.
 
 ##### *Return value*
-Mixed.  What is returned depends on what the LUA script itself returns, which could be a scalar value (int/string), or an array.
-Arrays that are returned can also contain other arrays, if that's how it was set up in your LUA script.  If there is an error
+Mixed. What is returned depends on what the LUA script itself returns, which could be a scalar value (int/string), or an array.
+Arrays that are returned can also contain other arrays, if that is how it was set up in your LUA script. If there is an error
 executing the LUA script, the getLastError() function can tell you the message that came back from Redis (e.g. compile error).
 
 ##### *Examples*
@@ -4326,7 +4326,7 @@ $redis->eval("return {1,2,3,redis.call('lrange','mylist',0,-1)}");
 
 ### evalSha
 -----
-_**Description**_: Evaluate a LUA script serverside, from the SHA1 hash of the script instead of the script itself.
+_**Description**_: Evaluate a LUA script server-side, from the SHA1 hash of the script instead of the script itself.
 
 In order to run this command Redis will have to have already loaded the script,
 either by running it or via the SCRIPT LOAD command.
@@ -4450,9 +4450,9 @@ $redis->_prefix('my-value'); // Will return 'my-prefix:my-value'
 -----
 _**Description**_: A utility method to serialize values manually.
 
-This method allows you to serialize a value with whatever serializer is configured, manually.
+This method allows you to serialize a value manually with whatever serializer is configured.
 This can be useful for serialization/unserialization of data going in and out of EVAL commands
-as phpredis can't automatically do this itself.  Note that if no serializer is set, phpredis
+as phpredis cannot automatically do this itself. Note that if no serializer is set, phpredis
 will change Array values to 'Array', and Objects to 'Object'.
 
 ##### *Parameters*
@@ -4492,34 +4492,34 @@ $redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return [1,2,3]
 
 ### isConnected
 -----
-_**Description**_:  A method to determine if a phpredis object thinks it's connected to a server
+_**Description**_:  A method to determine if a phpredis object thinks it is connected to a server
 
 ##### *Parameters*
 None
 
 ##### *Return value*
-*Boolean* Returns TRUE if phpredis thinks it's connected and FALSE if not
+*Boolean* Returns TRUE if phpredis thinks it is connected and FALSE if not
 
 ### getHost
 -----
-_**Description**_:  Retrieve our host or unix socket that we're connected to
+_**Description**_:  Retrieve our host or unix socket that we are connected to
 
 ##### *Parameters*
 None
 
 ##### *Return value*
-*Mixed* The host or unix socket we're connected to or FALSE if we're not connected
+*Mixed* The host or unix socket we are connected to or FALSE if we are not connected
 
 
 ### getPort
 -----
-_**Description**_:  Get the port we're connected to
+_**Description**_:  Get the port we are connected to
 
 ##### *Parameters*
 None
 
 ##### *Return value*
-*Mixed* Returns the port we're connected to or FALSE if we're not connected
+*Mixed* Returns the port we are connected to or FALSE if we are not connected
 
 ### getDbNum
 -----
@@ -4529,7 +4529,7 @@ _**Description**_:  Get the database number phpredis is pointed to
 None
 
 ##### *Return value*
-*Mixed* Returns the database number (LONG) phpredis thinks it's pointing to or FALSE if we're not connected
+*Mixed* Returns the database number (LONG) phpredis thinks it is pointing to or FALSE if we are not connected
 
 ### getTimeout
 -----
@@ -4539,16 +4539,16 @@ _**Description**_:  Get the (write) timeout in use for phpredis
 None
 
 ##### *Return value*
-*Mixed* The timeout (DOUBLE) specified in our connect call or FALSE if we're not connected
+*Mixed* The timeout (DOUBLE) specified in our connect call or FALSE if we are not connected
 
 ### getReadTimeout
-_**Description**_:  Get the read timeout specified to phpredis or FALSE if we're not connected
+_**Description**_:  Get the read timeout specified to phpredis or FALSE if we are not connected
 
 ##### *Parameters*
 None
 
 ##### *Return value*
-*Mixed*  Returns the read timeout (which can be set using setOption and Redis::OPT_READ_TIMEOUT) or FALSE if we're not connected
+*Mixed*  Returns the read timeout (which can be set using setOption and Redis::OPT_READ_TIMEOUT) or FALSE if we are not connected
 
 ### getPersistentID
 -----
@@ -4558,8 +4558,8 @@ _**Description**_:  Gets the persistent ID that phpredis is using
 None
 
 ##### *Return value*
-*Mixed* Returns the persistent id phpredis is using (which will only be set if connected with pconnect), NULL if we're not
-using a persistent ID, and FALSE if we're not connected
+*Mixed* Returns the persistent id phpredis is using (which will only be set if connected with pconnect), NULL if we are not
+using a persistent ID, and FALSE if we are not connected
 
 ### getAuth
 -----
