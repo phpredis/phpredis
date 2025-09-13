@@ -204,7 +204,7 @@ $redis = new Redis([
 *connectTimeout*: float, value in seconds (default is 0 meaning unlimited)  
 *retryInterval*: int, value in milliseconds (optional)  
 *readTimeout*: float, value in seconds (default is 0 meaning unlimited)  
-*persistent*: mixed, if value is string then it is used as persistent id, else value casts to boolean  
+*persistent*: mixed, If the value is a string it is used as a persistent ID. Non-strings are cast to boolean.
 *auth*: mixed, authentication information
 *database*: int, database number
 *ssl*: array, SSL context options  
