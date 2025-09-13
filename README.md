@@ -15,9 +15,9 @@ You can send comments, patches, questions [here on github](https://github.com/ph
 These are a work in progress, but will eventually replace our **ONE README TO RULE THEM ALL** docs.  
 
 ## Supporting the project
-PhpRedis will always be free and open source software, but if you or your company has found it useful please consider supporting the project.  Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support would be appreciated! :heart:
+PhpRedis will always be free and open source software, but if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support would be appreciated! :heart:
 
-The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder).  Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions.  Additionally this will allow you to provide feedback on which fixes and new features to prioritize.
+The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and new features to prioritize.
 
 You can also make a one-time contribution with [![PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
 
@@ -70,7 +70,7 @@ phpredis can be used to store PHP sessions. To do this, configure `session.save_
 
 `session.save_path` can have a simple `host:port` format too, but you need to provide the `tcp://` scheme if you want to use the parameters. The following parameters are available:
 
-* weight (integer): the weight of a host is used in comparison with the others in order to customize the session distribution on several hosts. If host A has twice the weight of host B, it will get twice the amount of sessions. In the example, *host1* stores 20% of all the sessions (1/(1+2+2)) while *host2* and *host3* each store 40% (2/(1+2+2)). The target host is determined once and for all at the start of the session, and doesn't change. The default weight is 1.
+* weight (integer): the weight of a host is used in comparison with the others to customize the session distribution on several hosts. If host A has twice the weight of host B, it will get twice the amount of sessions. In the example, *host1* stores 20% of all the sessions (1/(1+2+2)) while *host2* and *host3* each store 40% (2/(1+2+2)). The target host is determined once and for all at the start of the session, and doesn't change. The default weight is 1.
 * timeout (float): the connection timeout to a redis host, expressed in seconds. If the host is unreachable in that amount of time, the session storage will be unavailable for the client. The default timeout is very high (86400 seconds).
 * persistent (integer, should be 1 or 0): defines if a persistent connection should be used.
 * prefix (string, defaults to "PHPREDIS_SESSION:"): used as a prefix to the Redis key in which the session is stored. The key is composed of the prefix followed by the session ID.
@@ -106,7 +106,7 @@ session.save_path = "tcp://127.0.0.1:6379?auth[]=user&auth[]=password&prefix=use
 **Support**: Locking feature is currently only supported for Redis setup with single master instance (e.g. classic master/slave Sentinel environment).
 So locking may not work properly in RedisArray or RedisCluster environments.
 
-Following INI variables can be used to configure session locking:
+The following INI variables can be used to configure session locking:
 ~~~
 ; Should the locking be enabled? Defaults to: 0.
 redis.session.locking_enabled = 1
@@ -120,7 +120,7 @@ redis.session.lock_retries = 2000
 
 ### Session compression
 
-Following INI variables can be used to configure session compression:
+The following INI variables can be used to configure session compression:
 ~~~
 ; Should session compression be enabled? Possible values are zstd, lzf, lz4, none. Defaults to: none
 redis.session.compression = zstd
@@ -204,7 +204,7 @@ $redis = new Redis([
 *connectTimeout*: float, value in seconds (default is 0 meaning unlimited)  
 *retryInterval*: int, value in milliseconds (optional)  
 *readTimeout*: float, value in seconds (default is 0 meaning unlimited)  
-*persistent*: mixed, if value is string then it used as persistent id, else value casts to boolean  
+*persistent*: mixed, If the value is a string it is used as a persistent ID. Non-strings are cast to boolean.
 *auth*: mixed, authentication information
 *database*: int, database number
 *ssl*: array, SSL context options  
@@ -212,7 +212,7 @@ $redis = new Redis([
 ### Class RedisException
 -----
 phpredis throws a [RedisException](#class-redisexception) object if it can't reach the Redis server. That can happen in case of connectivity issues,
-if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an
+if the Redis service is down, or if the Redis host is overloaded. In any other problematic case that does not involve an
 unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
 ### Predefined constants
@@ -288,12 +288,12 @@ The connection will not be closed on end of request until the php process ends.
 So be prepared for too many open FD's errors (specially on redis server side) when using persistent
 connections on many servers connecting to one redis server.
 
-Also more than one persistent connection can be made identified by either host + port + timeout
+Also more than one persistent connection can be made, identified by either host + port + timeout
 or host + persistent_id or unix socket + timeout.
 
 Since v4.2.1, it became possible to use connection pooling by setting INI variable `redis.pconnect.pooling_enabled` to 1.
 
-This feature is not available in threaded versions. `pconnect` and `popen` then working like their non
+This feature is not available in threaded versions. `pconnect` and `popen` then work like their non
 persistent equivalents.
 
 ##### *Parameters*
@@ -416,9 +416,9 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);  // Use JSON t
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 
 /* Options for the SCAN family of commands, indicating whether to abstract
-   empty results from the user.  If set to SCAN_NORETRY (the default), phpredis
+   empty results from the user. If set to SCAN_NORETRY (the default), phpredis
    will just issue one SCAN command at a time, sometimes returning an empty
-   array of results.  If set to SCAN_RETRY, phpredis will retry the scan command
+   array of results. If set to SCAN_RETRY, phpredis will retry the scan command
    until keys come back OR Redis returns an iterator of zero
 */
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
@@ -548,7 +548,7 @@ $redis->acl('USERS'); /* Get a list of users */
 $redis->acl('LOG');   /* See log of Redis' ACL subsystem */
 ~~~
 
-*Note*:  In order to user the `ACL` command you must be communicating with Redis >= 6.0 and be logged into an account that has access to administration commands such as ACL.  Please reference [this tutorial](https://redis.io/topics/acl) for an overview of Redis 6 ACLs and [the redis command reference](https://redis.io/commands) for every ACL subcommand.
+*Note*: In order to use the `ACL` command you must be communicating with Redis >= 6.0 and be logged into an account that has access to administration commands such as ACL. Please reference [this tutorial](https://redis.io/topics/acl) for an overview of Redis 6 ACLs and [the redis command reference](https://redis.io/commands) for every ACL subcommand.
 
 *Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
 
@@ -868,7 +868,7 @@ $redis->getEx('key', ['EX' => 10]); // get key and set its expiration to 10 seco
 
 ### set
 -----
-_**Description**_: Set the string value in argument as value of the key.  If you're using Redis >= 2.6.12, you can pass extended options as explained below
+_**Description**_: Set the string value in argument as value of the key. If you're using Redis >= 2.6.12, you can pass extended options as explained below
 
 ##### *Parameters*
 *Key*  
@@ -1087,7 +1087,7 @@ A string, the previous value located at this key.
 ~~~php
 $redis->set('x', '42');
 $exValue = $redis->getSet('x', 'lol');	// return '42', replaces x by 'lol'
-$newValue = $redis->get('x')'		// return 'lol'
+$newValue = $redis->get('x');		// return 'lol'
 ~~~
 
 ### randomKey
@@ -1170,7 +1170,7 @@ $redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 
 ### expireAt, pexpireAt
 -----
-_**Description**_: Seta specific timestamp for a key to expire in seconds or milliseconds.
+_**Description**_: Set a specific timestamp for a key to expire in seconds or milliseconds.
 
 ##### *Prototype*
 ~~~php
@@ -1179,7 +1179,7 @@ public function pexpireat(string $key, int $unix_timestamp_millis, ?string $mode
 ~~~
 
 ##### *Return value*
-*BOOL*: `TRUE` if an expiration was set and `FALSE` if one was not set or in the event on an error.  You can detect an actual error by checking `getLastError()`.
+*BOOL*: `TRUE` if an expiration was set and `FALSE` if one was not set or in the event of an error. You can detect an actual error by checking `getLastError()`.
 
 ##### *Example*
 ~~~php
@@ -1215,7 +1215,7 @@ _**Description**_:  Scan the keyspace for keys
 *LONG, Optional*: Count of keys per iteration (only a suggestion to Redis)
 
 ##### *Return value*
-*Array, boolean*:  This function will return an array of keys or FALSE if Redis returned zero keys
+*Array, boolean*:  This function will return an array of keys or FALSE if Redis returns zero keys
 
 *Note*: SCAN is a "directed node" command in [RedisCluster](cluster.md#directed-node-commands)
 
@@ -1470,7 +1470,7 @@ _**Description**_: Returns the time to live left for a given key in seconds (ttl
 *Key*: key
 
 ##### *Return value*
-*LONG*:  The time to live in seconds.  If the key has no ttl, `-1` will be returned, and `-2` if the key doesn't exist.
+*LONG*: The time to live in seconds. If the key has no ttl, `-1` will be returned, and `-2` if the key doesn't exist.
 
 ##### *Example*
 ~~~php
@@ -1551,7 +1551,7 @@ $redis->restore('bar', 0, $val); // The key 'bar', will now be equal to the key 
 _**Description**_: Migrates a key to a different Redis instance.
 
 **Note:**: Redis introduced migrating multiple keys in 3.0.6, so you must have at least
-that version in order to call `migrate` with an array of keys.
+that version to call `migrate` with an array of keys.
 
 ##### *Parameters*
 *host* string.  The destination host  
@@ -2443,7 +2443,7 @@ key1, key2, keyN: keys identifying the different sets on which we will apply the
 
 ##### *Return value*
 
-Array, contain the result of the intersection between those keys. If the intersection between the different sets is empty, the return value will be empty array.
+Array, containing the result of the intersection between those keys. If the intersection between the different sets is empty, the return value will be an empty array.
 
 ##### *Examples*
 ~~~php
@@ -2618,7 +2618,7 @@ _**Description**_: Returns a random element from the set value at Key, without r
 *key*  
 *count* (Integer, optional)
 ##### *Return value*
-If no count is provided, a random *String* value from the set will be returned.  If a count
+If no count is provided, a random *String* value from the set will be returned. If a count
 is provided, an array of values from the set will be returned.  Read about the different
 ways to use the count here: [SRANDMEMBER](http://redis.io/commands/srandmember)
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
@@ -3915,7 +3915,7 @@ $obj_redis->xGroup('DESTROY', $str_key, $str_group);
 $obj_redis->xGroup('DELCONSUMER', $str_key, $str_group, $str_consumer_name);
 ~~~
 
-_**Description**_:  This command is used in order to create, destroy, or manage consumer groups.
+_**Description**_:  This command is used to create, destroy, or manage consumer groups.
 
 ##### *Return value*
 *Mixed*:  This command returns different types depending on the specific XGROUP command executed.
@@ -4104,7 +4104,7 @@ $obj_redis->xRevRange('mystream', '+', '-');
 $obj_redis->xTrim($str_stream, $i_max_len [, $boo_approximate]);
 ~~~
 
-_**Description**_:  Trim the stream length to a given maximum.  If the "approximate" flag is pasesed, Redis will use your size as a hint but only trim trees in whole nodes (this is more efficient).
+_**Description**_:  Trim the stream length to a given maximum.  If the "approximate" flag is passed, Redis will use your size as a hint but only trim trees in whole nodes (this is more efficient).
 
 ##### *Return value*
 *long*:  The number of messages trimmed from the stream.
@@ -4218,7 +4218,7 @@ _**Description**_: A method to execute any arbitrary command against the a Redis
 This method is variadic and takes a dynamic number of arguments of various types (string, long, double), but must be passed at least one argument (the command keyword itself).
 
 ##### *Return value*
-The return value can be various types depending on what the server itself returns.   No post processing is done to the returned value and must be handled by the client code.
+The return value can be various types depending on what the server itself returns. No post processing is done to the returned value and it must be handled by the client code.
 
 ##### *Example*
 ```php
@@ -4361,7 +4361,7 @@ $redis->script('exists', $script1, [$script2, $script3, ...]);
 ##### *Return value*
 * SCRIPT LOAD will return the SHA1 hash of the passed script on success, and FALSE on failure.
 * SCRIPT FLUSH should always return TRUE
-* SCRIPT KILL will return true if a script was able to be killed and false if not
+* SCRIPT KILL will return true if a script was killed and false if not
 * SCRIPT EXISTS will return an array with TRUE or FALSE for each passed script
 
 ### client
