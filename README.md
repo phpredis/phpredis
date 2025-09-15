@@ -15,17 +15,17 @@ You can send comments, patches, questions [here on github](https://github.com/ph
 These are a work in progress, but will eventually replace our **ONE README TO RULE THEM ALL** docs.  
 
 ## Supporting the project
-PhpRedis will always be free and open source software, but if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support would be appreciated! :heart:
+PhpRedis will always be free and open source software and if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support is greatly appreciated! :heart:
 
-The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and new features to prioritize.
+The best way to support the project is through [GitHub Sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [Slack](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and features to prioritize.
 
-You can also make a one-time contribution with [![PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
+You can also make a one-time contribution with [PayPal](https://www.paypal.me/michaelgrunder/5).
 
 ## Sponsors
 <a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>
 <a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" align="center" alt="Bluehost.com" width="150"></a>
 <a href="https://objectcache.pro"><img src="https://objectcache.pro/assets/wordmark-padded.png" align="center" alt="Object Cache Pro" width="150"></a>
-<a href="https://openlms.net"><img src="https://help.openlms.net/wp-content/uploads/2020/05/cropped-open-lms.png" align="center" alt="OpenLMS.net" width="150"></a>
+<a href="https://openlms.net"><img src="https://support.openlms.net/hc/theming_assets/01HZPV3CVP3Y6P7G6MT14NP6V1" align="center" alt="OpenLMS.net" width="150"></a>
 
 # Table of contents
 -----
