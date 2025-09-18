@@ -3213,6 +3213,10 @@ PHP_METHOD(RedisCluster, vrandmember) {
                            cluster_randmember_resp, 1);
 }
 
+PHP_METHOD(RedisCluster, vrange) {
+    CLUSTER_PROCESS_KW_CMD("VRANGE", redis_vrange_cmd, cluster_mbulk_resp, 1);
+}
+
 PHP_METHOD(RedisCluster, vrem) {
     CLUSTER_PROCESS_KW_CMD("VREM", redis_kv_cmd, cluster_long_resp, 0);
 }
