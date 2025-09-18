@@ -191,6 +191,9 @@ int redis_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_xrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
+int redis_vrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
 int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 

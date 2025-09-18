@@ -5856,14 +5856,16 @@ int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* X[REV]RANGE key start end [COUNT count] */
-int redis_xrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char *kw, char **cmd, int *cmd_len, short *slot,
-                     void **ctx)
+static int
+redis_xrange_generic_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char *kw, zend_bool have_count_literal, char **cmd,
+                         int *cmd_len, short *slot, void **ctx)
 {
     smart_string cmdstr = {0};
     char *key, *start, *end;
     size_t keylen, startlen, endlen;
     zend_long count = -1;
+    int argc;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "sss|l", &key, &keylen,
                               &start, &startlen, &end, &endlen, &count)
@@ -5872,19 +5874,38 @@ int redis_xrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    redis_cmd_init_sstr(&cmdstr, 3 + (2 * (count > -1)), kw, strlen(kw));
+    argc = 3 + ((have_count_literal ? 2 : 1) * (count > -1));
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+
     redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
     redis_cmd_append_sstr(&cmdstr, start, startlen);
     redis_cmd_append_sstr(&cmdstr, end, endlen);
 
     if (count > -1) {
-        redis_cmd_append_sstr(&cmdstr, ZEND_STRL("COUNT"));
+        if (have_count_literal)
+            redis_cmd_append_sstr(&cmdstr, ZEND_STRL("COUNT"));
         redis_cmd_append_sstr_long(&cmdstr, count);
     }
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
     return SUCCESS;
+}
+
+int redis_xrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, short *slot,
+                     void **ctx)
+{
+    return redis_xrange_generic_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                    redis_sock, kw, 1, cmd, cmd_len, slot, ctx);
+}
+
+int redis_vrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, short *slot,
+                     void **ctx)
+{
+    return redis_xrange_generic_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                    redis_sock, kw, 0, cmd, cmd_len, slot, ctx);
 }
 
 /* Helper function to take an associative array and append the Redis

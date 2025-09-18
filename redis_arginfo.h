@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 26d337d9f4984fe9e2c15c4245620494cb6ac24e */
+ * Stub hash: 619374bbad94b8a9992f9c11abd12362e07359d0 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1098,6 +1098,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vrandmember, 0, 
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vrange, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, min, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, max, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vrem, 0, 2, Redis, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_MIXED, 0)
@@ -1537,6 +1544,7 @@ ZEND_METHOD(Redis, vinfo);
 ZEND_METHOD(Redis, vismember);
 ZEND_METHOD(Redis, vemb);
 ZEND_METHOD(Redis, vrandmember);
+ZEND_METHOD(Redis, vrange);
 ZEND_METHOD(Redis, vrem);
 ZEND_METHOD(Redis, vsetattr);
 ZEND_METHOD(Redis, vgetattr);
@@ -1825,6 +1833,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, vismember, arginfo_class_Redis_vismember, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vemb, arginfo_class_Redis_vemb, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vrandmember, arginfo_class_Redis_vrandmember, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, vrange, arginfo_class_Redis_vrange, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vrem, arginfo_class_Redis_vrem, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vsetattr, arginfo_class_Redis_vsetattr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vgetattr, arginfo_class_Redis_vgetattr, ZEND_ACC_PUBLIC)

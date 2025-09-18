@@ -4300,6 +4300,18 @@ class Redis {
     public function vrandmember(string $key, int $count = 0): Redis|array|string|false;
 
     /**
+     * Retreive a lexographical range of elements from a vector set
+     *
+     * @param string $key        The vector set to query.
+     * @param string $min        The minimum element to return.
+     * @param string $max        The maximum element to return.
+     * @param int    $count      An optional maximum number of elements to return.
+     *
+     * @return Redis|array|false An array of elements in the requested range or false on failure.
+     */
+    public function vrange(string $key, string $min, string $max, int $count = -1): Redis|array|false;
+
+    /**
      * Remove an element from a vector set
      *
      * @param string $key     The vector set to remove from.
@@ -4328,8 +4340,6 @@ class Redis {
      * @param string $key     The vector set to query.
      * @param mixed  $member  The member to query.
      * @param bool   $decode  Whether to automatically deserialize any returned json.
-     *
-     *
      *
      * @return Redis|array|false An array of attributes for the member or false on failure.
      */

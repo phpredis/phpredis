@@ -7887,6 +7887,25 @@ class Redis_Test extends TestSuite {
         );
     }
 
+    public function testVRange() {
+        if ($this->haveCommand('VRANGE') === false)
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('v'));
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->assertEquals(1, $this->redis->vadd('v', [$i / 10, $i / 10], "e{$i}"));
+        }
+
+        $res = $this->redis->vrange('v', '-', '+');
+        $this->assertIsArray($res);
+        $this->assertEquals(10, count($res));
+
+        $res = $this->redis->vrange('v', '-', '+', 3);
+        $this->assertIsArray($res);
+        $this->assertEquals(3, count($res));
+    }
+
     public function testInvalidAuthArgs() {
         $client = $this->newInstance();
 

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: c8d6113b07ba9386e41ab8513190c87415676bd0 */
+ * Stub hash: d504e84c671162c4ec78aa1e6bb5a47c695ee90d */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -914,6 +914,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_vrandmemb
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_vrange, 0, 3, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, min, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, max, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_vrem, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_MIXED, 0)
@@ -1377,6 +1384,7 @@ ZEND_METHOD(RedisCluster, vinfo);
 ZEND_METHOD(RedisCluster, vismember);
 ZEND_METHOD(RedisCluster, vemb);
 ZEND_METHOD(RedisCluster, vrandmember);
+ZEND_METHOD(RedisCluster, vrange);
 ZEND_METHOD(RedisCluster, vrem);
 ZEND_METHOD(RedisCluster, vlinks);
 ZEND_METHOD(RedisCluster, vgetattr);
@@ -1633,6 +1641,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, vismember, arginfo_class_RedisCluster_vismember, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, vemb, arginfo_class_RedisCluster_vemb, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, vrandmember, arginfo_class_RedisCluster_vrandmember, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, vrange, arginfo_class_RedisCluster_vrange, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, vrem, arginfo_class_RedisCluster_vrem, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, vlinks, arginfo_class_RedisCluster_vlinks, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, vgetattr, arginfo_class_RedisCluster_vgetattr, ZEND_ACC_PUBLIC)

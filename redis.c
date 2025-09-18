@@ -3209,6 +3209,10 @@ PHP_METHOD(Redis, vrandmember) {
                          redis_randmember_response);
 }
 
+PHP_METHOD(Redis, vrange) {
+    REDIS_PROCESS_KW_CMD("VRANGE", redis_vrange_cmd, redis_sock_read_multibulk_reply);
+}
+
 PHP_METHOD(Redis, vrem) {
     REDIS_PROCESS_KW_CMD("VREM", redis_kv_cmd, redis_long_response);
 }

@@ -1109,6 +1109,19 @@ class RedisCluster {
     public function vrandmember(string $key, int $count = 0): RedisCluster|array|string|false;
 
     /**
+     * Retreive a lexographical range of elements from a vector set
+     *
+     * @param string $key        The vector set to query.
+     * @param string $min        The minimum element to return.
+     * @param string $max        The maximum element to return.
+     * @param int    $count      An optional maximum number of elements to return.
+     *
+     * @return RedisCluster|array|false An array of elements in the specified range.`
+     */
+    public function vrange(string $key, string $min, string $max, int $count = -1): RedisCluster|array|false;
+
+
+    /**
      * @see Redis::vrem
      */
     public function vrem(string $key, mixed $member): RedisCluster|int|false;
