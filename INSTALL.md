@@ -1,3 +1,11 @@
+# Installation with PIE from packagist
+
+To pull latest stable released version, from [packagist](https://packagist.org/packages/phpredis/phpredis)
+
+~~~
+pie install phpredis/phpredis
+~~~
+
 # Installation from pecl
 
 To pull latest stable released version, from [pecl](https://pecl.php.net/package/redis)
@@ -40,20 +48,20 @@ Follow the DLL link on the [https://pecl.php.net/package/redis](https://pecl.php
 
 Fedora users can install the package from the official repository.
 
-### Fedora ≥ 29, Version 5
+### Fedora ≥ 40, Version 6
 
-Installation of the [php-pecl-redis5](https://packages.fedoraproject.org/pkgs/php-pecl-redis5/php-pecl-redis5/) package:
-
-~~~
-dnf install php-pecl-redis5
-~~~
-
-## RHEL / CentOS
-
-Installation of the [php-pecl-redis](https://apps.fedoraproject.org/packages/php-pecl-redis) package, from the [EPEL repository](https://fedoraproject.org/wiki/EPEL):
+Installation of the [php-pecl-redis6](https://src.fedoraproject.org/rpms/php-pecl-redis6/) package:
 
 ~~~
-yum install php-pecl-redis
+dnf install php-redis
+~~~
+
+## CentOS / RHEL and clones
+
+Installation of the php-pecl-redis6 package, available for PHP ≥ 8.3:
+
+~~~
+dnf install php-redis
 ~~~
 
 ### openSUSE ≥ 15.1
