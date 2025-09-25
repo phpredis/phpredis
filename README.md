@@ -155,7 +155,6 @@ php tests/TestRedis.php --class Redis --test echo
 The [API Documentation](https://phpredis.github.io/phpredis) are a work in progress, but will eventually replace our **ONE README TO RULE THEM ALL** docs.  
 
 ## Classes and methods
------
 
 ### Usage
 
