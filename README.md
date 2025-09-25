@@ -10,20 +10,20 @@ It is released under the [PHP License, version 3.01](http://www.php.net/license/
 
 You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to michael.grunder@gmail.com ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)).
 
-### Supporting the project
+## Supporting the project
 PhpRedis will always be free and open source software and if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support is greatly appreciated! :heart:
 
 The best way to support the project is through [GitHub Sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [Slack](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and features to prioritize.
 
 You can also make a one-time contribution with [PayPal](https://www.paypal.me/michaelgrunder/5).
 
-### Sponsors
+## Sponsors
 <a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>
 <a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" align="center" alt="Bluehost.com" width="150"></a>
 <a href="https://objectcache.pro"><img src="https://objectcache.pro/assets/wordmark-padded.png" align="center" alt="Object Cache Pro" width="150"></a>
 <a href="https://openlms.net"><img src="https://support.openlms.net/hc/theming_assets/01HZPV3CVP3Y6P7G6MT14NP6V1" align="center" alt="OpenLMS.net" width="150"></a>
 
-### Table of contents
+## Table of contents
 1. [Installing/Configuring](#installingconfiguring)
   * [Installation](#installation)
   * [PHP Session handler](#php-session-handler)
@@ -50,10 +50,7 @@ You can also make a one-time contribution with [PayPal](https://www.paypal.me/mi
   * [Scripting](#scripting)
   * [Introspection](#introspection)
 
------
-
 ## Installing/Configuring
------
 
 ### Installation
 
