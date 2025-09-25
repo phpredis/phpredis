@@ -28,7 +28,7 @@ You can send comments, patches, questions [here on github](https://github.com/ph
 ## Become a Sponsor
 PhpRedis will always be free and open source software and if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support is greatly appreciated! :heart:
 
-The ongoing development is made possible thanks to the generous support of [Relay](https://relay.so), which funds the vast majority of work on the project. Relay is a next-generation, high-performance in-memory cache and drop-in replacement for PhpRedis.
+The ongoing development of PhpRedis is made possible thanks to the generous support of [Relay](https://relay.so), which funds the vast majority of work on the project. Relay is a high-performance in-memory cache and drop-in replacement for PhpRedis, which handles millions of requests per second without breaking a sweat.
 
 The best way to support the project is through [GitHub Sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [Slack](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and features to prioritize. You can also make a one-time contribution with [PayPal](https://www.paypal.me/michaelgrunder/5).
 
