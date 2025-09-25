@@ -27,6 +27,7 @@ The best way to support the project is through [GitHub Sponsors](https://github.
   <a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>&nbsp;
   <a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" align="center" alt="Bluehost.com" width="150"></a>
   <a href="https://openlms.net"><img src="https://support.openlms.net/hc/theming_assets/01HZPV3CVP3Y6P7G6MT14NP6V1" align="center" alt="OpenLMS.net" width="125"></a>
+  <br><br>
 </div>
 
 ## Table of contents
