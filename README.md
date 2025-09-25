@@ -13,15 +13,21 @@ You can send comments, patches, questions [here on github](https://github.com/ph
 ## Supporting the project
 PhpRedis will always be free and open source software and if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support is greatly appreciated! :heart:
 
-The best way to support the project is through [GitHub Sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [Slack](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and features to prioritize.
-
-You can also make a one-time contribution with [PayPal](https://www.paypal.me/michaelgrunder/5).
+The best way to support the project is through [GitHub Sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [Slack](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and features to prioritize. You can also make a one-time contribution with [PayPal](https://www.paypal.me/michaelgrunder/5).
 
 ## Sponsors
-<a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>
-<a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" align="center" alt="Bluehost.com" width="150"></a>
-<a href="https://objectcache.pro"><img src="https://objectcache.pro/assets/wordmark-padded.png" align="center" alt="Object Cache Pro" width="150"></a>
-<a href="https://openlms.net"><img src="https://support.openlms.net/hc/theming_assets/01HZPV3CVP3Y6P7G6MT14NP6V1" align="center" alt="OpenLMS.net" width="150"></a>
+
+<div align="center">
+  <br>
+  <a href="https://relay.so">
+    <img src="https://s3.us-east-1.amazonaws.com/assets.relay.so/img/wordmark-purple.svg" align="center" alt="The next-generation caching layer for PHP." width="300">
+  </a>
+  <br><br><br>
+  <a href="https://objectcache.pro"><img src="https://objectcache.pro/assets/wordmark-padded.png" align="center" alt="Object Cache Pro" width="200"></a>&nbsp;
+  <a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>&nbsp;
+  <a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" align="center" alt="Bluehost.com" width="150"></a>
+  <a href="https://openlms.net"><img src="https://support.openlms.net/hc/theming_assets/01HZPV3CVP3Y6P7G6MT14NP6V1" align="center" alt="OpenLMS.net" width="125"></a>
+</div>
 
 ## Table of contents
 1. [Installing/Configuring](#installingconfiguring)
