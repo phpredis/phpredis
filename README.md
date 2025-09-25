@@ -8,7 +8,7 @@ The phpredis extension provides an API for communicating with the [Redis](http:/
 
 It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 
-You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to michael.grunder@gmail.com ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)).
+You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to [Michael](mailto:michael.grunder@gmail.com) ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), [Pavlo](mailto:p.yatsukhnenko@gmail.com) ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or [Nicolas](mailto:n.favrefelix@gmail.com) ([@yowgi](https://twitter.com/yowgi)).
 
 ## Supporting the project
 PhpRedis will always be free and open source software and if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support is greatly appreciated! :heart:
