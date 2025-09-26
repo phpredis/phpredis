@@ -14,6 +14,12 @@ To pull latest stable released version, from [pecl](https://pecl.php.net/package
 pecl install redis
 ~~~
 
+Configure options can be passed as well:
+
+```bash
+pecl install --configureoptions="enable-redis-msgpack='yes' enable-redis-igbinary='yes'" redis
+```
+
 # Installation from sources
 
 To build this extension for the sources tree:
