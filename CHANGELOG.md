@@ -7,31 +7,27 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 # [6.3.0RC1] - TBD
 
+### Sponsors :sparkling_heart:
+
+- [A-VISION](https://github.com/A-VISION-BV)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Geoffrey Hoffman](https://github.com/phpguru)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Open LMS](https://openlms.net/)
+- [Relay](https://relay.so)
+- [Salvatore Sanfilippo](https://github.com/antirez)
+- [Ty Karok](https://github.com/karock)
+
 ## Fixed
 
-- Fix markdown headlines
-  [1d662f56](https://github.com/phpredis/phpredis/commit/1d662f56aaac82e9f4a480265666e49eb592d9f6)
-  ([tillkruss](https://github.com/tillkruss))
-- Fix geosearchstore bypolygon test
-  [f24814a4](https://github.com/phpredis/phpredis/commit/f24814a42349e6bb1b2aff8fdae4422be1cbd732)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Fix `VISMEMBER` unit test
-  [38115dec](https://github.com/phpredis/phpredis/commit/38115decb97ccdd96088077fcb447db9251667f0)
+- Fix an overflow bug in ZADD on Windows
+  [35df8ad7](https://github.com/phpredis/phpredis/commit/35df8ad7c2fc54fbf2a58d486cce49e712344bb2)
   ([michael-grunder](https://github.com/michael-grunder))
 - Fix errors and a warning
   [b8de91c9](https://github.com/phpredis/phpredis/commit/b8de91c9e09dfaf6850273619b5ed92ce5d88db9)
   ([michael-grunder](https://github.com/michael-grunder))
-- Fix `VEMB` reply handling in `RedisCluster`
-  [c4b2ea6c](https://github.com/phpredis/phpredis/commit/c4b2ea6ca532d4ef2c836f9b9c0701846c3bb202)
-  ([michael-grunder](https://github.com/michael-grunder))
 - Fix `RedisCluster` segfault
   [f61e8cd7](https://github.com/phpredis/phpredis/commit/f61e8cd7bae16a761fd5c6c4b62e1e52707e0841)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Fix dead assignment
-  [d564e8cf](https://github.com/phpredis/phpredis/commit/d564e8cf3ce33c65898bc098173358b697fa459a)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Fix several issues surfaced by `gcc -fanalyze`
-  [8be2306e](https://github.com/phpredis/phpredis/commit/8be2306e4f9192aaa167a5338673f3c348a2caf6)
   ([michael-grunder](https://github.com/michael-grunder))
 - Fix passing NULL for hash expiry argument
   [ca80ee0e](https://github.com/phpredis/phpredis/commit/ca80ee0e6781bad4b4e453a10e968491b12db579)
@@ -51,18 +47,12 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Fix double -> int truncation warning
   [152fdda9](https://github.com/phpredis/phpredis/commit/152fdda9b15fe5e60914f43fa34f64fd6e19d90d)
   ([michael-grunder](https://github.com/michael-grunder))
-- Fix an unused variable warning
-  [b48aa0d4](https://github.com/phpredis/phpredis/commit/b48aa0d471bf7280a1365fb5b4cb7595b5920498)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Fix SIGABRT in PHP 8.4 with RedisArray
+- Fix `SIGABRT` in PHP 8.4 with RedisArray
   [3c64b33f](https://github.com/phpredis/phpredis/commit/3c64b33ffe06a8929d61dd2b71ae5ea08014a455)
   ([Novynn](https://github.com/Novynn))
 - Fixing segfault in cluster_update_slot
   [b0ba827b](https://github.com/phpredis/phpredis/commit/b0ba827be243eae701239fa4068c05249ada6b49)
   ([JacobBrownAustin](https://github.com/JacobBrownAustin))
-- Fix typo (s/sees/seeds/)
-  [25e6d5fc](https://github.com/phpredis/phpredis/commit/25e6d5fcc2b7599907ec9571a12c1d5c8f9c0dcb)
-  ([xabbuh](https://github.com/xabbuh))
 - Fix typo
   [d0b0c5cf](https://github.com/phpredis/phpredis/commit/d0b0c5cfdde9d49a265ca4bf7184e3998863aed0)
   ([michael-grunder](https://github.com/michael-grunder))
@@ -81,40 +71,26 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Add `maxRetries` to `redis_sock_configure`
   [e9e9e495](https://github.com/phpredis/phpredis/commit/e9e9e4950946cd92aab8d0aa14d9d84adce4a646)
   ([michael-grunder](https://github.com/michael-grunder))
-- Add a regression test for `EVAL[SHA]`
-  [22a2914b](https://github.com/phpredis/phpredis/commit/22a2914b09e927c0641da846b01fe54ebef50334)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement `VISMEMBER` command
-  [92dd256f](https://github.com/phpredis/phpredis/commit/92dd256f981be863fb3811c17aad60e5b270c862)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement `VGETATTR` command
-  [d80b7258](https://github.com/phpredis/phpredis/commit/d80b725824d5cb56a44910b761c82acaec265713)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement `VLINKS` command
-  [7f9b1f41](https://github.com/phpredis/phpredis/commit/7f9b1f416ec96e3c34fb2b18a674cb28debcf8c5)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement `VSETATTR` command
-  [92716ed0](https://github.com/phpredis/phpredis/commit/92716ed0c5ccd199fe20575989d84c582832d01c)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement `VREM` command
-  [dc91631b](https://github.com/phpredis/phpredis/commit/dc91631b3f6fe689fbf2de63da96f7a5ff350048)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement `VRANDMEMBER`
-  [1deca628](https://github.com/phpredis/phpredis/commit/1deca62841ab0b8df0699733166bf9394d5143e0)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement `VEMB` and slightly rework VINFO
-  [96378b70](https://github.com/phpredis/phpredis/commit/96378b70fd03b571d1952022ec07f20307bf9fe6)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement `VCARD`, `VDIM`, and `VINFO`
-  [0fda9f29](https://github.com/phpredis/phpredis/commit/0fda9f293b81f271b0f33e36303cf4df3e9dcefe)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Add `Redis::REDIS_VECTORSET` type
-  [0ed0fc05](https://github.com/phpredis/phpredis/commit/0ed0fc0562eccbfd53b30d466c4076bab35bc39b)
+- Implement vectorset commands
+  [92dd256f](https://github.com/phpredis/phpredis/commit/92dd256f981be863fb3811c17aad60e5b270c862),
+  [d80b7258](https://github.com/phpredis/phpredis/commit/d80b725824d5cb56a44910b761c82acaec265713),
+  [7f9b1f41](https://github.com/phpredis/phpredis/commit/7f9b1f416ec96e3c34fb2b18a674cb28debcf8c5),
+  [92716ed0](https://github.com/phpredis/phpredis/commit/92716ed0c5ccd199fe20575989d84c582832d01c),
+  [dc91631b](https://github.com/phpredis/phpredis/commit/dc91631b3f6fe689fbf2de63da96f7a5ff350048),
+  [1deca628](https://github.com/phpredis/phpredis/commit/1deca62841ab0b8df0699733166bf9394d5143e0),
+  [96378b70](https://github.com/phpredis/phpredis/commit/96378b70fd03b571d1952022ec07f20307bf9fe6),
+  [0fda9f29](https://github.com/phpredis/phpredis/commit/0fda9f293b81f271b0f33e36303cf4df3e9dcefe),
+  [0ed0fc05](https://github.com/phpredis/phpredis/commit/0ed0fc0562eccbfd53b30d466c4076bab35bc39b),
+  [d1d69005](https://github.com/phpredis/phpredis/commit/d1d690053f8a468a64628da1d53cfd3ad6155344),
+  [286fa630](https://github.com/phpredis/phpredis/commit/286fa630649af95c5530f5df54cc74927bdf2383),
+  [38115dec](https://github.com/phpredis/phpredis/commit/38115decb97ccdd96088077fcb447db9251667f0),
+  [c4b2ea6c](https://github.com/phpredis/phpredis/commit/c4b2ea6ca532d4ef2c836f9b9c0701846c3bb202)
   ([michael-grunder](https://github.com/michael-grunder))
 - Implement `GEOSEARCH[STORE]` `BYPOLYGON`
-  [8d369f4d](https://github.com/phpredis/phpredis/commit/8d369f4d6263c8fe549d6eb89c52dc148843963d)
+  [8d369f4d](https://github.com/phpredis/phpredis/commit/8d369f4d6263c8fe549d6eb89c52dc148843963d),
+  [f24814a4](https://github.com/phpredis/phpredis/commit/f24814a42349e6bb1b2aff8fdae4422be1cbd732)
   ([michael-grunder](https://github.com/michael-grunder))
-- Implement `DELIFEQ` command
+- Implement Valkey's `DELIFEQ` command
   [b1b0c191](https://github.com/phpredis/phpredis/commit/b1b0c1914232b2b8d94cd2147b12df4429ba10bc)
   ([michael-grunder](https://github.com/michael-grunder))
 - Add an INI setting returning 5.x legacy behavior -- readonly session on lock failure
@@ -122,12 +98,6 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   ([arokettu](https://github.com/arokettu))
 - Implement several hash expiration commands
   [7350768c](https://github.com/phpredis/phpredis/commit/7350768cd9285b7d0c5c28742eabe52cfb1b326a)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement VSIM command
-  [d1d69005](https://github.com/phpredis/phpredis/commit/d1d690053f8a468a64628da1d53cfd3ad6155344)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Implement VADD command
-  [286fa630](https://github.com/phpredis/phpredis/commit/286fa630649af95c5530f5df54cc74927bdf2383)
   ([michael-grunder](https://github.com/michael-grunder))
 - Introduce `Redis::serverName` and `Redis::serverVersion` methods
   [056c2dbe](https://github.com/phpredis/phpredis/commit/056c2dbee7f6379a9f546e46584ace59449847c7)
@@ -147,57 +117,9 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Changed
 
-- Attempt to fix an overflow bug in ZADD on Windows
-  [35df8ad7](https://github.com/phpredis/phpredis/commit/35df8ad7c2fc54fbf2a58d486cce49e712344bb2)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Refactor `redis_replicaof_cmd`
-  [659dc763](https://github.com/phpredis/phpredis/commit/659dc763e0f69f526ff0a3404c1a113c9c55e9ea)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Rework `REDIS_SAVE_CALLBACK` to be a function
-  [9802fc0e](https://github.com/phpredis/phpredis/commit/9802fc0e46a3746e7913807029c6edcf03be3ec5)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Rework `REDIS_PROCESS_REQUEST` to be a function
-  [8f0931bb](https://github.com/phpredis/phpredis/commit/8f0931bbed9c68a9d9316ec2dbe36852235bbb04)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Remove dead legacy code
-  [7c953d45](https://github.com/phpredis/phpredis/commit/7c953d458b8b30bc6bb6e7877a9b07ff5607300a)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Rework `REDIS_PROCESS_KW_CMD` as a function
-  [950d2bc7](https://github.com/phpredis/phpredis/commit/950d2bc79dd328ae4d9b55a019b9d51a312813f5)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Rework `REDIS_PROCESS_CMD` into a static function
-  [601ebbff](https://github.com/phpredis/phpredis/commit/601ebbff2b654d7f73d58a5cea275f08009fd4ee)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Rework `CLUSTER_RESET_MULTI` to be a static function
-  [c3a71631](https://github.com/phpredis/phpredis/commit/c3a71631080d0e40a66b1362bc9113f4048a9aca)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Rework `CLUSTER_FREE_QUEUE` as a static function
-  [b0040514](https://github.com/phpredis/phpredis/commit/b004051499ffd78cd4ca678e0a061cf279dedb6c)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Remove dead macro `CLUSTER_BUILD_CMD`
-  [fae89fa9](https://github.com/phpredis/phpredis/commit/fae89fa9927d5d1074da45ffe019822af215969e)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Make `CLUSTER_ENQUEUE_RESPONSE` a static function
-  [f880e1f7](https://github.com/phpredis/phpredis/commit/f880e1f7273a230bd462824533e03c35e49a57f4)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Rework `CLUSTER_PROCESS_KW_CMD` to be a small wrapper macro + function
-  [b90e27f2](https://github.com/phpredis/phpredis/commit/b90e27f2858276908803b6ac65103aeb89c254f8)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Rework `CLUSTER_PROCESS_CMD` to use an underlying function
-  [1db39089](https://github.com/phpredis/phpredis/commit/1db390891455e2faeb5a9fef4f3da9e18a2ba754)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Refactor `EVAL[SHA]` command and add a regression test
-  [6e5faf42](https://github.com/phpredis/phpredis/commit/6e5faf4226b6a0a33ce782ae04d5d395fe233f55)
-  ([michael-grunder](https://github.com/michael-grunder))
 - Check for `dragonfly_version` in `HELLO` response
   [593ba012](https://github.com/phpredis/phpredis/commit/593ba012ac49065343f6bbf10adca5047414ce85)
   ([michael-grunder](https://github.com/michael-grunder))
-- Broaden return type for Redis::hGetAll
-  [bfbab892](https://github.com/phpredis/phpredis/commit/bfbab8925878409d0f6614c17a597e74c30574a8)
-  ([mgiuffrida](https://github.com/mgiuffrida))
-- New macros REDIS_RESPONSE_ERROR and REDIS_RETURN_ZVAL
-  [614b86e4](https://github.com/phpredis/phpredis/commit/614b86e457532f0cc3c6f41322740e6125949721)
-  ([JakubOnderka](https://github.com/JakubOnderka))
 - Simplify redis_unpack method calling
   [0a85bd82](https://github.com/phpredis/phpredis/commit/0a85bd824a1506d54abe3c48a3ad12c34429b00d)
   ([JakubOnderka](https://github.com/JakubOnderka))
@@ -210,24 +132,15 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Make execHello protected
   [300c5fb2](https://github.com/phpredis/phpredis/commit/300c5fb218ebb55fb6eca4de91756a91e57912ea)
   ([michael-grunder](https://github.com/michael-grunder))
-- Remove wrapper macro which hides branching logic
-  [58e1a04f](https://github.com/phpredis/phpredis/commit/58e1a04f76340b7add977b586d18bb1f8cb23bac)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Use continue not break if we get a NULL node
-  [8685c49c](https://github.com/phpredis/phpredis/commit/8685c49c7055d538f695cb3af1bb85b4145efad5)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Remove pointless casts
-  [03837f02](https://github.com/phpredis/phpredis/commit/03837f0230a0f00d88194e373ec89e77ec1c7bbe)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Change `int` flags to `zend_bool` since we only use them as booleans
-  [77691947](https://github.com/phpredis/phpredis/commit/77691947571921ced7170abcbdc0643ad7cf7c47)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Remove unused macros + simplify some logic
-  [75acbb09](https://github.com/phpredis/phpredis/commit/75acbb0984704c0e66919153d9485ac156d382be)
-  ([michael-grunder](https://github.com/michael-grunder))
 
 ## Documentation
 
+- Update Relay sponsorship
+  [7a69d73](https://github.com/phpredis/phpredis/commit/7a69d73)
+  ([tillkruss](https://github.com/tillkruss))
+- Fix markdown headlines
+  [1d662f56](https://github.com/phpredis/phpredis/commit/1d662f56aaac82e9f4a480265666e49eb592d9f6)
+  ([tillkruss](https://github.com/tillkruss))
 - document PECL configure options
   [2066cfad](https://github.com/phpredis/phpredis/commit/2066cfad26db9e72295697485a0756df66dfe87c)
   ([tillkruss](https://github.com/tillkruss))
@@ -246,12 +159,18 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Link to the correct header
   [d18db84c](https://github.com/phpredis/phpredis/commit/d18db84c68d4db907fe04e6531a5129c1fe97391)
   ([wyattoday](https://github.com/wyattoday))
-- Update README.md
+- Update README.md about supported PHP versions.
   [b7a97e5e](https://github.com/phpredis/phpredis/commit/b7a97e5ec37ade2481f875295e45a2e1b6dd5366)
   ([AkameOuO](https://github.com/AkameOuO))
+- Broaden return type for Redis::hGetAll
+  [bfbab892](https://github.com/phpredis/phpredis/commit/bfbab8925878409d0f6614c17a597e74c30574a8)
+  ([mgiuffrida](https://github.com/mgiuffrida))
 
 ## Tests/CI
 
+- Add a regression test for `EVAL[SHA]`
+  [22a2914b](https://github.com/phpredis/phpredis/commit/22a2914b09e927c0641da846b01fe54ebef50334)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Rework `HEXPIRE` test inclusion + bump Valkey
   [b83981aa](https://github.com/phpredis/phpredis/commit/b83981aaeb6614754664353d8b4db22f5a631543)
   ([michael-grunder](https://github.com/michael-grunder))
@@ -264,6 +183,57 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Reorganize tests
   [807f806f](https://github.com/phpredis/phpredis/commit/807f806fe8a4df77691c869289db24358a684f7f)
   ([yatsukhnenko](https://github.com/yatsukhnenko))
+
+## Internal/Performance
+
+- Fix typo (s/sees/seeds/)
+  [25e6d5fc](https://github.com/phpredis/phpredis/commit/25e6d5fcc2b7599907ec9571a12c1d5c8f9c0dcb)
+  ([xabbuh](https://github.com/xabbuh))
+- Fix an unused variable warning
+  [b48aa0d4](https://github.com/phpredis/phpredis/commit/b48aa0d471bf7280a1365fb5b4cb7595b5920498)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix several issues surfaced by `gcc -fanalyze`
+  [8be2306e](https://github.com/phpredis/phpredis/commit/8be2306e4f9192aaa167a5338673f3c348a2caf6)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix dead assignment
+  [d564e8cf](https://github.com/phpredis/phpredis/commit/d564e8cf3ce33c65898bc098173358b697fa459a)
+- Refactor `redis_replicaof_cmd`
+  [659dc763](https://github.com/phpredis/phpredis/commit/659dc763e0f69f526ff0a3404c1a113c9c55e9ea)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Refactor several command handling macros into typesafe static functions
+  [9802fc0e](https://github.com/phpredis/phpredis/commit/9802fc0e46a3746e7913807029c6edcf03be3ec5),
+  [8f0931bb](https://github.com/phpredis/phpredis/commit/8f0931bbed9c68a9d9316ec2dbe36852235bbb04),
+  [7c953d45](https://github.com/phpredis/phpredis/commit/7c953d458b8b30bc6bb6e7877a9b07ff5607300a),
+  [950d2bc7](https://github.com/phpredis/phpredis/commit/950d2bc79dd328ae4d9b55a019b9d51a312813f5),
+  [601ebbff](https://github.com/phpredis/phpredis/commit/601ebbff2b654d7f73d58a5cea275f08009fd4ee),
+  [c3a71631](https://github.com/phpredis/phpredis/commit/c3a71631080d0e40a66b1362bc9113f4048a9aca),
+  [b0040514](https://github.com/phpredis/phpredis/commit/b004051499ffd78cd4ca678e0a061cf279dedb6c),
+  [fae89fa9](https://github.com/phpredis/phpredis/commit/fae89fa9927d5d1074da45ffe019822af215969e),
+  [f880e1f7](https://github.com/phpredis/phpredis/commit/f880e1f7273a230bd462824533e03c35e49a57f4),
+  [b90e27f2](https://github.com/phpredis/phpredis/commit/b90e27f2858276908803b6ac65103aeb89c254f8),
+  [1db39089](https://github.com/phpredis/phpredis/commit/1db390891455e2faeb5a9fef4f3da9e18a2ba754)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Refactor `EVAL[SHA]` command and add a regression test
+  [6e5faf42](https://github.com/phpredis/phpredis/commit/6e5faf4226b6a0a33ce782ae04d5d395fe233f55)
+  ([michael-grunder](https://github.com/michael-grunder))
+- New macros REDIS_RESPONSE_ERROR and REDIS_RETURN_ZVAL
+  [614b86e4](https://github.com/phpredis/phpredis/commit/614b86e457532f0cc3c6f41322740e6125949721)
+  ([JakubOnderka](https://github.com/JakubOnderka))
+- Remove wrapper macro which hides branching logic
+  [58e1a04f](https://github.com/phpredis/phpredis/commit/58e1a04f76340b7add977b586d18bb1f8cb23bac)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Use continue not break if we get a NULL node
+  [8685c49c](https://github.com/phpredis/phpredis/commit/8685c49c7055d538f695cb3af1bb85b4145efad5)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Remove pointless casts
+  [03837f02](https://github.com/phpredis/phpredis/commit/03837f0230a0f00d88194e373ec89e77ec1c7bbe)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Change `int` flags to `zend_bool` since we only use them as booleans
+  [77691947](https://github.com/phpredis/phpredis/commit/77691947571921ced7170abcbdc0643ad7cf7c47)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Remove unused macros + simplify some logic
+  [75acbb09](https://github.com/phpredis/phpredis/commit/75acbb0984704c0e66919153d9485ac156d382be)
+  ([michael-grunder](https://github.com/michael-grunder))
 
 # [6.2.0] - 2025-03-24 ([Github](https://github.com/phpredis/phpredis/releases/6.2.0), [PECL](https://pecl.php.net/package/redis/6.2.0))
 
