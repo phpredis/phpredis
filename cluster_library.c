@@ -1431,7 +1431,10 @@ static int cluster_update_slot(redisCluster *c) {
                 if (!CLUSTER_REDIR_CMP(c, slave->sock)) {
                     // Detected a failover, the redirected node was a replica
                     // Remap the cluster's keyspace
-                    cluster_map_keyspace(c);
+                    if (cluster_map_keyspace(c) == FAILURE) {
+                        CLUSTER_THROW_EXCEPTION("Failed to remap cluster keyspace after failover", 0);
+                        return FAILURE;
+                    }
                     return SUCCESS;
                 }
             } ZEND_HASH_FOREACH_END();
@@ -1610,9 +1613,19 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                    return -1;
                }
                c->cmd_sock = SLOT_SOCK(c, slot);
+               /* Verify slot is valid after update */
+               if (!c->cmd_sock) {
+                   CLUSTER_THROW_EXCEPTION("Socket for slot is NULL after MOVED redirection", 0);
+                   return -1;
+               }
            } else if (c->redir_type == REDIR_ASK) {
                /* For ASK redirection we want to redirect but not update slot mapping */
                c->cmd_sock = cluster_get_asking_sock(c);
+               /* Verify socket from ASK redirection */
+               if (!c->cmd_sock) {
+                   CLUSTER_THROW_EXCEPTION("Socket is NULL after ASK redirection", 0);
+                   return -1;
+               }
            }
         }
 
