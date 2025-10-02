@@ -199,7 +199,7 @@ This release introduces support for dozens of new commands, including hash field
   [8be2306e](https://github.com/phpredis/phpredis/commit/8be2306e4f9192aaa167a5338673f3c348a2caf6)
   ([michael-grunder](https://github.com/michael-grunder))
 - Fix dead assignment
-  [d564e8cf](https://github.com/phpredis/phpredis/commit/d564e8cf3ce33c65898bc098173358b697fa459a)
+  [d564e8cf](https://github.com/phpredis/phpredis/commit/d564e8cf3ce33c65898bc098173358b697fa459a) ([michael-grunder](https://github.com/michael-grunder))
 - Refactor `redis_replicaof_cmd`
   [659dc763](https://github.com/phpredis/phpredis/commit/659dc763e0f69f526ff0a3404c1a113c9c55e9ea)
   ([michael-grunder](https://github.com/michael-grunder))
