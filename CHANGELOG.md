@@ -7,6 +7,8 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 # [6.3.0RC1] - TBD
 
+This release introduces support for dozens of new commands, including hash field expiration, Valkey’s DELIFEQ, and Redis vector set operations. It also delivers numerous bug fixes and performance improvements.
+
 ### Sponsors :sparkling_heart:
 
 - [A-VISION](https://github.com/A-VISION-BV)
