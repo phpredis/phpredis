@@ -8,47 +8,56 @@ The phpredis extension provides an API for communicating with the [Redis](http:/
 
 It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 
-You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to michael.grunder@gmail.com ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)).
-
-## Supporting the project
-PhpRedis will always be free and open source software and if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support is greatly appreciated! :heart:
-
-The best way to support the project is through [GitHub Sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [Slack](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and features to prioritize.
-
-You can also make a one-time contribution with [PayPal](https://www.paypal.me/michaelgrunder/5).
+You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to [Michael](mailto:michael.grunder@gmail.com) ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), [Pavlo](mailto:p.yatsukhnenko@gmail.com) ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or [Nicolas](mailto:n.favrefelix@gmail.com) ([@yowgi](https://twitter.com/yowgi)).
 
 ## Sponsors
-<a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>
-<a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" align="center" alt="Bluehost.com" width="150"></a>
-<a href="https://objectcache.pro"><img src="https://objectcache.pro/assets/wordmark-padded.png" align="center" alt="Object Cache Pro" width="150"></a>
-<a href="https://openlms.net"><img src="https://support.openlms.net/hc/theming_assets/01HZPV3CVP3Y6P7G6MT14NP6V1" align="center" alt="OpenLMS.net" width="150"></a>
+
+<div align="center">
+  <br>
+  <a href="https://relay.so">
+    <img src="https://s3.us-east-1.amazonaws.com/assets.relay.so/img/wordmark-purple.svg" align="center" alt="The next-generation caching layer for PHP." width="275">
+  </a>
+  <br><br><br>
+  <a href="https://objectcache.pro"><img src="https://objectcache.pro/assets/wordmark-padded.png" align="center" alt="Object Cache Pro" width="200"></a>&nbsp;
+  <a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>&nbsp;
+  <a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" align="center" alt="Bluehost.com" width="150"></a>
+  <a href="https://openlms.net"><img src="https://support.openlms.net/hc/theming_assets/01HZPV3CVP3Y6P7G6MT14NP6V1" align="center" alt="OpenLMS.net" width="125"></a>
+  <br><br>
+</div>
+
+## Become a Sponsor
+PhpRedis will always be free and open source software and if you or your company has found it useful please consider supporting the project. Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support is greatly appreciated! :heart:
+
+The ongoing development of PhpRedis is made possible thanks to the generous support of [Relay](https://relay.so), which funds the vast majority of work on the project. Relay is a high-performance in-memory cache and drop-in replacement for PhpRedis, which handles millions of requests per second without breaking a sweat.
+
+The best way to support the project is through [GitHub Sponsors](https://github.com/sponsors/michael-grunder). Many of the reward tiers grant access to our [Slack](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions. Additionally this will allow you to provide feedback on which fixes and features to prioritize. You can also make a one-time contribution with [PayPal](https://www.paypal.me/michaelgrunder/5).
 
 ## Table of contents
 1. [Installing/Configuring](#installingconfiguring)
-  * [Installation](#installation)
-  * [PHP Session handler](#php-session-handler)
-  * [Distributed Redis Array](./arrays.md#readme)
-  * [Redis Cluster support](./cluster.md#readme)
-  * [Redis Sentinel support](./sentinel.md#readme)
-  * [Running the unit tests](#running-the-unit-tests)
+   * [Installation](#installation)
+   * [PHP Session handler](#php-session-handler)
+   * [Distributed Redis Array](./arrays.md#readme)
+   * [Redis Cluster support](./cluster.md#readme)
+   * [Redis Sentinel support](./sentinel.md#readme)
+   * [Running the unit tests](#running-the-unit-tests)
 2. [API Documentation](#api-documentation)
 3. [Classes and methods](#classes-and-methods)
-  * [Usage](#usage)
-  * [Connection](#connection)
-  * [Retry and backoff](#retry-and-backoff)
-  * [Server](#server)
-  * [Keys and strings](#keys-and-strings)
-  * [Hashes](#hashes)
-  * [Lists](#lists)
-  * [Sets](#sets)
-  * [Sorted sets](#sorted-sets)
-  * [HyperLogLogs](#hyperloglogs)
-  * [Geocoding](#geocoding)
-  * [Streams](#streams)
-  * [Pub/sub](#pubsub)
-  * [Transactions](#transactions)
-  * [Scripting](#scripting)
-  * [Introspection](#introspection)
+   * [Usage](#usage)
+   * [Connection](#connection)
+   * [Retry and backoff](#retry-and-backoff)
+   * [Server](#server)
+   * [Keys and strings](#keys-and-strings)
+   * [Hashes](#hashes)
+   * [Lists](#lists)
+   * [Sets](#sets)
+   * [Sorted sets](#sorted-sets)
+   * [HyperLogLogs](#hyperloglogs)
+   * [Geocoding](#geocoding)
+   * [Streams](#streams)
+   * [Pub/sub](#pubsub)
+   * [Transactions](#transactions)
+   * [Scripting](#scripting)
+   * [Introspection](#introspection)
 
 ## Installing/Configuring
 
