@@ -86,7 +86,8 @@ This release introduces support for dozens of new commands, including hash field
   [d1d69005](https://github.com/phpredis/phpredis/commit/d1d690053f8a468a64628da1d53cfd3ad6155344),
   [286fa630](https://github.com/phpredis/phpredis/commit/286fa630649af95c5530f5df54cc74927bdf2383),
   [38115dec](https://github.com/phpredis/phpredis/commit/38115decb97ccdd96088077fcb447db9251667f0),
-  [c4b2ea6c](https://github.com/phpredis/phpredis/commit/c4b2ea6ca532d4ef2c836f9b9c0701846c3bb202)
+  [c4b2ea6c](https://github.com/phpredis/phpredis/commit/c4b2ea6ca532d4ef2c836f9b9c0701846c3bb202),
+  [6ce3bd53](https://github.com/phpredis/phpredis/commit/6ce3bd53)
   ([michael-grunder](https://github.com/michael-grunder))
 - Implement `GEOSEARCH[STORE]` `BYPOLYGON`
   [8d369f4d](https://github.com/phpredis/phpredis/commit/8d369f4d6263c8fe549d6eb89c52dc148843963d),
