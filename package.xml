@@ -42,6 +42,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Fix possible hash field name truncation [834d2b37] (Michael Grunder)
     Fix a possible segfault during failover [5ebb853e] (rlerdorf)
+    Bump version and fix XGROUP test [f5db01b7, 4517d5f9] remicollet
     Fix an overflow bug in ZADD on Windows [35df8ad7] (Michael Grunder)
     Fix errors and a warning [b8de91c9] (Michael Grunder)
     Fix `RedisCluster` segfault [f61e8cd7] (Michael Grunder)

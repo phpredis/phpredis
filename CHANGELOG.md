@@ -28,6 +28,10 @@ This release introduces support for dozens of new commands, including hash field
 - Fix a possible segfault during failover
   [5ebb853e](https://github.com/phpredis/phpredis/commit/5ebb853e)
   ([rlerdorf](https://github.com/rlerdorf))
+- Bump version and fix XGROUP test
+  [f5db01b7](https://github.com/phpredis/phpredis/commit/f5db01b7),
+  [4517d5f9](https://github.com/phpredis/phpredis/commit/4517d5f9)
+  ([remicollet](https://github.com/remicollet))
 - Fix an overflow bug in ZADD on Windows
   [35df8ad7](https://github.com/phpredis/phpredis/commit/35df8ad7c2fc54fbf2a58d486cce49e712344bb2)
   ([michael-grunder](https://github.com/michael-grunder))
