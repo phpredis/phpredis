@@ -1,38 +1,38 @@
 <?xml version="1.0"?>
-<package packagerversion="1.4.11" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
+<package xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" packagerversion="1.4.11" version="2.0" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
 http://pear.php.net/dtd/tasks-1.0.xsd
 http://pear.php.net/dtd/package-2.0
 http://pear.php.net/dtd/package-2.0.xsd">
- <name>redis</name>
- <channel>pecl.php.net</channel>
- <summary>PHP extension for interfacing with key-value stores</summary>
- <description>
+  <name>redis</name>
+  <channel>pecl.php.net</channel>
+  <summary>PHP extension for interfacing with key-value stores</summary>
+  <description>
    This extension provides an API for communicating with RESP-based key-value
    stores, such as Redis, Valkey, and KeyDB.
- </description>
- <lead>
-  <name>Michael Grunder</name>
-  <user>mgrunder</user>
-  <email>michael.grunder@gmail.com</email>
-  <active>yes</active>
- </lead>
- <lead>
-  <name>Pavlo Yatsukhnenko</name>
-  <user>yatsukhnenko</user>
-  <email>p.yatsukhnenko@gmail.com</email>
-  <active>yes</active>
- </lead>
- <date>2025-03-24</date>
- <version>
-  <release>6.2.0</release>
-  <api>6.2.0</api>
- </version>
- <stability>
-  <release>stable</release>
-  <api>stable</api>
- </stability>
- <license uri="http://www.php.net/license">PHP</license>
- <notes>
+</description>
+  <lead>
+    <name>Michael Grunder</name>
+    <user>mgrunder</user>
+    <email>michael.grunder@gmail.com</email>
+    <active>yes</active>
+  </lead>
+  <lead>
+    <name>Pavlo Yatsukhnenko</name>
+    <user>yatsukhnenko</user>
+    <email>p.yatsukhnenko@gmail.com</email>
+    <active>yes</active>
+  </lead>
+  <date>2025-03-24</date>
+  <version>
+    <release>6.2.0</release>
+    <api>6.2.0</api>
+  </version>
+  <stability>
+    <release>stable</release>
+    <api>stable</api>
+  </stability>
+  <license uri="http://www.php.net/license">PHP</license>
+  <notes>
     --- Sponsors ---
 
     A-VISION Advisering - https://a-vision.nu/
@@ -64,7 +64,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Added getWithMeta method [9036ffca, 36ab5850] (Pavlo Yatsukhnenko)
     * Implement GETDEL command for RedisCluster [d342e4ac] (michael-grunder)
     * Introduce Redis::OPT_PACK_IGNORE_NUMBERS option [f9ce9429, 29e5cf0d] (michael-grunder)
-    * Implement Valkey >= 8.1 IFEQ SET option [a2eef77f] (michael-grunder)
+    * Implement Valkey &gt;= 8.1 IFEQ SET option [a2eef77f] (michael-grunder)
     * Implement KeyDB's EXPIREMEMBER[AT] commands [4cd3f593] (michael-grunder)
 
     Documentation:
@@ -102,103 +102,112 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Do not allocate empty string or string with one character [64da891e] (Jakub Onderka)
     * Initialize arrays with known size [99beb922] (Jakub Onderka)
     * Use smart str for constructing pipeline cmd [b665925e] (Jakub Onderka)
- </notes>
- <contents>
-  <dir name="/">
-   <file role='doc' name='LICENSE'/>
-   <file role='doc' name='CREDITS'/>
-   <file role='doc' name='README.md'/>
-   <file role='src' name='INSTALL.md'/>
-   <file role='doc' name='arrays.md'/>
-   <file role='doc' name='cluster.md'/>
-   <file role='doc' name='sentinel.md'/>
-   <file role='src' name='backoff.c'/>
-   <file role='src' name='backoff.h'/>
-   <file role='src' name='cluster_library.c'/>
-   <file role='src' name='cluster_library.h'/>
-   <file role='src' name='common.h'/>
-   <file role='src' name='config.m4'/>
-   <file role='src' name='config.w32'/>
-   <file role='src' name='crc16.h'/>
-   <file role='src' name='library.c'/>
-   <file role='src' name='library.h'/>
-   <file role='src' name='php_redis.h'/>
-   <file role='src' name='redis.c'/>
-   <file role='src' name='redis.stub.php'/>
-   <file role='src' name='redis_arginfo.h'/>
-   <file role='src' name='redis_legacy_arginfo.h'/>
-   <file role='src' name='redis_array.c'/>
-   <file role='src' name='redis_array.h'/>
-   <file role='src' name='redis_array.stub.php'/>
-   <file role='src' name='redis_array_arginfo.h'/>
-   <file role='src' name='redis_array_legacy_arginfo.h'/>
-   <file role='src' name='redis_array_impl.c'/>
-   <file role='src' name='redis_array_impl.h'/>
-   <file role='src' name='redis_cluster.c'/>
-   <file role='src' name='redis_cluster.h'/>
-   <file role='src' name='redis_cluster.stub.php'/>
-   <file role='src' name='redis_cluster_arginfo.h'/>
-   <file role='src' name='redis_cluster_legacy_arginfo.h'/>
-   <file role='src' name='redis_commands.c'/>
-   <file role='src' name='redis_commands.h'/>
-   <file role='src' name='redis_session.c'/>
-   <file role='src' name='redis_session.h'/>
-   <file role='src' name='redis_sentinel.c'/>
-   <file role='src' name='redis_sentinel.h'/>
-   <file role='src' name='redis_sentinel.stub.php'/>
-   <file role='src' name='redis_sentinel_arginfo.h'/>
-   <file role='src' name='redis_sentinel_legacy_arginfo.h'/>
-   <file role='src' name='sentinel_library.c'/>
-   <file role='src' name='sentinel_library.h'/>
-   <dir name='liblzf'>
-     <file role='doc' name='LICENSE'/>
-     <file role='doc' name='README'/>
-     <file role='src' name='lzf.h'/>
-     <file role='src' name='lzfP.h'/>
-     <file role='src' name='lzf_c.c'/>
-     <file role='src' name='lzf_d.c'/>
-   </dir> <!-- liblzf -->
-   <dir name='tests'>
-     <file role='test' name='RedisArrayTest.php'/>
-     <file role='test' name='RedisClusterTest.php'/>
-     <file role='test' name='RedisSentinelTest.php'/>
-     <file role='test' name='RedisTest.php'/>
-     <file role='test' name='TestRedis.php'/>
-     <file role='test' name='TestSuite.php'/>
-     <file role='test' name='getSessionData.php'/>
-     <file role='test' name='regenerateSessionId.php'/>
-     <file role='test' name='startSession.php'/>
-     <file role='test' name='SessionHelpers.php'/>
-     <file role='test' name='make-cluster.sh'/>
-     <file role='test' name='mkring.sh'/>
-   </dir> <!-- tests -->
-  </dir> <!-- / -->
- </contents>
- <dependencies>
-  <required>
-   <php>
-    <min>7.4.0</min>
-   </php>
-   <pearinstaller>
-    <min>1.4.0b1</min>
-   </pearinstaller>
-  </required>
- </dependencies>
- <providesextension>redis</providesextension>
- <extsrcrelease>
-  <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
-  <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
-  <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
-  <configureoption name="enable-redis-msgpack" prompt="enable msgpack serializer support?" default="no"/>
-  <configureoption name="enable-redis-lz4" prompt="enable lz4 compression?" default="no"/>
-  <configureoption name="with-liblz4" prompt="use system liblz4?" default="yes"/>
- </extsrcrelease>
- <changelog>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>6.2.0</release><api>6.2.0</api></version>
-   <date>2025-03-24</date>
-   <notes>
+</notes>
+  <contents>
+    <dir name="/">
+      <file role="doc" name="LICENSE"/>
+      <file role="doc" name="CREDITS"/>
+      <file role="doc" name="README.md"/>
+      <file role="src" name="INSTALL.md"/>
+      <file role="doc" name="arrays.md"/>
+      <file role="doc" name="cluster.md"/>
+      <file role="doc" name="sentinel.md"/>
+      <file role="src" name="backoff.c"/>
+      <file role="src" name="backoff.h"/>
+      <file role="src" name="cluster_library.c"/>
+      <file role="src" name="cluster_library.h"/>
+      <file role="src" name="common.h"/>
+      <file role="src" name="config.m4"/>
+      <file role="src" name="config.w32"/>
+      <file role="src" name="crc16.h"/>
+      <file role="src" name="library.c"/>
+      <file role="src" name="library.h"/>
+      <file role="src" name="php_redis.h"/>
+      <file role="src" name="redis.c"/>
+      <file role="src" name="redis.stub.php"/>
+      <file role="src" name="redis_arginfo.h"/>
+      <file role="src" name="redis_legacy_arginfo.h"/>
+      <file role="src" name="redis_array.c"/>
+      <file role="src" name="redis_array.h"/>
+      <file role="src" name="redis_array.stub.php"/>
+      <file role="src" name="redis_array_arginfo.h"/>
+      <file role="src" name="redis_array_legacy_arginfo.h"/>
+      <file role="src" name="redis_array_impl.c"/>
+      <file role="src" name="redis_array_impl.h"/>
+      <file role="src" name="redis_cluster.c"/>
+      <file role="src" name="redis_cluster.h"/>
+      <file role="src" name="redis_cluster.stub.php"/>
+      <file role="src" name="redis_cluster_arginfo.h"/>
+      <file role="src" name="redis_cluster_legacy_arginfo.h"/>
+      <file role="src" name="redis_commands.c"/>
+      <file role="src" name="redis_commands.h"/>
+      <file role="src" name="redis_session.c"/>
+      <file role="src" name="redis_session.h"/>
+      <file role="src" name="redis_sentinel.c"/>
+      <file role="src" name="redis_sentinel.h"/>
+      <file role="src" name="redis_sentinel.stub.php"/>
+      <file role="src" name="redis_sentinel_arginfo.h"/>
+      <file role="src" name="redis_sentinel_legacy_arginfo.h"/>
+      <file role="src" name="sentinel_library.c"/>
+      <file role="src" name="sentinel_library.h"/>
+      <dir name="liblzf">
+        <file role="doc" name="LICENSE"/>
+        <file role="doc" name="README"/>
+        <file role="src" name="lzf.h"/>
+        <file role="src" name="lzfP.h"/>
+        <file role="src" name="lzf_c.c"/>
+        <file role="src" name="lzf_d.c"/>
+      </dir>
+      <!-- liblzf -->
+      <dir name="tests">
+        <file role="test" name="RedisArrayTest.php"/>
+        <file role="test" name="RedisClusterTest.php"/>
+        <file role="test" name="RedisSentinelTest.php"/>
+        <file role="test" name="RedisTest.php"/>
+        <file role="test" name="TestRedis.php"/>
+        <file role="test" name="TestSuite.php"/>
+        <file role="test" name="getSessionData.php"/>
+        <file role="test" name="regenerateSessionId.php"/>
+        <file role="test" name="startSession.php"/>
+        <file role="test" name="SessionHelpers.php"/>
+        <file role="test" name="make-cluster.sh"/>
+        <file role="test" name="mkring.sh"/>
+      </dir>
+      <!-- tests -->
+    </dir>
+    <!-- / -->
+  </contents>
+  <dependencies>
+    <required>
+      <php>
+        <min>7.4.0</min>
+      </php>
+      <pearinstaller>
+        <min>1.4.0b1</min>
+      </pearinstaller>
+    </required>
+  </dependencies>
+  <providesextension>redis</providesextension>
+  <extsrcrelease>
+    <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
+    <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
+    <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
+    <configureoption name="enable-redis-msgpack" prompt="enable msgpack serializer support?" default="no"/>
+    <configureoption name="enable-redis-lz4" prompt="enable lz4 compression?" default="no"/>
+    <configureoption name="with-liblz4" prompt="use system liblz4?" default="yes"/>
+  </extsrcrelease>
+  <changelog>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>6.2.0</release>
+        <api>6.2.0</api>
+      </version>
+      <date>2025-03-24</date>
+      <notes>
     --- Sponsors ---
 
     A-VISION Advisering - https://a-vision.nu/
@@ -230,7 +239,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Added getWithMeta method [9036ffca, 36ab5850] (Pavlo Yatsukhnenko)
     * Implement GETDEL command for RedisCluster [d342e4ac] (michael-grunder)
     * Introduce Redis::OPT_PACK_IGNORE_NUMBERS option [f9ce9429, 29e5cf0d] (michael-grunder)
-    * Implement Valkey >= 8.1 IFEQ SET option [a2eef77f] (michael-grunder)
+    * Implement Valkey &gt;= 8.1 IFEQ SET option [a2eef77f] (michael-grunder)
     * Implement KeyDB's EXPIREMEMBER[AT] commands [4cd3f593] (michael-grunder)
     * Set priority to 60 (for PIE installations) [9e504ede] (Pavlo Yatsukhnenko)
 
@@ -269,13 +278,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Do not allocate empty string or string with one character [64da891e] (Jakub Onderka)
     * Initialize arrays with known size [99beb922] (Jakub Onderka)
     * Use smart str for constructing pipeline cmd [b665925e] (Jakub Onderka)
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>6.1.0</release><api>6.0.0</api></version>
-   <date>2024-10-04</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>6.1.0</release>
+        <api>6.0.0</api>
+      </version>
+      <date>2024-10-04</date>
+      <notes>
     --- Sponsors ---
 
     Audiomack - https://audiomack.com
@@ -417,13 +432,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add missing option to installation example [2bddd84f] (Pavlo Yatsukhnenko)
     * Fix typo in link [8f6bc98f] (Timo Sand)
     * Update tests to allow users to use a custom class. [5f6ce414] (Michael Grunder)
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>6.0.2</release><api>6.0.0</api></version>
-   <date>2023-10-22</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>6.0.2</release>
+        <api>6.0.0</api>
+      </version>
+      <date>2023-10-22</date>
+      <notes>
     --- Sponsors ---
 
     Audiomack - https://audiomack.com
@@ -448,13 +469,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix deprecation error when passing null to match_type parameter.[b835aaa3] (Pavlo Yatsukhnenko)
     * Fix flaky test and OBJECT in a pipeline. [a7f51f70] (Michael Grunder)
     * Find our callback by pattern with PSUBSCRIBE [2f276dcd] (Michael Grunder)
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>6.0.1</release><api>6.0.0</api></version>
-   <date>2023-09-23</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>6.0.1</release>
+        <api>6.0.0</api>
+      </version>
+      <date>2023-09-23</date>
+      <notes>
     --- Sponsors ---
 
     Audiomack - https://audiomack.com
@@ -482,13 +509,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix  memory leak and segfault in Redis::exec [362e1141] (Pavlo Yatsukhnenko), (Markus Podar)
     * Fix unknown expiration modifier [264c0c7e, 95bd184b] (Pavlo Yatsukhnenko)
     * Update documentation [3674d663, 849bedb6, 1ad95b63] (Till Kruss), (Joost OrangeJuiced)
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>6.0.0</release><api>6.0.0</api></version>
-   <date>2023-09-09</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>6.0.0</release>
+        <api>6.0.0</api>
+      </version>
+      <date>2023-09-09</date>
+      <notes>
     --- Sponsors ---
 
     Audiomack - https://audiomack.com
@@ -640,13 +673,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add FCALL/FCALL_RO commands [7c46ad2c] (Pavlo Yatsukhnenko)
     * Remove unused macros [831d6118] (Pavlo Yatsukhnenko)
 
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.3.7</release><api>5.3.7</api></version>
-   <date>2022-02-15</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.3.7</release>
+        <api>5.3.7</api>
+      </version>
+      <date>2022-02-15</date>
+      <notes>
     --- Sponsors ---
 
     Audiomack - https://audiomack.com
@@ -676,13 +715,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     - Fix RedisArray::scan [8689ab1c] (Pavlo Yatsukhnenko)
     - Fix LZF decompression logic [0719c1ec] (Michael Grunder)
 
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.3.6</release><api>5.3.6</api></version>
-   <date>2022-01-17</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.3.6</release>
+        <api>5.3.6</api>
+      </version>
+      <date>2022-01-17</date>
+      <notes>
     --- Sponsors ---
 
     Audiomack - https://audiomack.com
@@ -700,13 +745,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     - Fix a segfault in RedisArray::del [d2f2a7d9] (Pavlo Yatsukhnenko)
 
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.3.5</release><api>5.3.5</api></version>
-   <date>2021-12-18</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.3.5</release>
+        <api>5.3.5</api>
+      </version>
+      <date>2021-12-18</date>
+      <notes>
     phpredis 5.3.5
 
     This release adds support for exponential backoff w/jitter, experimental
@@ -789,13 +840,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     * SMISMEMBER Command
       [#1894, ae2382472, ed283e1ab] (Pavlo Yatsukhnenko)
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.3.4</release><api>5.3.4</api></version>
-   <date>2021-03-24</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.3.4</release>
+        <api>5.3.4</api>
+      </version>
+      <date>2021-03-24</date>
+      <notes>
     phpredis 5.3.4
 
     This release fixes a multi/pipeline segfault on apple silicon as well as
@@ -816,13 +873,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       ~ Avtandil Kikabidze - https://github.com/akalongman
       ~ Zaher Ghaibeh - https://github.com/zaherg
       ~ BatchLabs - https://batch.com
-   </notes>
- </release>
- <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.3.3</release><api>5.3.3</api></version>
-   <date>2021-02-01</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.3.3</release>
+        <api>5.3.3</api>
+      </version>
+      <date>2021-02-01</date>
+      <notes>
     phpredis 5.3.3
 
     This release mostly includes just small PHP 8 Windows compatibility fixes
@@ -842,14 +905,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       ~ Avtandil Kikabidze - https://github.com/akalongman
       ~ Zaher Ghaibeh - https://github.com/zaherg
       ~ BatchLabs - https://batch.com
-   </notes>
-  </release>
-
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.3.2</release><api>5.3.2</api></version>
-   <date>2020-10-22</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.3.2</release>
+        <api>5.3.2</api>
+      </version>
+      <date>2020-10-22</date>
+      <notes>
     This release containse some bugfixes and small improvements.
     You can find a detailed list of changes in CHANGELOG.md and package.xml
 
@@ -890,14 +958,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Allow to specify stream context for rediscluster session handler [a8daaff8, 4fbe7df7] (Pavlo Yatsukhnenko)
     * Add new parameter to RedisCluster to specify stream ssl/tls context. [f771ea16] (Pavlo Yatsukhnenko)
     * Add new parameter to RedisSentinel to specify auth information [81c502ae] (Pavlo Yatsukhnenko)
-   </notes>
-  </release>
-
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.3.1</release><api>5.3.1</api></version>
-   <date>2020-07-07</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.3.1</release>
+        <api>5.3.1</api>
+      </version>
+      <date>2020-07-07</date>
+      <notes>
     phpredis 5.3.1
 
     This is a small bugfix release that fixes a couple of issues in 5.3.0.
@@ -924,13 +997,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       3c56289c, 08f202e7] (Remi Collet)
     * Add openSUSE installation instructions [13a168f4] (Pavlo Yatsukhnenko)
     * Remove EOL Fedora installation instructions [b4779e6a] (Remi Collet)
-   </notes>
-  </release>
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.3.0</release><api>5.3.0</api></version>
-   <date>2020-06-30</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.3.0</release>
+        <api>5.3.0</api>
+      </version>
+      <date>2020-06-30</date>
+      <notes>
     phpredis 5.3.0
 
     This release contains initial support for Redis 6 ACLs, LZ4 compression,
@@ -1008,14 +1087,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       (Pavlo Yatsukhnenko)
     * Fix documentation showing lPush and rPush are variadic [6808cd6a]
       (Michael Grunder)
-   </notes>
-  </release>
-
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.2.2</release><api>5.2.2</api></version>
-   <date>2020-05-05</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.2.2</release>
+        <api>5.2.2</api>
+      </version>
+      <date>2020-05-05</date>
+      <notes>
     phpredis 5.2.2
 
     This is a bugfix release that contains a fix for authentication
@@ -1028,17 +1112,22 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Sponsors
       ~ Audiomack.com - https://audiomack.com
       ~ Till Kruss - https://github.com/tillkruss
-   </notes>
-  </release>
-
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.2.1</release><api>5.2.1</api></version>
-   <date>2020-03-19</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.2.1</release>
+        <api>5.2.1</api>
+      </version>
+      <date>2020-03-19</date>
+      <notes>
     phpredis 5.2.1
 
-    This is a bugfix release that fixes `redis->zAdd` arginfo as well as a
+    This is a bugfix release that fixes `redis-&gt;zAdd` arginfo as well as a
     segfault when closing persistent connections.
 
     * Fix arginfo for Redis::zadd [a8e2b021] (Pavlo Yatsukhnenko)
@@ -1047,16 +1136,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Sponsors
       ~ Audiomack.com - https://audiomack.com
       ~ Till Kruss - https://github.com/tillkruss
-   </notes>
-  </release>
-
-
-
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.2.0</release><api>5.2.0</api></version>
-   <date>2020-03-02</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.2.0</release>
+        <api>5.2.0</api>
+      </version>
+      <date>2020-03-02</date>
+      <notes>
     phpredis 5.2.0
 
     - There were no changes between 5.2.0RC2 and 5.2.0.
@@ -1149,27 +1241,38 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     * Added challenge/response mechanism for persistent connections [a5f95925,
       25cdaee6, 7b6072e0, 99ebd0cc, 3243f426] (Pavlo Yatsukhnenko, Michael Grunder)
-   </notes>
-  </release>
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.1.1</release><api>5.1.0</api></version>
-   <date>2019-11-11</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.1.1</release>
+        <api>5.1.0</api>
+      </version>
+      <date>2019-11-11</date>
+      <notes>
       phpredis 5.1.1
 
       This release contains only bugfix for unix-socket connection.
 
       * Fix fail to connect to redis through unix socket [2bae8010, 9f4ededa] (Pavlo Yatsukhnenko, Michael Grunder)
       * Documentation improvements (@fitztrev)
-   </notes>
-  </release>
-
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.1.0</release><api>5.1.0</api></version>
-   <date>2019-10-31</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.1.0</release>
+        <api>5.1.0</api>
+      </version>
+      <date>2019-10-31</date>
+      <notes>
       This release contains important bugfixes and improvements.
 
       phpredis 5.1.0
@@ -1190,20 +1293,25 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Fix unix-socket detection logic broken in 418428fa [a080b73f] (Pavlo Yatsukhnenko)
       * Fix memory leak and bug with getLastError for redis_mbulk_reply_assoc and redis_mbulk_reply_zipped. [7f42d628, 3a622a07] (Pavlo Yatsukhnenko), (Michael Grunder)
       * Fix bug with password contain "#" for redis_session [2bb08680] (Pavlo Yatsukhnenko)
-      * Add optional support for Zstd compression, using --enable-redis-ztsd. This requires libzstd version >= 1.3.0 [2abc61da] (Remi Collet)
+      * Add optional support for Zstd compression, using --enable-redis-ztsd. This requires libzstd version &gt;= 1.3.0 [2abc61da] (Remi Collet)
       * Fix overallocation in RedisCluster directed node commands [cf93649] (Michael Grunder)
       * Also attach slaves when caching cluster slots [0d6d3fdd, b114fc26] (Michael Grunder)
       * Use zend_register_persistent_resource_ex for connection pooling [fdada7ae, 7c6c43a6] (Pavlo Yatsukhnenko)
       * Refactor redis_session [91a8e734, 978c3074] (Pavlo Yatsukhnenko)
       * Documentation improvements (@Steveb-p, @tangix, @ljack-adista, @jdreesen, Michael Grunder)
-   </notes>
-  </release>
-
-  <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>5.0.0</release><api>5.0.0</api></version>
-   <date>2019-07-02</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>5.0.0</release>
+        <api>5.0.0</api>
+      </version>
+      <date>2019-07-02</date>
+      <notes>
     This release contains important improvements and breaking changes.
     The most interesting are: drop PHP5 support, RedisCluster slots caching,
     JSON and msgpack serializers, soft deprecation of non-Redis commands.
@@ -1217,7 +1325,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     * Allow compilation without JSON serialization enabled and fixes for deprecated
       helper methods.  [235a27] (Pavlo Yatsukhnenko)
-    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
+    * Fix php msgpack &gt;= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
 
     phpredis 5.0.0RC1
 
@@ -1227,7 +1335,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * xInfo response format [4852a510, ac9dca0a] (Pavlo Yatsukhnenko)
     * Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27] (Michael Grunder)
     * Allow PING to take an optional argument [6e494170] (Michael Grunder)
-    * Allow ZRANGE to be called either with `true` or `['withscores' => true]` [19f3efcf] (Michael Grunder)
+    * Allow ZRANGE to be called either with `true` or `['withscores' =&gt; true]` [19f3efcf] (Michael Grunder)
     * Allow to specify server address as schema://host [418428fa] (Pavlo Yatsukhnenko)
     * Allow persistent_id to be passed as NULL with strict_types enabled [60223762] (Michael Grunder)
     * Add server address to exception message [e8fb49be, 34d6403d] (Pavlo Yatsukhnenko)
@@ -1240,14 +1348,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add RedisCluster slots caching [9f0d7bc0, ea081e05] (Michael Grunder)
     * Drop PHP5 support [f9928642, 46a50c12, 4601887d, 6ebb36ce, fdbe9d29] (Michael Grunder)
     * Documentation improvements (@alexander-schranz, @cookieguru, Pavlo Yatsukhnenko, Michael Grunder)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>4.3.0</release><api>4.3.0</api></version>
-   <date>2019-03-13</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>4.3.0</release>
+        <api>4.3.0</api>
+      </version>
+      <date>2019-03-13</date>
+      <notes>
       phpredis 4.3.0
 
       This is probably the last release with PHP 5 support!!!
@@ -1276,14 +1389,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Remove unused parameter lazy_connect from redis_sock_create [c0793e8b] (Pavlo Yatsukhnenko)
       * Remove useless ZEND_ACC_[C|D]TOR. [bc9b5597] (@twosee)
       * Documentation improvements (@fanjiapeng, @alexander-schranz, @hmc, Pavlo Yatsukhnenko, Michael Grunder)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>4.2.0RC3</release><api>4.2.0RC3</api></version>
-   <date>2018-11-08</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>beta</release>
+        <api>beta</api>
+      </stability>
+      <version>
+        <release>4.2.0RC3</release>
+        <api>4.2.0RC3</api>
+      </version>
+      <date>2018-11-08</date>
+      <notes>
       phpredis 4.2.0RC3
 
       The main feature of this release is new Streams API implemented by Michael Grunder.
@@ -1300,7 +1418,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
       4.2.0RC2:
 
       * Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` [25b043ce] (Pavlo Yatsukhnenko)
-      * Update STREAM API to handle STATUS -> BULK reply change [0b97ec37] (Michael Grunder)
+      * Update STREAM API to handle STATUS -&gt; BULK reply change [0b97ec37] (Michael Grunder)
       * Treat a -1 response from cluster_check_response as a timeout. [27df9220, 07ef7f4e, d1172426] (Michael Grunder)
       * Use a ZSET instead of SET for EVAL tests [2e412373] (Michael Grunder)
       * Missing space between command and args [0af2a7fe] (@remicollet)
@@ -1317,14 +1435,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Display ini entries in output of phpinfo [908ac4b3] (Pavlo Yatsukhnenko)
       * Persistent connections can be closed via close method + change reconnection logic [1d997873] (Pavlo Yatsukhnenko)
       * Documentation improvements (@mg, @elcheco, @lucascourot, @nolimitdev, Michael Grunder)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>4.1.1</release><api>4.1.1</api></version>
-   <date>2018-08-01</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>4.1.1</release>
+        <api>4.1.1</api>
+      </version>
+      <date>2018-08-01</date>
+      <notes>
       phpredis 4.1.1
 
       This release contains only bugfixes and documentation improvements
@@ -1333,14 +1456,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Fix compression in RedisCluster [a53e1a34] (Pavlo Yatsukhnenko)
       * Fix TravisCI builds [9bf32d30] (@jrchamp)
       * Highlight php codes in documentation [c3b023b0] (@ackintosh)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>4.1.0</release><api>4.1.0</api></version>
-   <date>2018-01-10</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>4.1.0</release>
+        <api>4.1.0</api>
+      </version>
+      <date>2018-01-10</date>
+      <notes>
       phpredis 4.1.0
 
       The primary new feature of this release is session locking functionality. Thanks to @SkydiveMarius!
@@ -1354,26 +1482,36 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Add session locking functionality [300c7251] (@SkydiveMarius, Michael Grunder, Pavlo Yatsukhnenko)
       * Fix compression in RedisCluster [1aed74b4] (Pavlo Yatsukhnenko)
       * Refactor geo* commands + documentation improvements (Michael Grunder)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>4.0.2</release><api>4.0.2</api></version>
-   <date>2018-04-25</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>4.0.2</release>
+        <api>4.0.2</api>
+      </version>
+      <date>2018-04-25</date>
+      <notes>
       phpredis 4.0.2
 
       This release contains only fix of exists method to take multiple keys
       and return integer value (was broken in 4.0.1) Thanks @RanjanRohit!
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>4.0.1</release><api>4.0.1</api></version>
-   <date>2018-04-18</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>4.0.1</release>
+        <api>4.0.1</api>
+      </version>
+      <date>2018-04-18</date>
+      <notes>
       phpredis 4.0.1
 
       * Fix arginfo for connect/pconnect issue #1337 [c3b228] (@mathroc)
@@ -1381,14 +1519,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Fix config.m4 for lzf issue #1325 [20e173] (Pavlo Yatsukhnenko)
       * Updates EXISTS documentation and notes change in 4.0.0 [bed186] (Michael Grunder)
       * Fix typo in notes [0bed36] (@szepeviktor)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>4.0.0</release><api>4.0.0</api></version>
-   <date>2018-03-17</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>4.0.0</release>
+        <api>4.0.0</api>
+      </version>
+      <date>2018-03-17</date>
+      <notes>
     phpredis 4.0.0
 
     *** WARNING! THIS RELEASE CONTAINS BREAKING API CHANGES! ***
@@ -1408,28 +1551,38 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Allow to use empty string as persistent_id [ec4fd1bd] (Pavlo Yatsukhnenko)
     * Don't use convert_to_string in redis_hmget_cmd [99335d6] (Pavlo Yatsukhnenko)
     * Allow mixing MULTI and PIPELINE modes (experimental) [5874b0] (Pavlo Yatsukhnenko)
-    * PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44] (@fmk)
+    * PHP &gt;=7.3.0 uses zend_string to store `php_url` elements [b566fb44] (@fmk)
     * Documentation improvements (Michael Grunder, @TomA-R)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>3.1.6</release><api>3.1.6</api></version>
-   <date>2018-01-03</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.1.6</release>
+        <api>3.1.6</api>
+      </version>
+      <date>2018-01-03</date>
+      <notes>
     phpredis 3.1.6
 
     This release contains only fix of RedisArray distributor hashing function
     which was broken in 3.1.4. Huge thanks to @rexchen123
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>3.1.5</release><api>3.1.5</api></version>
-   <date>2017-12-20</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.1.5</release>
+        <api>3.1.5</api>
+      </version>
+      <date>2017-12-20</date>
+      <notes>
     phpredis 3.1.5
 
     This is interim release which contains only bug fixes.
@@ -1439,15 +1592,20 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Allow to use empty string as persistent_id [344de5] (Pavlo Yatsukhnenko)
     * Fix cluster_init_seeds. [db1347] (@adlagares)
     * Fix z_seeds may be a reference [42581a] (@janic716)
-    * PHP >=7.3 uses zend_string for php_url elements [b566fb] (@fmk)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>3.1.4</release><api>3.1.4</api></version>
-   <date>2017-09-27</date>
-   <notes>
+    * PHP &gt;=7.3 uses zend_string for php_url elements [b566fb] (@fmk)
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.1.4</release>
+        <api>3.1.4</api>
+      </version>
+      <date>2017-09-27</date>
+      <notes>
     phpredis 3.1.4
 
     The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
@@ -1477,14 +1635,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       calls to pipeline [d11798, 77aeba] (Michael Grunder)
     * Use zend_string rather than char* for various context fields (err, prefix, etc) [2bf7b2] (Pavlo Yatsukhnenko)
     * Various other library fixes [142b51, 4452f6, e672f4, 658ee3, c9df77, 4a0a46] (Pavlo Yatsukhnenko)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>3.1.3</release><api>3.1.3</api></version>
-   <date>2017-07-15</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.1.3</release>
+        <api>3.1.3</api>
+      </version>
+      <date>2017-07-15</date>
+      <notes>
     phpredis 3.1.3
 
     This release contains two big improvements:
@@ -1514,14 +1677,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Better documentation [f0c25a, c5991f, 9ec9ae] (Michael Grunder)
     * Better TravisCI integration [e37c08] (Pavlo Yatsukhnenko)
     * Refactoring (Pavlo Yatsukhnenko, Michael Grunder)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>3.1.2</release><api>3.1.2</api></version>
-   <date>2017-03-16</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.1.2</release>
+        <api>3.1.2</api>
+      </version>
+      <date>2017-03-16</date>
+      <notes>
    phpredis 3.1.2
 
    * RedisArray segfault fix [564ce3] (Pavlo Yatsukhnenko)
@@ -1530,14 +1698,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
    * Fix for RedisCluster bulk response parsing [4121c4] (Alberto Fernandez)
    * Re allow single array for sInterStore [6ef0c2, d01966] (Michael Grunder)
    * Better TravisCI integration [4fd2f6] (Pavlo Yatsukhnenko)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>3.1.1RC2</release><api>3.1.1RC2</api></version>
-   <date>2017-01-16</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>beta</release>
+        <api>beta</api>
+      </stability>
+      <version>
+        <release>3.1.1RC2</release>
+        <api>3.1.1RC2</api>
+      </version>
+      <date>2017-01-16</date>
+      <notes>
 
     phpredis 3.1.1RC2
 
@@ -1563,14 +1736,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Added php session unit test (@yatsukhnenko)
     * Added explicit module dependency for igbinary (@remicollet)
     * Added phpinfo serialization information (@remicollet)
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>3.1.0</release><api>3.1.0</api></version>
-   <date>2016-12-14</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>3.1.0</release>
+        <api>3.1.0</api>
+      </version>
+      <date>2016-12-14</date>
+      <notes>
     phpredis 3.1.0
 
     In this version of phpredis codebase was unified to work with all versions of php \o/
@@ -1588,17 +1766,22 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Use static declarations for spl_ce_RuntimeException decl (Jeremy Mikola) [a9857d69]
     * Fixed method call problem causes session handler to display two times (ZiHang Gao) [24f86c49]
     * psetex method returns '+OK' on success, not true (sitri@ndxbn) [afcd8445]
-    * Fix integer overflow for long (>32bit) increments in hIncrBy (iyesin) [58e1d799]
+    * Fix integer overflow for long (&gt;32bit) increments in hIncrBy (iyesin) [58e1d799]
     * Move zend_object handler to the end (Michael Grunder) [34107966]
     * Using setOption on redis array causes immediate connection (Pavlo Yatsukhnenko) [f1a85b38]
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>2.2.8</release><api>2.2.8</api></version>
-   <date>2016-06-02</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>2.2.8</release>
+        <api>2.2.8</api>
+      </version>
+      <date>2016-06-02</date>
+      <notes>
     phpredis 2.2.8
 
     The main improvement in this version of phpredis is support for Redis
@@ -1638,14 +1821,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
       (CatKang) [04196aee]
     * Case insensitive zRangeByScore options
     * Fixed dreaded size_t vs long long compiler warning
-   </notes>
-   </release>
-
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>2.2.7</release><api>2.2.7</api></version>
-   <date>2015-03-03</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>2.2.7</release>
+        <api>2.2.7</api>
+      </version>
+      <date>2015-03-03</date>
+      <notes>
       phpredis 2.2.7
 
        -- Improvements ---
@@ -1672,13 +1860,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
        * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
        * Fix several issues with serialization NARY
        * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo
-   </notes>
-   </release>
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>2.2.5</release><api>2.2.5</api></version>
-   <date>2014-03-15</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>2.2.5</release>
+        <api>2.2.5</api>
+      </version>
+      <date>2014-03-15</date>
+      <notes>
     phpredis 2.2.5
 
     This is a minor release with several bug fixes as well as additions to support
@@ -1699,13 +1893,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
     [DOC] Fix syntax error in documentation for the SET command (@mithunsatheesh)
     [DOC] Homebrew documentation instructions (@mathias)
 
-   </notes>
-   </release>
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>2.2.4</release><api>2.2.4</api></version>
-   <date>2013-09-01</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>2.2.4</release>
+        <api>2.2.4</api>
+      </version>
+      <date>2013-09-01</date>
+      <notes>
    **
    ** Features / Improvements
    **
@@ -1713,7 +1913,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    * Randomized reconnect delay for RedisArray @mobli
      This feature adds an optional parameter when constructing a RedisArray object
      such that a random delay will be introduced if reconnections are made,
-     mitigating any &apos;thundering herd&apos; type problems.
+     mitigating any 'thundering herd' type problems.
 
    * Lazy connections to RedisArray servers @mobli
      By default, RedisArray will attempt to connect to each server you pass in
@@ -1737,15 +1937,21 @@ http://pear.php.net/dtd/package-2.0.xsd">
    * Added ZEND_ACC_CTOR and ZEND_ACC_DTOR @euskadi31
    * Stop throwing and clearing an exception on connect failure @matmoi
    * Fix a false positive unit test failure having to do with TTL returns
-   </notes>
-  </release>
-   <release>
-   <stability><release>stable</release><api>stable</api></stability>
-   <version><release>2.2.3</release><api>2.2.3</api></version>
-   <date>2013-04-29</date>
-   <notes>
+  </notes>
+    </release>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>2.2.3</release>
+        <api>2.2.3</api>
+      </version>
+      <date>2013-04-29</date>
+      <notes>
     First release to PECL
-   </notes>
-  </release>
- </changelog>
+  </notes>
+    </release>
+  </changelog>
 </package>
