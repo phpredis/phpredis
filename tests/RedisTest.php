@@ -3337,7 +3337,7 @@ class Redis_Test extends TestSuite {
         $this->assertEquals([123 => FALSE], $this->redis->hMget('h', [123]));
 
         // Test with an array populated with things we can't use as keys
-        $this->assertFalse($this->redis->hmget('h', [false,NULL,false]));
+        $this->assertFalse(@$this->redis->hmget('h', [false,NULL,false]));
 
         // Test with some invalid keys mixed in (which should just be ignored)
         $this->assertEquals(
@@ -7161,7 +7161,9 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(1, $this->redis->del('s'));
         $this->assertTrue($this->redis->xGroup('create', 's', 'mygroup', '$', true, 1337));
         $info = $this->redis->xinfo('groups', 's');
-        $this->assertTrue(isset($info[0]['entries-read']) && 1337 == (int)$info[0]['entries-read']);
+        $this->assertTrue(isset($info[0]['entries-read']));
+        /* Starting with redis 8.2.2 returns 0 */
+        $this->assertTrue((int)$info[0]['entries-read'] === 1337 || (int)$info[0]['entries-read'] === 0);
     }
 
     public function testXAck() {
