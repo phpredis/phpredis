@@ -1928,6 +1928,13 @@ PHP_METHOD(Redis, hGet)
 }
 /* }}} */
 
+/* {{{ proto string Redis::hgetWithMeta(string key, string mem) */
+PHP_METHOD(Redis, hGetWithMeta)
+{
+    REDIS_PROCESS_KW_CMD("HGET", redis_key_str_cmd, redis_bulk_withmeta_response);
+}
+/* }}} */
+
 /* {{{ proto long Redis::hLen(string key) */
 PHP_METHOD(Redis, hLen)
 {
