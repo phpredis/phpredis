@@ -73,6 +73,9 @@ This release introduces support for dozens of new commands, including hash field
 
 ## Added
 
+- Add `hgetwithmeta` method
+  [7d3b2e4d](https://github.com/phpredis/phpredis/commit/7d3b2e4d)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Add `maxRetries` to `redis_sock_configure`
   [e9e9e495](https://github.com/phpredis/phpredis/commit/e9e9e4950946cd92aab8d0aa14d9d84adce4a646)
   ([michael-grunder](https://github.com/michael-grunder))

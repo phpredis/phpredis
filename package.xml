@@ -59,6 +59,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Added:
 
+    Add `hgetwithmeta` method [7d3b2e4d] (Pavlo Yatsukhnenko)
     Add `maxRetries` to `redis_sock_configure` [e9e9e495] (Michael Grunder)
     Implement vectorset commands [92dd256f, d80b7258, 7f9b1f41, 92716ed0,
     dc91631b, 1deca628, 96378b70, 0fda9f29, 0ed0fc05, d1d69005, 286fa630,
