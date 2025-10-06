@@ -378,7 +378,7 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     int failover, int persistent);
 PHP_REDIS_API void cluster_free(redisCluster *c, int free_ctx);
 PHP_REDIS_API void cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds);
-PHP_REDIS_API int cluster_map_keyspace(redisCluster *c);
+REDIS_NODISCARD PHP_REDIS_API int cluster_map_keyspace(redisCluster *c);
 PHP_REDIS_API void cluster_free_node(redisClusterNode *node);
 
 /* Functions for interacting with cached slots maps */
