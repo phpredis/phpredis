@@ -5971,6 +5971,72 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
     }
 
+    public function testHGetWithMeta() {
+        $this->redis->del('hash');
+        $this->assertFalse($this->redis->hget('hash', 'member'));
+
+        $result = $this->redis->hgetWithMeta('hash', 'member');
+        $this->assertIsArray($result, 2);
+        $this->assertArrayKeyEquals($result, 0, false);
+        $this->assertArrayKey($result, 1, function ($metadata) {
+            $this->assertIsArray($metadata);
+            $this->assertArrayKeyEquals($metadata, 'length', -1);
+            return true;
+        });
+
+        if ($this->havePipeline()) {
+            $batch = $this->redis->pipeline()
+                ->hget('hash', 'member')
+                ->hgetWithMeta('hash', 'member')
+                ->exec();
+            $this->assertIsArray($batch, 2);
+            $this->assertArrayKeyEquals($batch, 0, false);
+            $this->assertArrayKey($batch, 1, function ($result) {
+                $this->assertIsArray($result, 2);
+                $this->assertArrayKeyEquals($result, 0, false);
+                $this->assertArrayKey($result, 1, function ($metadata) {
+                    $this->assertIsArray($metadata);
+                    $this->assertArrayKeyEquals($metadata, 'length', -1);
+                    return true;
+                });
+                return true;
+            });
+        }
+
+        $batch = $this->redis->multi()
+            ->hset('hash', 'member', 'value')
+            ->hgetWithMeta('hash', 'member')
+            ->exec();
+        $this->assertIsArray($batch, 2);
+        $this->assertArrayKeyEquals($batch, 0, 1);
+        $this->assertArrayKey($batch, 1, function ($result) {
+            $this->assertIsArray($result, 2);
+            $this->assertArrayKeyEquals($result, 0, 'value');
+            $this->assertArrayKey($result, 1, function ($metadata) {
+                $this->assertIsArray($metadata);
+                $this->assertArrayKeyEquals($metadata, 'length', strlen('value'));
+                return true;
+            });
+            return true;
+        });
+
+        $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        $this->assertEquals(0, $this->redis->hset('hash', 'member', false));
+
+        $result = $this->redis->hgetWithMeta('hash', 'member');
+        $this->assertIsArray($result, 2);
+        $this->assertArrayKeyEquals($result, 0, false);
+        $this->assertArrayKey($result, 1, function ($metadata) {
+            $this->assertIsArray($metadata);
+            $this->assertArrayKeyEquals($metadata, 'length', strlen(serialize(false)));
+            return true;
+        });
+
+        $this->assertFalse($this->redis->hget('hash', 'member'));
+        $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+    }
+
     public function testPrefix() {
         // no prefix
         $this->redis->setOption(Redis::OPT_PREFIX, '');

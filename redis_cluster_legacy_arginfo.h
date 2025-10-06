@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d504e84c671162c4ec78aa1e6bb5a47c695ee90d */
+ * Stub hash: 6561a50ccac9841ac01a53feb5f88e7f592e1bc2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -344,6 +344,8 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_hget arginfo_class_RedisCluster_hexists
 
 #define arginfo_class_RedisCluster_hgetall arginfo_class_RedisCluster__prefix
+
+#define arginfo_class_RedisCluster_hgetWithMeta arginfo_class_RedisCluster_hexists
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_hincrby, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
@@ -1008,7 +1010,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zdiff, 0, 0, 1)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
-
 ZEND_METHOD(RedisCluster, __construct);
 ZEND_METHOD(RedisCluster, _compress);
 ZEND_METHOD(RedisCluster, _uncompress);
@@ -1094,6 +1095,7 @@ ZEND_METHOD(RedisCluster, hdel);
 ZEND_METHOD(RedisCluster, hexists);
 ZEND_METHOD(RedisCluster, hget);
 ZEND_METHOD(RedisCluster, hgetall);
+ZEND_METHOD(RedisCluster, hgetWithMeta);
 ZEND_METHOD(RedisCluster, hincrby);
 ZEND_METHOD(RedisCluster, hincrbyfloat);
 ZEND_METHOD(RedisCluster, hkeys);
@@ -1264,7 +1266,6 @@ ZEND_METHOD(RedisCluster, zdiffstore);
 ZEND_METHOD(RedisCluster, zunion);
 ZEND_METHOD(RedisCluster, zdiff);
 
-
 static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, __construct, arginfo_class_RedisCluster___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _compress, arginfo_class_RedisCluster__compress, ZEND_ACC_PUBLIC)
@@ -1351,6 +1352,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, hexists, arginfo_class_RedisCluster_hexists, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hget, arginfo_class_RedisCluster_hget, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hgetall, arginfo_class_RedisCluster_hgetall, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, hgetWithMeta, arginfo_class_RedisCluster_hgetWithMeta, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hincrby, arginfo_class_RedisCluster_hincrby, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hincrbyfloat, arginfo_class_RedisCluster_hincrbyfloat, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hkeys, arginfo_class_RedisCluster_hkeys, ZEND_ACC_PUBLIC)
@@ -1523,17 +1525,16 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_FE_END
 };
 
-
-static const zend_function_entry class_RedisClusterException_methods[] = {
-	ZEND_FE_END
-};
-
 static zend_class_entry *register_class_RedisCluster(void)
 {
 	zend_class_entry ce, *class_entry;
 
 	INIT_CLASS_ENTRY(ce, "RedisCluster", class_RedisCluster_methods);
+#if (PHP_VERSION_ID >= 80400)
+	class_entry = zend_register_internal_class_with_flags(&ce, NULL, 0);
+#else
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#endif
 
 	zval const_OPT_SLAVE_FAILOVER_value;
 	ZVAL_LONG(&const_OPT_SLAVE_FAILOVER_value, REDIS_OPT_FAILOVER);
@@ -1572,8 +1573,12 @@ static zend_class_entry *register_class_RedisClusterException(zend_class_entry *
 {
 	zend_class_entry ce, *class_entry;
 
-	INIT_CLASS_ENTRY(ce, "RedisClusterException", class_RedisClusterException_methods);
+	INIT_CLASS_ENTRY(ce, "RedisClusterException", NULL);
+#if (PHP_VERSION_ID >= 80400)
+	class_entry = zend_register_internal_class_with_flags(&ce, class_entry_RuntimeException, 0);
+#else
 	class_entry = zend_register_internal_class_ex(&ce, class_entry_RuntimeException);
+#endif
 
 	return class_entry;
 }

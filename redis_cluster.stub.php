@@ -481,6 +481,11 @@ class RedisCluster {
     public function hgetall(string $key): RedisCluster|array|false;
 
     /**
+     * @see Redis::hgetWithMeta
+     */
+    public function hgetWithMeta(string $key, string $member): mixed;
+
+    /**
      * @see Redis::hincrby
      */
     public function hincrby(string $key, string $member, int $value): RedisCluster|int|false;

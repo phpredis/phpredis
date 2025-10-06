@@ -1760,6 +1760,17 @@ class Redis {
     public function hGetAll(string $key): Redis|array|false;
 
     /**
+     * Retrieve a value and metadata of hash field.
+     *
+     * @param  string  $key The key to query
+     * @param  string  $member The key to query
+     * @return mixed
+     *
+     * @example $redis->hgetWithMeta('foo', 'field');
+     */
+    public function hGetWithMeta(string $key, string $member): mixed;
+
+    /**
      * Increment a hash field's value by an integer
      *
      * @param string $key   The hash to modify
