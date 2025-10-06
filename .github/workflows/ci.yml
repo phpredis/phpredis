@@ -231,7 +231,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -261,7 +261,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         ts: [nts, ts]
     steps:
       - name: Checkout
@@ -269,7 +269,7 @@ jobs:
         with:
           submodules: true
       - name: Install PHP ${{ matrix.php }}
-        uses: php/setup-php-sdk@v0.10
+        uses: php/setup-php-sdk@v0.11
         id: setup-php-sdk
         with:
           version: ${{ matrix.php }}
