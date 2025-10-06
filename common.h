@@ -41,6 +41,31 @@
 # error "Unknown endianness"
 #endif
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#  define REDIS_MSVC 1
+#endif
+
+#ifndef REDIS_MSVC
+#  if defined(__has_c_attribute)
+#    if __has_c_attribute(nodiscard)
+#      define REDIS_NODISCARD [[nodiscard]]
+#    endif
+#  endif
+#  ifndef REDIS_NODISCARD
+#    if defined(__has_attribute)
+#      if __has_attribute(warn_unused_result)
+#        define REDIS_NODISCARD __attribute__((warn_unused_result))
+#      endif
+#    elif defined(__GNUC__) || defined(__clang__)
+#      define REDIS_NODISCARD __attribute__((warn_unused_result))
+#    else
+#      define REDIS_NODISCARD
+#    endif
+#  endif
+#else
+#  define REDIS_NODISCARD
+#endif
+
 #include "backoff.h"
 
 typedef enum {
