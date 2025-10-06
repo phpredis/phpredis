@@ -40,6 +40,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Fixed:
 
+    Fix a possible segfault during failover [5ebb853e] (rlerdorf)
     Fix an overflow bug in ZADD on Windows [35df8ad7] (Michael Grunder)
     Fix errors and a warning [b8de91c9] (Michael Grunder)
     Fix `RedisCluster` segfault [f61e8cd7] (Michael Grunder)
@@ -105,6 +106,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Internal/Performance:
 
+    Introduce `[[nodiscard]]` type attribute where supported. [2d963e79] (Michael Grunder)
     Fix typo (s/sees/seeds/) [25e6d5fc] (xabbuh)
     Fix an unused variable warning [b48aa0d4] (Michael Grunder)
     Fix several issues surfaced by `gcc -fanalyze` [8be2306e] (Michael Grunder)

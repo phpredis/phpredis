@@ -22,6 +22,9 @@ This release introduces support for dozens of new commands, including hash field
 
 ## Fixed
 
+- Fix a possible segfault during failover
+  [5ebb853e](https://github.com/phpredis/phpredis/commit/5ebb853e)
+  ([rlerdorf](https://github.com/rlerdorf))
 - Fix an overflow bug in ZADD on Windows
   [35df8ad7](https://github.com/phpredis/phpredis/commit/35df8ad7c2fc54fbf2a58d486cce49e712344bb2)
   ([michael-grunder](https://github.com/michael-grunder))
@@ -189,6 +192,9 @@ This release introduces support for dozens of new commands, including hash field
 
 ## Internal/Performance
 
+- Introduce `[[nodiscard]]` type attribute where supported.
+  [2d963e79](https://github.com/phpredis/phpredis/commit/2d963e79)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Fix typo (s/sees/seeds/)
   [25e6d5fc](https://github.com/phpredis/phpredis/commit/25e6d5fcc2b7599907ec9571a12c1d5c8f9c0dcb)
   ([xabbuh](https://github.com/xabbuh))
