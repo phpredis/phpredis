@@ -3395,6 +3395,24 @@ class Redis_Test extends TestSuite {
 	}
     }
 
+    /* Regression test for GitHub issue 2731 */
+    public function testNumericPrefixHashFields() {
+        $hash = [
+            '86deaeb05e3f7760b67e92897a1325e0fdd8618d' => 'one',
+            '-86deaeb05e3f7760b67e92897a1325e0fdd8618d' => 'two',
+            12345 => 'a_real_number',
+            -12345 => 'a_negative_real_number',
+        ];
+
+        $this->assertIsInt($this->redis->del('hash'));
+        $this->assertTrue($this->redis->hmset('hash', $hash));
+
+        $res = $this->redis->hmget('hash', array_keys($hash));
+
+        // The keys from our local variable and res should be equal
+        $this->assertEqualsCanonicalizing(array_keys($hash), array_keys($res));
+    }
+
     public function testHRandField() {
         if (version_compare($this->version, '6.2.0') < 0)
             $this->MarkTestSkipped();
