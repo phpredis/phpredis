@@ -22,6 +22,9 @@ This release introduces support for dozens of new commands, including hash field
 
 ## Fixed
 
+- Fix possible hash field name truncation
+  [834d2b37](https://github.com/phpredis/phpredis/commit/834d2b37)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Fix a possible segfault during failover
   [5ebb853e](https://github.com/phpredis/phpredis/commit/5ebb853e)
   ([rlerdorf](https://github.com/rlerdorf))
