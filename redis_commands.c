@@ -2688,7 +2688,7 @@ static inline zval *coerce_hash_field(zval *zv, zval *aux) {
 
     if (UNEXPECTED(Z_TYPE_P(zv) == IS_STRING &&
                    is_numeric_string(Z_STRVAL_P(zv),
-                                     Z_STRLEN_P(zv), &lv, NULL, 1) == IS_LONG))
+                                     Z_STRLEN_P(zv), &lv, NULL, 0) == IS_LONG))
     {
         ZVAL_LONG(aux, lv);
         return aux;
