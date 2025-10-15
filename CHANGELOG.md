@@ -5,7 +5,7 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [6.3.0RC1] - TBD
+# [6.3.0RC1] - 2025-10-15
 
 This release introduces support for dozens of new commands, including hash field expiration, Valkey’s DELIFEQ, and Redis vector set operations. It also delivers numerous bug fixes and performance improvements.
 
@@ -28,6 +28,10 @@ This release introduces support for dozens of new commands, including hash field
 - Fix a possible segfault during failover
   [5ebb853e](https://github.com/phpredis/phpredis/commit/5ebb853e)
   ([rlerdorf](https://github.com/rlerdorf))
+- Bump version and fix XGROUP test
+  [f5db01b7](https://github.com/phpredis/phpredis/commit/f5db01b7),
+  [4517d5f9](https://github.com/phpredis/phpredis/commit/4517d5f9)
+  ([remicollet](https://github.com/remicollet))
 - Fix an overflow bug in ZADD on Windows
   [35df8ad7](https://github.com/phpredis/phpredis/commit/35df8ad7c2fc54fbf2a58d486cce49e712344bb2)
   ([michael-grunder](https://github.com/michael-grunder))
