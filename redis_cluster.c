@@ -1987,10 +1987,42 @@ PHP_METHOD(RedisCluster, getoption) {
 }
 /* }}} */
 
+static void forward_sock_conn_options(redisClusterNode *node, void *arg) {
+    RedisSock *src = arg;
+
+    node->sock->max_retries = src->max_retries;
+    node->sock->backoff = src->backoff;
+}
+
+/* Apply a function to all nodes and their replicas */
+static void
+cluster_node_apply(redisCluster *c, void (*fn)(redisClusterNode *, void *),
+                   void *privdata)
+{
+    redisClusterNode *node, *slave;
+
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node == NULL)
+            continue;
+
+        fn(node, privdata);
+
+        if (node->slaves) {
+            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+                if (slave == NULL)
+                    continue;
+
+                fn(slave, privdata);
+            } ZEND_HASH_FOREACH_END();
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
 /* {{{ proto bool RedisCluster::setOption(long option, mixed value) */
 PHP_METHOD(RedisCluster, setoption) {
     redisCluster *c = GET_CONTEXT();
     redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, c);
+    cluster_node_apply(c, forward_sock_conn_options, c->flags);
 }
 /* }}} */
 
