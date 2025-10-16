@@ -47,6 +47,14 @@ class RedisCluster {
      */
     public const FAILOVER_DISTRIBUTE_SLAVES = UNKNOWN;
 
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_FAILOVER_PREFER_REPLICA
+     *
+     */
+    public const FAILOVER_PREFER_REPLICA = UNKNOWN;
+
     public function __construct(string|null $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = null, ?array $context = null);
 
     /**

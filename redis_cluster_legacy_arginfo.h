@@ -1566,6 +1566,12 @@ static zend_class_entry *register_class_RedisCluster(void)
 	zend_declare_class_constant_ex(class_entry, const_FAILOVER_DISTRIBUTE_SLAVES_name, &const_FAILOVER_DISTRIBUTE_SLAVES_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_FAILOVER_DISTRIBUTE_SLAVES_name);
 
+	zval const_FAILOVER_PREFER_REPLICA_value;
+	ZVAL_LONG(&const_FAILOVER_PREFER_REPLICA_value, REDIS_FAILOVER_PREFER_REPLICA);
+	zend_string *const_FAILOVER_PREFER_REPLICA_name = zend_string_init_interned("FAILOVER_PREFER_REPLICA", sizeof("FAILOVER_PREFER_REPLICA") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_FAILOVER_PREFER_REPLICA_name, &const_FAILOVER_PREFER_REPLICA_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_FAILOVER_PREFER_REPLICA_name);
+
 	return class_entry;
 }
 

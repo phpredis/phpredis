@@ -148,6 +148,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_FAILOVER_ERROR             1
 #define REDIS_FAILOVER_DISTRIBUTE        2
 #define REDIS_FAILOVER_DISTRIBUTE_SLAVES 3
+#define REDIS_FAILOVER_PREFER_REPLICA    4
 /* serializers */
 typedef enum {
     REDIS_SERIALIZER_NONE,

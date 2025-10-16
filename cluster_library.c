@@ -1315,6 +1315,9 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
  * REDIS_FAILOVER_DISTRIBUTE_SLAVES:
  *   We pick at random from slave nodes of a given master.  This option is
  *   used to load balance read queries against N slaves.
+ * REDIS_FAILOVER_PREFER_REPLICA:
+ *   We prefer to read from slave nodes, falling back to the master only when
+ *   no slaves are available for the slot.
  *
  * Once we are able to find a node we can write to, we check for MOVED or
  * ASKING redirection, such that the keyspace can be updated.
@@ -1353,6 +1356,14 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         /* Try the master, then fall back to any slaves we may have */
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz) ||
            !cluster_dist_write(c, cmd, sz, 1)) return 0;
+    } else if (failover == REDIS_FAILOVER_PREFER_REPLICA) {
+        /* Try slaves first, then fall back to master if no slaves available */
+        if (!cluster_dist_write(c, cmd, sz, 1)) {
+            /* Successfully wrote to a slave */
+            return 0;
+        }
+        /* All slaves failed, try the master */
+        if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz)) return 0;
     } else {
         /* Include or exclude master node depending on failover option and
          * attempt to make our write */
