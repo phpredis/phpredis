@@ -654,7 +654,7 @@ class RedisCluster {
      *
      * @param string|array $key_or_address Either a key name or array with host and port indicating
      *                                     which cluster node we want to send the command to.
-     * @param string       $sections       Optional section(s) you wish Redis server to return.
+     * @param string       ...$sections    Optional section(s) you wish Redis server to return.
      *
      * @return RedisCluster|array|false
      */
@@ -794,7 +794,7 @@ class RedisCluster {
      * @param string|array $key_or_address Either a key name or a two element array with host and
      *                                     address, informing RedisCluster which node to ping.
      *
-     * @param string       $message        An optional message to send.
+     * @param string|null  $message        An optional message to send.
      *
      * @return mixed This method always returns `true` if no message was sent, and the message itself
      *               if one was.
