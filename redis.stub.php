@@ -1575,7 +1575,7 @@ class Redis {
      *
      * @return string The error string or NULL if there is none.
      */
-    public function getLastError(): ?string;
+    public function getLastError(): string|null;
 
     /**
      * Returns whether the connection is in ATOMIC, MULTI, or PIPELINE mode
@@ -1599,7 +1599,7 @@ class Redis {
      *
      * @return string The ID or NULL if we don't have one.
      */
-    public function getPersistentID(): ?string;
+    public function getPersistentID(): string|null;
 
     /**
      * Get the port we are connected to.  This number will be zero if we are connected to a unix socket.
