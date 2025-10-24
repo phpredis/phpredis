@@ -931,6 +931,10 @@ class Redis_Cluster_Test extends Redis_Test {
             $key = "failover-test-key-$i";
             $value = "value-$i";
             $this->redis->set($key, $value);
+            /* Wait for replication to ensure the key has propagated to replicas.
+             * Using 1 replica as CI sets up clusters with 1 replica per node.
+             * Timeout is 1000ms (1 second) which should be sufficient. */
+            $this->redis->rawCommand($key, 'WAIT', '1', '1000');
             $test_data[$key] = $value;
         }
 
@@ -948,21 +952,25 @@ class Redis_Cluster_Test extends Redis_Test {
 
         /* List */
         $this->redis->rpush('pref-list', 'a', 'b', 'c');
+        $this->redis->rawCommand('pref-list', 'WAIT', '1', '1000');
         $this->assertEquals(['a', 'b', 'c'], $this->redis->lrange('pref-list', 0, -1));
 
         /* Set */
         $this->redis->sadd('pref-set', 'x', 'y', 'z');
+        $this->redis->rawCommand('pref-set', 'WAIT', '1', '1000');
         $members = $this->redis->smembers('pref-set');
         sort($members);
         $this->assertEquals(['x', 'y', 'z'], $members);
 
         /* Hash */
         $this->redis->hmset('pref-hash', ['field1' => 'val1', 'field2' => 'val2']);
+        $this->redis->rawCommand('pref-hash', 'WAIT', '1', '1000');
         $this->assertEquals(['field1' => 'val1', 'field2' => 'val2'],
             $this->redis->hgetall('pref-hash'));
 
         /* Sorted Set */
         $this->redis->zadd('pref-zset', 1, 'm1', 2, 'm2', 3, 'm3');
+        $this->redis->rawCommand('pref-zset', 'WAIT', '1', '1000');
         $this->assertEquals(['m1', 'm2', 'm3'], $this->redis->zrange('pref-zset', 0, -1));
 
         /* Clean up */
