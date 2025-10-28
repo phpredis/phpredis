@@ -922,6 +922,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Test FAILOVER_PREFER_REPLICA mode specifically */
     public function testFailoverPreferReplica() {
+        if ($this->is_keydb)
+            $this->markTestSkipped();
+
         /* Enable readonly mode and set FAILOVER_PREFER_REPLICA */
         $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_PREFER_REPLICA);
 
