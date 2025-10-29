@@ -2,6 +2,7 @@
 /.vscode
 /docs/.cache
 .cquery
+*.dep
 *.deps
 *.libs
 *.o
