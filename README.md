@@ -281,7 +281,36 @@ $redis->connect('/tmp/redis.sock', 0, 1.5, NULL, 0, 1.5); // Unix socket with 1.
 
 /* With PhpRedis >= 5.3.0 you can specify authentication and stream information on connect */
 $redis->connect('127.0.0.1', 6379, 1, '', 0, 0, ['auth' => ['phpredis', 'phpredis']]);
+
+/* TLS connections can customise the underlying PHP stream context */
+$redis->connect('tls://redis.example.com', 6380, 1.5, null, 0, 0, [
+    'auth' => ['app-user', 'strong-password'],
+    'stream' => [
+        'verify_peer' => true,                 // validate the server certificate against cafile/capath
+        'verify_peer_name' => true,            // require the certificate common/SAN name to match peer_name
+        'peer_name' => 'redis.example.com',    // expected hostname presented by the server certificate
+        'cafile' => '/etc/ssl/redis-ca.pem',   // CA or bundle used to trust the server certificate
+        'capath' => '/etc/ssl/certs',          // directory alternative to cafile
+        'allow_self_signed' => false,          // set to true if you rely on a self-signed certificate
+        'local_cert' => '/etc/ssl/client.crt', // client certificate for mutual TLS (optional)
+        'local_pk' => '/etc/ssl/client.key',   // private key that matches local_cert (optional)
+        'passphrase' => 'secret',              // passphrase for local_pk if it is encrypted (optional)
+        'ciphers' => 'HIGH:!aNULL:!MD5',       // TLS cipher list provided to OpenSSL (optional)
+    ],
+]);
 ~~~
+
+When you pass a `stream` key PhpRedis forwards the options to [`stream_socket_client`](https://www.php.net/manual/en/context.ssl.php).  
+Commonly used options include:
+
+- `verify_peer`, `verify_peer_name`, `peer_name`: control server certificate validation behaviour.
+- `cafile`/`capath`: provide the trusted certificate authority bundle when the default store is insufficient.
+- `allow_self_signed`: permits self-signed certificates when set to `true`.
+- `local_cert`, `local_pk`, `passphrase`: configure client-side certificates for mutual TLS.
+- `ciphers`: restrict the negotiated TLS cipher suites.
+- Any other SSL context option supported by PHP (e.g. `SNI_enabled`, `disable_compression`) can also be supplied.
+
+The same array format can be used with `pconnect`/`popen`.
 
 **Note:** `open` is an alias for `connect` and will be removed in future versions of phpredis.
 
