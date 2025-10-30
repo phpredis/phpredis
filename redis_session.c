@@ -221,7 +221,7 @@ static int redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
 }
 
 PHP_REDIS_API redis_pool_member *
-redis_pool_get_sock(redis_pool *pool, const char *key) {
+redis_pool_get_sock(redis_pool *pool, const char *key, zend_string **err) {
 
     unsigned int pos, i;
     memcpy(&pos, key, sizeof(pos));
@@ -229,18 +229,45 @@ redis_pool_get_sock(redis_pool *pool, const char *key) {
 
     redis_pool_member *rpm = pool->head;
 
+    *err = NULL;
+
     for(i = 0; i < pool->totalWeight;) {
         if (pos >= i && pos < i + rpm->weight) {
             if (redis_sock_server_open(rpm->redis_sock) == 0) {
+                *err = NULL;
                 return rpm;
             }
         }
+
+        if (rpm->redis_sock)
+            *err = rpm->redis_sock->err;
+
         i += rpm->weight;
         rpm = rpm->next;
     }
 
     return NULL;
 }
+
+static RedisSock *
+get_pool_mem_sock(redis_pool *pool, zend_string *key) {
+    redis_pool_member *rpm;
+    zend_string *err;
+
+    if (ZSTR_LEN(key) == 0)
+        return NULL;
+
+    rpm = redis_pool_get_sock(pool, ZSTR_VAL(key), &err);
+    if (rpm == NULL || rpm->redis_sock == NULL) {
+        php_error_docref(NULL, E_WARNING,
+            "Redis connection not available (%s)",
+            err ? ZSTR_VAL(err) : "unknown error");
+        return NULL;
+    }
+
+    return rpm->redis_sock;
+}
+
 
 /* Helper to set our session lock key */
 static int set_session_lock_key(RedisSock *redis_sock, char *cmd, int cmd_len
@@ -572,20 +599,20 @@ fail:
 PS_CLOSE_FUNC(redis)
 {
     redis_pool *pool = PS_GET_MOD_DATA();
+    RedisSock *redis_sock;
 
-    if (pool) {
-        if (pool->lock_status.session_key) {
-            redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(pool->lock_status.session_key));
+    if (pool == NULL)
+        return SUCCESS;
 
-            RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-            if (redis_sock) {
-                lock_release(redis_sock, &pool->lock_status);
-            }
+    if (pool->lock_status.session_key) {
+        redis_sock = get_pool_mem_sock(pool, pool->lock_status.session_key);
+        if (redis_sock) {
+            lock_release(redis_sock, &pool->lock_status);
         }
-
-        redis_pool_free(pool);
-        PS_SET_MOD_DATA(NULL);
     }
+
+    redis_pool_free(pool);
+    PS_SET_MOD_DATA(NULL);
 
     return SUCCESS;
 }
@@ -612,31 +639,34 @@ redis_session_key(RedisSock *redis_sock, const char *key, int key_len)
     return session;
 }
 
+static zend_string *
+redis_session_key_zstr(RedisSock *redis_sock, zend_string *key) {
+    return redis_session_key(redis_sock, ZSTR_VAL(key), ZSTR_LEN(key));
+}
+
 /* {{{ PS_CREATE_SID_FUNC
  */
 PS_CREATE_SID_FUNC(redis)
 {
-    int retries = 3;
     redis_pool *pool = PS_GET_MOD_DATA();
+    RedisSock *redis_sock;
+    int retries = 3;
 
-    if (!pool) {
+    if (!pool)
         return php_session_create_id(NULL);
-    }
 
     while (retries-- > 0) {
-        zend_string* sid = php_session_create_id((void **) &pool);
-        redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(sid));
+        zend_string *sid = php_session_create_id((void **) &pool);
 
-        RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-
+        redis_sock = get_pool_mem_sock(pool, sid);
         if (!redis_sock) {
-            php_error_docref(NULL, E_NOTICE, "Redis connection not available");
             zend_string_release(sid);
             return php_session_create_id(NULL);
         }
 
-        if (pool->lock_status.session_key) zend_string_release(pool->lock_status.session_key);
-        pool->lock_status.session_key = redis_session_key(redis_sock, ZSTR_VAL(sid), ZSTR_LEN(sid));
+        if (pool->lock_status.session_key)
+            zend_string_release(pool->lock_status.session_key);
+        pool->lock_status.session_key = redis_session_key_zstr(redis_sock, sid);
 
         if (lock_acquire(redis_sock, &pool->lock_status) == SUCCESS) {
             return sid;
@@ -659,24 +689,16 @@ PS_CREATE_SID_FUNC(redis)
  */
 PS_VALIDATE_SID_FUNC(redis)
 {
-    char *cmd, *response;
     int cmd_len, response_len;
+    RedisSock *redis_sock;
+    char *cmd, *response;
 
-    const char *skey = ZSTR_VAL(key);
-    size_t skeylen = ZSTR_LEN(key);
-
-    if (!skeylen) return FAILURE;
-
-    redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
-    RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-    if (!redis_sock) {
-        php_error_docref(NULL, E_WARNING, "Redis connection not available");
+    redis_sock = get_pool_mem_sock(PS_GET_MOD_DATA(), key);
+    if (!redis_sock)
         return FAILURE;
-    }
 
     /* send EXISTS command */
-    zend_string *session = redis_session_key(redis_sock, skey, skeylen);
+    zend_string *session = redis_session_key_zstr(redis_sock, key);
     cmd_len = REDIS_SPPRINTF(&cmd, "EXISTS", "S", session);
     zend_string_release(session);
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0 || (response = redis_sock_read(redis_sock, &response_len)) == NULL) {
@@ -701,29 +723,21 @@ PS_VALIDATE_SID_FUNC(redis)
  */
 PS_UPDATE_TIMESTAMP_FUNC(redis)
 {
-    char *cmd, *response;
     int cmd_len, response_len;
-
-    const char *skey = ZSTR_VAL(key);
-    size_t skeylen = ZSTR_LEN(key);
-
-    if (!skeylen) return FAILURE;
+    RedisSock *redis_sock;
+    char *cmd, *response;
 
     /* No need to update the session timestamp if we've already done so */
     if (INI_INT("redis.session.early_refresh")) {
         return SUCCESS;
     }
 
-    redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
-    RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-    if (!redis_sock) {
-        php_error_docref(NULL, E_WARNING, "Redis connection not available");
+    redis_sock = get_pool_mem_sock(PS_GET_MOD_DATA(), key);
+    if (!redis_sock)
         return FAILURE;
-    }
 
     /* send EXPIRE command */
-    zend_string *session = redis_session_key(redis_sock, skey, skeylen);
+    zend_string *session = redis_session_key_zstr(redis_sock, key);
     cmd_len = REDIS_SPPRINTF(&cmd, "EXPIRE", "Sd", session, session_gc_maxlifetime());
     zend_string_release(session);
 
@@ -749,31 +763,29 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
  */
 PS_READ_FUNC(redis)
 {
-    char *resp, *cmd, *compressed_buf;
     int resp_len, cmd_len, compressed_free;
-    const char *skey = ZSTR_VAL(key);
-    size_t skeylen = ZSTR_LEN(key), compressed_len;
-
-    if (!skeylen) return FAILURE;
-
+    char *resp, *cmd, *compressed_buf;
     redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
-    RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-    if (!redis_sock) {
-        php_error_docref(NULL, E_WARNING, "Redis connection not available");
+    RedisSock *redis_sock;
+    size_t compressed_len;
+
+    redis_sock = get_pool_mem_sock(pool, key);
+    if (!redis_sock)
         return FAILURE;
-    }
 
     /* send GET command */
-    if (pool->lock_status.session_key) zend_string_release(pool->lock_status.session_key);
-    pool->lock_status.session_key = redis_session_key(redis_sock, skey, skeylen);
+    if (pool->lock_status.session_key)
+        zend_string_release(pool->lock_status.session_key);
+    pool->lock_status.session_key = redis_session_key_zstr(redis_sock, key);
 
     /* Update the session ttl if early refresh is enabled */
     if (INI_INT("redis.session.early_refresh")) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "GETEX", "Ssd", pool->lock_status.session_key,
+        cmd_len = REDIS_SPPRINTF(&cmd, "GETEX", "Ssd",
+                                 pool->lock_status.session_key,
                                  "EX", 2, session_gc_maxlifetime());
     } else {
-        cmd_len = REDIS_SPPRINTF(&cmd, "GET", "S", pool->lock_status.session_key);
+        cmd_len = REDIS_SPPRINTF(&cmd, "GET", "S",
+                                 pool->lock_status.session_key);
     }
 
     if (lock_acquire(redis_sock, &pool->lock_status) != SUCCESS) {
@@ -825,25 +837,21 @@ PS_WRITE_FUNC(redis)
 {
     char *cmd, *response;
     int cmd_len, response_len, compressed_free;
-    const char *skey = ZSTR_VAL(key);
-    size_t skeylen = ZSTR_LEN(key), svallen = ZSTR_LEN(val);
+    size_t svallen = ZSTR_LEN(val);
+    RedisSock *redis_sock;
     char *sval;
 
-    if (!skeylen) return FAILURE;
-
     redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
-    RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-    if (!redis_sock) {
-        php_error_docref(NULL, E_WARNING, "Redis connection not available");
+
+    redis_sock = get_pool_mem_sock(pool, key);
+    if (!redis_sock)
         return FAILURE;
-    }
 
     /* send SET command */
-    zend_string *session = redis_session_key(redis_sock, skey, skeylen);
+    zend_string *session = redis_session_key_zstr(redis_sock, key);
 
-    compressed_free = session_compress_data(redis_sock, ZSTR_VAL(val), ZSTR_LEN(val),
-                                            &sval, &svallen);
+    compressed_free = session_compress_data(redis_sock, ZSTR_VAL(val),
+                                            ZSTR_LEN(val), &sval, &svallen);
 
     cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "Sds", session, session_gc_maxlifetime(), sval, svallen);
     zend_string_release(session);
@@ -882,22 +890,18 @@ PS_DESTROY_FUNC(redis)
 {
     char *cmd, *response;
     int cmd_len, response_len;
-    const char *skey = ZSTR_VAL(key);
-    size_t skeylen = ZSTR_LEN(key);
+    RedisSock *redis_sock;
 
     redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
-    RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-    if (!redis_sock) {
-        php_error_docref(NULL, E_WARNING, "Redis connection not available");
+    redis_sock = get_pool_mem_sock(pool, key);
+    if (!redis_sock)
         return FAILURE;
-    }
 
     /* Release lock */
     lock_release(redis_sock, &pool->lock_status);
 
     /* send DEL command */
-    zend_string *session = redis_session_key(redis_sock, skey, skeylen);
+    zend_string *session = redis_session_key_zstr(redis_sock, key);
     cmd_len = REDIS_SPPRINTF(&cmd, "DEL", "S", session);
     zend_string_release(session);
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0 || (response = redis_sock_read(redis_sock, &response_len)) == NULL) {
