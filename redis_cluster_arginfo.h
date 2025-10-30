@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 5c64413b79e9df135d90d36ecb47ee391f36a448 */
+ * Stub hash: e7a59897413ea803bf34996c07e6eeaa87f32cea */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -54,6 +54,12 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_bgrewriteaof, 0, 1, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_wait, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
+	ZEND_ARG_TYPE_INFO(0, numreplicas, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_waitaof, 0, 4, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
@@ -1194,6 +1200,7 @@ ZEND_METHOD(RedisCluster, _redir);
 ZEND_METHOD(RedisCluster, acl);
 ZEND_METHOD(RedisCluster, append);
 ZEND_METHOD(RedisCluster, bgrewriteaof);
+ZEND_METHOD(RedisCluster, wait);
 ZEND_METHOD(RedisCluster, waitaof);
 ZEND_METHOD(RedisCluster, bgsave);
 ZEND_METHOD(RedisCluster, bitcount);
@@ -1451,6 +1458,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, acl, arginfo_class_RedisCluster_acl, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, append, arginfo_class_RedisCluster_append, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bgrewriteaof, arginfo_class_RedisCluster_bgrewriteaof, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, wait, arginfo_class_RedisCluster_wait, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, waitaof, arginfo_class_RedisCluster_waitaof, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bgsave, arginfo_class_RedisCluster_bgsave, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bitcount, arginfo_class_RedisCluster_bitcount, ZEND_ACC_PUBLIC)
