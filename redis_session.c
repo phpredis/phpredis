@@ -147,7 +147,10 @@ static int session_gc_maxlifetime(void) {
 /* Retrieve redis.session.compression from php.ini */
 static int session_compression_type(void) {
     const char *compression = INI_STR("redis.session.compression");
-    if(compression == NULL || *compression == '\0' || strncasecmp(compression, "none", sizeof("none") - 1) == 0) {
+
+    if(compression == NULL || *compression == '\0' ||
+       strncasecmp(compression, "none", sizeof("none") - 1) == 0)
+    {
         return REDIS_COMPRESSION_NONE;
     }
 
@@ -167,8 +170,17 @@ static int session_compression_type(void) {
     }
 #endif
 
-    // E_NOTICE when outside of valid values
-    php_error_docref(NULL, E_NOTICE, "redis.session.compression is outside of valid values, disabling");
+    if (strcasecmp(compression, "lzf") ||
+        strcasecmp(compression, "zstd") ||
+        strcasecmp(compression, "lz4"))
+    {
+        php_error_docref(NULL, E_NOTICE,
+            "redis.session.compression: '%s' compression is not available. "
+            "Rebuild phpredis with %s support.", compression, compression);
+    } else {
+        php_error_docref(NULL, E_NOTICE,
+            "redis.session.compression: '%s' is invalid", compression);
+    }
 
     return REDIS_COMPRESSION_NONE;
 }
