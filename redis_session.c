@@ -570,6 +570,9 @@ PS_OPEN_FUNC(redis)
     if (pool->head) {
         PS_SET_MOD_DATA(pool);
         return SUCCESS;
+    } else {
+        php_error_docref(NULL, E_WARNING,
+            "Unable to extract any servers from session.save_path");
     }
 
 fail:
