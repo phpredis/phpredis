@@ -565,6 +565,8 @@ $redis->setOption(Redis::OPT_BACKOFF_CAP, 750); // backoff time capped at 750ms
 1. [info](#info) - Get information and statistics about the server
 1. [lastSave](#lastsave) - Get the timestamp of the last disk save
 1. [save](#save) - Synchronously save the dataset to disk (wait to complete)
+1. [wait](#wait) - Block until write acknowledgements from replicas
+1. [waitaof](#waitaof) - Wait for local AOF fsync and replica acknowledgements
 1. [slaveOf](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
 1. [slowLog](#slowlog) - Access the Redis slowLog entries
@@ -748,6 +750,48 @@ None.
 ###### *Example*
 ~~~php
 $redis->save();
+~~~
+
+#### wait
+-----
+_**Description**_: Block the client until a specified number of replicas acknowledge the most recent write or until the timeout elapses.
+
+###### *Parameters*
+*numreplicas* (int): The number of replicas that must confirm the write.  
+*timeout* (int): Maximum time to wait in milliseconds (`0` to wait indefinitely).
+
+###### *Return value*
+*INT*: The number of replicas that acknowledged the write before timing out, or `FALSE` on error.
+
+###### *Example*
+~~~php
+$redis->set('user:1', 'marco');
+$confirmed = $redis->wait(1, 500);
+
+if ($confirmed < 1) {
+    // Handle the case where the write was not replicated in time.
+}
+~~~
+
+#### waitaof
+-----
+_**Description**_: Block until Redis has durably written recent changes to the local AOF file the requested number of times and received acknowledgements from the requested number of replicas (Redis >= 7.2).
+
+###### *Parameters*
+*numlocal* (int): Minimum number of local AOF fsync operations to wait for.  
+*numreplicas* (int): Number of replicas that must acknowledge the write.  
+*timeout* (int): Maximum time to wait in milliseconds (`0` to wait indefinitely).
+
+###### *Return value*
+*ARRAY*: Two integers, where element `0` is the number of local fsync operations performed and element `1` is the number of replica acknowledgements, or `FALSE` on error.
+
+###### *Example*
+~~~php
+[$local, $replicas] = $redis->waitaof(1, 1, 1000);
+
+if ($local < 1 || $replicas < 1) {
+    // The write was not persisted or replicated as requested.
+}
 ~~~
 
 #### slaveOf
