@@ -232,14 +232,31 @@ static int redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
     return len_written;
 }
 
+static inline int weighted_seed(zend_string *key) {
+    /* In GCC the fast-path is one 32-bit load with a union */
+    union { int pos; } u;
+
+    if (EXPECTED(ZSTR_LEN(key) >= sizeof(u.pos))) {
+        memcpy(&u.pos, ZSTR_VAL(key), sizeof(u.pos));
+        return u.pos;
+    }
+
+    u.pos = 0;
+
+    memcpy(&u.pos, ZSTR_VAL(key), ZSTR_LEN(key));
+
+    return u.pos;
+}
+
 PHP_REDIS_API redis_pool_member *
-redis_pool_get_sock(redis_pool *pool, const char *key) {
+redis_pool_get_sock(redis_pool *pool, zend_string *key) {
+    redis_pool_member *rpm;
+    int pos, i;
 
-    unsigned int pos, i;
-    memcpy(&pos, key, sizeof(pos));
-    pos %= pool->totalWeight;
+    /* In the next release, ensure pool->totalWeight > 0 */
+    pos = weighted_seed(key) % (pool->totalWeight ? pool->totalWeight : 1);
 
-    redis_pool_member *rpm = pool->head;
+    rpm = pool->head;
 
     for(i = 0; i < pool->totalWeight;) {
         if (pos >= i && pos < i + rpm->weight) {
@@ -590,7 +607,7 @@ PS_CLOSE_FUNC(redis)
 
     if (pool) {
         if (pool->lock_status.session_key) {
-            redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(pool->lock_status.session_key));
+            redis_pool_member *rpm = redis_pool_get_sock(pool, pool->lock_status.session_key);
 
             RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
             if (redis_sock) {
@@ -640,7 +657,7 @@ PS_CREATE_SID_FUNC(redis)
 
     while (retries-- > 0) {
         zend_string* sid = php_session_create_id((void **) &pool);
-        redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(sid));
+        redis_pool_member *rpm = redis_pool_get_sock(pool, sid);
 
         RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
 
@@ -683,7 +700,7 @@ PS_VALIDATE_SID_FUNC(redis)
     if (!skeylen) return FAILURE;
 
     redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
+    redis_pool_member *rpm = redis_pool_get_sock(pool, key);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
         php_error_docref(NULL, E_WARNING, "Redis connection not available");
@@ -730,7 +747,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     }
 
     redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
+    redis_pool_member *rpm = redis_pool_get_sock(pool, key);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
         php_error_docref(NULL, E_WARNING, "Redis connection not available");
@@ -772,7 +789,7 @@ PS_READ_FUNC(redis)
     if (!skeylen) return FAILURE;
 
     redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
+    redis_pool_member *rpm = redis_pool_get_sock(pool, key);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
         php_error_docref(NULL, E_WARNING, "Redis connection not available");
@@ -847,7 +864,7 @@ PS_WRITE_FUNC(redis)
     if (!skeylen) return FAILURE;
 
     redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
+    redis_pool_member *rpm = redis_pool_get_sock(pool, key);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
         php_error_docref(NULL, E_WARNING, "Redis connection not available");
@@ -901,7 +918,7 @@ PS_DESTROY_FUNC(redis)
     size_t skeylen = ZSTR_LEN(key);
 
     redis_pool *pool = PS_GET_MOD_DATA();
-    redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
+    redis_pool_member *rpm = redis_pool_get_sock(pool, key);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
         php_error_docref(NULL, E_WARNING, "Redis connection not available");
