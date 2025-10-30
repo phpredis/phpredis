@@ -3073,22 +3073,30 @@ PHP_METHOD(RedisCluster, randomkey) {
 }
 /* }}} */
 
-PHP_METHOD(RedisCluster, waitaof) {
-    zend_long numlocal, numreplicas, timeout;
+static
+void cluster_gen_wait_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
+                          size_t kwlen, zend_bool has_local, int reply_type)
+{
+    zend_long numreplicas, timeout, numlocal = 0;
     redisCluster *c = GET_CONTEXT();
     smart_string cmdstr = {0};
     void *ctx = NULL;
     short slot;
     zval *node;
+    int argc;
 
-    ZEND_PARSE_PARAMETERS_START(4, 4)
+    argc = 3 + !!has_local;
+
+    ZEND_PARSE_PARAMETERS_START(argc, argc)
         Z_PARAM_ZVAL(node)
-        Z_PARAM_LONG(numlocal)
+        if (has_local) {
+            Z_PARAM_LONG(numlocal)
+        }
         Z_PARAM_LONG(numreplicas)
         Z_PARAM_LONG(timeout)
     ZEND_PARSE_PARAMETERS_END();
 
-    if (numlocal < 0 || numreplicas < 0 || timeout < 0) {
+    if (numreplicas < 0 || timeout < 0 || numlocal < 0) {
         php_error_docref(NULL, E_WARNING, "No arguments can be negative");
         RETURN_FALSE;
     }
@@ -3098,14 +3106,16 @@ PHP_METHOD(RedisCluster, waitaof) {
         RETURN_FALSE;
     }
 
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 3, "WAITAOF");
-    redis_cmd_append_sstr_long(&cmdstr, numlocal);
+    redis_cmd_init_sstr(&cmdstr, argc - 1, (char*)kw, kwlen);
+    if (has_local) {
+        redis_cmd_append_sstr_long(&cmdstr, numlocal);
+    }
     redis_cmd_append_sstr_long(&cmdstr, numreplicas);
     redis_cmd_append_sstr_long(&cmdstr, timeout);
 
     c->readonly = 0;
 
-    if (cluster_send_slot(c, slot, cmdstr.c, cmdstr.len, TYPE_MULTIBULK) < 0) {
+    if (cluster_send_slot(c, slot, cmdstr.c, cmdstr.len, reply_type) < 0) {
         CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", 0);
         smart_string_free(&cmdstr);
         RETURN_FALSE;
@@ -3118,6 +3128,16 @@ PHP_METHOD(RedisCluster, waitaof) {
     }
 
     smart_string_free(&cmdstr);
+}
+
+PHP_METHOD(RedisCluster, wait) {
+    cluster_gen_wait_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, ZEND_STRL("WAIT"), 0,
+                         TYPE_INT);
+}
+
+PHP_METHOD(RedisCluster, waitaof) {
+    cluster_gen_wait_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, ZEND_STRL("WAITAOF"), 1,
+                         TYPE_MULTIBULK);
 }
 
 /* {{{ proto bool RedisCluster::ping(string key| string msg)
