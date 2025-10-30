@@ -4198,27 +4198,94 @@ $obj_redis->xTrim('mystream', 100, true);
 
 ### Pub/sub
 
-* [pSubscribe](#psubscribe) - Subscribe to channels by pattern
-* [publish](#publish) - Post a message to a channel
 * [subscribe](#subscribe) - Subscribe to channels
+* [unsubscribe](#unsubscribe) - Stop listening to channels
+* [pSubscribe](#psubscribe) - Subscribe to channels by pattern
+* [punsubscribe](#punsubscribe) - Stop listening to pattern subscriptions
+* [publish](#publish) - Post a message to a channel
 * [pubSub](#pubsub) - Introspection into the pub/sub subsystem
+
+#### subscribe
+-----
+_**Description**_: Subscribe to channels. Warning: this function will probably change in the future.
+
+###### *Parameters*
+*channels*: an array of channels to subscribe to  
+*callback*: either a string or [$instance, 'method_name']. The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
+*return value*: Mixed. Any non-null return value in the callback will be returned to the caller.
+
+Calling `$redis->unsubscribe()` inside the callback removes the provided channels. Once all channel subscriptions have been removed (for example by omitting the parameter so every channel is removed) PhpRedis leaves pub/sub mode and returns control to your script, which is the safest way to exit a `subscribe()` loop from within the callback.
+
+###### *Example*
+~~~php
+$r = new Redis;
+$r->connect('localhost', 6379);
+
+$r->subscribe(['channel'], function ($redis, $chan, $message) {
+    echo "Received {$chan}: {$message}\n";
+    $redis->unsubscribe(['channel']);
+});
+
+echo "Done\n";
+~~~
+
+#### unsubscribe
+-----
+_**Description**_: Remove one or more channel subscriptions. When all active channel subscriptions are removed PhpRedis exits pub/sub mode.
+
+###### *Parameters*
+*channels*: an array of channels to unsubscribe from. Passing an empty array, or omitting the parameter while inside an active subscription loop, unsubscribes from every channel.
+
+###### *Return value*
+*Redis|array|bool*: Outside of a subscription loop the method returns `true` on success. When invoked from within a subscription callback the method returns the server response array (`['unsubscribe', $channel, $remaining]`) until all subscriptions have been removed.
+
+###### *Example*
+~~~php
+$redis->unsubscribe(['first', 'second']);
+~~~
 
 #### pSubscribe
 -----
-_**Description**_: Subscribe to channels by pattern
+_**Description**_: Subscribe to channels by pattern. Warning: this function will probably change in the future.
 
 ###### *Parameters*
 *patterns*: An array of patterns to match  
-*callback*: Either a string or an array with an object and method.  The callback will get four arguments ($redis, $pattern, $channel, $message)  
-*return value*: Mixed.  Any non-null return value in the callback will be returned to the caller.  
+*callback*: Either a string or an array with an object and method. The callback will get four arguments ($redis, $pattern, $channel, $message)  
+*return value*: Mixed. Any non-null return value in the callback will be returned to the caller.
+
+When you no longer need a pattern subscription call `$redis->punsubscribe()` from inside the callback. PhpRedis tracks the exact patterns you subscribed to and exits pub/sub mode once no patterns remain (including when the parameter is omitted to remove every pattern).
+
 ###### *Example*
 ~~~php
-function pSubscribe($redis, $pattern, $chan, $msg) {
-	echo "Pattern: $pattern\n";
-	echo "Channel: $chan\n";
-	echo "Payload: $msg\n";
-}
+$r = new Redis;
+$r->connect('localhost', 6379);
+
+$r->psubscribe(['*foo*', '*bar*'], function ($redis, $pattern, $channel, $message) {
+    echo "Pattern {$pattern} matched {$channel}: {$message}\n";
+    $redis->punsubscribe(['*foo*', '*bar*']);
+});
+
+echo "Done\n";
 ~~~
+
+#### punsubscribe
+-----
+_**Description**_: Remove one or more pattern subscriptions that were registered with `pSubscribe()`.
+
+###### *Parameters*
+*patterns*: An array of patterns to unsubscribe from.
+
+###### *Return value*
+*Redis|array|bool*: The channels that were removed.
+
+###### *Example*
+~~~php
+$redis->punsubscribe(['orders.*']);
+$redis->punsubscribe(['foo', 'bar']);
+$redis->punsubscribe(['*']);
+~~~
+
+_**Note**_: PhpRedis does not interpret glob-style requests that differ from the patterns you originally supplied to `pSubscribe()`. For example, subscribing with `['foo']` and later calling `$redis->punsubscribe(['*'])` will send the command to Redis, but PhpRedis will still think `foo` is active and will keep invoking the callback. Always pass the same concrete patterns that were used to subscribe.
 
 #### publish
 -----
@@ -4231,35 +4298,6 @@ _**Description**_: Publish messages to channels. Warning: this function will pro
 ###### *Example*
 ~~~php
 $redis->publish('chan-1', 'hello, world!'); // send message.
-~~~
-
-#### subscribe
------
-_**Description**_: Subscribe to channels. Warning: this function will probably change in the future.
-
-###### *Parameters*
-*channels*: an array of channels to subscribe to  
-*callback*: either a string or [$instance, 'method_name']. The callback function receives 3 parameters: the redis instance, the channel name, and the message.
-*return value*:  Mixed.  Any non-null return value in the callback will be returned to the caller.
-###### *Example*
-~~~php
-function f($redis, $chan, $msg) {
-	switch($chan) {
-		case 'chan-1':
-			...
-			break;
-
-		case 'chan-2':
-			...
-			break;
-
-		case 'chan-2':
-			...
-			break;
-	}
-}
-
-$redis->subscribe(['chan-1', 'chan-2', 'chan-3'], 'f'); // subscribe to 3 chans
 ~~~
 
 #### pubSub
