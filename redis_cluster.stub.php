@@ -155,7 +155,7 @@ class RedisCluster {
      *
      * @see Redis::lmove
      */
-    public function lmove(string $src, string $dst, string $wherefrom, string $whereto): Redis|string|false;
+    public function lmove(string $src, string $dst, string $wherefrom, string $whereto): RedisCluster|string|false;
 
     /**
      * Move an element from one list to another, blocking up to a timeout until an element is available.
@@ -163,7 +163,7 @@ class RedisCluster {
      * @see Redis::blmove
      *
      */
-    public function blmove(string $src, string $dst, string $wherefrom, string $whereto, float $timeout): Redis|string|false;
+    public function blmove(string $src, string $dst, string $wherefrom, string $whereto, float $timeout): RedisCluster|string|false;
 
     /**
      * @see Redis::bzpopmax
@@ -538,12 +538,12 @@ class RedisCluster {
     /**
      * @see Redis::expiremember
      */
-    public function expiremember(string $key, string $field, int $ttl, ?string $unit = null): Redis|int|false;
+    public function expiremember(string $key, string $field, int $ttl, ?string $unit = null): RedisCluster|int|false;
 
     /**
      * @see Redis::expirememberat
      */
-    public function expirememberat(string $key, string $field, int $timestamp): Redis|int|false;
+    public function expirememberat(string $key, string $field, int $timestamp): RedisCluster|int|false;
 
     /**
      * @see https://redis.io/commands/hrandfield
@@ -690,7 +690,7 @@ class RedisCluster {
     /**
      * @see Redis::lpos
      */
-    public function lpos(string $key, mixed $value, ?array $options = null): Redis|null|bool|int|array;
+    public function lpos(string $key, mixed $value, ?array $options = null): RedisCluster|null|bool|int|array;
 
     /**
      * @see Redis::lpush
@@ -1139,12 +1139,12 @@ class RedisCluster {
     /**
      * @see Redis::vgetattr
      */
-    public function vgetattr(string $key, mixed $member, bool $decode = true): Redis|array|string|false;
+    public function vgetattr(string $key, mixed $member, bool $decode = true): RedisCluster|array|string|false;
 
     /**
      * @see Redis::vsetattr
      */
-    public function vsetattr(string $key, mixed $member, array|string $attributes): Redis|int|false;
+    public function vsetattr(string $key, mixed $member, array|string $attributes): RedisCluster|int|false;
 
     /**
      * @see Redis::xack
@@ -1346,7 +1346,7 @@ class RedisCluster {
     /**
      * @see https://redis.io/commands/zmscore
      */
-    public function zmscore(string $key, mixed $member, mixed ...$other_members): Redis|array|false;
+    public function zmscore(string $key, mixed $member, mixed ...$other_members): RedisCluster|array|false;
 
     /**
      * @see Redis::zunionstore
