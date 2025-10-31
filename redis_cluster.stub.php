@@ -654,7 +654,7 @@ class RedisCluster {
      *
      * @param string|array $key_or_address Either a key name or array with host and port indicating
      *                                     which cluster node we want to send the command to.
-     * @param string       ...$sections    Optional section(s) you wish Redis server to return.
+     * @param string       $sections       Optional section(s) you wish Redis server to return.
      *
      * @return RedisCluster|array|false
      */
