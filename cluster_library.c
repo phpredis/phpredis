@@ -1556,11 +1556,23 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 {
     int resp, timedout = 0;
     long msstart;
+    redisCachedCluster *cc;
 
     if (!SLOT(c, slot)) {
-        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
-            "The slot %d is not covered by any node in this cluster", slot);
-        return -1;
+        if (c->lazy_connect) {
+            if (CLUSTER_CACHING_ENABLED() && (cc = cluster_cache_load(c->cache_key))) {
+                cluster_init_cache(c, cc);
+            }
+
+            if (!SLOT(c, slot) && cluster_map_keyspace(c) == FAILURE) {
+                return -1;
+            }
+        }
+        if (!SLOT(c, slot)) {
+            zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+                "The slot %d is not covered by any node in this cluster", slot);
+            return -1;
+        }
     }
     /* Set the slot we're operating against as well as it's socket.  These can
      * change during our request loop if we have a master failure and are

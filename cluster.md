@@ -27,10 +27,13 @@ $obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true
 // If value is array (even empty), it will connect via TLS.  If not, it will connect without TLS.
 // Note: If the seeds start with "ssl:// or tls://", it will connect to the seeds via TLS, but the subsequent connections will connect without TLS if this value is null.  So, if your nodes require TLS, this value must be an array, even if empty.
 $obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, NULL, ["verify_peer" => false]);
+
+// Defer initial CLUSTER SLOTS mapping until first command with $lazy_connect argument set to true
+$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, NULL, null, true);
 ```
 
 #### Loading a cluster configuration by name
-In order to load a named array, one must first define the seed nodes in redis.ini.  The following lines would define the cluster 'mycluster', and be loaded automatically by phpredis.
+In order to load a named array, one must first define the seed nodes in redis.ini.  The following lines would define the cluster 'mycluster', and be lazy-loaded automatically by phpredis.
 
 ```ini
 # In redis.ini
@@ -38,6 +41,7 @@ redis.clusters.seeds = "mycluster[]=localhost:7000&test[]=localhost:7001"
 redis.clusters.timeout = "mycluster=5"
 redis.clusters.read_timeout = "mycluster=10"
 redis.clusters.auth = "mycluster=password"
+redis.clusters.lazyconnect = "mycluster=1"
 ```
 
 Then, this cluster can be loaded by doing the following
@@ -49,6 +53,8 @@ $obj_cluster = new RedisCluster('mycluster');
 ## Connection process
 
 On construction, the RedisCluster class will iterate over the provided seed nodes until it can attain a connection to the cluster and run CLUSTER SLOTS to map every node in the cluster locally.  Once the keyspace is mapped, RedisCluster will only connect to nodes when it needs to (e.g. you're getting a key that we believe is on that node.)
+
+If `lazy_connect` is enabled, the initial keyspace mapping is deferred until the first command is issued. This can reduce startup overhead when many cluster objects are created but not immediately used. If slot caching is enabled (see below), lazy connect will also skip loading from cache at construction time and will instead map or load the cache upon first use.
 
 ## Slot caching
 Each time the `RedisCluster` class is constructed from scratch, phpredis needs to execute a `CLUSTER SLOTS` command to map the keyspace.  Although this isn't an expensive command, it does require a round trip for each newly created object, which is inefficient.  Starting from PhpRedis 5.0.0 these slots can be cached by setting `redis.clusters.cache_slots = 1` in `php.ini`.

@@ -914,6 +914,11 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
     }
 
+    public function testLazyConnectConstruct() {
+        $rc = new RedisCluster(NULL, self::$seeds, 1, 1, true, $this->getAuth(), null, true);
+        $this->assertTrue($rc->ping('lazy'));
+    }
+
     protected function execWaitAOF() {
         return $this->redis->waitaof(uniqid(), 0, 0, 0);
     }
