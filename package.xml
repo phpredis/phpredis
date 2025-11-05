@@ -22,17 +22,17 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <email>p.yatsukhnenko@gmail.com</email>
     <active>yes</active>
   </lead>
-  <date>2025-10-15</date>
+  <date>2025-11-06</date>
   <version>
-    <release>6.3.0RC1</release>
+    <release>6.3.0</release>
     <api>6.2.0</api>
   </version>
   <stability>
-    <release>beta</release>
+    <release>stable</release>
     <api>stable</api>
   </stability>
   <license uri="http://www.php.net/license">PHP</license>
-  <notes>
+  <notes>--- 6.3.0 ---
 
     --- Sponsors ---
 
@@ -45,102 +45,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Salvatore Sanfilippo - https://github.com/antirez
     Ty Karok - https://github.com/karock
 
-    --- 6.3.0RC1 ---
-
-    This release introduces support for dozens of new commands, including hash
-    field expiration, Valkey’s DELIFEQ, and Redis vector set operations. It also
-    delivers numerous bug fixes and performance improvements.
-
     Fixed:
 
-    Fix possible hash field name truncation [834d2b37] (Michael Grunder)
-    Fix a possible segfault during failover [5ebb853e] (rlerdorf)
-    Bump version and fix XGROUP test [f5db01b7, 4517d5f9] remicollet
-    Fix an overflow bug in ZADD on Windows [35df8ad7] (Michael Grunder)
-    Fix errors and a warning [b8de91c9] (Michael Grunder)
-    Fix `RedisCluster` segfault [f61e8cd7] (Michael Grunder)
-    Fix passing NULL for hash expiry argument [ca80ee0e] (Michael Grunder)
-    Fix an off-by-one length calculation error [340f23b0] (Michael Grunder)
-    Fix hset fields handling [6b2f088d] (Pavlo Yatsukhnenko)
-    Fix HSetEx expiry argument handling [7805da75] (Pavlo Yatsukhnenko)
-    Fix the echo liveness check when in sentinel mode [2acab399] (Michael Grunder)
-    Fix double -&gt; int truncation warning [152fdda9] (Michael Grunder)
-    Fix `SIGABRT` in PHP 8.4 with RedisArray [3c64b33f] (Novynn)
-    Fixing segfault in cluster_update_slot [b0ba827b] (Jacob Brown Austin)
-    Fix typo [d0b0c5cf] (Michael Grunder)
-    Fix compiling with PHP 8.5.0 alpha3 and newer [1e6f5477] (wyattoday)
-    Fix error length calculation + UB sanity check [e73130fe] (Michael Grunder)
-    Fix arguments order for `SET` command [f73f5fcc] (Pavlo Yatsukhnenko)
+    * Cloning our objects should not segfault [770034cc] (michael-grunder)
+    * Fix return type for `RedisCluster` `vgetattr` and `vsetattr`
+      [834d2b37] (michael-grunder)
 
-    Added:
-
-    Add `hgetwithmeta` method [7d3b2e4d] (Pavlo Yatsukhnenko)
-    Add `maxRetries` to `redis_sock_configure` [e9e9e495] (Michael Grunder)
-    Implement vectorset commands [92dd256f, d80b7258, 7f9b1f41, 92716ed0,
-    dc91631b, 1deca628, 96378b70, 0fda9f29, 0ed0fc05, d1d69005, 286fa630,
-    38115dec, c4b2ea6c, 6ce3bd53] (Michael Grunder)
-    Implement `GEOSEARCH[STORE]` `BYPOLYGON` [8d369f4d, f24814a4] (Michael Grunder)
-    Implement Valkey's `DELIFEQ` command [b1b0c191] (Michael Grunder)
-    Add an INI setting returning 5.x legacy behavior -- readonly session on lock
-    failure [8dada174] (arokettu)
-    Implement several hash expiration commands [7350768c] (Michael Grunder)
-    Introduce `Redis::serverName` and `Redis::serverVersion` methods [056c2dbe,
-    cbaf095f, fa3eb006] (Pavlo Yatsukhnenko, Michael Grunder)
-    New option 'database' for Redis class constructor [4f6a3ed1] (JakubOnderka)
-    Implement `HGETEX`, `HSETEX`, `HGETDEL`, and refactor `HMGET` [ce5b0fac]
-    (Michael Grunder)
-    Implement `GETDEL` for `RedisCluster` [d342e4ac] (Michael Grunder)
-
-    ## Changed
-
-    Check for `dragonfly_version` in `HELLO` response [593ba012] (Michael Grunder)
-    Simplify redis_unpack method calling [0a85bd82] (JakubOnderka)
-    Refactor `getWithMeta` logic [0445e683] (Michael Grunder)
-    cleanup session temp file [3828c929] (remicollet)
-    Make execHello protected [300c5fb2] (Michael Grunder)
-
-    Documentation:
-
-    Update Relay sponsorship [7a69d73] (Till Kruss)
-    Fix markdown headlines [1d662f56] (Till Kruss)
-    document PECL configure options [2066cfad] (Till Kruss)
-    Improve wording in README about project support [0ac01476] (Till Kruss)
-    Improve install instructions [c0076036] (Remi Collet)
-    Clean up README.md: fix typos, spelling, and grammar errors [09cd4c54] (Copilot)
-    Refine parameter descriptions and examples in README [f9f609e1] (joshtrichards)
-    Link to the correct header [d18db84c] (wyattoday)
-    Update README.md about supported PHP versions. [b7a97e5e] (AkameOuO)
-    Broaden return type for Redis::hGetAll [bfbab892] (mgiuffrida)
-
-    Tests/CI:
-
-    Add a regression test for `EVAL[SHA]` [22a2914b] (Michael Grunder)
-    Rework `HEXPIRE` test inclusion + bump Valkey [b83981aa] (Michael Grunder)
-    Add PHP 8.5 to CI [334937cb] (Pavlo Yatsukhnenko)
-    Attempt to fix flaky GitHub CI tests [80140003] (Michael Grunder)
-    Reorganize tests [807f806f] (Pavlo Yatsukhnenko)
-
-    Internal/Performance:
-
-    Introduce `[[nodiscard]]` type attribute where supported. [2d963e79] (Michael Grunder)
-    Fix typo (s/sees/seeds/) [25e6d5fc] (xabbuh)
-    Fix an unused variable warning [b48aa0d4] (Michael Grunder)
-    Fix several issues surfaced by `gcc -fanalyze` [8be2306e] (Michael Grunder)
-    Fix dead assignment [d564e8cf] (Michael Grunder)
-    Refactor `redis_replicaof_cmd` [659dc763] (Michael Grunder)
-    Refactor several command handling macros into typesafe static functions
-    [9802fc0e, 8f0931bb, 7c953d45, 950d2bc7, 601ebbff, c3a71631, b0040514,
-    fae89fa9, f880e1f7, b90e27f2, 1db39089] (Michael Grunder)
-    Refactor `EVAL[SHA]` command and add a regression test [6e5faf42]
-    (Michael Grunder)
-    New macros REDIS_RESPONSE_ERROR and REDIS_RETURN_ZVAL [614b86e4]
-    (JakubOnderka)
-    Remove wrapper macro which hides branching logic [58e1a04f] (Michael Grunder)
-    Use continue not break if we get a NULL node [8685c49c] (Michael Grunder)
-    Remove pointless casts [03837f02] (Michael Grunder)
-    Change `int` flags to `zend_bool` since we only use them as booleans
-    [77691947] (Michael Grunder)
-    Remove unused macros + simplify some logic [75acbb09] (Michael Grunder)
 </notes>
   <contents>
     <dir name="/">
@@ -236,6 +146,35 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <configureoption name="with-liblz4" prompt="use system liblz4?" default="yes"/>
   </extsrcrelease>
   <changelog>
+    <release>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>6.3.0</release>
+        <api>6.2.0</api>
+      </version>
+      <date>2025-11-06</date>
+      <notes>--- 6.3.0 ---
+    --- Sponsors ---
+
+    A-VISION Advertising - https://github.com/A-VISION-BV
+    Avtandil Kikabidze - https://github.com/akalongman
+    Geoffrey Hoffman - https://github.com/phpguru
+    Object Cache Pro for WordPress - https://objectcache.pro/
+    Open LMS - https://openlms.net/
+    Relay - https://relay.so)
+    Salvatore Sanfilippo - https://github.com/antirez
+    Ty Karok - https://github.com/karock
+
+    Fixed:
+
+    * Cloning our objects should not segfault [770034cc] (michael-grunder)
+    * Fix return type for `RedisCluster` `vgetattr` and `vsetattr`
+      [834d2b37] (michael-grunder)
+</notes>
+    </release>
     <release>
       <stability>
         <release>beta</release>
