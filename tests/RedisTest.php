@@ -8679,5 +8679,32 @@ class Redis_Test extends TestSuite {
         $this->assertEquals($data, $runner->getData());
         $this->assertEquals(600, $this->redis->ttl($runner->getSessionKey()));
     }
+
+    public function testDigest() {
+        if ( ! $this->haveCommand('DIGEST'))
+            $this->markTestSkipped();
+
+        $key = 'foo';
+        $val = 'bar';
+
+        $this->redis->set($key, $val);
+        $digest = $this->redis->digest($key);
+        $this->assertTrue(is_string($digest) && strlen($digest) == 16);
+
+        /* In PHP >= 8.1 we can verify the value */
+        if (PHP_VERSION_ID >= 80100) {
+            $this->assertEquals($this->redis->_digest($val), $digest);
+
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+            $this->assertTrue($this->redis->set($key, $val));
+            $this->assertEquals(
+                $this->redis->_digest($val),
+                $this->redis->digest($key)
+            );
+
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        }
+    }
 }
 ?>

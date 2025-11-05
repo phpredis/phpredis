@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: cd1fe38b8b2078964d1b7f50252f6f931d20fd35 */
+ * Stub hash: 22ead9142161a92426bf27f80bb6334fd95f8680 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -22,6 +22,8 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster__unserialize arginfo_class_RedisCluster__compress
 
 #define arginfo_class_RedisCluster__pack arginfo_class_RedisCluster__compress
+
+#define arginfo_class_RedisCluster__digest arginfo_class_RedisCluster__compress
 
 #define arginfo_class_RedisCluster__unpack arginfo_class_RedisCluster__compress
 
@@ -1016,12 +1018,15 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zdiff, 0, 0, 1)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
+#define arginfo_class_RedisCluster_digest arginfo_class_RedisCluster__prefix
+
 ZEND_METHOD(RedisCluster, __construct);
 ZEND_METHOD(RedisCluster, _compress);
 ZEND_METHOD(RedisCluster, _uncompress);
 ZEND_METHOD(RedisCluster, _serialize);
 ZEND_METHOD(RedisCluster, _unserialize);
 ZEND_METHOD(RedisCluster, _pack);
+ZEND_METHOD(RedisCluster, _digest);
 ZEND_METHOD(RedisCluster, _unpack);
 ZEND_METHOD(RedisCluster, _prefix);
 ZEND_METHOD(RedisCluster, _masters);
@@ -1272,6 +1277,7 @@ ZEND_METHOD(RedisCluster, zinter);
 ZEND_METHOD(RedisCluster, zdiffstore);
 ZEND_METHOD(RedisCluster, zunion);
 ZEND_METHOD(RedisCluster, zdiff);
+ZEND_METHOD(RedisCluster, digest);
 
 static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, __construct, arginfo_class_RedisCluster___construct, ZEND_ACC_PUBLIC)
@@ -1280,6 +1286,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, _serialize, arginfo_class_RedisCluster__serialize, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _unserialize, arginfo_class_RedisCluster__unserialize, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _pack, arginfo_class_RedisCluster__pack, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, _digest, arginfo_class_RedisCluster__digest, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _unpack, arginfo_class_RedisCluster__unpack, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _prefix, arginfo_class_RedisCluster__prefix, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _masters, arginfo_class_RedisCluster__masters, ZEND_ACC_PUBLIC)
@@ -1530,6 +1537,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, zdiffstore, arginfo_class_RedisCluster_zdiffstore, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, zunion, arginfo_class_RedisCluster_zunion, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, zdiff, arginfo_class_RedisCluster_zdiff, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, digest, arginfo_class_RedisCluster_digest, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
 

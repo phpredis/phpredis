@@ -16,11 +16,13 @@
   +----------------------------------------------------------------------+
 */
 
+#include "hash/php_hash.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include "redis_commands.h"
+
 
 #include "php_network.h"
 
@@ -7487,6 +7489,70 @@ void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     valfree = redis_pack(redis_sock, zv, &val, &len);
     RETVAL_STRINGL(val, len);
     if (valfree) efree(val);
+}
+
+#if PHP_VERSION_ID >= 80100
+static zend_string *redis_xxh3_digest(RedisSock *redis_sock, zval *zv) {
+    zend_string *algo, *hex;
+    const php_hash_ops *ops;
+    unsigned char *digest;
+    int valfree;
+    size_t len;
+    char *val;
+    void *ctx;
+
+    algo = zend_string_init(ZEND_STRL("XXH3"), 0);
+    ops  = php_hash_fetch_ops(algo);
+    if (ops == NULL) {
+        zend_string_release(algo);
+        return NULL;
+    }
+
+    valfree = redis_pack(redis_sock, zv, &val, &len);
+
+    ctx = emalloc(ops->context_size);
+    ops->hash_init(ctx, NULL);
+    ops->hash_update(ctx, (const unsigned char *)val, len);
+
+    digest = emalloc(ops->digest_size);
+    ops->hash_final(digest, ctx);
+
+    hex = zend_string_safe_alloc(ops->digest_size, 2, 0, 0);
+    php_hash_bin2hex(ZSTR_VAL(hex), digest, ops->digest_size);
+    ZSTR_VAL(hex)[ZSTR_LEN(hex)] = '\0';
+
+    efree(ctx);
+    efree(digest);
+    if (valfree) efree(val);
+    zend_string_release(algo);
+
+    return hex;
+}
+#endif
+
+void redis_digest_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          zend_class_entry *exception_ce)
+{
+    zend_string *digest;
+    zval *zv;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(zv)
+    ZEND_PARSE_PARAMETERS_END_EX(return );
+
+    #if PHP_VERSION_ID >= 80100
+        digest = redis_xxh3_digest(redis_sock, zv);
+
+        if (digest == NULL) {
+            zend_throw_exception(exception_ce, "XXH3 hashing not available?", 0);
+            RETURN_THROWS();
+        }
+
+        RETURN_STR(digest);
+    #else
+        zend_throw_exception(exception_ce, "Method requires PHP >= 8.1", 0);
+        RETURN_FALSE;
+    #endif
 }
 
 void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
