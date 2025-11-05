@@ -1139,12 +1139,12 @@ class RedisCluster {
     /**
      * @see Redis::vgetattr
      */
-    public function vgetattr(string $key, mixed $member, bool $decode = true): Redis|array|string|false;
+    public function vgetattr(string $key, mixed $member, bool $decode = true): RedisCluster|array|string|false;
 
     /**
      * @see Redis::vsetattr
      */
-    public function vsetattr(string $key, mixed $member, array|string $attributes): Redis|int|false;
+    public function vsetattr(string $key, mixed $member, array|string $attributes): RedisCluster|int|false;
 
     /**
      * @see Redis::xack
