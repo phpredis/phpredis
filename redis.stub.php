@@ -591,6 +591,20 @@ class Redis {
     public function _pack(mixed $value): string;
 
     /**
+     * Compute the XXH3 digest of a packed value.
+     *
+     * @param mixed $value The value to compute the digest for.
+     * @return string The computed digest.
+     *
+     * @throws RedisException If XXH3 is not supported.
+     *
+     * @note This function requires PHP >= 8.1 which is the version PHP
+     *       added support for XXH3 hashing and made the hash extension
+     *       mandatory.
+     */
+    public function _digest(mixed $value): string;
+
+    /**
      * Unpack the provided value with the configured compressor and serializer
      * as set with Redis::setOption().
      *
@@ -5037,6 +5051,16 @@ class Redis {
      * $redis->zUnionStore('dst', ['zs1', 'zs2', 'zs3']);
      */
     public function zunionstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): Redis|int|false;
+
+    /**
+     * Ask the server for the XXH3 digest of a given key's value
+     *
+     * @param strinig $key The key to retrieve the digest for.
+     * @return Redis|string|false The XXH3 digest as a string or false on failure.
+     */
+    public function digest(string $key): Redis|string|false;
 }
+
+
 
 class RedisException extends RuntimeException {}

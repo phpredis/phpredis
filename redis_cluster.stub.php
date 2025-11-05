@@ -75,6 +75,11 @@ class RedisCluster {
     public function _pack(mixed $value): string;
 
     /**
+     * @see Redis::_digest()
+     */
+    public function _digest(mixed $value): string;
+
+    /**
      * @see Redis::_unpack()
      */
     public function _unpack(string $value): mixed;
@@ -1380,6 +1385,11 @@ class RedisCluster {
      * @see https://redis.io/commands/zdiff
      */
     public function zdiff(array $keys, ?array $options = null): RedisCluster|array|false;
+
+    /**
+     * @see https://redis.io/commands/digest
+     */
+    public function digest(string $key): RedisCluster|string|false;
 }
 
 class RedisClusterException extends RuntimeException {}

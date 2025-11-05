@@ -455,6 +455,8 @@ void redis_uncompress_handler(INTERNAL_FUNCTION_PARAMETERS,
 
 void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+void redis_digest_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    zend_class_entry *exception_ce);
 
 #endif
 
