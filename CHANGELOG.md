@@ -5,6 +5,41 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [6.3.0] - 2025-11-06 ([Github](https://github.com/phpredis/phpredis/releases/6.3.0), [PECL](https://pecl.php.net/package/redis/6.3.0))
+
+This release introduces support for dozens of new commands, including hash field expiration, Valkey’s DELIFEQ, and Redis vector set operations. It also delivers numerous bug fixes and performance improvements.
+
+### Sponsors :sparkling_heart:
+
+- [A-VISION](https://github.com/A-VISION-BV)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Geoffrey Hoffman](https://github.com/phpguru)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Open LMS](https://openlms.net/)
+- [Relay](https://relay.so)
+- [Salvatore Sanfilippo](https://github.com/antirez)
+- [Ty Karok](https://github.com/karock)
+
+## Fixed
+
+- Cloning our objects should not segfault
+  [770034cc](https://github.com/phpredis/phpredis/commit/770034cc)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix return type for `RedisCluster` `vgetattr` and `vsetattr`
+  [834d2b37](https://github.com/phpredis/phpredis/commit/ab593f01)
+  ([michael-grunder](https://github.com/michael-grunder))
+
+### Sponsors :sparkling_heart:
+
+- [A-VISION](https://github.com/A-VISION-BV)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Geoffrey Hoffman](https://github.com/phpguru)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Open LMS](https://openlms.net/)
+- [Relay](https://relay.so)
+- [Salvatore Sanfilippo](https://github.com/antirez)
+- [Ty Karok](https://github.com/karock)
+
 # [6.3.0RC1] - 2025-10-15
 
 This release introduces support for dozens of new commands, including hash field expiration, Valkey’s DELIFEQ, and Redis vector set operations. It also delivers numerous bug fixes and performance improvements.
