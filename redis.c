@@ -2620,6 +2620,24 @@ PHP_METHOD(Redis, _pack) {
     redis_pack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 
+#if PHP_VERSION_ID >= 80100
+PHP_METHOD(Redis, _digest) {
+    RedisSock *redis_sock;
+    zval *zv;
+
+    redis_sock = redis_sock_get_instance(getThis(), 0);
+    if (redis_sock == NULL) {
+        RETURN_FALSE;
+    }
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(zv)
+    ZEND_PARSE_PARAMETERS_END();
+
+    RETURN_STR(redis_digest_handler(redis_sock, zv));
+}
+#endif
+
 PHP_METHOD(Redis, _unpack) {
     RedisSock *redis_sock;
 
@@ -3178,6 +3196,10 @@ PHP_METHOD(Redis, geosearch) {
 
 PHP_METHOD(Redis, geosearchstore) {
     REDIS_PROCESS_CMD(geosearchstore, redis_long_response);
+}
+
+PHP_METHOD(Redis, digest) {
+    REDIS_PROCESS_KW_CMD("DIGEST", redis_key_cmd, redis_ping_response);
 }
 
 /*

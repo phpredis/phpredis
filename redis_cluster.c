@@ -2024,6 +2024,19 @@ PHP_METHOD(RedisCluster, _pack) {
     redis_pack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
 }
 
+#if PHP_VERSION_ID >= 80100
+PHP_METHOD(RedisCluster, _digest) {
+    redisCluster *c = GET_CONTEXT();
+    zval *zv;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(zv)
+    ZEND_PARSE_PARAMETERS_END();
+
+    RETURN_STR(redis_digest_handler(c->flags, zv));
+}
+#endif
+
 PHP_METHOD(RedisCluster, _unpack) {
     redisCluster *c = GET_CONTEXT();
     redis_unpack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
@@ -3436,6 +3449,10 @@ PHP_METHOD(RedisCluster, command) {
 
 PHP_METHOD(RedisCluster, copy) {
     CLUSTER_PROCESS_CMD(copy, cluster_1_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, digest) {
+    CLUSTER_PROCESS_KW_CMD("DIGEST", redis_key_cmd, cluster_bulk_raw_resp, 1);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

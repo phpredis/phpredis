@@ -74,6 +74,13 @@ class RedisCluster {
      */
     public function _pack(mixed $value): string;
 
+#if PHP_VERSION_ID >= 80100
+    /**
+     * @see Redis::_digest()
+     */
+    public function _digest(string $value): string;
+#endif
+
     /**
      * @see Redis::_unpack()
      */
@@ -1380,6 +1387,11 @@ class RedisCluster {
      * @see https://redis.io/commands/zdiff
      */
     public function zdiff(array $keys, ?array $options = null): RedisCluster|array|false;
+
+    /**
+     * @see https://redis.io/commands/digest
+     */
+    public function digest(string $key): RedisCluster|string|false;
 }
 
 class RedisClusterException extends RuntimeException {}

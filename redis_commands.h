@@ -456,6 +456,10 @@ void redis_uncompress_handler(INTERNAL_FUNCTION_PARAMETERS,
 void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 
+#if PHP_VERSION_ID >= 80100
+zend_string *redis_digest_handler(RedisSock *redis_sock, zval *zv);
+#endif
+
 #endif
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 4c712b9de716d8008f7d3b38aa8b7125b08a042b */
+ * Stub hash: b3bd2917baa5afac66331f28a0d2cdd6a7981083 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -27,6 +27,12 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis__unserialize, 0, 1, 
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis__pack arginfo_class_Redis__serialize
+
+#if PHP_VERSION_ID >= 80100
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis__digest, 0, 1, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
+#endif
 
 #define arginfo_class_Redis__unpack arginfo_class_Redis__unserialize
 
@@ -1299,6 +1305,8 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zunionstore arginfo_class_Redis_zinterstore
 
+#define arginfo_class_Redis_digest arginfo_class_Redis_dump
+
 ZEND_METHOD(Redis, __construct);
 ZEND_METHOD(Redis, __destruct);
 ZEND_METHOD(Redis, _compress);
@@ -1307,6 +1315,9 @@ ZEND_METHOD(Redis, _prefix);
 ZEND_METHOD(Redis, _serialize);
 ZEND_METHOD(Redis, _unserialize);
 ZEND_METHOD(Redis, _pack);
+#if PHP_VERSION_ID >= 80100
+ZEND_METHOD(Redis, _digest);
+#endif
 ZEND_METHOD(Redis, _unpack);
 ZEND_METHOD(Redis, acl);
 ZEND_METHOD(Redis, append);
@@ -1583,6 +1594,7 @@ ZEND_METHOD(Redis, zinterstore);
 ZEND_METHOD(Redis, zscan);
 ZEND_METHOD(Redis, zunion);
 ZEND_METHOD(Redis, zunionstore);
+ZEND_METHOD(Redis, digest);
 
 static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, __construct, arginfo_class_Redis___construct, ZEND_ACC_PUBLIC)
@@ -1593,6 +1605,9 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, _serialize, arginfo_class_Redis__serialize, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _unserialize, arginfo_class_Redis__unserialize, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _pack, arginfo_class_Redis__pack, ZEND_ACC_PUBLIC)
+#if PHP_VERSION_ID >= 80100
+	ZEND_ME(Redis, _digest, arginfo_class_Redis__digest, ZEND_ACC_PUBLIC)
+#endif
 	ZEND_ME(Redis, _unpack, arginfo_class_Redis__unpack, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, acl, arginfo_class_Redis_acl, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, append, arginfo_class_Redis_append, ZEND_ACC_PUBLIC)
@@ -1884,6 +1899,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, zscan, arginfo_class_Redis_zscan, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zunion, arginfo_class_Redis_zunion, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zunionstore, arginfo_class_Redis_zunionstore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, digest, arginfo_class_Redis_digest, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
 
