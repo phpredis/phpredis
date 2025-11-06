@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d0bb6b6ec863c928aea6375dce8a7afdd3a4c23e */
+ * Stub hash: 5b0d7eb501f18007665806137a68ae74c5c76613 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -587,6 +587,11 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_mset, 0, 0, 1)
 	ZEND_ARG_INFO(0, key_values)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_msetex, 0, 0, 1)
+	ZEND_ARG_INFO(0, key_vals)
+	ZEND_ARG_INFO(0, expiry)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_msetnx arginfo_class_Redis_mset
@@ -1287,6 +1292,7 @@ ZEND_METHOD(Redis, mget);
 ZEND_METHOD(Redis, migrate);
 ZEND_METHOD(Redis, move);
 ZEND_METHOD(Redis, mset);
+ZEND_METHOD(Redis, msetex);
 ZEND_METHOD(Redis, msetnx);
 ZEND_METHOD(Redis, multi);
 ZEND_METHOD(Redis, object);
@@ -1581,6 +1587,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, migrate, arginfo_class_Redis_migrate, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, move, arginfo_class_Redis_move, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, mset, arginfo_class_Redis_mset, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, msetex, arginfo_class_Redis_msetex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, msetnx, arginfo_class_Redis_msetnx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, multi, arginfo_class_Redis_multi, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, object, arginfo_class_Redis_object, ZEND_ACC_PUBLIC)

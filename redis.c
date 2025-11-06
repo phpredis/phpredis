@@ -1659,6 +1659,10 @@ PHP_METHOD(Redis, msetnx) {
 }
 /* }}} */
 
+PHP_METHOD(Redis, msetex) {
+    REDIS_PROCESS_CMD(msetex, redis_long_response);
+}
+
 /* {{{ proto string Redis::rpoplpush(string srckey, string dstkey) */
 PHP_METHOD(Redis, rpoplpush)
 {
