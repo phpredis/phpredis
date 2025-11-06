@@ -8704,6 +8704,13 @@ class Redis_Test extends TestSuite {
             );
 
             $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        } else {
+            $this->assertThrowsMatch($this->redis,
+                function($r) {
+                    $r->_digest('foo');
+                },
+                '/^.*8\.1.*$/'
+            );
         }
     }
 
