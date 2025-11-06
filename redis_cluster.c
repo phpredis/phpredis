@@ -798,7 +798,11 @@ static void cluster_generic_delete(INTERNAL_FUNCTION_PARAMETERS,
 
 /* {{{ proto array RedisCluster::del(string key1, string key2, ... keyN) */
 PHP_METHOD(RedisCluster, del) {
-    cluster_generic_delete(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DEL", sizeof("DEL") - 1);
+    cluster_generic_delete(INTERNAL_FUNCTION_PARAM_PASSTHRU, ZEND_STRL("DEL"));
+}
+
+PHP_METHOD(RedisCluster, delex) {
+    CLUSTER_PROCESS_CMD(delex, cluster_long_resp, 0);
 }
 
 PHP_METHOD(RedisCluster, delifeq) {
