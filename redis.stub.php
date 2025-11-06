@@ -2903,6 +2903,19 @@ class Redis {
     public function mset(array $key_values): Redis|bool;
 
     /**
+     * Set one or more keys and values with optional expiry information.
+     *
+     * @param array      $key_vals An array of keys with their values.
+     * @param int|float|array|null $expiry   An optional array with expiry information.
+     * @return Redis|int|false 1 if all keys were set, 0 if none were.
+     *
+     * @see https://redis.io/commands/msetex
+     *
+     * @example $redis->msetex(['foo' => 'bar', 'baz' => 'bop'], ['EX' => 60]);
+     */
+    public function msetex(array $key_vals, int|float|array|null $expiry = null): Redis|int|false;
+
+    /**
      * Set one or more string keys but only if none of the key exist.
      *
      * @param array $key_values An array of keys with their values.

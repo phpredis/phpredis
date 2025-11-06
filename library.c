@@ -954,6 +954,7 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
  * S - Pointer to a zend_string
  * k - Same as 's' but the value will be prefixed if phpredis is set up do do
  *     that and the working slot will be set if it has been passed.
+ * K - Same as 'S' but the value will be prefixed if phpredis is set up to do
  * v - A z_val which will be serialized if phpredis is configured to serialize.
  * f - A double value
  * F - Alias to 'f'
@@ -994,6 +995,10 @@ redis_spprintf(RedisSock *redis_sock, short *slot, char **ret, char *kw, char *f
                 redis_cmd_append_sstr(&cmd, arg.str, arglen);
                 if (slot) *slot = cluster_hash_key(arg.str, arglen);
                 if (argfree) efree(arg.str);
+                break;
+            case 'K':
+                arg.zstr = va_arg(ap, zend_string*);
+                redis_cmd_append_sstr_key_zstr(&cmd, arg.zstr, redis_sock, slot);
                 break;
             case 'v':
                 arg.zv = va_arg(ap, zval*);
