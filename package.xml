@@ -32,8 +32,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <api>stable</api>
   </stability>
   <license uri="http://www.php.net/license">PHP</license>
-  <notes>--- 6.3.0 ---
-
+  <notes>
     --- Sponsors ---
 
     A-VISION Advertising - https://github.com/A-VISION-BV
@@ -41,9 +40,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Geoffrey Hoffman - https://github.com/phpguru
     Object Cache Pro for WordPress - https://objectcache.pro/
     Open LMS - https://openlms.net/
-    Relay - https://relay.so)
+    Relay - https://relay.so
     Salvatore Sanfilippo - https://github.com/antirez
     Ty Karok - https://github.com/karock
+
+    --- 6.3.0 ---
+
+    This release introduces support for dozens of new commands, including hash
+    field expiration, Valkey’s DELIFEQ, and Redis vector set commands. It also
+    includes many bug fixes and performance improvements.
 
     Fixed:
 
@@ -156,7 +161,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
         <api>6.2.0</api>
       </version>
       <date>2025-11-06</date>
-      <notes>--- 6.3.0 ---
+      <notes>
     --- Sponsors ---
 
     A-VISION Advertising - https://github.com/A-VISION-BV
@@ -164,9 +169,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Geoffrey Hoffman - https://github.com/phpguru
     Object Cache Pro for WordPress - https://objectcache.pro/
     Open LMS - https://openlms.net/
-    Relay - https://relay.so)
+    Relay - https://relay.so
     Salvatore Sanfilippo - https://github.com/antirez
     Ty Karok - https://github.com/karock
+
+    --- 6.3.0 ---
+
+    This release introduces support for dozens of new commands, including hash
+    field expiration, Valkey’s DELIFEQ, and Redis vector set commands. It also
+    includes many bug fixes and performance improvements.
 
     Fixed:
 
@@ -194,7 +205,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Geoffrey Hoffman - https://github.com/phpguru
     Object Cache Pro for WordPress - https://objectcache.pro/
     Open LMS - https://openlms.net/
-    Relay - https://relay.so)
+    Relay - https://relay.so
     Salvatore Sanfilippo - https://github.com/antirez
     Ty Karok - https://github.com/karock
 
