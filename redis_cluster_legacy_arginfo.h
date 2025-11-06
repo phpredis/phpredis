@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 22ead9142161a92426bf27f80bb6334fd95f8680 */
+ * Stub hash: 76e57d541155478d414e8cfe84d56f6d07ec6e3d */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -186,6 +186,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_del, 0, 0, 1)
 	ZEND_ARG_VARIADIC_INFO(0, other_keys)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_delex, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_RedisCluster_delifeq arginfo_class_RedisCluster_append
 
 #define arginfo_class_RedisCluster_discard arginfo_class_RedisCluster__masters
@@ -309,10 +314,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_getWithMeta arginfo_class_RedisCluster__prefix
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_getex, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_getex arginfo_class_RedisCluster_delex
 
 #define arginfo_class_RedisCluster_getbit arginfo_class_RedisCluster_append
 
@@ -410,7 +412,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_expirememberat, 0, 0, 3)
 	ZEND_ARG_INFO(0, timestamp)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_hrandfield arginfo_class_RedisCluster_getex
+#define arginfo_class_RedisCluster_hrandfield arginfo_class_RedisCluster_delex
 
 #define arginfo_class_RedisCluster_hset arginfo_class_RedisCluster_hincrby
 
@@ -713,9 +715,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_smove, 0, 0, 3)
 	ZEND_ARG_INFO(0, member)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_sort arginfo_class_RedisCluster_getex
+#define arginfo_class_RedisCluster_sort arginfo_class_RedisCluster_delex
 
-#define arginfo_class_RedisCluster_sort_ro arginfo_class_RedisCluster_getex
+#define arginfo_class_RedisCluster_sort_ro arginfo_class_RedisCluster_delex
 
 #define arginfo_class_RedisCluster_spop arginfo_class_RedisCluster_lpop
 
@@ -957,7 +959,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zrangestore, 0, 0, 4)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_zrandmember arginfo_class_RedisCluster_getex
+#define arginfo_class_RedisCluster_zrandmember arginfo_class_RedisCluster_delex
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zrangebylex, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
@@ -1063,6 +1065,7 @@ ZEND_METHOD(RedisCluster, decr);
 ZEND_METHOD(RedisCluster, decrby);
 ZEND_METHOD(RedisCluster, decrbyfloat);
 ZEND_METHOD(RedisCluster, del);
+ZEND_METHOD(RedisCluster, delex);
 ZEND_METHOD(RedisCluster, delifeq);
 ZEND_METHOD(RedisCluster, discard);
 ZEND_METHOD(RedisCluster, dump);
@@ -1323,6 +1326,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, decrby, arginfo_class_RedisCluster_decrby, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, decrbyfloat, arginfo_class_RedisCluster_decrbyfloat, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, del, arginfo_class_RedisCluster_del, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, delex, arginfo_class_RedisCluster_delex, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, delifeq, arginfo_class_RedisCluster_delifeq, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, discard, arginfo_class_RedisCluster_discard, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, dump, arginfo_class_RedisCluster_dump, ZEND_ACC_PUBLIC)

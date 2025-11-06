@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6d3e032dd0579e635f9479bf2b5ccde5e990ba97 */
+ * Stub hash: 971f78fe271baaeb6a5835b2bd645c18df9be7e2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -165,6 +165,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_del, 0, 0, 1)
 	ZEND_ARG_VARIADIC_INFO(0, other_keys)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_delex, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_Redis_delifeq arginfo_class_Redis_append
 
 #define arginfo_class_Redis_delete arginfo_class_Redis_del
@@ -314,10 +319,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getBit, 0, 0, 2)
 	ZEND_ARG_INFO(0, idx)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getEx, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_getEx arginfo_class_Redis_delex
 
 #define arginfo_class_Redis_getDBNum arginfo_class_Redis___destruct
 
@@ -415,7 +417,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hMset, 0, 0, 2)
 	ZEND_ARG_INFO(0, fieldvals)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_hRandField arginfo_class_Redis_getEx
+#define arginfo_class_Redis_hRandField arginfo_class_Redis_delex
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hSet, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -793,9 +795,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_slowlog, 0, 0, 1)
 	ZEND_ARG_INFO(0, length)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_sort arginfo_class_Redis_getEx
+#define arginfo_class_Redis_sort arginfo_class_Redis_delex
 
-#define arginfo_class_Redis_sort_ro arginfo_class_Redis_getEx
+#define arginfo_class_Redis_sort_ro arginfo_class_Redis_delex
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sortAsc, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -1064,7 +1066,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zrangestore, 0, 0, 4)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRandMember arginfo_class_Redis_getEx
+#define arginfo_class_Redis_zRandMember arginfo_class_Redis_delex
 
 #define arginfo_class_Redis_zRank arginfo_class_Redis_hGet
 
@@ -1175,6 +1177,7 @@ ZEND_METHOD(Redis, debug);
 ZEND_METHOD(Redis, decr);
 ZEND_METHOD(Redis, decrBy);
 ZEND_METHOD(Redis, del);
+ZEND_METHOD(Redis, delex);
 ZEND_METHOD(Redis, delifeq);
 ZEND_METHOD(Redis, discard);
 ZEND_METHOD(Redis, dump);
@@ -1463,6 +1466,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, decr, arginfo_class_Redis_decr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, decrBy, arginfo_class_Redis_decrBy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, del, arginfo_class_Redis_del, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, delex, arginfo_class_Redis_delex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, delifeq, arginfo_class_Redis_delifeq, ZEND_ACC_PUBLIC)
 #if (PHP_VERSION_ID >= 80400)
 	ZEND_RAW_FENTRY("delete", zim_Redis_del, arginfo_class_Redis_delete, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED, NULL, NULL)

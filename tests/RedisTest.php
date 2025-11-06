@@ -8706,5 +8706,30 @@ class Redis_Test extends TestSuite {
             $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
         }
     }
+
+    public function testDelEx() {
+        if ( ! $this->haveCommand('DELEX'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('captain'));
+        $this->assertTrue($this->redis->set('captain', 'picard'));
+
+        $this->assertEquals(0, $this->redis->delex('captain', ['ifeq' => 'not-picard']));
+        $this->assertEquals(0, $this->redis->delex('captain', ['ifne' => 'picard']));
+        $this->assertEquals(1, $this->redis->delex('captain', ['ifeq' => 'picard']));
+
+        $this->assertTrue($this->redis->set('captain', 'Sisko'));
+        $digest = $this->redis->digest('captain');
+        $this->assertEquals(0, $this->redis->delex('captain', ['ifdne' => $digest]));
+        $this->assertEquals(1, $this->redis->delex('captain', ['ifdeq' => $digest]));
+
+        $this->assertTrue($this->redis->set('captain', 'Janeway'));
+        $this->assertEquals(1, $this->redis->delex('captain'));
+
+        foreach ([[], null] as $arg) {
+            $this->assertTrue($this->redis->set('captain', 'Archer'));
+            $this->assertEquals(1, $this->redis->delex('captain', $arg));
+        }
+    }
 }
 ?>

@@ -989,6 +989,10 @@ PHP_METHOD(Redis, del) {
 }
 /* }}} */
 
+PHP_METHOD(Redis, delex) {
+    REDIS_PROCESS_CMD(delex, redis_long_response);
+}
+
 PHP_METHOD(Redis, delifeq) {
     REDIS_PROCESS_KW_CMD("DELIFEQ", redis_kv_cmd, redis_long_response);
 }
