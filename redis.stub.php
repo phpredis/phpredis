@@ -1010,6 +1010,16 @@ class Redis {
     public function del(array|string $key, string ...$other_keys): Redis|int|false;
 
     /**
+     * Delete a key conditionally based on its value or hash digest
+     *
+     * @param string $key         The key to delete
+     * @param array|null $options An array with options to modify how DELX works.
+     *
+     * @return Redis|int|false Returns 1 if the key was deleted, 0 if it was not.
+     */
+    public function delex(string $key, ?array $options = null): Redis|int|false;
+
+    /**
      * Delete a key if it's equal to the specified value. This command is
      * specific to Valkey >= 9.0
      *

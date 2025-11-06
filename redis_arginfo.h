@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6d3e032dd0579e635f9479bf2b5ccde5e990ba97 */
+ * Stub hash: 971f78fe271baaeb6a5835b2bd645c18df9be7e2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -175,6 +175,11 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_del, 0, 1, Redis, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_delex, 0, 1, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_delifeq arginfo_class_Redis_append
@@ -1343,6 +1348,7 @@ ZEND_METHOD(Redis, debug);
 ZEND_METHOD(Redis, decr);
 ZEND_METHOD(Redis, decrBy);
 ZEND_METHOD(Redis, del);
+ZEND_METHOD(Redis, delex);
 ZEND_METHOD(Redis, delifeq);
 ZEND_METHOD(Redis, discard);
 ZEND_METHOD(Redis, dump);
@@ -1631,6 +1637,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, decr, arginfo_class_Redis_decr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, decrBy, arginfo_class_Redis_decrBy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, del, arginfo_class_Redis_del, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, delex, arginfo_class_Redis_delex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, delifeq, arginfo_class_Redis_delifeq, ZEND_ACC_PUBLIC)
 #if (PHP_VERSION_ID >= 80400)
 	ZEND_RAW_FENTRY("delete", zim_Redis_del, arginfo_class_Redis_delete, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED, NULL, NULL)

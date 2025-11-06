@@ -2642,6 +2642,77 @@ int redis_decr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         TYPE_DECR, redis_sock, cmd, cmd_len, slot, ctx);
 }
 
+typedef enum delExType {
+    REDIS_DELEX_NONE,
+    REDIS_DELEX_IFEQ,
+    REDIS_DELEX_IFNE,
+    REDIS_DELEX_IFDEQ,
+    REDIS_DELEX_IFDNE
+} delExType;
+
+static zend_bool stringToDelExType(delExType *dst, zend_string *src) {
+    *dst = REDIS_DELEX_NONE;
+
+    if (zend_string_equals_literal_ci(src, "IFEQ")) {
+        *dst = REDIS_DELEX_IFEQ;
+    } else if (zend_string_equals_literal_ci(src, "IFNE")) {
+        *dst = REDIS_DELEX_IFNE;
+    } else if (zend_string_equals_literal_ci(src, "IFDEQ")) {
+        *dst = REDIS_DELEX_IFDEQ;
+    } else if (zend_string_equals_literal_ci(src, "IFDNE")) {
+        *dst = REDIS_DELEX_IFDNE;
+    } else {
+        return 0;
+    }
+
+    return 1;
+}
+
+int redis_delex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    delExType type = REDIS_DELEX_NONE;
+    smart_string cmdstr = {0};
+    zend_string *key, *ztype;;
+    HashTable *ht = NULL;
+    zval *zv = NULL;
+    zend_bool pack;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(ht)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (ht != NULL) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(ht, ztype, zv) {
+            if (ztype == NULL)
+                continue;
+
+            ZVAL_DEREF(zv);
+
+            if (stringToDelExType(&type, ztype))
+                break;
+
+            php_error_docref(NULL, E_WARNING, "Unknown option '%s'", ZSTR_VAL(ztype));
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, type != REDIS_DELEX_NONE ? 3 : 1, "DELEX");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+
+    if (type != REDIS_DELEX_NONE) {
+        redis_cmd_append_sstr_zstr(&cmdstr, ztype);
+        pack = type == REDIS_DELEX_IFEQ || type == REDIS_DELEX_IFNE;
+        redis_cmd_append_sstr_zval(&cmdstr, zv, pack ? redis_sock : NULL);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* HINCRBY */
 int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
