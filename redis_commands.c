@@ -78,6 +78,45 @@ typedef struct redisRestoreOptions {
     zend_long freq;
 } redisRestoreOptions;
 
+typedef enum redisSetType {
+    REDIS_SET_NONE,
+    REDIS_SET_NX,
+    REDIS_SET_XX
+} redisSetType;
+
+typedef enum redisExpiryType {
+    REDIS_EXPIRY_NONE,
+    REDIS_EXPIRY_EX,
+    REDIS_EXPIRY_PX,
+    REDIS_EXPIRY_EXAT,
+    REDIS_EXPIRY_PXAT,
+} redisExpiryType;
+
+typedef enum redisEqType {
+    REDIS_IF_NONE,
+    REDIS_IFEQ,
+    REDIS_IFNE,
+    REDIS_IFDEQ,
+    REDIS_IFDNE
+} redisEqType;
+
+typedef struct redisExpiryOptions {
+    redisExpiryType type;
+    zend_long ttl;
+    zend_bool keepttl;
+} redisExpiryOptions;
+
+typedef struct redisSetOptions {
+    redisSetType type;
+    zend_bool get;
+    redisExpiryOptions expiry;
+    struct {
+        redisEqType type;
+        zval *zval;
+    } eq;
+} redisSetOptions;
+
+
 #define REDIS_ZCMD_HAS_DST_KEY      (1 << 0)
 #define REDIS_ZCMD_HAS_WITHSCORES   (1 << 1)
 #define REDIS_ZCMD_HAS_BY_LEX_SCORE (1 << 2)
@@ -1920,15 +1959,31 @@ gen_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+static void
+redis_cmd_append_sstr_mset_kvals(smart_string *cmdstr, RedisSock *redis_sock,
+                                 HashTable *kvals)
+{
+    zend_string *key;
+    zend_ulong idx;
+    zval *zv;
+
+    ZEND_HASH_FOREACH_KEY_VAL(kvals, idx, key, zv) {
+        ZVAL_DEREF(zv);
+        if (key) {
+            redis_cmd_append_sstr_key_zstr(cmdstr, key, redis_sock, NULL);
+        } else {
+            redis_cmd_append_sstr_key_long(cmdstr, idx, redis_sock, NULL);
+        }
+        redis_cmd_append_sstr_zval(cmdstr, zv, redis_sock);
+    } ZEND_HASH_FOREACH_END();
+}
+
 int redis_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char *kw, char **cmd, int *cmd_len, short *slot,
                    void **ctx)
 {
     smart_string cmdstr = {0};
     HashTable *kvals = NULL;
-    zend_string *key;
-    zend_ulong idx;
-    zval *zv;
 
     ZEND_PARSE_PARAMETERS_START(1, 1)
         Z_PARAM_ARRAY_HT(kvals)
@@ -1937,17 +1992,9 @@ int redis_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (zend_hash_num_elements(kvals) == 0)
         return FAILURE;
 
-    redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(kvals) * 2, kw, strlen(kw));
-
-    ZEND_HASH_FOREACH_KEY_VAL(kvals, idx, key, zv) {
-        ZVAL_DEREF(zv);
-        if (key) {
-            redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, NULL);
-        } else {
-            redis_cmd_append_sstr_key_long(&cmdstr, idx, redis_sock, NULL);
-        }
-        redis_cmd_append_sstr_zval(&cmdstr, zv, redis_sock);
-    } ZEND_HASH_FOREACH_END();
+    redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(kvals) * 2, kw,
+                        strlen(kw));
+    redis_cmd_append_sstr_mset_kvals(&cmdstr, redis_sock, kvals);
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
@@ -2326,129 +2373,262 @@ static int redis_try_get_expiry(zval *zv, zend_long *lval) {
     }
 }
 
+static zend_bool zstr_to_expiry_type(redisExpiryType *dst, zend_string *src) {
+    redisExpiryType tmp = REDIS_EXPIRY_NONE;
+
+    if (zend_string_equals_literal_ci(src, "EX")) {
+        tmp = REDIS_EXPIRY_EX;
+    } else if (zend_string_equals_literal_ci(src, "PX")) {
+        tmp = REDIS_EXPIRY_PX;
+    } else if (zend_string_equals_literal_ci(src, "EXAT")) {
+        tmp = REDIS_EXPIRY_EXAT;
+    } else if (zend_string_equals_literal_ci(src, "PXAT")) {
+        tmp = REDIS_EXPIRY_PXAT;
+    } else {
+        return 0;
+    }
+
+    *dst = tmp;
+    return 1;
+}
+
+static zend_bool zstr_to_eq_type(redisEqType *dst, zend_string *src) {
+    *dst = REDIS_IF_NONE;
+
+    if (zend_string_equals_literal_ci(src, "IFEQ")) {
+        *dst = REDIS_IFEQ;
+    } else if (zend_string_equals_literal_ci(src, "IFNE")) {
+        *dst = REDIS_IFNE;
+    } else if (zend_string_equals_literal_ci(src, "IFDEQ")) {
+        *dst = REDIS_IFDEQ;
+    } else if (zend_string_equals_literal_ci(src, "IFDNE")) {
+        *dst = REDIS_IFDNE;
+    } else {
+        return 0;
+    }
+
+    return 1;
+}
+
+static void fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
+    zend_string *key;
+    zval *zv;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        if (key) {
+            if (zstr_to_expiry_type(&dst->expiry.type, key)) {
+                dst->expiry.ttl = zval_get_long(zv);
+            } else if (zstr_to_eq_type(&dst->eq.type, key)) {
+                dst->eq.zval = zv;
+            } else if (zend_string_equals_literal_ci(key, "GET")) {
+                dst->get = zval_is_true(zv);
+            }
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            key = Z_STR_P(zv);
+            if (zend_string_equals_literal_ci(key, "NX")) {
+                dst->type = REDIS_SET_NX;
+            } else if (zend_string_equals_literal_ci(key, "XX")) {
+                dst->type = REDIS_SET_XX;
+            } else if (zend_string_equals_literal_ci(key, "GET")) {
+                dst->get = 1;
+            } else if (zend_string_equals_literal_ci(key, "KEEPTTL")) {
+                dst->expiry.type = REDIS_EXPIRY_NONE;
+                dst->expiry.keepttl = 1;
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
+static int
+fill_set_options_zval(redisSetOptions *dst, zval *zv, zend_bool legacy_set) {
+    zend_long lval;
+
+    memset(dst, 0, sizeof(*dst));
+
+    if (zv == NULL)
+        return SUCCESS;
+
+    if (Z_TYPE_P(zv) == IS_ARRAY) {
+        fill_set_options_ht(dst, Z_ARRVAL_P(zv));
+        return SUCCESS;
+    } else if (redis_try_get_expiry(zv, &lval) == SUCCESS && lval > 0) {
+        if (!legacy_set)
+            dst->expiry.type = REDIS_EXPIRY_EX;
+        dst->expiry.ttl = lval;
+        return SUCCESS;
+    }
+
+    php_error_docref(NULL, E_WARNING,
+        "EXPIRY is invalid (must be an int, float, or numeric string >= 1)");
+
+    return FAILURE;
+}
+
+static void
+redis_cmd_append_sstr_expiry(smart_string *cmdstr, redisExpiryOptions *e)
+{
+    if (e->type == REDIS_EXPIRY_NONE && !e->keepttl)
+        return;
+
+    if (e->keepttl) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "KEEPTTL");
+        return;
+    } else if (e->type == REDIS_EXPIRY_EX) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "EX");
+    } else if (e->type == REDIS_EXPIRY_PX) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "PX");
+    } else if (e->type == REDIS_EXPIRY_EXAT) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "EXAT");
+    } else if (e->type == REDIS_EXPIRY_PXAT) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "PXAT");
+    }
+
+    redis_cmd_append_sstr_zend_long(cmdstr, e->ttl);
+}
+
+static void
+redis_cmd_append_eq_clause(smart_string *cmdstr, RedisSock *redis_sock,
+                           redisEqType type, zval *zv)
+{
+    zend_bool pack;
+
+    if (type == REDIS_IF_NONE)
+        return;
+
+    if (type == REDIS_IFEQ) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "IFEQ");
+    } else if (type == REDIS_IFNE) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "IFNE");
+    } else if (type == REDIS_IFDEQ) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "IFDEQ");
+    } else if (type == REDIS_IFDNE) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "IFDNE");
+    }
+
+    pack = type == REDIS_IFEQ || type == REDIS_IFNE;
+    redis_cmd_append_sstr_zval(cmdstr, zv, pack ? redis_sock : NULL);
+}
+
+static void
+redis_cmd_append_sstr_set_type(smart_string *cmdstr, redisSetType type) {
+    if (type == REDIS_SET_NX) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "NX");
+    } else if (type == REDIS_SET_XX) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "XX");
+    }
+}
+
+/* MSETEX */
+int redis_msetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    redisSetOptions opt = {0};
+    smart_string cmdstr = {0};
+    zval *zexp = NULL;
+    HashTable *kvals;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_ARRAY_HT(kvals)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(zexp)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(kvals) == 0) {
+        php_error_docref(NULL, E_WARNING, "No key/value pairs provided");
+        return FAILURE;
+    }
+
+    if (fill_set_options_zval(&opt, zexp, 0) != SUCCESS)
+        return FAILURE;
+
+    argc = 1 + (2 * zend_hash_num_elements(kvals)) + !!opt.type;
+    if (opt.expiry.keepttl) {
+        argc += 1;
+    } else if (opt.expiry.type != REDIS_EXPIRY_NONE) {
+        argc += 2;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "MSETEX");
+
+    redis_cmd_append_sstr_u64(&cmdstr, zend_hash_num_elements(kvals));
+    redis_cmd_append_sstr_mset_kvals(&cmdstr, redis_sock, kvals);
+    redis_cmd_append_sstr_set_type(&cmdstr, opt.type);
+    redis_cmd_append_sstr_expiry(&cmdstr, &opt.expiry);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* SET */
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key = NULL, *exp_type = NULL, *set_type = NULL;
-    zval *z_value, *z_opts = NULL, *ifeq = NULL;
-    zend_string *zstr = NULL, *tmp = NULL;
+    zval *z_value = NULL, *z_opts = NULL;
     smart_string cmdstr = {0};
-    zend_long expire = -1;
-    zend_bool get = 0;
-    long keep_ttl = 0;
-    size_t key_len;
+    redisSetOptions opt = {0};
+    zend_string *key;
+    int argc = 2;
 
-    #define setExpiryWarning(zv) \
-        php_error_docref(NULL, E_WARNING, "%s passed as EXPIRY is invalid " \
-                         "(must be an int, float, or numeric string >= 1)", \
-                         zend_zval_type_name((zv)))
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_ZVAL(z_value)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(z_opts)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    // Make sure the function is being called correctly
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|z", &key, &key_len,
-                             &z_value, &z_opts) == FAILURE)
-    {
+    if (fill_set_options_zval(&opt, z_opts, 1) != SUCCESS)
         return FAILURE;
-    }
-
-    // Check for an options array
-    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        HashTable *kt = Z_ARRVAL_P(z_opts);
-        zend_string *zkey;
-        zval *v;
-
-        /* Iterate our option array */
-        ZEND_HASH_FOREACH_STR_KEY_VAL(kt, zkey, v) {
-            ZVAL_DEREF(v);
-            /* Detect PX or EX argument and validate timeout */
-            if (zkey && (zend_string_equals_literal_ci(zkey, "EX") ||
-                         zend_string_equals_literal_ci(zkey, "PX") ||
-                         zend_string_equals_literal_ci(zkey, "EXAT") ||
-                         zend_string_equals_literal_ci(zkey, "PXAT"))
-            ) {
-                if (redis_try_get_expiry(v, &expire) == FAILURE || expire < 1) {
-                    setExpiryWarning(v);
-                    return FAILURE;
-                }
-
-                exp_type = ZSTR_VAL(zkey);
-            } else if (zkey && zend_string_equals_literal_ci(zkey, "IFEQ")) {
-                ifeq = v;
-            } else if (Z_TYPE_P(v) == IS_STRING) {
-                if (zend_string_equals_literal_ci(Z_STR_P(v), "KEEPTTL")) {
-                    keep_ttl  = 1;
-                } else if (zend_string_equals_literal_ci(Z_STR_P(v), "GET")) {
-                    get = 1;
-                } else if (zend_string_equals_literal_ci(Z_STR_P(v), "NX") ||
-                           zend_string_equals_literal_ci(Z_STR_P(v), "XX"))
-                {
-                    set_type = Z_STRVAL_P(v);
-                }
-            }
-        } ZEND_HASH_FOREACH_END();
-    } else if (z_opts && Z_TYPE_P(z_opts) != IS_NULL) {
-        if (redis_try_get_expiry(z_opts, &expire) == FAILURE || expire < 1) {
-            setExpiryWarning(z_opts);
-            return FAILURE;
-        }
-    }
-
-    /* Protect the user from syntax errors but give them some info about what's wrong */
-    if (exp_type && keep_ttl) {
-        php_error_docref(NULL, E_WARNING, "KEEPTTL can't be combined with EX or PX option");
-        return FAILURE;
-    }
 
     /* You can't use IFEQ with NX or XX */
-    if (set_type && ifeq) {
-        php_error_docref(NULL, E_WARNING, "IFEQ can't be combined with NX or XX option");
+    if (opt.type && opt.eq.type != REDIS_IF_NONE) {
+        php_error_docref(NULL, E_WARNING,
+            "IF clauses can't be combined with NX/XX");
         return FAILURE;
     }
 
     /* Backward compatibility:  If we are passed no options except an EXPIRE ttl, we
-     * actually execute a SETEX command */
-    if (expire > 0 && !exp_type && !set_type && !keep_ttl) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SETEX", "klv", key, key_len, expire, z_value);
+     * actually execute the SETEX command */
+    if (opt.expiry.ttl > 0 && opt.expiry.type == REDIS_EXPIRY_NONE && !opt.type)
+    {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SETEX", "Klv", key, opt.expiry.ttl,
+                                      z_value);
         return SUCCESS;
     }
 
-    /* Calculate argc based on options set */
-    int argc = 2 + (ifeq ? 2 : 0) + (exp_type ? 2 : 0) + (set_type != NULL) +
-        (keep_ttl != 0) + get;
-
-    /* Initial SET <key> <value> */
-    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("SET"));
-    redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
-    redis_cmd_append_sstr_zval(&cmdstr, z_value, redis_sock);
-
-    if (ifeq) {
-        zstr = zval_get_tmp_string(ifeq, &tmp);
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "IFEQ");
-        redis_cmd_append_sstr_zstr(&cmdstr, zstr);
-        zend_tmp_string_release(tmp);
-    } else if (set_type) {
-        redis_cmd_append_sstr(&cmdstr, set_type, strlen(set_type));
+    /* Add additional argc depending on options */
+    argc += (opt.eq.type != REDIS_IF_NONE ? 2 : 0) + !!opt.type + !!opt.get;
+    if (opt.expiry.keepttl) {
+        argc += 1;
+    } else if (opt.expiry.type != REDIS_EXPIRY_NONE) {
+        argc += 2;
     }
 
-    if (get) {
+    /* Initial SET <key> <value> */
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "SET");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_zval(&cmdstr, z_value, redis_sock);
+
+    if (opt.eq.type != REDIS_IF_NONE) {
+        redis_cmd_append_eq_clause(&cmdstr, redis_sock, opt.eq.type, opt.eq.zval);
+    } else if (opt.type != REDIS_SET_NONE) {
+        redis_cmd_append_sstr_set_type(&cmdstr, opt.type);
+    }
+
+    if (opt.get) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "GET");
         *ctx = PHPREDIS_CTX_PTR;
     }
 
-    if (exp_type) {
-        redis_cmd_append_sstr(&cmdstr, exp_type, strlen(exp_type));
-        redis_cmd_append_sstr_long(&cmdstr, (long)expire);
-    } else if (keep_ttl) {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "KEEPTTL");
-    }
+    redis_cmd_append_sstr_expiry(&cmdstr, &opt.expiry);
 
     /* Push command and length to the caller */
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
 
     return SUCCESS;
-
-    #undef setExpiryWarning
 }
 
 /* MGET */
