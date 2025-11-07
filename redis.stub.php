@@ -523,20 +523,20 @@ class Redis {
     public function __destruct();
 
     /**
-     * Compress a value with the currently configured compressor as set with
-     * Redis::setOption().
+     * Compress a value with the currently configured compressor (Redis::OPT_COMPRESSION)
+     * exactly the same way PhpRedis does before sending data to Redis.
      *
      * @see Redis::setOption()
      *
      * @param  string $value The value to be compressed
-     * @return string        The compressed result
+     * @return string        The compressed result (or the original value if compression is disabled)
      *
      */
     public function _compress(string $value): string;
 
     /**
-     * Uncompress the provided argument that has been compressed with the
-     * currently configured compressor as set with Redis::setOption().
+     * Uncompress the provided argument using the compressor configured via
+     * Redis::setOption() (Redis::OPT_COMPRESSION).
      *
      * @see Redis::setOption()
      *
@@ -581,8 +581,9 @@ class Redis {
     public function _unserialize(string $value): mixed;
 
     /**
-     * Pack the provided value with the configured serializer and compressor
-     * as set with Redis::setOption().
+     * Pack the provided value by first serializing it (if Redis::OPT_SERIALIZER is set)
+     * and then compressing the serialized payload (if Redis::OPT_COMPRESSION is set),
+     * mirroring exactly what PhpRedis transmits to Redis.
      *
      * @param  mixed $value  The value to pack
      * @return string        The packed result having been serialized and
@@ -591,7 +592,8 @@ class Redis {
     public function _pack(mixed $value): string;
 
     /**
-     * Compute the XXH3 digest of a packed value.
+     * Compute the XXH3 digest of a PHP value after it has been `_pack`ed, producing
+     * the same digest Redis' DIGEST command would return for the stored value.
      *
      * @param mixed $value The value to compute the digest for.
      * @return string The computed digest.
@@ -605,11 +607,12 @@ class Redis {
     public function _digest(mixed $value): string;
 
     /**
-     * Unpack the provided value with the configured compressor and serializer
-     * as set with Redis::setOption().
+     * Unpack the provided value by first uncompressing it (if Redis::OPT_COMPRESSION
+     * is set) and then unserializing it (if Redis::OPT_SERIALIZER is set) to recover
+     * the original PHP value.
      *
      * @param  string $value The value which has been serialized and compressed.
-     * @return mixed         The uncompressed and eserialized value.
+     * @return mixed         The uncompressed and deserialized value.
      *
      */
     public function _unpack(string $value): mixed;
