@@ -168,7 +168,7 @@ var Doctum = {
             DoctumSearch.doctumSearchPageAutoCompleteProgressBar.className = 'progress-bar';
         }
     },
-    makeProgress: function () {
+    makeProgess: function () {
         Doctum.makeProgressOnProgressBar(
             Doctum.doctumSearchAutoCompleteProgressBarPercent,
             Doctum.doctumSearchAutoCompleteProgressBar
@@ -209,7 +209,7 @@ var Doctum = {
             oReq.onprogress = function (pe) {
                 if (pe.lengthComputable) {
                     Doctum.doctumSearchAutoCompleteProgressBarPercent = parseInt(pe.loaded / pe.total * 100, 10);
-                    Doctum.makeProgress();
+                    Doctum.makeProgess();
                 }
             };
             oReq.onloadend = function (_) {
@@ -261,10 +261,13 @@ var Doctum = {
     /**
      * Clean the search query
      *
-     * @param string query
+     * @param string|null query
      * @return string
      */
     cleanSearchQuery: function (query) {
+        if (typeof query !== 'string') {
+            return '';
+        }
         // replace any chars that could lead to injecting code in our regex
         // remove start or end spaces
         // replace backslashes by an escaped version, use case in search: \myRootFunction
