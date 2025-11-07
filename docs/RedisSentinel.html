@@ -102,7 +102,7 @@
                     
                 </div>
                 <div class="col-md-8">
-                    <a href="#method___construct">__construct</a>(string $host, int $port = 26379, float $timeout = 0, mixed $persistent = null, int $retry_interval = 0, float $read_timeout = 0, mixed $auth = null, array $context = null)
+                    <a href="#method___construct">__construct</a>(array|null $options = null)
         
                                             <p class="no-description">No description</p>
                                     </div>
@@ -198,7 +198,7 @@
             </div>
                     <div class="row">
                 <div class="col-md-2 type">
-                    bool|<a href="RedisSentinel.html">RedisSentinel</a>
+                    int|<a href="RedisSentinel.html">RedisSentinel</a>
                 </div>
                 <div class="col-md-8">
                     <a href="#method_reset">reset</a>(string $pattern)
@@ -239,7 +239,7 @@
                     <h3 id="method___construct">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L11">at line 11</a></div>
         <code>                    
-    <strong>__construct</strong>(string $host, int $port = 26379, float $timeout = 0, mixed $persistent = null, int $retry_interval = 0, float $read_timeout = 0, mixed $auth = null, array $context = null)
+    <strong>__construct</strong>(array|null $options = null)
         </code>
     </h3>
     <div class="details">    
@@ -255,43 +255,8 @@
 
                     <table class="table table-condensed">
                     <tr>
-                <td>string</td>
-                <td>$host</td>
-                <td></td>
-            </tr>
-                    <tr>
-                <td>int</td>
-                <td>$port</td>
-                <td></td>
-            </tr>
-                    <tr>
-                <td>float</td>
-                <td>$timeout</td>
-                <td></td>
-            </tr>
-                    <tr>
-                <td>mixed</td>
-                <td>$persistent</td>
-                <td></td>
-            </tr>
-                    <tr>
-                <td>int</td>
-                <td>$retry_interval</td>
-                <td></td>
-            </tr>
-                    <tr>
-                <td>float</td>
-                <td>$read_timeout</td>
-                <td></td>
-            </tr>
-                    <tr>
-                <td>mixed</td>
-                <td>$auth</td>
-                <td></td>
-            </tr>
-                    <tr>
-                <td>array</td>
-                <td>$context</td>
+                <td>array|null</td>
+                <td>$options</td>
                 <td></td>
             </tr>
             </table>
@@ -611,7 +576,7 @@
                     <div class="method-item">
                     <h3 id="method_reset">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L37">at line 37</a></div>
-        <code>                    bool|<a href="RedisSentinel.html">RedisSentinel</a>
+        <code>                    int|<a href="RedisSentinel.html">RedisSentinel</a>
     <strong>reset</strong>(string $pattern)
         </code>
     </h3>
@@ -639,7 +604,7 @@
 
                     <table class="table table-condensed">
         <tr>
-            <td>bool|<a href="RedisSentinel.html">RedisSentinel</a></td>
+            <td>int|<a href="RedisSentinel.html">RedisSentinel</a></td>
             <td></td>
         </tr>
     </table>
