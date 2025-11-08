@@ -22,3 +22,4 @@ tags
 compile_commands.json
 doctum.phar
 run-tests.php
+vendor/
