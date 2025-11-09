@@ -24,6 +24,36 @@
                 return;
             }
 
+            function ensureRedisIsBuiltIn() {
+                if (!hljs.getLanguage) {
+                    return;
+                }
+
+                var phpLanguage = hljs.getLanguage('php');
+                if (!phpLanguage || !phpLanguage.keywords) {
+                    return;
+                }
+
+                var builtIns = phpLanguage.keywords.built_in;
+                if (!builtIns) {
+                    phpLanguage.keywords.built_in = 'Redis';
+                    return;
+                }
+
+                if (Array.isArray(builtIns)) {
+                    if (builtIns.indexOf('Redis') === -1) {
+                        builtIns.push('Redis');
+                    }
+                    return;
+                }
+
+                if (typeof builtIns === 'string' && builtIns.indexOf('Redis') === -1) {
+                    phpLanguage.keywords.built_in = builtIns + ' Redis';
+                }
+            }
+
+            ensureRedisIsBuiltIn();
+
             var exampleBlocks = document.querySelectorAll('pre.examples');
             exampleBlocks.forEach(function (block) {
                 if (!block.dataset.language) {
@@ -57,6 +87,132 @@
 
                 hljs.highlightElement(block);
             });
+
+            highlightReturnTypes();
+
+            function highlightReturnTypes() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var containers = document.querySelectorAll('.return-value-content');
+                containers.forEach(function (container) {
+                    var table = container.querySelector('table');
+                    if (!table) {
+                        return;
+                    }
+
+                    table.querySelectorAll('tr').forEach(function (row) {
+                        var typeCell = row.querySelector('td');
+                        if (!typeCell || typeCell.querySelector('code.return-type')) {
+                            return;
+                        }
+
+                        var typeText = typeCell.textContent.trim();
+                        if (!typeText) {
+                            return;
+                        }
+
+                        var linkMeta = collectLinkMetadata(typeCell, typeText);
+                        var code = document.createElement('code');
+                        code.className = 'return-type language-php';
+                        code.textContent = typeText;
+
+                        typeCell.innerHTML = '';
+                        typeCell.appendChild(code);
+
+                        hljs.highlightElement(code);
+
+                        if (linkMeta.length) {
+                            restoreLinks(code, linkMeta);
+                        }
+                    });
+                });
+
+                function collectLinkMetadata(cell, typeText) {
+                    var anchors = cell.querySelectorAll('a');
+                    var lastIndex = 0;
+                    var meta = [];
+
+                    anchors.forEach(function (anchor) {
+                        var text = anchor.textContent.trim();
+                        if (!text) {
+                            return;
+                        }
+
+                        var href = anchor.getAttribute('href');
+                        var start = typeText.indexOf(text, lastIndex);
+
+                        if (start === -1) {
+                            start = typeText.indexOf(text);
+                            if (start === -1) {
+                                return;
+                            }
+                        }
+
+                        meta.push({
+                            start: start,
+                            end: start + text.length,
+                            href: href
+                        });
+
+                        lastIndex = start + text.length;
+                    });
+
+                    return meta;
+                }
+
+                function restoreLinks(codeElement, meta) {
+                    var sorted = meta.slice().sort(function (a, b) {
+                        return b.start - a.start;
+                    });
+
+                    sorted.forEach(function (info) {
+                        var startPos = findTextPosition(codeElement, info.start);
+                        var endPos = findTextPosition(codeElement, info.end);
+
+                        if (!startPos || !endPos) {
+                            return;
+                        }
+
+                        var range = document.createRange();
+                        range.setStart(startPos.node, startPos.offset);
+                        range.setEnd(endPos.node, endPos.offset);
+
+                        var anchor = document.createElement('a');
+                        anchor.setAttribute('href', info.href);
+                        anchor.appendChild(range.extractContents());
+                        range.insertNode(anchor);
+                        range.detach();
+                    });
+                }
+
+                function findTextPosition(container, targetIndex) {
+                    var walker = document.createTreeWalker(
+                        container,
+                        NodeFilter.SHOW_TEXT,
+                        null
+                    );
+
+                    var currentIndex = 0;
+                    var currentNode;
+
+                    while ((currentNode = walker.nextNode())) {
+                        var nextIndex = currentIndex + currentNode.textContent.length;
+
+                        if (targetIndex <= nextIndex) {
+                            return {
+                                node: currentNode,
+                                offset: targetIndex - currentIndex
+                            };
+                        }
+
+                        currentIndex = nextIndex;
+                    }
+
+                    return null;
+                }
+            }
         });
     </script>
 
@@ -3663,15 +3819,17 @@ host on Redis' default port (6379).</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td><a href="Redis.html">Redis</a></td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -3754,15 +3912,17 @@ exactly the same way PhpRedis does before sending data to Redis.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string</td>
             <td><p>The compressed result (or the original value if compression is disabled)</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -3816,15 +3976,17 @@ Redis::setOption() (Redis::OPT_COMPRESSION).</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string</td>
             <td><p>The uncompressed result.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -3878,15 +4040,17 @@ with Redis::setOption().</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string</td>
             <td><p>The prefixed string</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3928,15 +4092,17 @@ with Redis::setOption().</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string</td>
             <td><p>The serialized result</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -3990,15 +4156,17 @@ with Redis::setOption().</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>The unserialized result</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4053,9 +4221,10 @@ mirroring exactly what PhpRedis transmits to Redis.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string</td>
             <td><p>The packed result having been serialized and
@@ -4063,6 +4232,7 @@ compressed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4104,15 +4274,17 @@ the same digest Redis' DIGEST command would return for the stored value.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string</td>
             <td><p>The computed digest.</p></td>
         </tr>
     </table>
 
+                </div>
             
                             <h4>Exceptions</h4>
 
@@ -4164,15 +4336,17 @@ the original PHP value.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>The uncompressed and deserialized value.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4219,15 +4393,17 @@ the original PHP value.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4265,15 +4441,17 @@ the original PHP value.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new string length of the key or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4328,15 +4506,17 @@ $redis-&gt;auth(['username', 'password']);</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Whether the AUTH was successful.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4378,15 +4558,17 @@ $redis-&gt;auth(['username', 'password']);</p></p>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Whether the command was successful.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4428,15 +4610,17 @@ $redis-&gt;auth(['username', 'password']);</p></p>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Whether the command was successful.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4499,15 +4683,17 @@ $redis-&gt;auth(['username', 'password']);</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4577,15 +4763,17 @@ positions, rather than bytes.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of bits set in the requested range.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4653,15 +4841,17 @@ positions, rather than bytes.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4715,15 +4905,17 @@ was 0 and end was 2, Redis would only search the first two bits.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The position of the first set or unset bit.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4789,15 +4981,17 @@ the command.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|null|false</td>
             <td><p>Can return various things depending on command and data in Redis.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4860,15 +5054,17 @@ $relay-&gt;blPop([&#039;list1&#039;, &#039;list2&#039;, &#039;list3&#039;], 1.5)
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|null|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -4939,15 +5135,17 @@ to Redis &gt;= 6.0.0 to send a floating point timeout.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5015,15 +5213,17 @@ which needs to be a timeout.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The popped elements.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5087,15 +5287,17 @@ if no elements are available</p></p>                <p><p>This command is identi
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5171,9 +5373,10 @@ pop the lowest or highest scoring members from the set(s).</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|null|false</td>
             <td><p>This function will return an array of popped elements, or false
@@ -5184,6 +5387,7 @@ instead return NULL when Redis doesn't pop any elements.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5235,15 +5439,17 @@ pop the lowest or highest scoring elements.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|null|false</td>
             <td><p>An array of popped elements or false if none could be popped.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5312,9 +5518,10 @@ to pop elements from the beginning or end of the LISTs.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|null|false</td>
             <td><p>One or more elements popped from the list(s) or false if all LISTs
@@ -5322,6 +5529,7 @@ were empty.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5384,9 +5592,10 @@ elements from the beginning or end of the LISTs.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|null|false</td>
             <td><p>One or more elements popped from the LIST(s) or false if all the LISTs
@@ -5394,6 +5603,7 @@ were empty.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5435,15 +5645,17 @@ were empty.</p></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td><p>This should always return true or throw an exception if we're not connected.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5507,15 +5719,17 @@ var_dump($redis-&gt;getLastError());</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5539,15 +5753,17 @@ var_dump($redis-&gt;getLastError());</pre></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5586,15 +5802,17 @@ var_dump($redis-&gt;getLastError());</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5638,15 +5856,17 @@ Operations that PhpRedis supports are: RESETSTAT, REWRITE, GET, and SET.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5732,15 +5952,17 @@ $redis-&gt;config(&#039;SET&#039;, [&#039;timeout&#039; =&gt; 30, &#039;loglevel
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5787,15 +6009,17 @@ $redis-&gt;config(&#039;SET&#039;, [&#039;timeout&#039; =&gt; 30, &#039;loglevel
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the copy was completed and false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5848,15 +6072,17 @@ var_dump($redis-&gt;copy(&#039;source1&#039;, &#039;exists&#039;, [&#039;REPLACE
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of keys or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -5914,15 +6140,17 @@ var_dump($redis-&gt;dbsize());</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5963,15 +6191,17 @@ PhpRedis will actually send the <code>DECRBY</code> command.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new value of the key or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6037,15 +6267,17 @@ PhpRedis will actually send the <code>DECRBY</code> command.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new value of the key or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6108,15 +6340,17 @@ the name of a key.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of keys that were deleted</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6176,15 +6410,17 @@ the name of a key.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>Returns 1 if the key was deleted, 0 if it was not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6231,15 +6467,17 @@ specific to Valkey &gt;= 9.0</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>Returns 1 if the key was deleted, 0 if it was not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6293,15 +6531,17 @@ specific to Valkey &gt;= 9.0</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6332,15 +6572,17 @@ specific to Valkey &gt;= 9.0</p></p>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if we could discard the transaction.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6384,15 +6626,17 @@ $redis-&gt;getMode();</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td><p>A binary string representing the key's value.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6446,15 +6690,17 @@ $redis-&gt;restore(&#039;new-zset&#039;, 0, $binary);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td><p>The string sent to Redis or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6518,9 +6764,10 @@ and other data.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>LUA scripts may return arbitrary data so this method can return
@@ -6528,6 +6775,7 @@ strings, arrays, nested arrays, etc.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6590,15 +6838,17 @@ may not modify data in redis.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6665,15 +6915,17 @@ with <code>EVAL</code> first.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>Returns whatever the specific script does.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6744,15 +6996,17 @@ may not modify data in redis.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6796,15 +7050,17 @@ $redis-&gt;evalsha_ro($sha, [&#039;counter&#039;], 1);</pre></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The array of pipeline'd or multi replies or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6887,15 +7143,17 @@ additional keys to test.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|bool</td>
             <td><p>The number of keys that do exist and false on failure</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -6967,15 +7225,17 @@ GT - Set expiry only when new expiry is &gt; current expiry</code></pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if an expiration was set and false otherwise.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7037,15 +7297,17 @@ GT - Set expiry only when new expiry is &gt; current expiry</code></pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if an expiration was set, false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7121,15 +7383,17 @@ Redis::expire</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7162,9 +7426,10 @@ Redis::expire</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The timestamp when the key expires, or -1 if the key has no expiry
@@ -7172,6 +7437,7 @@ and -2 if the key doesn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7224,9 +7490,10 @@ $redis-&gt;expiretime(&#039;mykey&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The expiration timestamp of this key (in milliseconds) or -1 if the
@@ -7234,6 +7501,7 @@ key has no expiration, and -2 if it does not exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7302,9 +7570,10 @@ Redis::expiretime</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>Function may return arbitrary data so this method can return
@@ -7312,6 +7581,7 @@ strings, arrays, nested arrays, etc.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7373,9 +7643,10 @@ strings, arrays, nested arrays, etc.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>Function may return arbitrary data so this method can return
@@ -7383,6 +7654,7 @@ strings, arrays, nested arrays, etc.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7434,15 +7706,17 @@ strings, arrays, nested arrays, etc.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7494,15 +7768,17 @@ strings, arrays, nested arrays, etc.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7567,15 +7843,17 @@ strings, arrays, nested arrays, etc.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool|string|array</td>
             <td><p>Depends on subcommand.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7649,9 +7927,10 @@ a string with options for the command <a href="Redis.html">Redis</a> documentati
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of added elements is returned.  If the 'CH' option is specified,
@@ -7659,6 +7938,7 @@ the return value is the number of members <em>changed</em>.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7732,9 +8012,10 @@ MI - miles</code></pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|float|false</td>
             <td><p>The calculated distance in whichever units were specified or false
@@ -7742,6 +8023,7 @@ if one or both members did not exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7803,15 +8085,17 @@ if one or both members did not exist.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of GeoHash encoded values.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7879,15 +8163,17 @@ if one or both members did not exist.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of longitude and latitude pairs.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -7981,15 +8267,17 @@ See <a href="Redis.html#method_geodist">Redis::geodist</a> for possible units.</
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>This command can return various things, depending on the options passed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -8066,15 +8354,17 @@ See <a href="Redis.html#method_geodist">Redis::geodist</a> for possible units.</
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -8148,15 +8438,17 @@ See <a href="Redis.html#method_georadius">Redis::georadius</a> for options.</p><
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>This command can return various things depending on options.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8217,15 +8509,17 @@ See <a href="Redis.html#method_georadius">Redis::georadius</a> for options.</p><
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8290,15 +8584,17 @@ options are not allowed for this command.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8375,15 +8671,17 @@ to search.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8424,15 +8722,17 @@ to search.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>The keys value or false if it did not exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -8484,15 +8784,17 @@ to search.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8523,15 +8825,17 @@ to search.</p></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>The authentication information used to authenticate the connection.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -8589,15 +8893,17 @@ Redis::auth</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -8661,15 +8967,17 @@ Redis::auth</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|bool</td>
             <td><p>The key's value or false if it didn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -8711,15 +9019,17 @@ Redis::auth</a>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td><p>The database we're connected to.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -8778,15 +9088,17 @@ Redis::select</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|bool</td>
             <td><p>The value of the key or false if it didn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -8828,15 +9140,17 @@ Redis::select</a>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string</td>
             <td><p>The host or Unix socket.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8867,15 +9181,17 @@ Redis::select</a>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string|null</td>
             <td><p>The error string or NULL if there is none.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8906,15 +9222,17 @@ Redis::select</a>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td><p>The mode we're in.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8955,15 +9273,17 @@ Redis::select</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>The setting itself or false on failure</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9006,15 +9326,17 @@ Redis::setOption</a>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string|null</td>
             <td><p>The ID or NULL if we don't have one.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9045,15 +9367,17 @@ Redis::setOption</a>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td><p>The port.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9084,15 +9408,17 @@ Redis::setOption</a>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9123,15 +9449,17 @@ Redis::setOption</a>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9182,15 +9510,17 @@ Redis::setOption</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td><p>The substring or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9264,15 +9594,17 @@ echo $redis-&gt;getRange(&#039;silly-word&#039;, 0, 4) . &quot;\n&quot;;</pre></
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|array|int|false</td>
             <td><p>Various reply types depending on options.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9316,15 +9648,17 @@ echo $redis-&gt;lcs(&#039;seq1&#039;, &#039;seq2&#039;) . &quot;\n&quot;;</pre><
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>float</td>
             <td><p>The timeout.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9370,15 +9704,17 @@ echo $redis-&gt;lcs(&#039;seq1&#039;, &#039;seq2&#039;) . &quot;\n&quot;;</pre><
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td><p>The old value of the key or false if it didn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9421,15 +9757,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>float|false</td>
             <td><p>The currently set timeout or false on failure (e.g. we aren't connected).</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9460,15 +9798,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td><p>An array in the form [$sent_bytes, $received_bytes]</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9499,15 +9839,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>void</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9558,15 +9900,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of fields actually removed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9623,15 +9967,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if it exists, false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9689,15 +10035,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9730,15 +10078,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>All fields and values or false if the key didn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9795,15 +10145,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9854,15 +10206,17 @@ $redis-&gt;getset(&#039;captain&#039;, &#039;Kirk&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new value of the field.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9925,15 +10279,17 @@ $redis-&gt;hincrby(&#039;player:1&#039;, &#039;score&#039;, 10);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|float|false</td>
             <td><p>The field value after incremented.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -9985,15 +10341,17 @@ $redis-&gt;hincrby(&#039;player:1&#039;, &#039;score&#039;, 10);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The fields in the hash or false if the hash doesn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10045,15 +10403,17 @@ $redis-&gt;hincrby(&#039;player:1&#039;, &#039;score&#039;, 10);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of fields or false if the key didn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10110,15 +10470,17 @@ $redis-&gt;hincrby(&#039;player:1&#039;, &#039;score&#039;, 10);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The fields and values or false if the key didn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10181,15 +10543,17 @@ information</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The fields and values or false if the key didn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10240,15 +10604,17 @@ information</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>One if fields were set zero if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10294,15 +10660,17 @@ information</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The field and values or false on failure</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10348,15 +10716,17 @@ information</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the operation was successful</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10417,15 +10787,17 @@ information</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|array|false</td>
             <td><p>One or more random fields (and possibly values).</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10486,15 +10858,17 @@ fields and their values.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of fields that were added, or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10559,15 +10933,17 @@ fields and their values.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the field was set and false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10625,15 +11001,17 @@ $redis-&gt;hsetnx(&#039;player:1&#039;, &#039;lock&#039;, &#039;enabled&#039;);<
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The string length of the field or false.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10688,15 +11066,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The values from the hash.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10763,15 +11143,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10838,15 +11220,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10913,15 +11297,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -10988,15 +11374,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11053,15 +11441,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11118,15 +11508,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11183,15 +11575,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11248,15 +11642,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11313,15 +11709,17 @@ $redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11390,15 +11788,17 @@ meaning the scan is complete.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>An array with a subset of fields and values.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11490,15 +11890,17 @@ do {
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11560,15 +11962,17 @@ do {
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11625,15 +12029,17 @@ do {
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new value of the key after incremented.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11699,15 +12105,17 @@ do {
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11768,15 +12176,17 @@ $redis-&gt;incrby(&#039;primes&#039;, 4);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|float|false</td>
             <td><p>The new value of the key or false if the key didn't contain a string.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11821,15 +12231,17 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -11871,15 +12283,17 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td><p>True if we are, false if not</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11921,15 +12335,17 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td><a href="Redis.html">Redis</a>|list&lt;string&gt;|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11986,15 +12402,17 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td><a href="Redis.html">Redis</a>|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12035,15 +12453,17 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of elements in the list or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12105,15 +12525,17 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td><p>The element removed from the source list.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12176,15 +12598,17 @@ $redis-&gt;lMove(&#039;numbers&#039;, &#039;odds&#039;, Redis::LEFT, Redis::LEFT
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12222,9 +12646,10 @@ $redis-&gt;lMove(&#039;numbers&#039;, &#039;odds&#039;, Redis::LEFT, Redis::LEFT
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool|string|array</td>
             <td><p>Will return the element(s) popped from the list or false/NULL
@@ -12232,6 +12657,7 @@ if none was removed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -12311,15 +12737,17 @@ if none was removed.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|null|bool|int|array</td>
             <td><p>Returns one or more of the matching indexes, or null/false if none were found.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12365,15 +12793,17 @@ if none was removed.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new length of the list after prepending.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -12430,15 +12860,17 @@ if none was removed.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new length of the list</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -12495,15 +12927,17 @@ if none was removed.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new length of the list.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12549,15 +12983,17 @@ if none was removed.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new length of the list.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12608,15 +13044,17 @@ if none was removed.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the list was modified.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -12658,15 +13096,17 @@ if none was removed.</p></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td><p>The unix timestamp of the last save time</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -12723,15 +13163,17 @@ if none was removed.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>The index or NULL/false if the element was not found.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12784,15 +13226,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The range of elements between the indexes.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12846,15 +13290,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of elements removed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -12916,15 +13362,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>true if the list was trimmed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12965,15 +13413,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>an array of keys with their values.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13050,15 +13500,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13096,15 +13548,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the key was moved</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13145,15 +13599,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the keys could be set.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13205,15 +13661,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the keys were set and false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13266,15 +13724,17 @@ from the end of the list.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|Redis</td>
             <td><p>True if the transaction could be started.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13335,15 +13795,17 @@ $redis-&gt;exec();</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13414,15 +13876,17 @@ $redis-&gt;exec();</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13494,15 +13958,17 @@ $redis-&gt;exec();</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13535,15 +14001,17 @@ $redis-&gt;exec();</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if a timeout was removed and false if it was not or the key didn't exist.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13596,15 +14064,17 @@ command works.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td><p>True if an expiry was set on the key, and false otherwise.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13668,15 +14138,17 @@ Redis &gt;= 7.0.0 you can pass an optional 'mode' argument.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13741,15 +14213,17 @@ Redis::expire</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int</td>
             <td><p>Returns 1 if the set was altered, and zero if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13801,15 +14275,17 @@ Redis::expire</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The estimated cardinality of the set.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13866,15 +14342,17 @@ Redis::expire</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Always returns true.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13926,9 +14404,10 @@ Redis::expire</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|bool</td>
             <td><p>If passed no message, this command will simply return <code>true</code>.
@@ -13936,6 +14415,7 @@ If a message is passed, it will return the message.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -13983,15 +14463,17 @@ when the user calls Redis::exec().</p>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|Redis</td>
             <td><p>The redis object is returned, to facilitate method chaining.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14074,15 +14556,17 @@ when the user calls Redis::exec().</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14133,15 +14617,17 @@ when the user calls Redis::exec().</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the key could be set.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14188,15 +14674,17 @@ when the user calls Redis::exec().</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td><p>True if we were subscribed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14250,9 +14738,10 @@ when the user calls Redis::exec().</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The key's TTL or one of two special values if it has none.</p>
@@ -14261,6 +14750,7 @@ when the user calls Redis::exec().</p>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14317,15 +14807,17 @@ when the user calls Redis::exec().</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of subscribed clients to the given channel.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14383,15 +14875,17 @@ when the user calls Redis::exec().</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14424,15 +14918,17 @@ when the user calls Redis::exec().</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>The array of subscribed patterns or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14503,15 +14999,17 @@ NOTE:  The <code>count</code> argument requires Redis &gt;= 6.2.0</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|string|bool</td>
             <td><p>One or more popped elements or false if all were empty.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14556,15 +15054,17 @@ NOTE:  The <code>count</code> argument requires Redis &gt;= 6.2.0</p></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td><p>A random key name or false if no keys exist</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14621,15 +15121,17 @@ NOTE:  The <code>count</code> argument requires Redis &gt;= 6.2.0</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>Can return any number of things depending on command executed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14681,15 +15183,17 @@ NOTE:  The <code>count</code> argument requires Redis &gt;= 6.2.0</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the key was renamed or false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14746,15 +15250,17 @@ NOTE:  The <code>count</code> argument requires Redis &gt;= 6.2.0</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the key was renamed, false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14800,15 +15306,17 @@ $redis-&gt;renamenx(&#039;dst&#039;, &#039;existing-dst&#039;);</pre></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Should always return true unless there is an error.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14877,15 +15385,17 @@ Zero means no TTL at all.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the key was stored, false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -14943,9 +15453,10 @@ $redis-&gt;restore(&#039;captains-backup&#039;, 0, $serialized);</pre></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>Will return an array with the role of the connected instance unless there is
@@ -14953,6 +15464,7 @@ an error.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14999,15 +15511,17 @@ another.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td><p>The popped element or false if the source key was empty.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15075,15 +15589,17 @@ $redis-&gt;rpoplpush(&#039;list2&#039;, &#039;list1&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of values added to the set.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15144,15 +15660,17 @@ instead of being variadic, takes a single array of values.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td><p>The number of members added to the set.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15219,9 +15737,10 @@ set that are not in any subsequent set.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>Returns the elements from keys 2..N that don't exist in the
@@ -15229,6 +15748,7 @@ first sorted set, or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15298,15 +15818,17 @@ values in a specified destination key.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of values stored in the destination set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15370,15 +15892,17 @@ in every one.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15445,15 +15969,17 @@ on the amount of work Redis will do.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td>The</td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15520,15 +16046,17 @@ be source key names.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of values stored in the destination key or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15590,15 +16118,17 @@ be source key names.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>Every element in the set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15661,9 +16191,10 @@ $redis-&gt;sMembers(&#039;tng-crew&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of integers representing whether each passed value
@@ -15671,6 +16202,7 @@ was a member of the set.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15746,15 +16278,17 @@ destination set if it does not currently exist.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the member was moved, and false if it wasn't in the set.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15815,15 +16349,17 @@ removing one element.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15887,15 +16423,17 @@ but the result may contain duplicate elements.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>One or more random members or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -15958,15 +16496,17 @@ but the result may contain duplicate elements.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The union of the one or more input sets or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16028,9 +16568,10 @@ but the result may contain duplicate elements.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of elements stored in the destination SET or
@@ -16038,6 +16579,7 @@ false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16086,15 +16628,17 @@ completed.  For a nonblocking alternative, see Redis::bgsave().</p></p>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Returns true unless an error occurs.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16179,9 +16723,10 @@ clients while iterating the key space.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array|false</td>
             <td><p>An array of keys, or false if no keys were returned for this
@@ -16192,6 +16737,7 @@ returned to zero.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16273,15 +16819,17 @@ while ($keys = $redis-&gt;scan($it, &#039;*zorg*&#039;)) {
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The cardinality of the set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16338,15 +16886,17 @@ while ($keys = $redis-&gt;scan($it, &#039;*zorg*&#039;)) {
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>This command returns various things depending on the specific operation executed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16401,15 +16951,17 @@ while ($keys = $redis-&gt;scan($it, &#039;*zorg*&#039;)) {
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>true on success and false on failure</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16484,15 +17036,17 @@ key or NULL if the key didn't exist.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|bool</td>
             <td><p>True if the key was set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16563,15 +17117,17 @@ key or NULL if the key didn't exist.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The original value of the bit or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16634,15 +17190,17 @@ $redis-&gt;setbit(&#039;foo&#039;, 7, 1);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The new length of the string or false on failure</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16776,15 +17334,17 @@ $redis-&gt;setRange(&#039;message&#039;, 6, &#039;Redis&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td><p>true if the setting was updated, false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16854,15 +17414,17 @@ Redis::__construct</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td><a href="Redis.html">Redis</a>|bool</td>
             <td><p>True on success or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16908,15 +17470,17 @@ Redis::__construct</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Returns true if the key was set and false otherwise.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -16976,15 +17540,17 @@ Redis::__construct</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True if the member exists and false if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -17042,15 +17608,17 @@ and users should instead use Redis::replicaof() if connecting to redis-server</p
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -17121,9 +17689,10 @@ replica status promoting the instance to a primary.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Success if we were successfully able to start replicating a primary or
@@ -17131,6 +17700,7 @@ were able to promote the replicat to a primary.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -17208,9 +17778,10 @@ an array of keys.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>This command returns the number of keys that exist and
@@ -17218,6 +17789,7 @@ had their last modified time reset</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -17283,15 +17855,17 @@ entries, which is configurable.</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -17356,9 +17930,10 @@ of this options array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>This command can either return an array with the sorted data
@@ -17367,6 +17942,7 @@ using the STORE option.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -17433,15 +18009,17 @@ using the STORE option.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -17527,15 +18105,17 @@ Redis::sort</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -17609,15 +18189,17 @@ Redis::sort</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -17691,15 +18273,17 @@ Redis::sort</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -17773,15 +18357,17 @@ Redis::sort</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -17832,15 +18418,17 @@ Redis::sort</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of values removed from the set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -17912,15 +18500,17 @@ before returning members for that iteration.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18026,9 +18616,10 @@ from one of the subscribed channels.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td><p>True on success, false on faiilure.  Note that this command will block the
@@ -18036,6 +18627,7 @@ client in a subscribe loop, waiting for messages to arrive.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18101,9 +18693,10 @@ echo &quot;Subscribe loop ended\n&quot;;</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The length of the string key if it exists, zero if it does not, and
@@ -18111,6 +18704,7 @@ false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18168,9 +18762,10 @@ from one of the subscribed channels.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td><p>True on success, false on faiilure.  Note that this command will block the
@@ -18178,6 +18773,7 @@ client in a subscribe loop, waiting for messages to arrive.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18244,15 +18840,17 @@ or from all of them if none is given.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>The array of unsubscribed channels.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18327,15 +18925,17 @@ very fast, regardless of the size of the underlying databases.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>Success if the databases could be swapped and false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18387,9 +18987,10 @@ $redis-&gt;get(&#039;db0-key&#039;);</pre></td>
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array</td>
             <td><p>A two element array consisting of a Unix Timestamp and the number of microseconds
@@ -18397,6 +18998,7 @@ elapsed since the second.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18448,9 +19050,10 @@ elapsed since the second.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>(a) The number of seconds until the key expires, or -1 if the key has
@@ -18459,6 +19062,7 @@ error, this command will return false.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18510,9 +19114,10 @@ error, this command will return false.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The Redis type constant or false on failure.</p>
@@ -18528,6 +19133,7 @@ Redis::REDIS_VECTORSET</code></pre></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18590,15 +19196,17 @@ you may pass any number of additional key names.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of keys deleted or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18666,15 +19274,17 @@ Redis::del</a>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>The array of unsubscribed channels.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18732,15 +19342,17 @@ echo &quot;We&#039;ve unsubscribed from both channels, exiting\n&quot;;</pre></t
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>True on success and false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18811,15 +19423,17 @@ string key names may be passed variadically.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18906,15 +19520,17 @@ receiving them.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int|false</td>
             <td><p>The number of replicas that have confirmed or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -18977,15 +19593,17 @@ not yet acknowledged by XACK.)</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int|false</td>
             <td><p>The number of acknowledged messages</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19104,15 +19722,17 @@ but in a more efficient way, meaning the trimming may not be exactly to
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19197,15 +19817,17 @@ but in a more efficient way, meaning the trimming may not be exactly to
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool|array</td>
             <td><p>An array of pending IDs or false if there are none, or on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19326,15 +19948,17 @@ $options = [
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>An array of claimed messages or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19416,15 +20040,17 @@ var_dump($pending);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of messages removed or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -19509,15 +20135,17 @@ Note:  Requires Redis &gt;= 7.0.0.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>This command return various results depending on the operation performed.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19584,15 +20212,17 @@ Note:  Requires Redis &gt;= 7.0.0.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td><p>This command can return different things depending on the operation being called.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19650,15 +20280,17 @@ Note:  Requires Redis &gt;= 7.0.0.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of messages or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19736,15 +20368,17 @@ acknowledged with XACK.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The pending messages belonging to the stream or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19817,15 +20451,17 @@ acknowledged with XACK.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>The entries in the stream within the requested range or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19891,15 +20527,17 @@ data is available on any of the provided streams.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>An array of read elements or false if there aren't any.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -19978,15 +20616,17 @@ $redis-&gt;xRead([&#039;s03&#039; =&gt; &#039;3-2&#039;, &#039;s04&#039; =&gt; &
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>Zero or more unread messages or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -20070,15 +20710,17 @@ $msgs = $redis-&gt;xReadGroup(&#039;ds9&#039;, &#039;sisko&#039;, [&#039;episode
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
             <td><p>The entries within the requested range, from newest to oldest.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -20154,15 +20796,17 @@ $msgs = $redis-&gt;xReadGroup(&#039;ds9&#039;, &#039;sisko&#039;, [&#039;episode
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>One if the key was added zero if not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20218,15 +20862,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of elements and their similarity scores, or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20267,15 +20913,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of elements in the vector set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20316,15 +20964,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of dimensions in the vector set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20365,15 +21015,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of information about the vector set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20419,15 +21071,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
             <td><p>true if the member exists, false if it does not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20478,15 +21132,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of embeddings for the member or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20532,15 +21188,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20596,15 +21254,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of elements in the requested range or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20650,15 +21310,17 @@ array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>1 if the member was removed, 0 if it was not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20711,15 +21373,17 @@ will be json encoded.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>1 if the attributes were set, 0 if they were not.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20770,15 +21434,17 @@ will be json encoded.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|string|false</td>
             <td><p>An array of attributes for the member or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20829,15 +21495,17 @@ will be json encoded.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of adjacent values and their scores, or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -20902,15 +21570,17 @@ more efficient for Redis given how streams are stored internally.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of entries deleted from the stream.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -20995,9 +21665,10 @@ will send whichever one is last in the options array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|float|false</td>
             <td><p>The return value varies depending on the options passed.</p>
@@ -21005,6 +21676,7 @@ will send whichever one is last in the options array.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21059,15 +21731,17 @@ will send whichever one is last in the options array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of elements in the set or false on failure</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21131,15 +21805,17 @@ will send whichever one is last in the options array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21207,15 +21883,17 @@ will send whichever one is last in the options array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|float|false</td>
             <td><p>The new score of the member or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21281,15 +21959,17 @@ lexographical range.</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of members that fall within the range or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21352,15 +22032,17 @@ $redis-&gt;zLexCount(&#039;captains&#039;, &#039;[A&#039;, &#039;[S&#039;);</pre
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of the scores of the requested elements.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21420,15 +22102,17 @@ $redis-&gt;zMScore(&#039;zs&#039;, &#039;one&#039;, &#039;not-a-member&#039;);</
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>All of the popped elements with scores or false on failure</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21488,15 +22172,17 @@ $redis-&gt;zPopMax(&#039;zs&#039;, 2);.</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The popped elements with their scores or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21577,15 +22263,17 @@ controls just the 'WITHSCORES' option.</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array with matching elements or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21660,15 +22348,17 @@ controls just the 'WITHSCORES' option.</p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of matching elements or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21742,15 +22432,17 @@ $redis-&gt;zRangeByLex(&#039;captains&#039;, &#039;[A&#039;, &#039;[S&#039;, 2, 
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The number of matching elements or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21826,15 +22518,17 @@ it will store them in a destination key provided by the user</p></p>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of elements stored in $dstkey or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21900,15 +22594,17 @@ OPTION       TYPE    MEANING
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|array</td>
             <td><p>One or more random elements.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -21965,15 +22661,17 @@ OPTION       TYPE    MEANING
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The rank of the requested member.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22038,15 +22736,17 @@ OPTION       TYPE    MEANING
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of members that were actually removed or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22108,15 +22808,17 @@ OPTION       TYPE    MEANING
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of elements removed from the set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22187,15 +22889,17 @@ OPTION       TYPE    MEANING
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of members removed from the set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22257,15 +22961,17 @@ OPTION       TYPE    MEANING
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of members removed from the set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22334,9 +23040,10 @@ the example below demonstrating how it may be used.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The members (and possibly scores) of the matching elements or false
@@ -22344,6 +23051,7 @@ on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22424,15 +23132,17 @@ on failure.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The matching members or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22514,15 +23224,17 @@ options argument, to mean <code>WITHSCORES</code>.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The matching members in reverse order of score or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22587,9 +23299,10 @@ $redis-&gt;zRevRangeByScore(&#039;oldest-people&#039;, &#039;117.5&#039;, &#039;
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The reverse rank (the rank if counted high to low) of the member or
@@ -22597,6 +23310,7 @@ false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22656,15 +23370,17 @@ $redis-&gt;zrevrank(&#039;ds9-characters&#039;, &#039;Garak&#039;);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|float|false</td>
             <td><p>The score of the requested element or false if it is not found.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22724,15 +23440,17 @@ return members and scores.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of members or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22793,9 +23511,10 @@ $redis-&gt;zDiff([&#039;primes&#039;, &#039;evens&#039;, &#039;mod3&#039;]);</pr
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of elements stored in the destination set or false on
@@ -22803,6 +23522,7 @@ failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22873,15 +23593,17 @@ intersection.  See Redis::zunion() for details.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>All of the members that exist in every set.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -22946,15 +23668,17 @@ resulting cardinality reaches this limit.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The cardinality of the intersection or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -23040,15 +23764,17 @@ $redis-&gt;zInterCard([&#039;zs1&#039;, &#039;zs2&#039;]);</pre></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The total number of members writtern to the destination set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -23131,15 +23857,17 @@ ZSCAN potentially blocking for longer periods of time.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>An array of elements or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -23230,15 +23958,17 @@ elements as the $keys array.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
             <td><p>The union of each sorted set or false on failure</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -23302,15 +24032,17 @@ Valid:  'MIN', 'MAX', 'SUM'.</p></td>
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
             <td><p>The number of members stored in the destination set or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
                             <h4>See also</h4>
@@ -23373,15 +24105,17 @@ $redis-&gt;zUnionStore(&#039;dst&#039;, [&#039;zs1&#039;, &#039;zs2&#039;, &#039
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
             <td><p>The XXH3 digest as a string or false on failure.</p></td>
         </tr>
     </table>
 
+                </div>
             
             
             
