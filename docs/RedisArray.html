@@ -5,7 +5,7 @@
     <meta name="robots" content="index, follow, all" />
     <title>RedisArray | PhpRedis API</title>
 
-            <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+                <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css">
         <link rel="stylesheet" type="text/css" href="css/doctum.css">
         <link rel="stylesheet" type="text/css" href="fonts/doctum-font.css">
@@ -16,6 +16,24 @@
         <meta name="MobileOptimized" content="width">
         <meta name="HandheldFriendly" content="true">
         <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+    <link rel="stylesheet" type="text/css" href="css/highlight-github.min.css">
+    <script defer src="js/highlight.min.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+            if (!window.hljs) {
+                return;
+            }
+
+            document.querySelectorAll('pre.examples').forEach(function (block) {
+                if (!block.dataset.language) {
+                    block.dataset.language = 'php';
+                }
+
+                hljs.highlightElement(block);
+            });
+        });
+    </script>
+
 
         <link rel="search"
           type="application/opensearchdescription+xml"
