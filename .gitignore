@@ -1,11 +1,13 @@
 /.idea
 /.vscode
+.cache
 /docs/.cache
 .cquery
 *.dep
 *.deps
 *.libs
 *.o
+*.la
 *.lo
 Makefile*
 configure*
