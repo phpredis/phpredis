@@ -10,11 +10,20 @@
                 return;
             }
 
-            document.querySelectorAll('pre.examples').forEach(function (block) {
+            var exampleBlocks = document.querySelectorAll('pre.examples');
+            exampleBlocks.forEach(function (block) {
                 if (!block.dataset.language) {
                     block.dataset.language = 'php';
                 }
+                block.classList.add('language-php');
+                hljs.highlightElement(block);
+            });
 
+            var signatureBlocks = document.querySelectorAll('code.method-signature');
+            signatureBlocks.forEach(function (block) {
+                if (!block.classList.contains('language-php')) {
+                    block.classList.add('language-php');
+                }
                 hljs.highlightElement(block);
             });
         });
