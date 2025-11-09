@@ -10,6 +10,36 @@
                 return;
             }
 
+            function ensureRedisIsBuiltIn() {
+                if (!hljs.getLanguage) {
+                    return;
+                }
+
+                var phpLanguage = hljs.getLanguage('php');
+                if (!phpLanguage || !phpLanguage.keywords) {
+                    return;
+                }
+
+                var builtIns = phpLanguage.keywords.built_in;
+                if (!builtIns) {
+                    phpLanguage.keywords.built_in = 'Redis';
+                    return;
+                }
+
+                if (Array.isArray(builtIns)) {
+                    if (builtIns.indexOf('Redis') === -1) {
+                        builtIns.push('Redis');
+                    }
+                    return;
+                }
+
+                if (typeof builtIns === 'string' && builtIns.indexOf('Redis') === -1) {
+                    phpLanguage.keywords.built_in = builtIns + ' Redis';
+                }
+            }
+
+            ensureRedisIsBuiltIn();
+
             var exampleBlocks = document.querySelectorAll('pre.examples');
             exampleBlocks.forEach(function (block) {
                 if (!block.dataset.language) {
