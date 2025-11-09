@@ -40,6 +40,23 @@
                 }
                 hljs.highlightElement(block);
             });
+
+            var phpCodeBlocks = document.querySelectorAll('pre code.language-php');
+            phpCodeBlocks.forEach(function (block) {
+                if (block.classList.contains('method-signature')) {
+                    return;
+                }
+
+                if (block.closest('pre.examples')) {
+                    return;
+                }
+
+                if (block.parentElement && !block.parentElement.classList.contains('language-php')) {
+                    block.parentElement.classList.add('language-php');
+                }
+
+                hljs.highlightElement(block);
+            });
         });
     </script>
 
