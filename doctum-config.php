@@ -17,6 +17,10 @@ return new Doctum($iterator, [
     'source_dir' => $root,
     'build_dir' => $root . '/docs',
     'cache_dir' => $root . '/docs/.cache',
+    'theme' => 'phpredis',
+    'template_dirs' => [
+        $root . '/doctum-theme',
+    ],
     'base_url' => 'https://phpredis.github.io/',
     'remote_repository' => new GitHubRemoteRepository(
         'phpredis/phpredis',

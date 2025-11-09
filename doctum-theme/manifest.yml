@@ -1,0 +1,6 @@
+name: phpredis
+parent: default
+
+static:
+    'css/highlight-github.min.css': 'css/highlight-github.min.css'
+    'js/highlight.min.js': 'js/highlight.min.js'
