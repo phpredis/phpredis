@@ -1,0 +1,22 @@
+{% extends 'default/layout/base.twig' %}
+
+{% block head %}
+    {{ parent() }}
+    <link rel="stylesheet" type="text/css" href="{{ path('css/highlight-github.min.css') }}">
+    <script defer src="{{ path('js/highlight.min.js') }}"></script>
+    <script>
+        window.addEventListener('load', function () {
+            if (!window.hljs) {
+                return;
+            }
+
+            document.querySelectorAll('pre.examples').forEach(function (block) {
+                if (!block.dataset.language) {
+                    block.dataset.language = 'php';
+                }
+
+                hljs.highlightElement(block);
+            });
+        });
+    </script>
+{% endblock %}
