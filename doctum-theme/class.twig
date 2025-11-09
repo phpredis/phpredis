@@ -1,0 +1,68 @@
+{% extends 'default/class.twig' %}
+{% from "macros.twig" import method_link, method_source_link, deprecations, internals, todos %}
+
+{% block method %}
+    {% set signature_plain = block('method_signature')|striptags %}
+    {% set signature_plain = signature_plain|replace({'&nbsp;': ' ', "\n": ' ', "\t": ' '})|trim %}
+    {% for i in 1..5 %}
+        {% set signature_plain = signature_plain|replace({'  ': ' '}) %}
+    {% endfor %}
+
+    <h3 id="method_{{ method.name|raw }}">
+        <div class="location">{% if method.class is not same as(class) %}{{ 'in %s'|trans|format(method_link(method, false, true))|raw }} {% endif %}{{ method_source_link(method) }}</div>
+        <code class="method-signature language-php">{{ signature_plain }}</code>
+    </h3>
+    <div class="details">
+        {%- if method.hasSince() -%}
+            <i>{{ 'Since:'|trans }} {{ method.getSince() }}</i>
+            <br>
+        {%- endif -%}
+        {{ deprecations(method) }}
+        {{ internals(method) }}
+
+        <div class="method-description">
+            {% if not method.shortdesc and not method.longdesc %}
+                <p class="no-description">{% trans 'No description' %}</p>
+            {% else %}
+                {% if method.shortdesc -%}
+                <p>{{ method.shortdesc|desc(class)|md_to_html }}</p>
+                {%- endif %}
+                {% if method.longdesc -%}
+                <p>{{ method.longdesc|desc(class)|md_to_html }}</p>
+                {%- endif %}
+            {%- endif %}
+            {{- todos(method) -}}
+        </div>
+        <div class="tags">
+            {% if method.parameters %}
+                <h4>{% trans 'Parameters' %}</h4>
+
+                {{ block('parameters') }}
+            {% endif %}
+
+            {% if method.hintDesc or method.hint %}
+                <h4>{% trans 'Return Value' %}</h4>
+
+                {{ block('return') }}
+            {% endif %}
+
+            {% if method.exceptions %}
+                <h4>{% trans 'Exceptions' %}</h4>
+
+                {{ block('exceptions') }}
+            {% endif %}
+
+            {% if method.tags('see') %}
+                <h4>{% trans 'See also' %}</h4>
+
+                {{ block('see') }}
+            {% endif %}
+
+            {% if method.hasExamples() %}
+                <h4>{% trans 'Examples' %}</h4>
+
+                {{ block('examples') }}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

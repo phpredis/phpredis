@@ -24,11 +24,20 @@
                 return;
             }
 
-            document.querySelectorAll('pre.examples').forEach(function (block) {
+            var exampleBlocks = document.querySelectorAll('pre.examples');
+            exampleBlocks.forEach(function (block) {
                 if (!block.dataset.language) {
                     block.dataset.language = 'php';
                 }
+                block.classList.add('language-php');
+                hljs.highlightElement(block);
+            });
 
+            var signatureBlocks = document.querySelectorAll('code.method-signature');
+            signatureBlocks.forEach(function (block) {
+                if (!block.classList.contains('language-php')) {
+                    block.classList.add('language-php');
+                }
                 hljs.highlightElement(block);
             });
         });
@@ -254,11 +263,10 @@
 
             <div id="method-details">
                     <div class="method-item">
-                    <h3 id="method___construct">
+                                                                                        
+    <h3 id="method___construct">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L11">at line 11</a></div>
-        <code>                    
-    <strong>__construct</strong>(array|null $options = null)
-        </code>
+        <code class="method-signature language-php">__construct(array|null $options = null)</code>
     </h3>
     <div class="details">    
     
@@ -288,11 +296,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_ckquorum">
+                                                                                        
+    <h3 id="method_ckquorum">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L14">at line 14</a></div>
-        <code>                    bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>ckquorum</strong>(string $master)
-        </code>
+        <code class="method-signature language-php">bool|RedisSentinel ckquorum(string $master)</code>
     </h3>
     <div class="details">    
     
@@ -331,11 +338,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_failover">
+                                                                                        
+    <h3 id="method_failover">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L17">at line 17</a></div>
-        <code>                    bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>failover</strong>(string $master)
-        </code>
+        <code class="method-signature language-php">bool|RedisSentinel failover(string $master)</code>
     </h3>
     <div class="details">    
     
@@ -374,11 +380,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_flushconfig">
+                                                                                        
+    <h3 id="method_flushconfig">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L20">at line 20</a></div>
-        <code>                    bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>flushconfig</strong>()
-        </code>
+        <code class="method-signature language-php">bool|RedisSentinel flushconfig()</code>
     </h3>
     <div class="details">    
     
@@ -407,11 +412,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_getMasterAddrByName">
+                                                                                        
+    <h3 id="method_getMasterAddrByName">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L23">at line 23</a></div>
-        <code>                    array|bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>getMasterAddrByName</strong>(string $master)
-        </code>
+        <code class="method-signature language-php">array|bool|RedisSentinel getMasterAddrByName(string $master)</code>
     </h3>
     <div class="details">    
     
@@ -450,11 +454,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_master">
+                                                                                        
+    <h3 id="method_master">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L26">at line 26</a></div>
-        <code>                    array|bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>master</strong>(string $master)
-        </code>
+        <code class="method-signature language-php">array|bool|RedisSentinel master(string $master)</code>
     </h3>
     <div class="details">    
     
@@ -493,11 +496,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_masters">
+                                                                                        
+    <h3 id="method_masters">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L29">at line 29</a></div>
-        <code>                    array|bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>masters</strong>()
-        </code>
+        <code class="method-signature language-php">array|bool|RedisSentinel masters()</code>
     </h3>
     <div class="details">    
     
@@ -526,11 +528,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_myid">
+                                                                                        
+    <h3 id="method_myid">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L31">at line 31</a></div>
-        <code>                    string
-    <strong>myid</strong>()
-        </code>
+        <code class="method-signature language-php">string myid()</code>
     </h3>
     <div class="details">    
     
@@ -559,11 +560,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_ping">
+                                                                                        
+    <h3 id="method_ping">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L34">at line 34</a></div>
-        <code>                    bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>ping</strong>()
-        </code>
+        <code class="method-signature language-php">bool|RedisSentinel ping()</code>
     </h3>
     <div class="details">    
     
@@ -592,11 +592,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_reset">
+                                                                                        
+    <h3 id="method_reset">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L37">at line 37</a></div>
-        <code>                    int|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>reset</strong>(string $pattern)
-        </code>
+        <code class="method-signature language-php">int|RedisSentinel reset(string $pattern)</code>
     </h3>
     <div class="details">    
     
@@ -635,11 +634,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_sentinels">
+                                                                                        
+    <h3 id="method_sentinels">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L40">at line 40</a></div>
-        <code>                    array|bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>sentinels</strong>(string $master)
-        </code>
+        <code class="method-signature language-php">array|bool|RedisSentinel sentinels(string $master)</code>
     </h3>
     <div class="details">    
     
@@ -678,11 +676,10 @@
 
             </div>
                     <div class="method-item">
-                    <h3 id="method_slaves">
+                                                                                        
+    <h3 id="method_slaves">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis_sentinel.stub.php#L43">at line 43</a></div>
-        <code>                    array|bool|<a href="RedisSentinel.html">RedisSentinel</a>
-    <strong>slaves</strong>(string $master)
-        </code>
+        <code class="method-signature language-php">array|bool|RedisSentinel slaves(string $master)</code>
     </h3>
     <div class="details">    
     
