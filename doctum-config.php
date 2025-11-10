@@ -5,6 +5,7 @@ use Doctum\RemoteRepository\GitHubRemoteRepository;
 use Symfony\Component\Finder\Finder;
 
 $root = realpath(__DIR__);
+Doctum::$defaultVersionName = 'develop';
 
 $iterator = Finder::create()
     ->files()
