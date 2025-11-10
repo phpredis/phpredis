@@ -178,6 +178,7 @@
             });
 
             highlightReturnTypes();
+            highlightMethodParameters();
             highlightApiIndex();
 
             function highlightReturnTypes() {
@@ -212,6 +213,50 @@
                         typeCell.appendChild(code);
 
                         highlightAndRestore(code, linkMeta);
+                    });
+                });
+            }
+
+            function highlightMethodParameters() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var headings = document.querySelectorAll('.tags > h4');
+                headings.forEach(function (heading) {
+                    if (!heading.textContent || heading.textContent.trim() !== 'Parameters') {
+                        return;
+                    }
+
+                    var table = heading.nextElementSibling;
+                    while (table && table.tagName !== 'TABLE') {
+                        table = table.nextElementSibling;
+                    }
+
+                    if (!table) {
+                        return;
+                    }
+
+                    table.querySelectorAll('tr').forEach(function (row) {
+                        var typeCell = row.querySelector('td');
+                        if (!typeCell || typeCell.querySelector('code.parameter-type')) {
+                            return;
+                        }
+
+                        var typeText = typeCell.textContent.trim();
+                        if (!typeText) {
+                            return;
+                        }
+
+                        var meta = collectLinkMetadata(typeCell, typeText);
+                        var code = document.createElement('code');
+                        code.className = 'parameter-type language-php';
+                        code.textContent = typeText;
+
+                        typeCell.innerHTML = '';
+                        typeCell.appendChild(code);
+
+                        highlightAndRestore(code, meta);
                     });
                 });
             }
