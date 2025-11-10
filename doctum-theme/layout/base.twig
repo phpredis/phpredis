@@ -47,6 +47,100 @@
                 }
             }
 
+            function collectLinkMetadata(container, typeText) {
+                var anchors = container.querySelectorAll('a');
+                var lastIndex = 0;
+                var meta = [];
+
+                for (var i = 0; i < anchors.length; i++) {
+                    var anchor = anchors[i];
+                    var text = anchor.textContent.trim();
+                    if (!text) {
+                        continue;
+                    }
+
+                    var href = anchor.getAttribute('href');
+                    var start = typeText.indexOf(text, lastIndex);
+
+                    if (start === -1) {
+                        start = typeText.indexOf(text);
+                        if (start === -1) {
+                            continue;
+                        }
+                    }
+
+                    meta.push({
+                        start: start,
+                        end: start + text.length,
+                        href: href
+                    });
+
+                    lastIndex = start + text.length;
+                }
+
+                return meta;
+            }
+
+            function findTextPosition(container, targetIndex) {
+                var walker = document.createTreeWalker(
+                    container,
+                    NodeFilter.SHOW_TEXT,
+                    null
+                );
+
+                var currentIndex = 0;
+                var currentNode;
+
+                while ((currentNode = walker.nextNode())) {
+                    var nextIndex = currentIndex + currentNode.textContent.length;
+
+                    if (targetIndex <= nextIndex) {
+                        return {
+                            node: currentNode,
+                            offset: targetIndex - currentIndex
+                        };
+                    }
+
+                    currentIndex = nextIndex;
+                }
+
+                return null;
+            }
+
+            function restoreLinks(codeElement, meta) {
+                var sorted = meta.slice().sort(function (a, b) {
+                    return b.start - a.start;
+                });
+
+                for (var i = 0; i < sorted.length; i++) {
+                    var info = sorted[i];
+                    var startPos = findTextPosition(codeElement, info.start);
+                    var endPos = findTextPosition(codeElement, info.end);
+
+                    if (!startPos || !endPos) {
+                        continue;
+                    }
+
+                    var range = document.createRange();
+                    range.setStart(startPos.node, startPos.offset);
+                    range.setEnd(endPos.node, endPos.offset);
+
+                    var anchor = document.createElement('a');
+                    anchor.setAttribute('href', info.href);
+                    anchor.appendChild(range.extractContents());
+                    range.insertNode(anchor);
+                    range.detach();
+                }
+            }
+
+            function highlightAndRestore(codeElement, metadata) {
+                hljs.highlightElement(codeElement);
+
+                if (metadata && metadata.length) {
+                    restoreLinks(codeElement, metadata);
+                }
+            }
+
             ensureCustomClassesAreBuiltIn();
 
             var exampleBlocks = document.querySelectorAll('pre.examples');
@@ -84,6 +178,7 @@
             });
 
             highlightReturnTypes();
+            highlightApiIndex();
 
             function highlightReturnTypes() {
                 if (!document.createTreeWalker || !window.NodeFilter) {
@@ -116,96 +211,124 @@
                         typeCell.innerHTML = '';
                         typeCell.appendChild(code);
 
-                        hljs.highlightElement(code);
-
-                        if (linkMeta.length) {
-                            restoreLinks(code, linkMeta);
-                        }
+                        highlightAndRestore(code, linkMeta);
                     });
                 });
+            }
 
-                function collectLinkMetadata(cell, typeText) {
-                    var anchors = cell.querySelectorAll('a');
-                    var lastIndex = 0;
-                    var meta = [];
-
-                    anchors.forEach(function (anchor) {
-                        var text = anchor.textContent.trim();
-                        if (!text) {
-                            return;
-                        }
-
-                        var href = anchor.getAttribute('href');
-                        var start = typeText.indexOf(text, lastIndex);
-
-                        if (start === -1) {
-                            start = typeText.indexOf(text);
-                            if (start === -1) {
-                                return;
-                            }
-                        }
-
-                        meta.push({
-                            start: start,
-                            end: start + text.length,
-                            href: href
-                        });
-
-                        lastIndex = start + text.length;
-                    });
-
-                    return meta;
+            function highlightApiIndex() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
                 }
 
-                function restoreLinks(codeElement, meta) {
-                    var sorted = meta.slice().sort(function (a, b) {
-                        return b.start - a.start;
-                    });
+                var potentialContainers = document.querySelectorAll('.container-fluid.underlined');
+                var containers = [];
+                var anchorSelector = '.row .col-md-8 > a[href^="#method_"]';
 
-                    sorted.forEach(function (info) {
-                        var startPos = findTextPosition(codeElement, info.start);
-                        var endPos = findTextPosition(codeElement, info.end);
-
-                        if (!startPos || !endPos) {
-                            return;
-                        }
-
-                        var range = document.createRange();
-                        range.setStart(startPos.node, startPos.offset);
-                        range.setEnd(endPos.node, endPos.offset);
-
-                        var anchor = document.createElement('a');
-                        anchor.setAttribute('href', info.href);
-                        anchor.appendChild(range.extractContents());
-                        range.insertNode(anchor);
-                        range.detach();
-                    });
-                }
-
-                function findTextPosition(container, targetIndex) {
-                    var walker = document.createTreeWalker(
-                        container,
-                        NodeFilter.SHOW_TEXT,
-                        null
-                    );
-
-                    var currentIndex = 0;
-                    var currentNode;
-
-                    while ((currentNode = walker.nextNode())) {
-                        var nextIndex = currentIndex + currentNode.textContent.length;
-
-                        if (targetIndex <= nextIndex) {
-                            return {
-                                node: currentNode,
-                                offset: targetIndex - currentIndex
-                            };
-                        }
-
-                        currentIndex = nextIndex;
+                for (var i = 0; i < potentialContainers.length; i++) {
+                    var candidate = potentialContainers[i];
+                    if (!candidate.querySelector(anchorSelector)) {
+                        continue;
                     }
 
-                    return null;
+                    var heading = candidate.previousElementSibling;
+                    if (heading && heading.tagName === 'H2' && heading.textContent && heading.textContent.trim() === 'Methods') {
+                        containers.push(candidate);
+                    }
+                }
+
+                if (!containers.length) {
+                    return;
+                }
+
+                for (var j = 0; j < containers.length; j++) {
+                    var container = containers[j];
+                    var rows = container.querySelectorAll('.row');
+
+                    for (var k = 0; k < rows.length; k++) {
+                        var row = rows[k];
+                        enhanceTypeCell(row.querySelector('.col-md-2.type'));
+                        enhanceSignatureCell(row.querySelector('.col-md-8'));
+                    }
+                }
+
+                function enhanceTypeCell(typeCell) {
+                    if (!typeCell || typeCell.querySelector('code.method-index-type')) {
+                        return;
+                    }
+
+                    var typeText = typeCell.textContent.trim();
+                    if (!typeText) {
+                        return;
+                    }
+
+                    var meta = collectLinkMetadata(typeCell, typeText);
+
+                    var code = document.createElement('code');
+                    code.className = 'method-index-type language-php';
+                    code.textContent = typeText;
+
+                    typeCell.innerHTML = '';
+                    typeCell.appendChild(code);
+
+                    highlightAndRestore(code, meta);
+                }
+
+                function enhanceSignatureCell(signatureCell) {
+                    if (!signatureCell || signatureCell.querySelector('code.method-index-signature')) {
+                        return;
+                    }
+
+                    var descriptionStart = null;
+                    for (var i = 0; i < signatureCell.children.length; i++) {
+                        var child = signatureCell.children[i];
+                        if (child.tagName === 'P') {
+                            descriptionStart = child;
+                            break;
+                        }
+                    }
+
+                    var nodesToProcess = [];
+                    var current = signatureCell.firstChild;
+                    while (current && current !== descriptionStart) {
+                        nodesToProcess.push(current);
+                        current = current.nextSibling;
+                    }
+
+                    if (!nodesToProcess.length) {
+                        return;
+                    }
+
+                    var signatureText = '';
+                    for (var j = 0; j < nodesToProcess.length; j++) {
+                        signatureText += nodesToProcess[j].textContent || '';
+                    }
+                    signatureText = signatureText.replace(/\s+/g, ' ').trim();
+
+                    if (!signatureText) {
+                        return;
+                    }
+
+                    var tempWrapper = document.createElement('div');
+                    for (var k = 0; k < nodesToProcess.length; k++) {
+                        tempWrapper.appendChild(nodesToProcess[k].cloneNode(true));
+                    }
+
+                    var meta = collectLinkMetadata(tempWrapper, signatureText);
+
+                    for (var l = 0; l < nodesToProcess.length; l++) {
+                        if (nodesToProcess[l].parentNode === signatureCell) {
+                            signatureCell.removeChild(nodesToProcess[l]);
+                        }
+                    }
+
+                    var code = document.createElement('code');
+                    code.className = 'method-index-signature language-php';
+                    code.textContent = signatureText;
+
+                    signatureCell.insertBefore(code, descriptionStart);
+
+                    highlightAndRestore(code, meta);
                 }
             }
         });
