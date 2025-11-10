@@ -24,7 +24,9 @@
                 return;
             }
 
-            function ensureRedisIsBuiltIn() {
+            function ensureCustomClassesAreBuiltIn() {
+                var classesToAdd = ['Redis', 'RedisCluster', 'RedisArray'];
+
                 if (!hljs.getLanguage) {
                     return;
                 }
@@ -36,23 +38,30 @@
 
                 var builtIns = phpLanguage.keywords.built_in;
                 if (!builtIns) {
-                    phpLanguage.keywords.built_in = 'Redis';
+                    phpLanguage.keywords.built_in = classesToAdd.join(' ');
                     return;
                 }
 
                 if (Array.isArray(builtIns)) {
-                    if (builtIns.indexOf('Redis') === -1) {
-                        builtIns.push('Redis');
-                    }
+                    classesToAdd.forEach(function (className) {
+                        if (builtIns.indexOf(className) === -1) {
+                            builtIns.push(className);
+                        }
+                    });
                     return;
                 }
 
-                if (typeof builtIns === 'string' && builtIns.indexOf('Redis') === -1) {
-                    phpLanguage.keywords.built_in = builtIns + ' Redis';
+                if (typeof builtIns === 'string') {
+                    classesToAdd.forEach(function (className) {
+                        if (builtIns.indexOf(className) === -1) {
+                            builtIns += ' ' + className;
+                        }
+                    });
+                    phpLanguage.keywords.built_in = builtIns;
                 }
             }
 
-            ensureRedisIsBuiltIn();
+            ensureCustomClassesAreBuiltIn();
 
             var exampleBlocks = document.querySelectorAll('pre.examples');
             exampleBlocks.forEach(function (block) {
