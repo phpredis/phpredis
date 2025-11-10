@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:referrer="http://a9.com/-/opensearch/extensions/referrer/">
-    <ShortName>PhpRedis API (main)</ShortName>
-    <Description>Searches PhpRedis API (main)</Description>
+    <ShortName>PhpRedis API (develop)</ShortName>
+    <Description>Searches PhpRedis API (develop)</Description>
     <Tags>PhpRedis API</Tags>
     <Url type="text/html" method="GET" template="https://phpredis.github.io/search.html?search={searchTerms}&amp;utm_source={referrer:source?}"/>
     <InputEncoding>UTF-8</InputEncoding>
