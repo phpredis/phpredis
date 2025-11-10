@@ -3334,6 +3334,9 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     int host_len, usocket = 0, err = 0, tcp_flag = 1;
     ConnectionPool *p = NULL;
 
+    // Monotonically incrementing persistent id counter
+    static unsigned long long counter = 0;
+
     if (redis_sock->stream != NULL) {
         redis_sock_disconnect(redis_sock, 0, 1);
     }
@@ -3383,7 +3386,8 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
             }
 
             gettimeofday(&tv, NULL);
-            persistent_id = strpprintf(0, "phpredis_%ld%ld", tv.tv_sec, (long)tv.tv_usec);
+            persistent_id = strpprintf(0, "phpredis_%ld%ld:%llu", tv.tv_sec,
+                                       (long)tv.tv_usec, ++counter);
         } else {
             if (redis_sock->persistent_id) {
                 persistent_id = strpprintf(0, "phpredis:%s:%s", host, ZSTR_VAL(redis_sock->persistent_id));
