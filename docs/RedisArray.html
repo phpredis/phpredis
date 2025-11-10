@@ -24,6 +24,45 @@
                 return;
             }
 
+            function ensureCustomClassesAreBuiltIn() {
+                var classesToAdd = ['Redis', 'RedisCluster', 'RedisArray'];
+
+                if (!hljs.getLanguage) {
+                    return;
+                }
+
+                var phpLanguage = hljs.getLanguage('php');
+                if (!phpLanguage || !phpLanguage.keywords) {
+                    return;
+                }
+
+                var builtIns = phpLanguage.keywords.built_in;
+                if (!builtIns) {
+                    phpLanguage.keywords.built_in = classesToAdd.join(' ');
+                    return;
+                }
+
+                if (Array.isArray(builtIns)) {
+                    classesToAdd.forEach(function (className) {
+                        if (builtIns.indexOf(className) === -1) {
+                            builtIns.push(className);
+                        }
+                    });
+                    return;
+                }
+
+                if (typeof builtIns === 'string') {
+                    classesToAdd.forEach(function (className) {
+                        if (builtIns.indexOf(className) === -1) {
+                            builtIns += ' ' + className;
+                        }
+                    });
+                    phpLanguage.keywords.built_in = builtIns;
+                }
+            }
+
+            ensureCustomClassesAreBuiltIn();
+
             var exampleBlocks = document.querySelectorAll('pre.examples');
             exampleBlocks.forEach(function (block) {
                 if (!block.dataset.language) {
@@ -40,6 +79,149 @@
                 }
                 hljs.highlightElement(block);
             });
+
+            var phpCodeBlocks = document.querySelectorAll('pre code.language-php');
+            phpCodeBlocks.forEach(function (block) {
+                if (block.classList.contains('method-signature')) {
+                    return;
+                }
+
+                if (block.closest('pre.examples')) {
+                    return;
+                }
+
+                if (block.parentElement && !block.parentElement.classList.contains('language-php')) {
+                    block.parentElement.classList.add('language-php');
+                }
+
+                hljs.highlightElement(block);
+            });
+
+            highlightReturnTypes();
+
+            function highlightReturnTypes() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var containers = document.querySelectorAll('.return-value-content');
+                containers.forEach(function (container) {
+                    var table = container.querySelector('table');
+                    if (!table) {
+                        return;
+                    }
+
+                    table.querySelectorAll('tr').forEach(function (row) {
+                        var typeCell = row.querySelector('td');
+                        if (!typeCell || typeCell.querySelector('code.return-type')) {
+                            return;
+                        }
+
+                        var typeText = typeCell.textContent.trim();
+                        if (!typeText) {
+                            return;
+                        }
+
+                        var linkMeta = collectLinkMetadata(typeCell, typeText);
+                        var code = document.createElement('code');
+                        code.className = 'return-type language-php';
+                        code.textContent = typeText;
+
+                        typeCell.innerHTML = '';
+                        typeCell.appendChild(code);
+
+                        hljs.highlightElement(code);
+
+                        if (linkMeta.length) {
+                            restoreLinks(code, linkMeta);
+                        }
+                    });
+                });
+
+                function collectLinkMetadata(cell, typeText) {
+                    var anchors = cell.querySelectorAll('a');
+                    var lastIndex = 0;
+                    var meta = [];
+
+                    anchors.forEach(function (anchor) {
+                        var text = anchor.textContent.trim();
+                        if (!text) {
+                            return;
+                        }
+
+                        var href = anchor.getAttribute('href');
+                        var start = typeText.indexOf(text, lastIndex);
+
+                        if (start === -1) {
+                            start = typeText.indexOf(text);
+                            if (start === -1) {
+                                return;
+                            }
+                        }
+
+                        meta.push({
+                            start: start,
+                            end: start + text.length,
+                            href: href
+                        });
+
+                        lastIndex = start + text.length;
+                    });
+
+                    return meta;
+                }
+
+                function restoreLinks(codeElement, meta) {
+                    var sorted = meta.slice().sort(function (a, b) {
+                        return b.start - a.start;
+                    });
+
+                    sorted.forEach(function (info) {
+                        var startPos = findTextPosition(codeElement, info.start);
+                        var endPos = findTextPosition(codeElement, info.end);
+
+                        if (!startPos || !endPos) {
+                            return;
+                        }
+
+                        var range = document.createRange();
+                        range.setStart(startPos.node, startPos.offset);
+                        range.setEnd(endPos.node, endPos.offset);
+
+                        var anchor = document.createElement('a');
+                        anchor.setAttribute('href', info.href);
+                        anchor.appendChild(range.extractContents());
+                        range.insertNode(anchor);
+                        range.detach();
+                    });
+                }
+
+                function findTextPosition(container, targetIndex) {
+                    var walker = document.createTreeWalker(
+                        container,
+                        NodeFilter.SHOW_TEXT,
+                        null
+                    );
+
+                    var currentIndex = 0;
+                    var currentNode;
+
+                    while ((currentNode = walker.nextNode())) {
+                        var nextIndex = currentIndex + currentNode.textContent.length;
+
+                        if (targetIndex <= nextIndex) {
+                            return {
+                                node: currentNode,
+                                offset: targetIndex - currentIndex
+                            };
+                        }
+
+                        currentIndex = nextIndex;
+                    }
+
+                    return null;
+                }
+            }
         });
     </script>
 
@@ -3230,15 +3412,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3300,15 +3484,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3332,15 +3518,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|callable</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3364,15 +3552,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|callable</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3396,15 +3586,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3438,15 +3630,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|null|Redis</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3480,15 +3674,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|null</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3522,15 +3718,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|string|null</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3554,15 +3752,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3601,15 +3801,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|int</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3633,15 +3835,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|null</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3665,15 +3869,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|null|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3697,15 +3903,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3729,15 +3937,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3771,15 +3981,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3828,15 +4040,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3860,15 +4074,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3902,15 +4118,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3944,15 +4162,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -3986,15 +4206,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4033,15 +4255,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|RedisArray</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4065,15 +4289,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4097,15 +4323,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4154,15 +4382,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4196,15 +4426,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4243,15 +4475,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4300,15 +4534,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4347,15 +4583,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|int</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4379,15 +4617,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|null</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4436,15 +4676,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4483,15 +4725,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4530,15 +4774,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4572,15 +4818,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4604,15 +4852,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4656,15 +4906,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4713,15 +4965,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4770,15 +5024,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4832,15 +5088,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4884,15 +5142,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|null|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4936,15 +5196,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|null|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -4988,15 +5250,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5040,15 +5304,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5092,15 +5358,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5149,15 +5417,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|null|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5201,15 +5471,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|null|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5258,15 +5530,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|null|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5310,15 +5584,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|null|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5342,15 +5618,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5389,15 +5667,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5421,15 +5701,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5468,15 +5750,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5520,15 +5804,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5572,15 +5858,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5604,15 +5892,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5646,15 +5936,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5693,15 +5985,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5740,15 +6034,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5787,15 +6083,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5834,15 +6132,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5876,15 +6176,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5918,15 +6220,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -5970,15 +6274,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6022,15 +6328,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6074,15 +6382,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6126,15 +6436,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6173,15 +6485,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6225,15 +6539,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6277,15 +6593,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6329,15 +6647,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6371,15 +6691,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6413,15 +6735,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6465,15 +6789,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6517,15 +6843,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6564,15 +6892,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool|string|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6626,15 +6956,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6683,15 +7015,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|float|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6735,15 +7069,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6787,15 +7123,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6854,15 +7192,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6921,15 +7261,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -6983,15 +7325,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7045,15 +7389,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7107,15 +7453,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7174,15 +7522,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7216,15 +7566,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7258,15 +7610,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7290,15 +7644,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7337,15 +7693,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7384,15 +7742,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7416,15 +7776,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7458,15 +7820,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7490,15 +7854,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7522,15 +7888,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string|null</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7554,15 +7922,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7586,15 +7956,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string|null</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7618,15 +7990,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7650,15 +8024,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7682,15 +8058,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7734,15 +8112,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7786,15 +8166,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|array|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7818,15 +8200,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>float</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7865,15 +8249,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7897,15 +8283,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>float|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7929,15 +8317,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -7961,15 +8351,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>void</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8013,15 +8405,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8060,15 +8454,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8107,15 +8503,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8149,15 +8547,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8196,15 +8596,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8248,15 +8650,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8300,15 +8704,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|float|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8342,15 +8748,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8384,15 +8792,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8431,15 +8841,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8483,15 +8895,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8535,15 +8949,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8582,15 +8998,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8629,15 +9047,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8676,15 +9096,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8723,15 +9145,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8775,15 +9199,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8822,15 +9248,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8864,15 +9292,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8911,15 +9341,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -8958,15 +9390,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9005,15 +9439,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9052,15 +9488,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9099,15 +9537,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9156,15 +9596,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9208,15 +9650,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9255,15 +9699,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9302,15 +9748,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9349,15 +9797,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|float|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9381,15 +9831,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9438,15 +9890,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>void</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9480,15 +9934,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9537,15 +9993,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9599,15 +10057,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9646,15 +10106,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool|string|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9698,15 +10160,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|null|bool|int|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9745,15 +10209,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9792,15 +10258,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9839,15 +10307,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9886,15 +10356,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9938,15 +10410,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -9970,15 +10444,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10017,15 +10493,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10069,15 +10547,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10121,15 +10601,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10173,15 +10655,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10220,15 +10704,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10262,15 +10748,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10309,15 +10797,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10381,15 +10871,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10453,15 +10945,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10495,15 +10989,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10547,15 +11043,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10599,15 +11097,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10646,15 +11146,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10688,15 +11190,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10735,15 +11239,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10767,15 +11273,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td><abbr title="bool|\RedisArray">RedisArray</abbr></td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10839,15 +11347,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10891,15 +11401,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10938,15 +11450,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -10980,15 +11494,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11027,15 +11543,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11074,15 +11592,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11116,15 +11636,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11163,15 +11685,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|string|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11195,15 +11719,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11242,15 +11768,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11289,15 +11817,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11336,15 +11866,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11368,15 +11900,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11425,15 +11959,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11457,15 +11993,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11504,15 +12042,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11556,15 +12096,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11603,15 +12145,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11650,15 +12194,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11702,15 +12248,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11749,15 +12297,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11796,15 +12346,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11843,15 +12395,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11885,15 +12439,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11937,15 +12493,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -11989,15 +12547,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12036,15 +12596,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12083,15 +12645,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12130,15 +12694,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12182,15 +12748,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12224,15 +12792,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12271,15 +12841,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12323,15 +12895,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12375,15 +12949,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12427,15 +13003,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12479,15 +13057,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>void</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12526,15 +13106,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12573,15 +13155,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12620,15 +13204,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12667,15 +13253,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12714,15 +13302,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12761,15 +13351,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12808,15 +13400,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12855,15 +13449,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12922,15 +13518,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -12989,15 +13587,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13056,15 +13656,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13123,15 +13725,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13175,15 +13779,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13222,15 +13828,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13264,15 +13872,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13311,15 +13921,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13353,15 +13965,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13400,15 +14014,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13432,15 +14048,17 @@
         </div>
         <div class="tags">
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13474,15 +14092,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13516,15 +14136,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13558,15 +14180,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13605,15 +14229,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13652,15 +14278,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13704,15 +14332,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13771,15 +14401,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13843,15 +14475,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13910,15 +14544,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -13957,15 +14593,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14014,15 +14652,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>mixed</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14056,15 +14696,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14123,15 +14765,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14180,15 +14824,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14232,15 +14878,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14294,15 +14942,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14351,15 +15001,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14408,15 +15060,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14460,15 +15114,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14502,15 +15158,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14544,15 +15202,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14586,15 +15246,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14633,15 +15295,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|bool</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14685,15 +15349,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14732,15 +15398,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14789,15 +15457,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14836,15 +15506,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14888,15 +15560,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14940,15 +15614,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|string|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -14992,15 +15668,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15054,15 +15732,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15106,15 +15786,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|float|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15148,15 +15830,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15200,15 +15884,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15252,15 +15938,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|float|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15304,15 +15992,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15356,15 +16046,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15403,15 +16095,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15450,15 +16144,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15507,15 +16203,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15569,15 +16267,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15626,15 +16326,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15673,15 +16375,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|string|array</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15720,15 +16424,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15772,15 +16478,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15824,15 +16532,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15876,15 +16586,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15928,15 +16640,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -15985,15 +16699,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16047,15 +16763,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16104,15 +16822,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16151,15 +16871,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16198,15 +16920,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|float|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16245,15 +16969,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16292,15 +17018,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16344,15 +17072,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16391,15 +17121,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16448,15 +17180,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16500,15 +17234,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|array|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             
@@ -16557,15 +17293,17 @@
             </table>
 
             
-                            <h4>Return Value</h4>
+                            <h4 class="return-value-header">Return Value</h4>
 
-                    <table class="table table-condensed">
+                <div class="return-value-content">
+                        <table class="table table-condensed">
         <tr>
             <td>RedisArray|int|false</td>
             <td></td>
         </tr>
     </table>
 
+                </div>
             
             
             

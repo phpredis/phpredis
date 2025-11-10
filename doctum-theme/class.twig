@@ -41,9 +41,11 @@
             {% endif %}
 
             {% if method.hintDesc or method.hint %}
-                <h4>{% trans 'Return Value' %}</h4>
+                <h4 class="return-value-header">{% trans 'Return Value' %}</h4>
 
-                {{ block('return') }}
+                <div class="return-value-content">
+                    {{ block('return') }}
+                </div>
             {% endif %}
 
             {% if method.exceptions %}
