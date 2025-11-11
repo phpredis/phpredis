@@ -7523,6 +7523,27 @@ class Redis_Test extends TestSuite {
         $this->assertFalse(@$this->redis->xDel('s', []));
     }
 
+    public function testXDelex() {
+        if ( ! $this->haveCommand('XDELEX'))
+            $this->markTestSkipped();
+
+        $stream = 'xdelex-stream';
+        $missing = '9999999999999-0';
+        $modes = [NULL, 'KEEPREF', 'DELREF', 'ACKED'];
+
+        foreach ($modes as $mode) {
+            $ids = $this->addStreamEntries($stream, 2);
+            $targets = [$ids[0], $missing];
+
+            $response = $mode === NULL
+                ? $this->redis->xdelex($stream, $targets)
+                : $this->redis->xdelex($stream, $targets, $mode);
+
+            $this->assertIsArray($response, 2);
+            $this->assertEquals([1, -1], array_values($response));
+        }
+    }
+
     public function testXTrim() {
         if ( ! $this->minVersionCheck('5.0'))
             $this->markTestSkipped();
