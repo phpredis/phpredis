@@ -1961,7 +1961,7 @@ gen_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 static void
 redis_cmd_append_sstr_mset_kvals(smart_string *cmdstr, RedisSock *redis_sock,
-                                 HashTable *kvals)
+                                 HashTable *kvals, short *slot)
 {
     zend_string *key;
     zend_ulong idx;
@@ -1970,9 +1970,9 @@ redis_cmd_append_sstr_mset_kvals(smart_string *cmdstr, RedisSock *redis_sock,
     ZEND_HASH_FOREACH_KEY_VAL(kvals, idx, key, zv) {
         ZVAL_DEREF(zv);
         if (key) {
-            redis_cmd_append_sstr_key_zstr(cmdstr, key, redis_sock, NULL);
+            redis_cmd_append_sstr_key_zstr(cmdstr, key, redis_sock, slot);
         } else {
-            redis_cmd_append_sstr_key_long(cmdstr, idx, redis_sock, NULL);
+            redis_cmd_append_sstr_key_long(cmdstr, idx, redis_sock, slot);
         }
         redis_cmd_append_sstr_zval(cmdstr, zv, redis_sock);
     } ZEND_HASH_FOREACH_END();
@@ -1994,7 +1994,7 @@ int redis_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(kvals) * 2, kw,
                         strlen(kw));
-    redis_cmd_append_sstr_mset_kvals(&cmdstr, redis_sock, kvals);
+    redis_cmd_append_sstr_mset_kvals(&cmdstr, redis_sock, kvals, slot);
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
@@ -2552,7 +2552,7 @@ int redis_msetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "MSETEX");
 
     redis_cmd_append_sstr_u64(&cmdstr, zend_hash_num_elements(kvals));
-    redis_cmd_append_sstr_mset_kvals(&cmdstr, redis_sock, kvals);
+    redis_cmd_append_sstr_mset_kvals(&cmdstr, redis_sock, kvals, slot);
     redis_cmd_append_sstr_set_type(&cmdstr, opt.type);
     redis_cmd_append_sstr_expiry(&cmdstr, &opt.expiry);
 
