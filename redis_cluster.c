@@ -814,6 +814,10 @@ PHP_METHOD(RedisCluster, unlink) {
     cluster_generic_delete(INTERNAL_FUNCTION_PARAM_PASSTHRU, "UNLINK", sizeof("UNLINK") - 1);
 }
 
+PHP_METHOD(RedisCluster, msetex) {
+    CLUSTER_PROCESS_CMD(msetex, cluster_long_resp, 0);
+}
+
 /* {{{ proto array RedisCluster::mget(array keys) */
 PHP_METHOD(RedisCluster, mget) {
     zval *z_ret = emalloc(sizeof(*z_ret));
