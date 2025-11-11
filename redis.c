@@ -3285,6 +3285,10 @@ PHP_METHOD(Redis, xdel) {
     REDIS_PROCESS_KW_CMD("XDEL", redis_key_str_arr_cmd, redis_long_response);
 }
 
+PHP_METHOD(Redis, xdelex) {
+    REDIS_PROCESS_CMD(xdelex, redis_read_variant_reply);
+}
+
 PHP_METHOD(Redis, xgroup) {
     REDIS_PROCESS_CMD(xgroup, redis_read_variant_reply);
 }
