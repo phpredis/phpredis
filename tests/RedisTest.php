@@ -2593,6 +2593,61 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
+    public function testMSetEx() {
+        if ( ! $this->haveCommand('MSETEX'))
+            $this->markTestSkipped();
+
+        $kvals = ['{msetex}:1' => 'v1', '{msetex}:2' => 'v2'];
+        $keys  = array_keys($kvals);
+
+        // No options, same as MSET
+        $this->redis->del($keys);
+        $ret = $this->redis->msetex($kvals);
+        $this->assertEquals(1, $ret);
+        $this->assertGT(0, $ret);
+        $this->assertEquals(array_values($kvals), $this->redis->mget($keys));
+        foreach ($keys as $key) {
+            $this->assertEquals(-1, $this->redis->ttl($key));
+        }
+
+        $options = [
+            ['EX', 100, 'TTL'],
+            ['PX', 100000, 'PTTL'],
+            ['EXAT', time() + 100, 'EXPIRETIME'],
+            ['PXAT', $this->mstime() + 100000, 'PEXPIRETIME']
+        ];
+
+        foreach ($options as [$opt, $val, $desc]) {
+            $this->assertIsInt($this->redis->del($keys));
+            $this->redis->msetex($kvals, [$opt => $val]);
+            foreach ($keys as $key) {
+                /* Timiing tests on GitHub CI are atrocious so we just
+                   want to verify that >= 1 and <= $val */
+                $ttl = $this->redis->$desc($key);
+                $this->assertBetween($val, 1, $ttl);
+            }
+        }
+
+        /* KEEPTTL */
+        $this->redis->set('{kt}:1', 'v1', 100);
+        $this->assertEquals(1, $this->redis->msetex(['{kt}:1' => 'v2'],
+                                                    ['KEEPTTL']));
+        $this->assertBetween($this->redis->ttl('{kt}:1'), 1, 100);
+
+        $keys = ['{xxnx}:1' => '1', '{xxnx}:2' => '2'];
+        $this->assertTrue($this->redis->mset($keys));
+
+        /* XX: Only set if they all already exist */
+        $this->assertEquals(1, $this->redis->msetex($keys, ['XX']));
+        $this->assertEquals(1, $this->redis->del(array_rand($keys)));
+        $this->assertEquals(0, $this->redis->msetex($keys, ['XX']));
+
+        /* NX: Only if none exist. Right now one does */
+        $this->assertEquals(0, $this->redis->msetex($keys, ['NX']));
+        $this->assertGT(0, $this->redis->del(array_keys($keys)));
+        $this->assertEquals(1, $this->redis->msetex($keys, ['NX']));
+    }
+
     public function testMsetNX() {
         $this->redis->del('x', 'y', 'z');    // remove x y z
         $this->assertTrue($this->redis->msetnx(['x' => 'a', 'y' => 'b', 'z' => 'c']));    // set x y z
