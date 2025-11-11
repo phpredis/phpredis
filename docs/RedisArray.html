@@ -252,27 +252,39 @@
                     }
 
                     table.querySelectorAll('tr').forEach(function (row) {
-                        var typeCell = row.querySelector('td');
-                        if (!typeCell || typeCell.querySelector('code.parameter-type')) {
+                        var cells = row.querySelectorAll('td');
+                        if (!cells.length) {
                             return;
                         }
 
-                        var typeText = typeCell.textContent.trim();
-                        if (!typeText) {
-                            return;
+                        enhanceParameterCell(cells[0], 'parameter-type');
+
+                        if (cells.length > 1) {
+                            enhanceParameterCell(cells[1], 'parameter-name');
                         }
-
-                        var meta = collectLinkMetadata(typeCell, typeText);
-                        var code = document.createElement('code');
-                        code.className = 'parameter-type language-php';
-                        code.textContent = typeText;
-
-                        typeCell.innerHTML = '';
-                        typeCell.appendChild(code);
-
-                        highlightAndRestore(code, meta);
                     });
                 });
+
+                function enhanceParameterCell(cell, className) {
+                    if (!cell || cell.querySelector('code.' + className)) {
+                        return;
+                    }
+
+                    var cellText = cell.textContent.trim();
+                    if (!cellText) {
+                        return;
+                    }
+
+                    var meta = collectLinkMetadata(cell, cellText);
+                    var code = document.createElement('code');
+                    code.className = className + ' language-php';
+                    code.textContent = cellText;
+
+                    cell.innerHTML = '';
+                    cell.appendChild(code);
+
+                    highlightAndRestore(code, meta);
+                }
             }
 
             function highlightApiIndex() {
