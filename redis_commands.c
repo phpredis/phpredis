@@ -2830,6 +2830,13 @@ typedef enum delExType {
     REDIS_DELEX_IFDNE
 } delExType;
 
+typedef enum xdelExMode {
+    REDIS_XDELEX_NONE,
+    REDIS_XDELEX_KEEPREF,
+    REDIS_XDELEX_DELREF,
+    REDIS_XDELEX_ACKED,
+} xdelExMode;
+
 static zend_bool stringToDelExType(delExType *dst, zend_string *src) {
     *dst = REDIS_DELEX_NONE;
 
@@ -5982,6 +5989,69 @@ redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr_long(&cmdstr, db);
     }
     REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, replace, "REPLACE");
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
+static xdelExMode zstr_to_xdelex_mode(zend_string *s) {
+    if (s == NULL)
+        return REDIS_XDELEX_NONE;
+    else if (zend_string_equals_literal_ci(s, "KEEPREF"))
+        return REDIS_XDELEX_KEEPREF;
+    else if (zend_string_equals_literal_ci(s, "DELREF"))
+        return REDIS_XDELEX_DELREF;
+    else if (zend_string_equals_literal_ci(s, "ACKED"))
+        return REDIS_XDELEX_ACKED;
+
+    php_error_docref(NULL, E_WARNING, "Unknown mode '%s'", ZSTR_VAL(s));
+
+    return REDIS_XDELEX_NONE;
+}
+
+int redis_xdelex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    xdelExMode mode = REDIS_XDELEX_NONE;
+    zend_string *key, *mstr = NULL;
+    smart_string cmdstr = {0};
+    HashTable *ids;
+    int argc = 3;
+    zval *id;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_ARRAY_HT(ids)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(mstr)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(ids) == 0) {
+        php_error_docref(NULL, E_WARNING, "At least one ID must be specified");
+        return FAILURE;
+    }
+
+    mode = zstr_to_xdelex_mode(mstr);
+
+    argc += (mode != REDIS_XDELEX_NONE) + zend_hash_num_elements(ids);
+    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("XDELEX"));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+
+    if (mode == REDIS_XDELEX_KEEPREF) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "KEEPREF");
+    } else if (mode == REDIS_XDELEX_DELREF) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "DELREF");
+    } else if (mode == REDIS_XDELEX_ACKED) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ACKED");
+    }
+
+    redis_cmd_append_sstr(&cmdstr, ZEND_STRL("IDS"));
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(ids));
+
+    ZEND_HASH_FOREACH_VAL(ids, id) {
+        redis_cmd_append_sstr_zval(&cmdstr, id, NULL);
+    } ZEND_HASH_FOREACH_END();
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;

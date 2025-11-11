@@ -1195,6 +1195,11 @@ class RedisCluster {
     public function xdel(string $key, array $ids): RedisCluster|int|false;
 
     /**
+     * @see \Redis::xdelex()
+     */
+    public function xdelex(string $key, array $ids, ?string $mode = null): Relay|array|false;
+
+    /**
      * @see \Redis::xgroup()
      */
     public function xgroup(string $operation, ?string $key = null, ?string $group = null, ?string $id_or_consumer = null,

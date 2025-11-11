@@ -3299,6 +3299,10 @@ PHP_METHOD(RedisCluster, xdel) {
     CLUSTER_PROCESS_KW_CMD("XDEL", redis_key_str_arr_cmd, cluster_long_resp, 0);
 }
 
+PHP_METHOD(RedisCluster, xdelex) {
+    CLUSTER_PROCESS_CMD(xdelex, cluster_variant_resp, 0);
+}
+
 /* {{{ proto variant RedisCluster::xgroup(string op, [string key, string arg1, string arg2]) }}} */
 PHP_METHOD(RedisCluster, xgroup) {
     CLUSTER_PROCESS_CMD(xgroup, cluster_variant_resp, 0);

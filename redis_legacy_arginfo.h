@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 5b0d7eb501f18007665806137a68ae74c5c76613 */
+ * Stub hash: 846d753053ccef9d2834d1fc3eeda873e02a70e5 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -899,6 +899,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xdel, 0, 0, 2)
 	ZEND_ARG_INFO(0, ids)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xdelex, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, ids)
+	ZEND_ARG_INFO(0, mode)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xgroup, 0, 0, 1)
 	ZEND_ARG_INFO(0, operation)
 	ZEND_ARG_INFO(0, key)
@@ -1376,6 +1382,7 @@ ZEND_METHOD(Redis, xadd);
 ZEND_METHOD(Redis, xautoclaim);
 ZEND_METHOD(Redis, xclaim);
 ZEND_METHOD(Redis, xdel);
+ZEND_METHOD(Redis, xdelex);
 ZEND_METHOD(Redis, xgroup);
 ZEND_METHOD(Redis, xinfo);
 ZEND_METHOD(Redis, xlen);
@@ -1681,6 +1688,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, xautoclaim, arginfo_class_Redis_xautoclaim, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xclaim, arginfo_class_Redis_xclaim, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xdel, arginfo_class_Redis_xdel, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, xdelex, arginfo_class_Redis_xdelex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xgroup, arginfo_class_Redis_xgroup, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xinfo, arginfo_class_Redis_xinfo, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xlen, arginfo_class_Redis_xlen, ZEND_ACC_PUBLIC)
