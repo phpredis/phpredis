@@ -1344,8 +1344,11 @@ redis_parse_info_response(char *response, zval *z_ret)
                     add_assoc_long_ex(z_ret, p1, p - p1, lval);
                     break;
                 case IS_DOUBLE:
-                    add_assoc_double_ex(z_ret, p1, p - p1, dval);
-                    break;
+                    if (dval < HUGE_VAL) {
+                        add_assoc_double_ex(z_ret, p1, p - p1, dval);
+                        break;
+                    }
+                    // fall through
                 default:
                     add_assoc_string_ex(z_ret, p1, p - p1, p + 1);
                 }
