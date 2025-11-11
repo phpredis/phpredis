@@ -4611,6 +4611,21 @@ class Redis {
     public function xdel(string $key, array $ids): Redis|int|false;
 
     /**
+     * Remove one or more IDs from a stream with extended options.
+     *
+     * @param string      $key  The stream to modify.
+     * @param array       $ids  One or more message IDs to remove.
+     * @param string|null $mode An optional mode argument.  Valid modes
+     *                          are as follows: KEEPREF | DELREF | ACKED
+     *
+     * @return Redis|array|false An array corresponding to IDs. 1 if the id was
+     *                           deleted and 0 if not.
+     *
+     * @see https://redis.io/docs/latest/commands/xdelex/
+     */
+    public function xdelex(string $key, array $ids, ?string $mode = null): Relay|array|false;
+
+    /**
      * XGROUP
      *
      * Perform various operation on consumer groups for a particular Redis STREAM.  What the command does
