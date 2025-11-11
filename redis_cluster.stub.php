@@ -760,6 +760,11 @@ class RedisCluster {
      */
     public function msetnx(array $key_values): RedisCluster|array|false;
 
+    /**
+     * @see \Redis::msetex()
+     */
+    public function msetex(array $key_vals, int|float|array|null $expiry = null): Redis|int|false;
+
     /* We only support Redis::MULTI in RedisCluster but take the argument
        so we can test MULTI..EXEC with RedisTest.php and in the event
        we add pipeline support in the future. */
