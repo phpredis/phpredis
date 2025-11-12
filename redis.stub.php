@@ -458,7 +458,7 @@ class Redis {
     public const OPT_BACKOFF_ALGORITHM = UNKNOWN;
 
     /**
-     * The default backoff algorithm, none.
+     * Default backoff - random delay before the first retry, then constant `base` ms.
      *
      * @var int
      * @cvalue REDIS_BACKOFF_ALGORITHM_DEFAULT
@@ -467,6 +467,7 @@ class Redis {
     public const BACKOFF_ALGORITHM_DEFAULT = UNKNOWN;
 
     /**
+     * Constant backoff - always sleep for exactly `base` ms (capped by `cap`).
      *
      * @var int
      * @cvalue REDIS_BACKOFF_ALGORITHM_CONSTANT
@@ -475,6 +476,7 @@ class Redis {
     public const BACKOFF_ALGORITHM_CONSTANT = UNKNOWN;
 
     /**
+     * Uniform backoff - randomly sleep between 0 and `base` ms for each retry.
      *
      * @var int
      * @cvalue REDIS_BACKOFF_ALGORITHM_UNIFORM
@@ -483,6 +485,7 @@ class Redis {
     public const BACKOFF_ALGORITHM_UNIFORM = UNKNOWN;
 
     /**
+     * Exponential backoff - doubles the delay every retry (up to 2^10) before `cap`.
      *
      * @var int
      * @cvalue REDIS_BACKOFF_ALGORITHM_EXPONENTIAL
@@ -491,6 +494,7 @@ class Redis {
     public const BACKOFF_ALGORITHM_EXPONENTIAL = UNKNOWN;
 
     /**
+     * Full jitter - exponential delay but pick a random value between 0 and that delay.
      *
      * @var int
      * @cvalue REDIS_BACKOFF_ALGORITHM_FULL_JITTER
@@ -499,6 +503,7 @@ class Redis {
     public const BACKOFF_ALGORITHM_FULL_JITTER = UNKNOWN;
 
     /**
+     * Equal jitter - half the exponential delay plus a random amount up to the other half.
      *
      * @var int
      * @cvalue REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER
@@ -507,6 +512,7 @@ class Redis {
     public const BACKOFF_ALGORITHM_EQUAL_JITTER = UNKNOWN;
 
     /**
+     * Decorrelated jitter - pick a random delay between `base` and 3x the previous delay.
      *
      * @var int
      * @cvalue REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER
@@ -515,6 +521,7 @@ class Redis {
     public const BACKOFF_ALGORITHM_DECORRELATED_JITTER = UNKNOWN;
 
     /**
+     * Backoff base - minimum delay in milliseconds that algorithms start from.
      *
      * @var int
      * @cvalue REDIS_OPT_BACKOFF_BASE
@@ -523,6 +530,7 @@ class Redis {
     public const OPT_BACKOFF_BASE = UNKNOWN;
 
     /**
+     * Backoff cap - maximum delay in milliseconds that any algorithm can reach.
      *
      * @var int
      * @cvalue REDIS_OPT_BACKOFF_CAP
