@@ -8,6 +8,8 @@
 
 class RedisCluster {
     /**
+     * Used to configure how `PhpRedis` will failover to replica nodes when a
+     * primary node fails to respond.
      *
      * @var int
      * @cvalue REDIS_OPT_FAILOVER
@@ -16,6 +18,7 @@ class RedisCluster {
     public const OPT_SLAVE_FAILOVER = UNKNOWN;
 
     /**
+     * Never read from replicas.
      *
      * @var int
      * @cvalue REDIS_FAILOVER_NONE
@@ -24,6 +27,7 @@ class RedisCluster {
     public const FAILOVER_NONE = UNKNOWN;
 
     /**
+     * Attempt to read from replicas when the primary errors out or is down.
      *
      * @var int
      * @cvalue REDIS_FAILOVER_ERROR
@@ -32,6 +36,8 @@ class RedisCluster {
     public const FAILOVER_ERROR = UNKNOWN;
 
     /**
+     * Distribute readonly commands at random between the primary and
+     * replica(s).
      *
      * @var int
      * @cvalue REDIS_FAILOVER_DISTRIBUTE
@@ -40,6 +46,7 @@ class RedisCluster {
     public const FAILOVER_DISTRIBUTE = UNKNOWN;
 
     /**
+     * Distribute readonly commands between the replicas only.
      *
      * @var int
      * @cvalue REDIS_FAILOVER_DISTRIBUTE_SLAVES
