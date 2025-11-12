@@ -8,6 +8,8 @@
 
 class Redis {
     /**
+     * Returned by `\Redis::type()` when the key does not exist or has a type
+     * we are not familiar with.
      *
      * @var int
      * @cvalue REDIS_NOT_FOUND
@@ -16,6 +18,7 @@ class Redis {
     public const REDIS_NOT_FOUND = UNKNOWN;
 
     /**
+     * Returned by `\Redis::type()` when the key is a string.
      *
      * @var int
      * @cvalue REDIS_STRING
@@ -24,6 +27,7 @@ class Redis {
     public const REDIS_STRING = UNKNOWN;
 
     /**
+     * Returned by `\Redis::type()` when the key is a set.
      *
      * @var int
      * @cvalue REDIS_SET
@@ -32,6 +36,7 @@ class Redis {
     public const REDIS_SET = UNKNOWN;
 
     /**
+     * Returned by `\Redis::type()` when the key is a list.
      *
      * @var int
      * @cvalue REDIS_LIST
@@ -40,6 +45,7 @@ class Redis {
     public const REDIS_LIST = UNKNOWN;
 
     /**
+     * Returned by `\Redis::type()` when the key is a sorted set.
      *
      * @var int
      * @cvalue REDIS_ZSET
@@ -48,6 +54,7 @@ class Redis {
     public const REDIS_ZSET = UNKNOWN;
 
     /**
+     * Returned by `\Redis::type()` when the key is a hash.
      *
      * @var int
      * @cvalue REDIS_HASH
@@ -56,6 +63,7 @@ class Redis {
     public const REDIS_HASH = UNKNOWN;
 
     /**
+     * Returned by `\Redis::type()` when the key is a stream.
      *
      * @var int
      * @cvalue REDIS_STREAM
@@ -64,6 +72,7 @@ class Redis {
     public const REDIS_STREAM = UNKNOWN;
 
     /**
+     * Returned by `\Redis::type()` when the key is a vector set.
      *
      * @var int
      * @cvalue REDIS_VECTORSET
