@@ -72,6 +72,8 @@ class Redis {
     public const REDIS_VECTORSET = UNKNOWN;
 
     /**
+     * Returned from `\Redis::getMode()` when we're not in a multi or pipeline
+     * transaction.
      *
      * @var int
      * @cvalue ATOMIC
@@ -80,6 +82,7 @@ class Redis {
     public const ATOMIC = UNKNOWN;
 
     /**
+     * Returned from `\Redis::getMode()` when we're in a multi transaction.
      *
      * @var int
      * @cvalue MULTI
@@ -88,6 +91,7 @@ class Redis {
     public const MULTI = UNKNOWN;
 
     /**
+     * Returned from `\Redis::getMode()` when we're in a pipeline transaction.
      *
      * @var int
      * @cvalue PIPELINE
@@ -96,6 +100,7 @@ class Redis {
     public const PIPELINE = UNKNOWN;
 
     /**
+     * Used with `\Redis::setOption()` to specify the serializer to use
      *
      * @var int
      * @cvalue REDIS_OPT_SERIALIZER
@@ -104,6 +109,7 @@ class Redis {
     public const OPT_SERIALIZER = UNKNOWN;
 
     /**
+     * Used to set an automatic prefix for keys used in commands.
      *
      * @var int
      * @cvalue REDIS_OPT_PREFIX
@@ -112,6 +118,7 @@ class Redis {
     public const OPT_PREFIX = UNKNOWN;
 
     /**
+     * Used to set the read timeout for the connection.
      *
      * @var int
      * @cvalue REDIS_OPT_READ_TIMEOUT
@@ -120,6 +127,7 @@ class Redis {
     public const OPT_READ_TIMEOUT = UNKNOWN;
 
     /**
+     * Used to enable or disable TCP keepalive on the connection.
      *
      * @var int
      * @cvalue REDIS_OPT_TCP_KEEPALIVE
@@ -128,6 +136,7 @@ class Redis {
     public const OPT_TCP_KEEPALIVE = UNKNOWN;
 
     /**
+     * Used to set the compression algorithm to use for compressing
      *
      * @var int
      * @cvalue REDIS_OPT_COMPRESSION
@@ -136,6 +145,9 @@ class Redis {
     public const OPT_COMPRESSION = UNKNOWN;
 
     /**
+     * Causes PhpRedis to return the actual string in `+OK` style responses
+     * from Redis. If disabled those replies are just converted to boolean
+     * true.
      *
      * @var int
      * @cvalue REDIS_OPT_REPLY_LITERAL
@@ -144,6 +156,7 @@ class Redis {
     public const OPT_REPLY_LITERAL = UNKNOWN;
 
     /**
+     * Used to specify the compression level to use when compressing data.
      *
      * @var int
      * @cvalue REDIS_OPT_COMPRESSION_LEVEL
@@ -152,6 +165,8 @@ class Redis {
     public const OPT_COMPRESSION_LEVEL = UNKNOWN;
 
     /**
+     * Tells PhpRedis to return a NULL multi-bulk (`*-1\r\n`) response
+     * as `null` as opposed to an empty array.
      *
      * @var int
      * @cvalue REDIS_OPT_NULL_MBULK_AS_NULL
@@ -160,12 +175,10 @@ class Redis {
     public const OPT_NULL_MULTIBULK_AS_NULL = UNKNOWN;
 
     /**
-     * @var int
-     * @cvalue REDIS_OPT_PACK_IGNORE_NUMBERS
-     *
      * When enabled, this option tells PhpRedis to ignore purely numeric values
      * when packing and unpacking data. This does not include numeric strings.
-     * If you want numeric strings to be ignored, typecast them to an int or float.
+     * If you want numeric strings to be ignored, typecast them to an int or
+     * float.
      *
      * The primary purpose of this option is to make it more ergonomic when
      * setting keys that will later be incremented or decremented.
@@ -174,10 +187,12 @@ class Redis {
      * because we have to see if the data is a string representation of an int
      * or float.
      *
+     * @var int
+     * @cvalue REDIS_OPT_PACK_IGNORE_NUMBERS
+     *
      * @example
      * $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);
      * $redis->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, true);
-     *
      * $redis->set('answer', 32);
      *
      * var_dump($redis->incrBy('answer', 10));  // int(42)
@@ -186,6 +201,7 @@ class Redis {
     public const OPT_PACK_IGNORE_NUMBERS = UNKNOWN;
 
     /**
+     * Sets the serializer to none (no serialization).
      *
      * @var int
      * @cvalue REDIS_SERIALIZER_NONE
@@ -194,6 +210,7 @@ class Redis {
     public const SERIALIZER_NONE = UNKNOWN;
 
     /**
+     * Sets the serializer to PHP's built-in `serialize()`/`unserialize()`
      *
      * @var int
      * @cvalue REDIS_SERIALIZER_PHP
@@ -203,6 +220,8 @@ class Redis {
 
 #ifdef HAVE_REDIS_IGBINARY
     /**
+     * Sets the serializer to igbinary. Note that phpredis must be compiled
+     * with ighbinary support to use this serializer.
      *
      * @var int
      * @cvalue REDIS_SERIALIZER_IGBINARY
@@ -213,6 +232,8 @@ class Redis {
 
 #ifdef HAVE_REDIS_MSGPACK
     /**
+     * Sets the serializer to msgpack. Note that phpredis must be compiled
+     * with msgpack support to use this serializer.
      *
      * @var int
      * @cvalue REDIS_SERIALIZER_MSGPACK
@@ -222,6 +243,7 @@ class Redis {
 #endif
 
     /**
+     * Sets the serializer to JSON.
      *
      * @var int
      * @cvalue REDIS_SERIALIZER_JSON
@@ -230,6 +252,7 @@ class Redis {
     public const SERIALIZER_JSON = UNKNOWN;
 
     /**
+     * Disables compression.
      *
      * @var int
      * @cvalue REDIS_COMPRESSION_NONE
@@ -239,6 +262,8 @@ class Redis {
 
 #ifdef HAVE_REDIS_LZF
     /**
+     * Sets the compression algorithm to LZF. PhpRedis must be compiled with
+     * lzf support but this serializer is bundled with the extension.
      *
      * @var int
      * @cvalue REDIS_COMPRESSION_LZF
@@ -249,6 +274,9 @@ class Redis {
 
 #ifdef HAVE_REDIS_ZSTD
     /**
+     * Sets the compression algorithm to ZSTD. PhpRedis must be compiled with
+     * zstd support to use this serializer. This is often the best balance
+     * between speed and compression ratio.
      *
      * @var int
      * @cvalue REDIS_COMPRESSION_ZSTD
@@ -258,6 +286,9 @@ class Redis {
 
 #ifdef ZSTD_CLEVEL_DEFAULT
     /**
+     * This constant represents the "default" compression level for ZSTD. If
+     * PhpRedis is compiled against a new enough ZSTD the value comes from the
+     * library, otherwise we just set it to 3.
      *
      * @var int
      * @cvalue ZSTD_CLEVEL_DEFAULT
@@ -266,6 +297,9 @@ class Redis {
     public const COMPRESSION_ZSTD_DEFAULT = UNKNOWN;
 #else
     /**
+     * This constant represents the "default" compression level for ZSTD. If
+     * PhpRedis is compiled against a new enough ZSTD the value comes from the
+     * library, otherwise we just set it to 3.
      *
      * @var int
      *
@@ -275,6 +309,8 @@ class Redis {
 
 #if ZSTD_VERSION_NUMBER >= 10400
     /**
+     * The minimum compression level ZSTD supports, which comes from the
+     * underlying ZSTD library if new enough. Otherwise we just set it to 1.
      *
      * @var int
      * @cvalue ZSTD_minCLevel()
@@ -283,14 +319,19 @@ class Redis {
     public const COMPRESSION_ZSTD_MIN = UNKNOWN;
 #else
     /**
-    *
-    * @var int
-    *
-    */
+     * The minimum compression level ZSTD supports, which comes from the
+     * underlying ZSTD library if new enough. Otherwise we just set it to 1.
+     *
+     * @var int
+     *
+     */
     public const COMPRESSION_ZSTD_MIN = 1;
 #endif
 
     /**
+     * The maximum compression level ZSTD supports, which comes from the
+     * underlying ZSTD library.
+     *
      * @var int
      * @cvalue ZSTD_maxCLevel()
      */
@@ -299,6 +340,9 @@ class Redis {
 
 #ifdef HAVE_REDIS_LZ4
     /**
+     * Set the compression algorithm to LZ4. PhpRedis must be compiled with
+     * lz4 support to use this serializer. This algorithm is generally
+     * the fastest but has a lower compression ratio than ZSTD.
      *
      * @var int
      * @cvalue REDIS_COMPRESSION_LZ4
@@ -308,6 +352,7 @@ class Redis {
 #endif
 
     /**
+     * Used with `\Redis::setOption()` to specify scan options.
      *
      * @var int
      * @cvalue REDIS_OPT_SCAN
@@ -316,6 +361,9 @@ class Redis {
     public const OPT_SCAN = UNKNOWN;
 
     /**
+     * When enabled, this option causes PhpRedis to automatically retry `SCAN`
+     * commands when Redis returns a non-zero cursor but no keys. This can
+     * happen due to the nature of Redis' scanning algorithm.
      *
      * @var int
      * @cvalue REDIS_SCAN_RETRY
@@ -324,6 +372,9 @@ class Redis {
     public const SCAN_RETRY = UNKNOWN;
 
     /**
+     * Then enabled, this option tells PhpRedis to not retry `SCAN` commands
+     * when Redis returns a non-zero cursor but no keys. This means that your
+     * code must handle this case itself.
      *
      * @var int
      * @cvalue REDIS_SCAN_NORETRY
@@ -332,6 +383,8 @@ class Redis {
     public const SCAN_NORETRY = UNKNOWN;
 
     /**
+     * Tells PhpRedis to prefix keys returned from `SCAN` commands with the
+     * currently set key prefix.
      *
      * @var int
      * @cvalue REDIS_SCAN_PREFIX
@@ -340,6 +393,8 @@ class Redis {
     public const SCAN_PREFIX = UNKNOWN;
 
     /**
+     * Tells PhpRedis to NOT prefix keys returned from `SCAN` commands with
+     * the currently set key prefix.
      *
      * @var int
      * @cvalue REDIS_SCAN_NOPREFIX
@@ -348,6 +403,8 @@ class Redis {
     public const SCAN_NOPREFIX = UNKNOWN;
 
     /**
+     * This is just the string "before" which is used with various  list
+     * commands to indicate an insertion point.
      *
      * @var string
      *
@@ -355,6 +412,8 @@ class Redis {
     public const BEFORE = "before";
 
     /**
+     * This is just the string "after" which is used with various list commands
+     * to indicate an insertion point.
      *
      * @var string
      *
@@ -362,6 +421,8 @@ class Redis {
     public const AFTER = "after";
 
     /**
+     * This is just the string "left" which is used with various list commands
+     * such as `LMOVE`.
      *
      * @var string
      *
@@ -369,6 +430,8 @@ class Redis {
     public const LEFT = "left";
 
     /**
+     * This is just the string "right" which is used with various list commands
+     * such as `LMOVE`.
      *
      * @var string
      *
@@ -376,6 +439,8 @@ class Redis {
     public const RIGHT = "right";
 
     /**
+     * How many times should `PhpRedis` attempt to reconnect when we are
+     * disconnected.
      *
      * @var int
      * @cvalue REDIS_OPT_MAX_RETRIES
@@ -384,6 +449,7 @@ class Redis {
     public const OPT_MAX_RETRIES = UNKNOWN;
 
     /**
+     * Used to specify the backoff algorithm to use when reconnecting.
      *
      * @var int
      * @cvalue REDIS_OPT_BACKOFF_ALGORITHM
@@ -392,6 +458,7 @@ class Redis {
     public const OPT_BACKOFF_ALGORITHM = UNKNOWN;
 
     /**
+     * The default backoff algorithm, none.
      *
      * @var int
      * @cvalue REDIS_BACKOFF_ALGORITHM_DEFAULT
