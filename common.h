@@ -46,9 +46,11 @@
 #endif
 
 #ifndef REDIS_MSVC
-#  if defined(__has_c_attribute)
-#    if __has_c_attribute(nodiscard)
-#      define REDIS_NODISCARD [[nodiscard]]
+#  ifndef REDIS_NODISCARD
+#    if defined(__has_c_attribute)
+#      if __has_c_attribute(nodiscard)
+#        define REDIS_NODISCARD [[nodiscard]]
+#      endif
 #    endif
 #  endif
 #  ifndef REDIS_NODISCARD
@@ -58,11 +60,11 @@
 #      endif
 #    elif defined(__GNUC__) || defined(__clang__)
 #      define REDIS_NODISCARD __attribute__((warn_unused_result))
-#    else
-#      define REDIS_NODISCARD
 #    endif
 #  endif
-#else
+#endif /* ifndef REDIS_MSVC */
+
+#ifndef REDIS_NODISCARD
 #  define REDIS_NODISCARD
 #endif
 
