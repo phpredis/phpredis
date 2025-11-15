@@ -523,7 +523,7 @@ PS_OPEN_FUNC(redis)
                     ZVAL_ZVAL(&context, zv, 1, 0);
                 }
 
-                zval_dtor(&params);
+                zval_ptr_dtor_nogc(&params);
             }
 
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
@@ -992,7 +992,7 @@ PS_OPEN_FUNC(rediscluster) {
     /* We need seeds */
     zv = REDIS_HASH_STR_FIND_TYPE_STATIC(Z_ARRVAL(z_conf), "seed", IS_ARRAY);
     if (zv == NULL) {
-        zval_dtor(&z_conf);
+        zval_ptr_dtor_nogc(&z_conf);
         return FAILURE;
     }
 
@@ -1009,7 +1009,7 @@ PS_OPEN_FUNC(rediscluster) {
     if (timeout < 0 || read_timeout < 0) {
         php_error_docref(NULL, E_WARNING,
             "Can't set negative timeout values in session configuration");
-        zval_dtor(&z_conf);
+        zval_ptr_dtor_nogc(&z_conf);
         return FAILURE;
     }
 
@@ -1037,7 +1037,7 @@ PS_OPEN_FUNC(rediscluster) {
         if (user) zend_string_release(user); \
         if (pass) zend_string_release(pass); \
         free_seed_array(seeds, nseeds); \
-        zval_dtor(&z_conf); \
+        zval_ptr_dtor_nogc(&z_conf); \
 
     /* Extract at least one valid seed or abort */
     seeds = cluster_validate_args(timeout, read_timeout, ht_seeds, &nseeds, NULL);
