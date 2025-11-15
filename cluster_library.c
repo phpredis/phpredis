@@ -2010,12 +2010,12 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         if ((z_tmp = zend_hash_index_find(Z_ARRVAL(z_tab), 0)) == NULL ||
             strcasecmp(Z_STRVAL_P(z_tmp), sctx->kw) != 0
         ) {
-            zval_dtor(&z_tab);
+            zval_ptr_dtor_nogc(&z_tab);
             efree(sctx);
             RETURN_FALSE;
         }
 
-        zval_dtor(&z_tab);
+        zval_ptr_dtor_nogc(&z_tab);
         pull = 1;
     }
 
@@ -2046,7 +2046,7 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         {
             is_pmsg = *Z_STRVAL_P(z_type) == 'p';
         } else {
-            zval_dtor(&z_tab);
+            zval_ptr_dtor_nogc(&z_tab);
             continue;
         }
 
@@ -2085,14 +2085,14 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         // If we have a return value, free it
         zval_ptr_dtor(&z_ret);
 
-        zval_dtor(&z_tab);
+        zval_ptr_dtor_nogc(&z_tab);
     }
 
     // We're no longer subscribing, due to an error
     c->subscribed_slot = -1;
 
     // Cleanup
-    zval_dtor(&z_tab);
+    zval_ptr_dtor_nogc(&z_tab);
     efree(sctx);
 
     // Failure
@@ -2116,8 +2116,8 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
         if (!cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, pull, mbulk_resp_loop_raw, &z_tab) ||
             (z_chan = zend_hash_index_find(Z_ARRVAL(z_tab), 1)) == NULL
         ) {
-            zval_dtor(&z_tab);
-            zval_dtor(return_value);
+            zval_ptr_dtor_nogc(&z_tab);
+            zval_ptr_dtor_nogc(return_value);
             RETURN_FALSE;
         }
 
@@ -2125,8 +2125,8 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
         if ((z_flag = zend_hash_index_find(Z_ARRVAL(z_tab), 2)) == NULL ||
             Z_STRLEN_P(z_flag) != 2
         ) {
-            zval_dtor(&z_tab);
-            zval_dtor(return_value);
+            zval_ptr_dtor_nogc(&z_tab);
+            zval_ptr_dtor_nogc(return_value);
             RETURN_FALSE;
         }
 
@@ -2136,7 +2136,7 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
         // Add result
         add_assoc_bool(return_value, Z_STRVAL_P(z_chan), flag[1] == '1');
 
-        zval_dtor(&z_tab);
+        zval_ptr_dtor_nogc(&z_tab);
         pull = 1;
     }
 }
@@ -2331,7 +2331,7 @@ cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
         /* Call our specified callback */
         if (cb(c->cmd_sock, &z_result, c->reply_len, ctx) == FAILURE) {
-            zval_dtor(&z_result);
+            zval_ptr_dtor_nogc(&z_result);
             CLUSTER_RETURN_FALSE(c);
         }
     }
@@ -2461,7 +2461,7 @@ cluster_xrange_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     c->cmd_sock->compression = c->flags->compression;
 
     if (redis_read_stream_messages(c->cmd_sock, c->reply_len, &z_messages) < 0) {
-        zval_dtor(&z_messages);
+        zval_ptr_dtor_nogc(&z_messages);
         CLUSTER_RETURN_FALSE(c);
     }
 
@@ -2485,7 +2485,7 @@ cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     } else {
         array_init(&z_streams);
         if (redis_read_stream_messages_multi(c->cmd_sock, c->reply_len, &z_streams) < 0) {
-            zval_dtor(&z_streams);
+            zval_ptr_dtor_nogc(&z_streams);
             CLUSTER_RETURN_FALSE(c);
         }
     }
@@ -2507,7 +2507,7 @@ cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
 
     if (redis_read_xclaim_reply(c->cmd_sock, c->reply_len, ctx == PHPREDIS_CTX_PTR, &z_msg) < 0) {
-        zval_dtor(&z_msg);
+        zval_ptr_dtor_nogc(&z_msg);
         CLUSTER_RETURN_FALSE(c);
     }
 
@@ -2542,7 +2542,7 @@ cluster_vemb_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     return;
 
 fail:
-    zval_dtor(&z_ret);
+    zval_ptr_dtor_nogc(&z_ret);
     CLUSTER_RETURN_FALSE(c);
 }
 
@@ -2556,7 +2556,7 @@ cluster_vinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
 
     array_init_size(&z_ret, c->reply_len / 2);
     if (redis_read_vinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_ret);
         CLUSTER_RETURN_FALSE(c);
     }
 
@@ -2623,7 +2623,7 @@ cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 
     array_init(&z_ret);
     if (redis_read_xinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_ret);
         CLUSTER_RETURN_FALSE(c);
     }
 
@@ -2658,7 +2658,7 @@ cluster_acl_custom_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx
 
     array_init(&z_ret);
     if (cb(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_ret);
         CLUSTER_RETURN_FALSE(c);
     }
 
@@ -2701,7 +2701,7 @@ PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
     // Call our callback
     if (cb(c->cmd_sock, z_ret, c->reply_len, NULL) == FAILURE) {
-        zval_dtor(z_ret);
+        zval_ptr_dtor_nogc(z_ret);
         return NULL;
     }
 
@@ -2727,7 +2727,7 @@ PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
             c->cmd_sock = SLOT_SOCK(c, fi->slot);
 
             if (cluster_check_response(c, &c->reply_type) < 0) {
-                zval_dtor(multi_resp);
+                zval_ptr_dtor_nogc(multi_resp);
                 RETURN_FALSE;
             }
 
@@ -2742,7 +2742,7 @@ PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     // Set our return array
-    zval_dtor(return_value);
+    zval_ptr_dtor_nogc(return_value);
     RETVAL_ZVAL(multi_resp, 0, 1);
 }
 
@@ -2858,7 +2858,7 @@ PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     if (c->reply_type != TYPE_LINE) {
         php_error_docref(0, E_ERROR,
             "Invalid reply type returned for MSET command");
-        zval_dtor(mctx->z_multi);
+        zval_ptr_dtor_nogc(mctx->z_multi);
         efree(mctx->z_multi);
         efree(mctx);
         RETURN_FALSE;
@@ -3061,7 +3061,7 @@ static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 zend_string *tmp, *zstr = zval_get_tmp_string(z, &tmp);
                 add_assoc_double_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), atof(line));
                 zend_tmp_string_release(tmp);
-                zval_dtor(z);
+                zval_ptr_dtor_nogc(z);
 
                 /* Free our key and line */
                 efree(key);

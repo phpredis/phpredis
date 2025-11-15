@@ -2235,7 +2235,7 @@ PHP_METHOD(Redis, exec)
         redis_sock->mode &= ~MULTI;
         redis_sock->watching = 0;
         if (ret < 0) {
-            zval_dtor(&z_ret);
+            zval_ptr_dtor_nogc(&z_ret);
             ZVAL_FALSE(&z_ret);
         }
     }
@@ -2252,7 +2252,7 @@ PHP_METHOD(Redis, exec)
                 array_init(&z_ret);
                 if (redis_sock_read_multibulk_multi_reply_loop(
                     INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_ret) != SUCCESS) {
-                    zval_dtor(&z_ret);
+                    zval_ptr_dtor_nogc(&z_ret);
                     ZVAL_FALSE(&z_ret);
                 }
             }
@@ -3089,7 +3089,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         /* Free our previous reply if we're back in the loop.  We know we are
          * if our return_value is an array */
         if (Z_TYPE_P(return_value) == IS_ARRAY) {
-            zval_dtor(return_value);
+            zval_ptr_dtor_nogc(return_value);
             ZVAL_NULL(return_value);
         }
 
