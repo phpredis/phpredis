@@ -66,17 +66,17 @@ redis_array_free(RedisArray *ra)
 
     /* Redis objects */
     for(i = 0; i< ra->count; i++) {
-        zval_dtor(&ra->redis[i]);
+        zval_ptr_dtor_nogc(&ra->redis[i]);
         zend_string_release(ra->hosts[i]);
     }
     efree(ra->redis);
     efree(ra->hosts);
 
     /* delete hash function */
-    zval_dtor(&ra->z_fun);
+    zval_ptr_dtor_nogc(&ra->z_fun);
 
     /* Distributor */
-    zval_dtor(&ra->z_dist);
+    zval_ptr_dtor_nogc(&ra->z_dist);
 
     /* Hashing algorithm */
     if (ra->algorithm) zend_string_release(ra->algorithm);
@@ -215,8 +215,8 @@ PHP_METHOD(RedisArray, __construct)
     if (algorithm) zend_string_release(algorithm);
     if (user) zend_string_release(user);
     if (pass) zend_string_release(pass);
-    zval_dtor(&z_dist);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_dist);
+    zval_ptr_dtor_nogc(&z_fun);
 
 finish:
 
@@ -278,10 +278,10 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
     /* multi/exec */
     if(ra->z_multi_exec) {
         call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs);
-        zval_dtor(return_value);
-        zval_dtor(&z_fun);
+        zval_ptr_dtor_nogc(return_value);
+        zval_ptr_dtor_nogc(&z_fun);
         for (i = 0; i < argc; ++i) {
-            zval_dtor(&z_callargs[i]);
+            zval_ptr_dtor_nogc(&z_callargs[i]);
         }
         efree(z_callargs);
         RETURN_ZVAL(getThis(), 1, 0);
@@ -296,7 +296,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
         ra_index_multi(redis_inst, MULTI);
         /* call using discarded temp value and extract exec results after. */
         call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs);
-        zval_dtor(return_value);
+        zval_ptr_dtor_nogc(return_value);
 
         /* add keys to index. */
         ra_index_key(key, key_len, redis_inst);
@@ -310,7 +310,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
             /* check if we have an error. */
             if (ra->prev && RA_CALL_FAILED(return_value, cmd)) { /* there was an error reading, try with prev ring. */
                 /* Free previous return value */
-                zval_dtor(return_value);
+                zval_ptr_dtor_nogc(return_value);
 
                 /* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
                 ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target ? z_new_target : redis_inst);
@@ -324,9 +324,9 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
     }
 
     /* cleanup */
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
     for (i = 0; i < argc; ++i) {
-        zval_dtor(&z_callargs[i]);
+        zval_ptr_dtor_nogc(&z_callargs[i]);
     }
     efree(z_callargs);
 }
@@ -544,7 +544,7 @@ multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 
     multihost_distribute_call(ra, return_value, &z_fun, 0, NULL);
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 static void
@@ -569,7 +569,7 @@ multihost_distribute_flush(INTERNAL_FUNCTION_PARAMETERS, const char *method_name
 
     multihost_distribute_call(ra, return_value, &z_fun, 1, z_args);
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 PHP_METHOD(RedisArray, info)
@@ -630,8 +630,8 @@ PHP_METHOD(RedisArray, keys)
 
     multihost_distribute_call(ra, return_value, &z_fun, 1, z_args);
 
-    zval_dtor(&z_args[0]);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_args[0]);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 PHP_METHOD(RedisArray, getOption)
@@ -657,7 +657,7 @@ PHP_METHOD(RedisArray, getOption)
 
     multihost_distribute_call(ra, return_value, &z_fun, 1, z_args);
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 PHP_METHOD(RedisArray, setOption)
@@ -686,8 +686,8 @@ PHP_METHOD(RedisArray, setOption)
 
     multihost_distribute_call(ra, return_value, &z_fun, 2, z_args);
 
-    zval_dtor(&z_args[1]);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_args[1]);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 PHP_METHOD(RedisArray, select)
@@ -713,7 +713,7 @@ PHP_METHOD(RedisArray, select)
 
     multihost_distribute_call(ra, return_value, &z_fun, 1, z_args);
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 #define HANDLE_MULTI_EXEC(ra, cmd, cmdlen) do { \
@@ -733,7 +733,7 @@ PHP_METHOD(RedisArray, select)
         } \
         /* call */\
         ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmdlen, &z_arg_array, NULL); \
-        zval_dtor(&z_arg_array); \
+        zval_ptr_dtor_nogc(&z_arg_array); \
         return; \
     } \
 } while(0)
@@ -826,13 +826,13 @@ PHP_METHOD(RedisArray, mget)
         call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_arg);
 
         /* cleanup args array */
-        zval_dtor(&z_arg);
+        zval_ptr_dtor_nogc(&z_arg);
 
         /* Error out if we didn't get a proper response */
         if (Z_TYPE(z_ret) != IS_ARRAY) {
             /* cleanup */
-            zval_dtor(&z_ret);
-            zval_dtor(&z_tmp_array);
+            zval_ptr_dtor_nogc(&z_ret);
+            zval_ptr_dtor_nogc(&z_tmp_array);
             RETVAL_FALSE;
             goto cleanup;
         }
@@ -843,10 +843,10 @@ PHP_METHOD(RedisArray, mget)
             ZVAL_ZVAL(&z_arg, z_cur, 1, 0);
             add_index_zval(&z_tmp_array, i, &z_arg);
         }
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_ret);
     }
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     array_init(return_value);
     /* copy temp array in the right order to return_value */
@@ -858,7 +858,7 @@ PHP_METHOD(RedisArray, mget)
     }
 
     /* cleanup */
-    zval_dtor(&z_tmp_array);
+    zval_ptr_dtor_nogc(&z_tmp_array);
 cleanup:
     efree(argv);
     efree(pos);
@@ -955,7 +955,7 @@ PHP_METHOD(RedisArray, mset)
         }
 
         if(!found) {
-            zval_dtor(&z_argarray);
+            zval_ptr_dtor_nogc(&z_argarray);
             continue; /* don't run empty MSETs */
         }
 
@@ -968,11 +968,11 @@ PHP_METHOD(RedisArray, mset)
             call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
         }
 
-        zval_dtor(&z_argarray);
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_argarray);
+        zval_ptr_dtor_nogc(&z_ret);
     }
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     /* Free any keys that we needed to allocate memory for, because they weren't strings */
     for(i = 0; i < argc; i++) {
@@ -1028,7 +1028,7 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     /* init data structures */
     h_keys = Z_ARRVAL(z_keys);
     if ((argc = zend_hash_num_elements(h_keys)) == 0) {
-        if (free_zkeys) zval_dtor(&z_keys);
+        if (free_zkeys) zval_ptr_dtor_nogc(&z_keys);
         efree(z_args);
         RETURN_FALSE;
     }
@@ -1076,7 +1076,7 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
         }
 
         if(!found) {    /* don't run empty DEL or UNLINK commands */
-            zval_dtor(&z_argarray);
+            zval_ptr_dtor_nogc(&z_argarray);
             continue;
         }
 
@@ -1090,11 +1090,11 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
         }
         total += Z_LVAL(z_ret);    /* increment total */
 
-        zval_dtor(&z_argarray);
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_argarray);
+        zval_ptr_dtor_nogc(&z_ret);
     }
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     RETVAL_LONG(total);
 
@@ -1104,7 +1104,7 @@ cleanup:
     efree(argc_each);
 
     if(free_zkeys) {
-        zval_dtor(&z_keys);
+        zval_ptr_dtor_nogc(&z_keys);
     }
     efree(z_args);
 }
@@ -1148,7 +1148,7 @@ ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw_len)
 
     ZVAL_STRINGL(&z_fun, kw, kw_len);
     call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, ZEND_NUM_ARGS(), z_args);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     ZVAL_ZVAL(z_cursor, &z_args[1], 0, 1);
 }
@@ -1194,7 +1194,7 @@ PHP_METHOD(RedisArray, scan)
 
     ZVAL_STRING(&z_fun, "SCAN");
     call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, ZEND_NUM_ARGS() - 1, z_args);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     ZVAL_ZVAL(z_iter, &z_args[0], 0, 1);
 }

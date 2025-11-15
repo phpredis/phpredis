@@ -4069,7 +4069,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if (slot) {
             php_error_docref(NULL, E_WARNING,
                 "SORT BY option is not allowed in Redis Cluster");
-            zval_dtor(&z_argv);
+            zval_ptr_dtor_nogc(&z_argv);
             return FAILURE;
         }
 
@@ -4099,7 +4099,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if (cross_slot) {
             php_error_docref(0, E_WARNING,
                 "Error, SORT key and STORE key have different slots!");
-            zval_dtor(&z_argv);
+            zval_ptr_dtor_nogc(&z_argv);
             return FAILURE;
         }
 
@@ -4120,7 +4120,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if (slot) {
             php_error_docref(NULL, E_WARNING,
                 "GET option for SORT disabled in Redis Cluster");
-            zval_dtor(&z_argv);
+            zval_ptr_dtor_nogc(&z_argv);
             return FAILURE;
         }
 
@@ -4149,7 +4149,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             if (added == 0) {
                 php_error_docref(NULL, E_WARNING,
                     "Array of GET values requested, but none are valid");
-                zval_dtor(&z_argv);
+                zval_ptr_dtor_nogc(&z_argv);
                 return FAILURE;
             }
         }
@@ -4179,7 +4179,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             ) {
                 php_error_docref(NULL, E_WARNING,
                     "LIMIT options on SORT command must be longs or strings");
-                zval_dtor(&z_argv);
+                zval_ptr_dtor_nogc(&z_argv);
                 return FAILURE;
             }
 
@@ -4221,7 +4221,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Clean up our arguments array.  Note we don't have to free any prefixed
      * key as that we didn't duplicate the pointer if we prefixed */
-    zval_dtor(&z_argv);
+    zval_ptr_dtor_nogc(&z_argv);
 
     // Push our length and command
     *cmd_len = cmdstr.len;

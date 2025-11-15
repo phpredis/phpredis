@@ -293,7 +293,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     if ((z_value = zend_hash_str_find(Z_ARRVAL(z_seeds), name, name_len)) != NULL) {
         ht_seeds = Z_ARRVAL_P(z_value);
     } else {
-        zval_dtor(&z_seeds);
+        zval_ptr_dtor_nogc(&z_seeds);
         CLUSTER_THROW_EXCEPTION("Couldn't find seeds for cluster", 0);
         return;
     }
@@ -303,7 +303,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &timeout);
-        zval_dtor(&z_tmp);
+        zval_ptr_dtor_nogc(&z_tmp);
     }
 
     /* Read timeout */
@@ -311,7 +311,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &read_timeout);
-        zval_dtor(&z_tmp);
+        zval_ptr_dtor_nogc(&z_tmp);
     }
 
     /* Persistent connections */
@@ -319,21 +319,21 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_bool(Z_ARRVAL(z_tmp), name, name_len, &persistent);
-        zval_dtor(&z_tmp);
+        zval_ptr_dtor_nogc(&z_tmp);
     }
 
     if ((iptr = INI_STR("redis.clusters.auth"))) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_auth(Z_ARRVAL(z_tmp), name, name_len, &user, &pass);
-        zval_dtor(&z_tmp);
+        zval_ptr_dtor_nogc(&z_tmp);
     }
 
     /* Attempt to create/connect to the cluster */
     redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass, NULL);
 
     /* Clean up */
-    zval_dtor(&z_seeds);
+    zval_ptr_dtor_nogc(&z_seeds);
     if (user) zend_string_release(user);
     if (pass) zend_string_release(pass);
 }
@@ -828,7 +828,7 @@ PHP_METHOD(RedisCluster, mget) {
     if (cluster_mkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MGET",
                         sizeof("MGET")-1, z_ret, cluster_mbulk_mget_resp) < 0)
     {
-        zval_dtor(z_ret);
+        zval_ptr_dtor_nogc(z_ret);
         efree(z_ret);
         RETURN_FALSE;
     }
@@ -859,7 +859,7 @@ PHP_METHOD(RedisCluster, msetnx) {
     if (cluster_mset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MSETNX",
                          sizeof("MSETNX")-1, z_ret, cluster_msetnx_resp) ==-1)
     {
-        zval_dtor(z_ret);
+        zval_ptr_dtor_nogc(z_ret);
         efree(z_ret);
         RETURN_FALSE;
     }
@@ -937,7 +937,7 @@ PHP_METHOD(RedisCluster, keys) {
         {
             php_error_docref(0, E_ERROR, "Can't send KEYS to %s:%d",
                 ZSTR_VAL(node->sock->host), node->sock->port);
-            zval_dtor(return_value);
+            zval_ptr_dtor_nogc(return_value);
             efree(cmd);
             RETURN_FALSE;
         }
@@ -2525,7 +2525,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     do {
         /* Free our return value if we're back in the loop */
         if (Z_TYPE_P(return_value) == IS_ARRAY) {
-            zval_dtor(return_value);
+            zval_ptr_dtor_nogc(return_value);
             ZVAL_NULL(return_value);
         }
 
@@ -2697,7 +2697,7 @@ PHP_METHOD(RedisCluster, scan) {
     do {
         /* Free our return value if we're back in the loop */
         if (Z_TYPE_P(return_value) == IS_ARRAY) {
-            zval_dtor(return_value);
+            zval_ptr_dtor_nogc(return_value);
             ZVAL_NULL(return_value);
         }
 
