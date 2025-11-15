@@ -1005,7 +1005,7 @@ PHP_METHOD(RedisCluster, spop) {
     } else if (ZEND_NUM_ARGS() == 2) {
         CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_long_cmd, cluster_mbulk_resp, 0);
     } else {
-        ZEND_WRONG_PARAM_COUNT();
+        zend_wrong_param_count();
     }
 }
 /* }}} */
@@ -1765,7 +1765,7 @@ PHP_METHOD(RedisCluster, zpopmax) {
     } else if (ZEND_NUM_ARGS() == 2) {
         CLUSTER_PROCESS_KW_CMD("ZPOPMAX", redis_key_long_cmd, cluster_mbulk_zipdbl_resp, 0);
     } else {
-        ZEND_WRONG_PARAM_COUNT();
+        zend_wrong_param_count();
     }
 }
 /* }}} */
@@ -1777,7 +1777,7 @@ PHP_METHOD(RedisCluster, zpopmin) {
     } else if (ZEND_NUM_ARGS() == 2) {
         CLUSTER_PROCESS_KW_CMD("ZPOPMIN", redis_key_long_cmd, cluster_mbulk_zipdbl_resp, 0);
     } else {
-        ZEND_WRONG_PARAM_COUNT();
+        zend_wrong_param_count();
     }
 }
 /* }}} */
