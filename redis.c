@@ -1274,7 +1274,7 @@ PHP_METHOD(Redis, sPop)
     } else if (ZEND_NUM_ARGS() == 2) {
         REDIS_PROCESS_KW_CMD("SPOP", redis_key_long_cmd, redis_sock_read_multibulk_reply);
     } else {
-        ZEND_WRONG_PARAM_COUNT();
+        zend_wrong_param_count();
     }
 
 }
@@ -1861,7 +1861,7 @@ PHP_METHOD(Redis, zPopMax)
     } else if (ZEND_NUM_ARGS() == 2) {
         REDIS_PROCESS_KW_CMD("ZPOPMAX", redis_key_long_cmd, redis_mbulk_reply_zipped_keys_dbl);
     } else {
-        ZEND_WRONG_PARAM_COUNT();
+        zend_wrong_param_count();
     }
 }
 /* }}} */
@@ -1874,7 +1874,7 @@ PHP_METHOD(Redis, zPopMin)
     } else if (ZEND_NUM_ARGS() == 2) {
         REDIS_PROCESS_KW_CMD("ZPOPMIN", redis_key_long_cmd, redis_mbulk_reply_zipped_keys_dbl);
     } else {
-        ZEND_WRONG_PARAM_COUNT();
+        zend_wrong_param_count();
     }
 }
 /* }}} */
