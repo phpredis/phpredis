@@ -531,7 +531,7 @@ redis_failover_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 } else if (zend_string_equals_literal_ci(zkey, "port")) {
                     port = zval_get_long(z_ele);
                 } else if (zend_string_equals_literal_ci(zkey, "force")) {
-                    force = zval_is_true(z_ele);
+                    force = zend_is_true(z_ele);
                 }
             }
         } ZEND_HASH_FOREACH_END();
@@ -677,7 +677,7 @@ void redis_get_zcmd_options(redisZcmdOptions *dst, zval *src, int flags) {
 
         if (key) {
             if ((flags & REDIS_ZCMD_HAS_WITHSCORES) && zend_string_equals_literal_ci(key, "WITHSCORES"))
-                dst->withscores = zval_is_true(zv);
+                dst->withscores = zend_is_true(zv);
             else if ((flags & REDIS_ZCMD_HAS_LIMIT) && zend_string_equals_literal_ci(key, "LIMIT") &&
                      Z_TYPE_P(zv) == IS_ARRAY)
             {
@@ -1165,7 +1165,7 @@ redis_zrandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 if (zend_string_equals_literal_ci(zkey, "count")) {
                     count = zval_get_long(z_ele);
                 } else if (zend_string_equals_literal_ci(zkey, "withscores")) {
-                    withscores = zval_is_true(z_ele);
+                    withscores = zend_is_true(z_ele);
                 }
             }
         } ZEND_HASH_FOREACH_END();
@@ -2421,7 +2421,7 @@ static void fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
             } else if (zstr_to_eq_type(&dst->eq.type, key)) {
                 dst->eq.zval = zv;
             } else if (zend_string_equals_literal_ci(key, "GET")) {
-                dst->get = zval_is_true(zv);
+                dst->get = zend_is_true(zv);
             }
         } else if (Z_TYPE_P(zv) == IS_STRING) {
             key = Z_STR_P(zv);
@@ -2693,13 +2693,13 @@ redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     expire = zval_get_long(z_ele);
                     persist = 0;
                 } else if (ZSTR_STRICMP_STATIC(zkey, "PERSIST")) {
-                    persist = zval_is_true(z_ele);
+                    persist = zend_is_true(z_ele);
                     exp_type = NULL;
                 }
             } else if (Z_TYPE_P(z_ele) == IS_STRING &&
                        zend_string_equals_literal_ci(Z_STR_P(z_ele), "PERSIST"))
             {
-                persist = zval_is_true(z_ele);
+                persist = zend_is_true(z_ele);
                 exp_type = NULL;
             }
         } ZEND_HASH_FOREACH_END();
@@ -3126,14 +3126,14 @@ static void redis_get_lcs_options(redisLcsOptions *dst, HashTable *ht) {
         if (key) {
             if (zend_string_equals_literal_ci(key, "LEN")) {
                 dst->idx = 0;
-                dst->len = zval_is_true(zv);
+                dst->len = zend_is_true(zv);
             } else if (zend_string_equals_literal_ci(key, "IDX")) {
                 dst->len = 0;
-                dst->idx = zval_is_true(zv);
+                dst->idx = zend_is_true(zv);
             } else if (zend_string_equals_literal_ci(key, "MINMATCHLEN")) {
                 dst->minmatchlen = zval_get_long(zv);
             } else if (zend_string_equals_literal_ci(key, "WITHMATCHLEN")) {
-                dst->withmatchlen = zval_is_true(zv);
+                dst->withmatchlen = zend_is_true(zv);
             } else {
                 php_error_docref(NULL, E_WARNING, "Unknown LCS option '%s'", ZSTR_VAL(key));
             }
@@ -3922,7 +3922,7 @@ redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 if (zend_string_equals_literal_ci(zkey, "count")) {
                     count = zval_get_long(z_ele);
                 } else if (zend_string_equals_literal_ci(zkey, "withvalues")) {
-                    withvalues = zval_is_true(z_ele);
+                    withvalues = zend_is_true(z_ele);
                 }
             } else if (Z_TYPE_P(z_ele) == IS_STRING) {
                 if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "WITHVALUES")) {
@@ -4158,7 +4158,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // ALPHA
     if (((z_ele = zend_hash_str_find(ht_opts, "alpha", sizeof("alpha") - 1)) != NULL ||
          (z_ele = zend_hash_str_find(ht_opts, "ALPHA", sizeof("ALPHA") - 1)) != NULL) &&
-         zval_is_true(z_ele)
+         zend_is_true(z_ele)
     ) {
         add_next_index_stringl(&z_argv, "ALPHA", sizeof("ALPHA") - 1);
     }
@@ -4499,7 +4499,7 @@ static int get_georadius_count_options(zval *optval, geoOptions *opts) {
 
         z_tmp = zend_hash_index_find(Z_ARRVAL_P(optval), 1);
         if (z_tmp) {
-            opts->any = zval_is_true(z_tmp);
+            opts->any = zend_is_true(z_tmp);
         }
     } else {
         if (Z_LVAL_P(optval) <= 0)
@@ -5665,13 +5665,13 @@ redis_build_client_tracking_command(smart_string *cmdstr, int argc, zval *z_args
                     }
                     prefix = z_ele;
                 } else if (zend_string_equals_literal_ci(zkey, "bcast")) {
-                    bcast = zval_is_true(z_ele);
+                    bcast = zend_is_true(z_ele);
                 } else if (zend_string_equals_literal_ci(zkey, "optin")) {
-                    optin = zval_is_true(z_ele);
+                    optin = zend_is_true(z_ele);
                 } else if (zend_string_equals_literal_ci(zkey, "optout")) {
-                    optout = zval_is_true(z_ele);
+                    optout = zend_is_true(z_ele);
                 } else if (zend_string_equals_literal_ci(zkey, "noloop")) {
-                    noloop = zval_is_true(z_ele);
+                    noloop = zend_is_true(z_ele);
                 }
             }
         } ZEND_HASH_FOREACH_END();
@@ -5685,7 +5685,7 @@ redis_build_client_tracking_command(smart_string *cmdstr, int argc, zval *z_args
         ZVAL_STRICMP_STATIC(&z_args[0], "off")
     )) {
         redis_cmd_append_sstr(cmdstr, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
-    } else if (zval_is_true(&z_args[0])) {
+    } else if (zend_is_true(&z_args[0])) {
         REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "ON");
     } else {
         REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "OFF");
@@ -5760,7 +5760,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             ZVAL_STRICMP_STATIC(&z_args[0], "no")
         )) {
             redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
-        } else if (zval_is_true(&z_args[0])) {
+        } else if (zend_is_true(&z_args[0])) {
             REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "YES");
         } else {
             REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NO");
@@ -5790,7 +5790,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             ZVAL_STRICMP_STATIC(&z_args[0], "off")
         )) {
             redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
-        } else if (zval_is_true(&z_args[0])) {
+        } else if (zend_is_true(&z_args[0])) {
             REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ON");
         } else {
             REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "OFF");
@@ -5964,7 +5964,7 @@ redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             if (zend_string_equals_literal_ci(zkey, "db")) {
                 db = zval_get_long(zv);
             } else if (zend_string_equals_literal_ci(zkey, "replace")) {
-                replace = zval_is_true(zv);
+                replace = zend_is_true(zv);
             }
         } ZEND_HASH_FOREACH_END();
     }
@@ -7023,9 +7023,9 @@ static void parse_vadd_options(redisVAddOptions *dst, HashTable *ht) {
                 if (validate_vadd_integer(key, zv, 1))
                     dst->ef = Z_LVAL_P(zv);
             } else if (zend_string_equals_literal_ci(key, "CAS")) {
-                dst->cas = zval_is_true(zv);
+                dst->cas = zend_is_true(zv);
             } else if (zend_string_equals_literal_ci(key, "VALUES")) {
-                dst->values = zval_is_true(zv);
+                dst->values = zend_is_true(zv);
             } else if (zend_string_equals_literal_ci(key, "SETATTR")) {
                 dst->attributes = zval_to_vattr(zv);
             }
@@ -7220,7 +7220,7 @@ static void parse_vsim_options(redisVSimOptions *dst, HashTable *ht) {
                 if (validate_vadd_integer(key, zv, 1))
                     dst->count = Z_LVAL_P(zv);
             } else if (zend_string_equals_literal_ci(key, "WITHSCORES")) {
-                dst->withscores = zval_is_true(zv);
+                dst->withscores = zend_is_true(zv);
             }
         } else if (Z_TYPE_P(zv) == IS_STRING) {
             if (zend_string_equals_literal_ci(Z_STR_P(zv), "FP32")) {
@@ -7587,7 +7587,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             }
             break;
         case REDIS_OPT_PACK_IGNORE_NUMBERS:
-            redis_sock->pack_ignore_numbers = zval_is_true(val);
+            redis_sock->pack_ignore_numbers = zend_is_true(val);
             RETURN_TRUE;
         case REDIS_OPT_COMPRESSION_LEVEL:
             val_long = zval_get_long(val);
