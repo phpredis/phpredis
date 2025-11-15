@@ -2595,7 +2595,7 @@ PHP_METHOD(RedisCluster, acl) {
 
     /* ACL in cluster needs a slot argument, and then at least the op */
     if (argc < 2) {
-        WRONG_PARAM_COUNT;
+        zend_wrong_param_count();
         RETURN_FALSE;
     }
 
