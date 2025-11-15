@@ -3055,7 +3055,7 @@ redis_sock_configure(RedisSock *redis_sock, HashTable *opts)
                 redis_sock->persistent_id = zval_get_string(val);
                 redis_sock->persistent = 1;
             } else {
-                redis_sock->persistent = zval_is_true(val);
+                redis_sock->persistent = zend_is_true(val);
             }
         } else if (zend_string_equals_literal_ci(zkey, "maxRetries")) {
             if (Z_TYPE_P(val) != IS_LONG || Z_LVAL_P(val) < 0) {
