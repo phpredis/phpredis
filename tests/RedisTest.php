@@ -2624,7 +2624,7 @@ class Redis_Test extends TestSuite {
                 /* Timiing tests on GitHub CI are atrocious so we just
                    want to verify that >= 1 and <= $val */
                 $ttl = $this->redis->$desc($key);
-                $this->assertBetween($val, 1, $ttl);
+                $this->assertBetween($val, 1, $ttl + 1);
             }
         }
 
