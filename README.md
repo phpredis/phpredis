@@ -232,10 +232,10 @@ Redis::REDIS_SET - Set
 Redis::REDIS_LIST - List
 Redis::REDIS_ZSET - Sorted set
 Redis::REDIS_HASH - Hash
+Redis::REDIS_STREAM - Stream    
+Redis::REDIS_VECTORSET - Vector set
 Redis::REDIS_NOT_FOUND - Not found / other
 ~~~
-
-@TODO: OPT_SERIALIZER, AFTER, BEFORE,...
 
 ### Connection
 
