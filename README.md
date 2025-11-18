@@ -252,7 +252,7 @@ Redis::REDIS_NOT_FOUND - Not found / other
 
 #### connect, open
 -----
-_**Description**_: Connects to a Redis instance.
+_**Description**_: Connects to a Redis instance. If phpredis cannot reach the server it will usually throw a [`RedisException`](#class-redisexception); only rarely will `FALSE` be returned without an exception.
 
 ###### *Parameters*
 
@@ -266,7 +266,7 @@ _**Description**_: Connects to a Redis instance.
 
 ###### *Return value*
 
-*BOOL*: `TRUE` on success, `FALSE` on error.
+*BOOL*: `TRUE` on success. Failures typically raise a `RedisException`, though in some edge cases `FALSE` may be returned instead.
 
 ###### *Example*
 
@@ -299,6 +299,12 @@ $redis->connect('tls://redis.example.com', 6380, 1.5, null, 0, 0, [
         'ciphers' => 'HIGH:!aNULL:!MD5',       // TLS cipher list provided to OpenSSL (optional)
     ],
 ]);
+
+try {
+    $redis->connect('redis.invalid', 6379);
+} catch (RedisException $ex) {
+    echo "Connection failed: {$ex->getMessage()}";
+}
 ~~~
 
 When you pass a `stream` key PhpRedis forwards the options to [`stream_socket_client`](https://www.php.net/manual/en/context.ssl.php).
