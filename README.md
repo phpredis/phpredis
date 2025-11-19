@@ -392,7 +392,7 @@ _**Description**_: Authenticate the connection using a password or a username an
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if the connection is authenticated, `FALSE` otherwise. In order to authenticate with a username and password you need Redis >= 6.0. |
+| `Redis\|bool` | `TRUE` if the connection is authenticated, `FALSE` otherwise. In order to authenticate with a username and password you need Redis >= 6.0. |
 
 
 ###### *Example*
@@ -425,7 +425,7 @@ _**Description**_: Change the selected database for the current connection.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
 
 ###### *Example*
 See method for example: [move](#move)
@@ -445,7 +445,7 @@ _**Description**_:  Swap one Redis database with another atomically
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` on success and `FALSE` on failure. Requires Redis >= 4.0.0 |
+| `Redis\|bool` | `TRUE` on success and `FALSE` on failure. Requires Redis >= 4.0.0 |
 
 
 ###### *Example*
@@ -551,7 +551,7 @@ $redis->ping([string $message]);
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | This method returns `TRUE` on success, or the passed string if called with an argument. |
+| `Redis\|string\|false` | This method returns `TRUE` on success, or the passed string if called with an argument. |
 
 
 ###### *Example*
@@ -579,7 +579,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | the same message. ### Retry and backoff 1. [Maximum retries](#maximum-retries) 1. [Backoff algorithms](#backoff-algorithms) |
+| `Redis\|string\|false` | the same message. ### Retry and backoff 1. [Maximum retries](#maximum-retries) 1. [Backoff algorithms](#backoff-algorithms) |
 
 
 #### Maximum retries
@@ -664,7 +664,7 @@ None.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
 
 
 ###### *Example*
@@ -684,7 +684,7 @@ None.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`. |
+| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`. |
 
 
 ###### *Example*
@@ -729,7 +729,7 @@ None.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | DB size, in number of keys. |
+| `Redis\|int\|false` | DB size, in number of keys. |
 
 
 ###### *Example*
@@ -752,7 +752,7 @@ _**Description**_: Remove all keys from all databases.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | Always `TRUE`. |
+| `Redis\|bool` | Always `TRUE`. |
 
 
 ###### *Example*
@@ -773,7 +773,7 @@ $redis->flushdb(?bool $sync = NULL): Redis|bool;
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | This command returns true on success and false on failure. |
+| `Redis\|bool` | This command returns true on success and false on failure. |
 
 
 ###### *Example*
@@ -850,7 +850,7 @@ None.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`. |
+| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`. |
 
 
 ###### *Example*
@@ -873,7 +873,7 @@ _**Description**_: Block the client until a specified number of replicas acknowl
 
 | Type | Description |
 | --- | --- | --- |
-| `int|false` | The number of replicas that acknowledged the write before timing out, or `FALSE` on error. |
+| `int\|false` | The number of replicas that acknowledged the write before timing out, or `FALSE` on error. |
 
 
 ###### *Example*
@@ -902,7 +902,7 @@ _**Description**_: Block until Redis has durably written recent changes to the l
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | Two integers, where element `0` is the number of local fsync operations performed and element `1` is the number of replica acknowledgements, or `FALSE` on error. |
+| `Redis\|array\|false` | Two integers, where element `0` is the number of local fsync operations performed and element `1` is the number of replica acknowledgements, or `FALSE` on error. |
 
 
 ###### *Example*
@@ -929,7 +929,7 @@ _**Description**_: Changes the slave status
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
 
 
 ###### *Example*
@@ -951,7 +951,7 @@ _**Description**_: Return the current server time.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array` | If successful, the time will come back as an associative array with element zero being the unix timestamp, and element one being microseconds. |
+| `Redis\|array` | If successful, the time will come back as an associative array with element zero being the unix timestamp, and element one being microseconds. |
 
 
 ###### *Examples*
@@ -1086,7 +1086,7 @@ _**Description**_: Get the value related to the specified key and set its expira
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|bool` | or *Bool*: If key doesn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned. |
+| `Redis\|string\|bool` | or *Bool*: If key doesn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned. |
 
 
 ###### *Examples*
@@ -1111,7 +1111,7 @@ _**Description**_: Set the string value in argument as value of the key. If you'
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|bool` | `TRUE` if the command is successful. |
+| `Redis\|string\|bool` | `TRUE` if the command is successful. |
 
 
 ###### *Examples*
@@ -1146,7 +1146,7 @@ _**Description**_: Set the string value in argument as value of the key, with a 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if the command is successful, `FALSE` in case of failure. |
+| `Redis\|bool` | `TRUE` if the command is successful, `FALSE` in case of failure. |
 
 
 ###### *Examples*
@@ -1171,7 +1171,7 @@ _**Description**_: Set the string value in argument as value of the key if the k
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if the command is successful, `FALSE` in case of failure. |
+| `Redis\|bool` | `TRUE` if the command is successful, `FALSE` in case of failure. |
 
 
 ###### *Examples*
@@ -1188,7 +1188,7 @@ _**Description**_: Remove specified keys.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `array|string` | Either an array with one or more key names or a string with the name of a key. |
+| `key` | `array\|string` | Either an array with one or more key names or a string with the name of a key. |
 | `other_keys` | `string` | One or more additional keys passed in a variadic fashion. |
 
 *Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
@@ -1197,7 +1197,7 @@ _**Description**_: Remove specified keys.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | Number of keys deleted (`0` if none existed to start with), `FALSE` in case of unexpected failure (i.e. connection, etc.) |
+| `Redis\|int\|false` | Number of keys deleted (`0` if none existed to start with), `FALSE` in case of unexpected failure (i.e. connection, etc.) |
 
 
 ###### *Examples*
@@ -1232,7 +1232,7 @@ _**Description**_: Verify if the specified key exists.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|bool` | Number of keys tested that exist (`0` if none do), `FALSE` in case of failure. |
+| `Redis\|int\|bool` | Number of keys tested that exist (`0` if none do), `FALSE` in case of failure. |
 
 
 ###### *Examples*
@@ -1263,7 +1263,7 @@ _**Description**_: Increment the number stored at key by one. If the second argu
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the new value |
+| `Redis\|int\|false` | the new value |
 
 
 ###### *Examples*
@@ -1296,7 +1296,7 @@ _**Description**_: Increment the key with floating point precision.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|float|false` | The new value of the key or false if the key didn't contain a string. |
+| `Redis\|float\|false` | The new value of the key or false if the key didn't contain a string. |
 
 
 ###### *Examples*
@@ -1324,7 +1324,7 @@ _**Description**_: Decrement the number stored at key by one. If the second argu
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The new value of the key or false on failure. |
+| `Redis\|int\|false` | The new value of the key or false on failure. |
 
 
 ###### *Examples*
@@ -1355,7 +1355,7 @@ _**Description**_: Get the values of all the specified keys. If one or more keys
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | Array containing the values related to keys in argument |
+| `Redis\|array\|false` | Array containing the values related to keys in argument |
 
 
 ###### *Examples*
@@ -1381,7 +1381,7 @@ _**Description**_: Sets a value and returns the previous entry at that key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | A string, the previous value located at this key. |
+| `Redis\|string\|false` | A string, the previous value located at this key. |
 
 ###### *Example*
 ~~~php
@@ -1401,7 +1401,7 @@ None.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | an existing key in redis. |
+| `Redis\|string\|false` | an existing key in redis. |
 
 
 ###### *Example*
@@ -1425,7 +1425,7 @@ _**Description**_: Moves a key to a different database.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
 
 ###### *Example*
 
@@ -1451,7 +1451,7 @@ _**Description**_: Renames a key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
 
 ###### *Example*
 ~~~php
@@ -1479,7 +1479,7 @@ public function pexpire(string $key, int $milliseconds, ?string $mode = NULL): R
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if an expiration was set, and `FALSE` on failure or if one was not set. You can distinguish between an error and an expiration not being set by checking `getLastError()`. |
+| `Redis\|bool` | `TRUE` if an expiration was set, and `FALSE` on failure or if one was not set. You can distinguish between an error and an expiration not being set by checking `getLastError()`. |
 
 ###### *Example*
 ~~~php
@@ -1503,7 +1503,7 @@ public function pexpireat(string $key, int $unix_timestamp_millis, ?string $mode
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if an expiration was set and `FALSE` if one was not set or in the event of an error. You can detect an actual error by checking `getLastError()`. |
+| `Redis\|bool` | `TRUE` if an expiration was set and `FALSE` if one was not set or in the event of an error. You can detect an actual error by checking `getLastError()`. |
 
 
 ###### *Example*
@@ -1528,7 +1528,7 @@ _**Description**_: Returns the keys that match a certain pattern.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|list<string>|false` | The keys that match a certain pattern. |
+| `Redis\|list<string>\|false` | The keys that match a certain pattern. |
 
 
 ###### *Example*
@@ -1545,7 +1545,7 @@ _**Description**_:  Scan the keyspace for keys
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `iterator` | `null|int|string` | The cursor returned by Redis for every subsequent call to SCAN. On the initial invocation of the call, it should be initialized by the caller to NULL. Each time SCAN is invoked, the iterator will be updated to a new number, until finally Redis will set the value to zero, indicating that the scan is complete. |
+| `iterator` | `null\|int\|string` | The cursor returned by Redis for every subsequent call to SCAN. On the initial invocation of the call, it should be initialized by the caller to NULL. Each time SCAN is invoked, the iterator will be updated to a new number, until finally Redis will set the value to zero, indicating that the scan is complete. |
 | `pattern` | `?string` | An optional glob-style pattern for matching key names. If passed as NULL, it is the equivalent of sending '*' (match every key). |
 | `count` | `int` | A hint to redis that tells it how many keys to return in a single call to SCAN. The larger the number, the longer Redis may block clients while iterating the key space. |
 | `type` | `?string` | An optional argument to specify which key types to scan (e.g. 'STRING', 'LIST', 'SET') |
@@ -1554,7 +1554,7 @@ _**Description**_:  Scan the keyspace for keys
 
 | Type | Description |
 | --- | --- | --- |
-| `array|false` | This function will return an array of keys or FALSE if Redis returns zero keys SCAN is a "directed node" command in [RedisCluster](cluster.md#directed-node-commands) |
+| `array\|false` | This function will return an array of keys or FALSE if Redis returns zero keys SCAN is a "directed node" command in [RedisCluster](cluster.md#directed-node-commands) |
 
 
 ###### *Example*
@@ -1604,7 +1604,7 @@ _**Description**_: Describes the object pointed to by a key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|string|false` | for "encoding", *LONG* for "refcount" and "idletime", `FALSE` if the key doesn't exist. |
+| `Redis\|int\|string\|false` | for "encoding", *LONG* for "refcount" and "idletime", `FALSE` if the key doesn't exist. |
 
 
 ###### *Example*
@@ -1628,7 +1628,7 @@ _**Description**_: Returns the type of data pointed by a given key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | Depending on the type of the data pointed by the key, this method will return the following value: string: Redis::REDIS_STRING set: Redis::REDIS_SET list: Redis::REDIS_LIST zset: Redis::REDIS_ZSET hash: Redis::REDIS_HASH other: Redis::REDIS_NOT_FOUND |
+| `Redis\|int\|false` | Depending on the type of the data pointed by the key, this method will return the following value: string: Redis::REDIS_STRING set: Redis::REDIS_SET list: Redis::REDIS_LIST zset: Redis::REDIS_ZSET hash: Redis::REDIS_HASH other: Redis::REDIS_NOT_FOUND |
 
 
 ###### *Example*
@@ -1651,7 +1651,7 @@ _**Description**_: Append specified string to the string stored in specified key
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | Size of the value after the append |
+| `Redis\|int\|false` | Size of the value after the append |
 
 
 ###### *Example*
@@ -1677,7 +1677,7 @@ _**Description**_: Return a substring of a larger string
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | The substring or false on failure. |
+| `Redis\|string\|false` | The substring or false on failure. |
 
 
 ###### *Example*
@@ -1703,7 +1703,7 @@ _**Description**_: Changes a substring of a larger string.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the length of the string after it was modified. |
+| `Redis\|int\|false` | the length of the string after it was modified. |
 
 
 ###### *Example*
@@ -1727,7 +1727,7 @@ _**Description**_: Get the length of a string value.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The length of the string key if it exists, zero if it does not, and false on failure. |
+| `Redis\|int\|false` | The length of the string key if it exists, zero if it does not, and false on failure. |
 
 
 ###### *Example*
@@ -1751,7 +1751,7 @@ _**Description**_: Return a single bit out of a larger string
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the bit value (0 or 1) |
+| `Redis\|int\|false` | the bit value (0 or 1) |
 
 
 ###### *Example*
@@ -1777,7 +1777,7 @@ _**Description**_: Changes a single bit of a string.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | 0 or 1, the value of the bit before it was set. |
+| `Redis\|int\|false` | 0 or 1, the value of the bit before it was set. |
 
 
 ###### *Example*
@@ -1805,7 +1805,7 @@ _**Description**_: Bitwise operation on multiple keys.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The size of the string stored in the destination key. |
+| `Redis\|int\|false` | The size of the string stored in the destination key. |
 
 
 #### bitCount
@@ -1825,7 +1825,7 @@ _**Description**_: Count bits in a string.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of bits set to 1 in the value behind the input key. |
+| `Redis\|int\|false` | The number of bits set to 1 in the value behind the input key. |
 
 
 #### sort
@@ -1885,7 +1885,7 @@ _**Description**_: Returns the time to live left for a given key in seconds (ttl
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The time to live in seconds. If the key has no ttl, `-1` will be returned, and `-2` if the key doesn't exist. |
+| `Redis\|int\|false` | The time to live in seconds. If the key has no ttl, `-1` will be returned, and `-2` if the key doesn't exist. |
 
 
 ###### *Example*
@@ -1907,7 +1907,7 @@ _**Description**_: Remove the expiration timer from a key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if a timeout was removed, `FALSE` if the key didn’t exist or didn’t have an expiration timer. |
+| `Redis\|bool` | `TRUE` if a timeout was removed, `FALSE` if the key didn’t exist or didn’t have an expiration timer. |
 
 
 ###### *Example*
@@ -1929,7 +1929,7 @@ _**Description**_: Sets multiple key-value pairs in one atomic command. MSETNX o
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
 
 
 ###### *Example*
@@ -1962,7 +1962,7 @@ that comes out of DUMP is a binary representation of the key as Redis stores it.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | The Redis encoded value of the key, or FALSE if the key doesn't exist |
+| `Redis\|string\|false` | The Redis encoded value of the key, or FALSE if the key doesn't exist |
 
 ###### *Examples*
 ~~~php
@@ -2002,7 +2002,7 @@ that version to call `migrate` with an array of keys.
 | --- | --- | --- |
 | `host` | `string` | The destination redis host. |
 | `port` | `int` | The destination redis port. |
-| `key` | `string|array` | The key or array of keys to migrate. |
+| `key` | `string\|array` | The key or array of keys to migrate. |
 | `dstdb` | `int` | The destination database index. |
 | `timeout` | `int` | The timeout for the operation in milliseconds. |
 | `copy` | `bool` | Whether to copy the key(s) or move them. |
@@ -2053,7 +2053,7 @@ _**Description**_: Adds a value to the hash stored at key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | `1` if value didn't exist and was added successfully, `0` if the value was already present and was replaced, `FALSE` if there was an error. |
+| `Redis\|int\|false` | `1` if value didn't exist and was added successfully, `0` if the value was already present and was replaced, `FALSE` if there was an error. |
 
 ###### *Example*
 ~~~php
@@ -2073,7 +2073,7 @@ _**Description**_: Adds a value to the hash stored at key only if this field isn
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if the field was set, `FALSE` if it was already present. |
+| `Redis\|bool` | `TRUE` if the field was set, `FALSE` if it was already present. |
 
 
 ###### *Example*
@@ -2114,7 +2114,7 @@ _**Description**_: Returns the length of a hash, in number of items
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the number of items in a hash, `FALSE` if the key doesn't exist or isn't a hash. |
+| `Redis\|int\|false` | the number of items in a hash, `FALSE` if the key doesn't exist or isn't a hash. |
 
 ###### *Example*
 ~~~php
@@ -2141,7 +2141,7 @@ _**Description**_: Removes a value from the hash stored at key. If the hash tabl
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the number of deleted keys, 0 if the key doesn't exist, `FALSE` if the key isn't a hash. |
+| `Redis\|int\|false` | the number of deleted keys, 0 if the key doesn't exist, `FALSE` if the key isn't a hash. |
 
 
 #### hKeys
@@ -2158,7 +2158,7 @@ _**Description**_: Returns the keys in a hash, as an array of strings.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|list<string>|false` | An array of elements, the keys of the hash. This works like PHP's array_keys(). |
+| `Redis\|list<string>\|false` | An array of elements, the keys of the hash. This works like PHP's array_keys(). |
 
 
 ###### *Example*
@@ -2200,7 +2200,7 @@ _**Description**_: Returns the values in a hash, as an array of strings.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|list<mixed>|false` | An array of elements, the values of the hash. This works like PHP's array_values(). |
+| `Redis\|list<mixed>\|false` | An array of elements, the values of the hash. This works like PHP's array_values(). |
 
 
 ###### *Example*
@@ -2242,7 +2242,7 @@ _**Description**_: Returns the whole hash, as an array of strings indexed by str
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array<string|int,` | An array of elements, the contents of the hash. |
+| `Redis\|array<string\|int,` | An array of elements, the contents of the hash. |
 
 
 ###### *Example*
@@ -2284,7 +2284,7 @@ _**Description**_: Verify if the specified member exists in a key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | If the member exists in the hash table, return `TRUE`, otherwise return `FALSE`. |
+| `Redis\|bool` | If the member exists in the hash table, return `TRUE`, otherwise return `FALSE`. |
 
 ###### *Examples*
 ~~~php
@@ -2308,7 +2308,7 @@ _**Description**_: Increments the value of a member from a hash by a given amoun
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The new value of the field. |
+| `Redis\|int\|false` | The new value of the field. |
 
 ###### *Examples*
 ~~~php
@@ -2332,7 +2332,7 @@ _**Description**_: Increments the value of a hash member by the provided float v
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|float|false` | The field value after incremented. |
+| `Redis\|float\|false` | The field value after incremented. |
 
 ###### *Examples*
 ~~~php
@@ -2356,7 +2356,7 @@ _**Description**_: Fills in a whole hash. Non-string values are converted to str
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | True if the operation was successful |
+| `Redis\|bool` | True if the operation was successful |
 
 ###### *Examples*
 ~~~php
@@ -2379,7 +2379,7 @@ _**Description**_: Retrieve the values associated to the specified fields in the
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | An array of elements, the values of the specified fields in the hash, with the hash keys as array keys. |
+| `Redis\|array\|false` | An array of elements, the values of the specified fields in the hash, with the hash keys as array keys. |
 
 ###### *Examples*
 ~~~php
@@ -2397,7 +2397,7 @@ _**Description**_:  Scan a HASH value for members, with an optional pattern and 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `key` | `string` | The hash to query. |
-| `iterator` | `null|int|string` | The scan iterator, which should be initialized to NULL before the first call. This value will be updated after every call to hscan, until it reaches zero meaning the scan is complete. |
+| `iterator` | `null\|int\|string` | The scan iterator, which should be initialized to NULL before the first call. This value will be updated after every call to hscan, until it reaches zero meaning the scan is complete. |
 | `pattern` | `?string` | An optional glob-style pattern to filter fields with. |
 | `count` | `int` | An optional hint to Redis about how many fields and values to return per HSCAN. |
 
@@ -2405,7 +2405,7 @@ _**Description**_:  Scan a HASH value for members, with an optional pattern and 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|bool` | An array of members that match our pattern |
+| `Redis\|array\|bool` | An array of members that match our pattern |
 
 
 ###### *Examples*
@@ -2434,7 +2434,7 @@ _**Description**_: Get the string length of the value associated with field in t
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the string length of the value associated with field, or zero when field is not present in the hash or key does not exist at all.; ### Lists; [blPop, brPop](#blpop-brpop) - Remove and get the first/last element in a list; [bRPopLPush](#brpoplpush) - Pop a value from a list, push it to another list and return it; [lIndex](#lindex) - Get an element from a list by its index; [lInsert](#linsert) - Insert an element before or after another element in a list; [lLen](#llen) - Get the length/size of a list; [lPop](#lpop) - Remove and get the first element in a list; [lPush](#lpush) - Prepend one or multiple values to a list; [lPushx](#lpushx) - Prepend a value to a list, only if the list exists; [lRange](#lrange) - Get a range of elements from a list; [lRem](#lrem) - Remove elements from a list; [lSet](#lset) - Set the value of an element in a list by its index; [lTrim](#ltrim) - Trim a list to the specified range; [rPop](#rpop) - Remove and get the last element in a list; [rPopLPush](#rpoplpush) - Remove the last element in a list, append it to another list and return it (redis >= 1.1); [rPush](#rpush) - Append one or multiple values to a list; [rPushX](#rpushx) - Append a value to a list, only if the list exists |
+| `Redis\|int\|false` | the string length of the value associated with field, or zero when field is not present in the hash or key does not exist at all.; ### Lists; [blPop, brPop](#blpop-brpop) - Remove and get the first/last element in a list; [bRPopLPush](#brpoplpush) - Pop a value from a list, push it to another list and return it; [lIndex](#lindex) - Get an element from a list by its index; [lInsert](#linsert) - Insert an element before or after another element in a list; [lLen](#llen) - Get the length/size of a list; [lPop](#lpop) - Remove and get the first element in a list; [lPush](#lpush) - Prepend one or multiple values to a list; [lPushx](#lpushx) - Prepend a value to a list, only if the list exists; [lRange](#lrange) - Get a range of elements from a list; [lRem](#lrem) - Remove elements from a list; [lSet](#lset) - Set the value of an element in a list by its index; [lTrim](#ltrim) - Trim a list to the specified range; [rPop](#rpop) - Remove and get the last element in a list; [rPopLPush](#rpoplpush) - Remove the last element in a list, append it to another list and return it (redis >= 1.1); [rPush](#rpush) - Append one or multiple values to a list; [rPushX](#rpushx) - Append a value to a list, only if the list exists |
 
 
 #### blPop, brPop
@@ -2446,8 +2446,8 @@ If all the list identified by the keys passed in arguments are empty, blPop will
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key_or_keys` | `string|array` | This can either be a string key or an array of one or more keys. |
-| `timeout_or_key` | `string|float|int` | If the previous argument was a string key, this can either be an additional key, or the timeout you wish to send to the command. |
+| `key_or_keys` | `string\|array` | This can either be a string key or an array of one or more keys. |
+| `timeout_or_key` | `string\|float\|int` | If the previous argument was a string key, this can either be an additional key, or the timeout you wish to send to the command. |
 | `extra_args` | `mixed` | See command documentation. |
 
 Or
@@ -2462,7 +2462,7 @@ Or
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|null|false` | Can return various things depending on command and data in Redis. |
+| `Redis\|array\|null\|false` | Can return various things depending on command and data in Redis. |
 
 
 ###### *Example*
@@ -2503,13 +2503,13 @@ _**Description**_: A blocking version of `rPopLPush`, with an integral timeout i
 | --- | --- | --- |
 | `src` | `string` | The source list |
 | `dst` | `string` | The destination list |
-| `timeout` | `int|float` | The number of seconds to wait. Note that you must be connected to Redis >= 6.0.0 to send a floating point timeout. |
+| `timeout` | `int\|float` | The number of seconds to wait. Note that you must be connected to Redis >= 6.0.0 to send a floating point timeout. |
 
 ###### *Return value*
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | The element that was moved in case of success, `FALSE` in case of timeout. |
+| `Redis\|string\|false` | The element that was moved in case of success, `FALSE` in case of timeout. |
 
 
 #### lIndex
@@ -2565,7 +2565,7 @@ If the list didn't exists, or the pivot didn't exists, the value is not inserted
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of the elements in the list, -1 if the pivot didn't exists. |
+| `Redis\|int\|false` | The number of the elements in the list, -1 if the pivot didn't exists. |
 
 
 ###### *Example*
@@ -2601,7 +2601,7 @@ _**Description**_: Return and remove the first element of the list.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool|string|array` | if command executed successfully `FALSE` in case of failure (empty list) |
+| `Redis\|bool\|string\|array` | if command executed successfully `FALSE` in case of failure (empty list) |
 
 
 ###### *Example*
@@ -2625,7 +2625,7 @@ $redis->lPush($key, $entry [, $entry, $entry]);
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
+| `Redis\|int\|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
 
 
 ###### *Examples*
@@ -2655,7 +2655,7 @@ _**Description**_: Adds the string value to the head (left) of the list if the l
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
+| `Redis\|int\|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
 
 
 ###### *Examples*
@@ -2686,7 +2686,7 @@ _**Description**_: Returns the specified elements of the list stored at the spec
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | containing the values in specified range. |
+| `Redis\|array\|false` | containing the values in specified range. |
 
 
 ###### *Example*
@@ -2715,7 +2715,7 @@ _**Description**_: Removes the first `count` occurrences of the value element fr
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the number of elements to remove `FALSE` if the value identified by key is not a list. |
+| `Redis\|int\|false` | the number of elements to remove `FALSE` if the value identified by key is not a list. |
 
 
 ###### *Example*
@@ -2747,7 +2747,7 @@ _**Description**_: Set the list at index with the new value.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if the new value was set. `FALSE` if the index is out of range, or data type identified by key is not a list. |
+| `Redis\|bool` | `TRUE` if the new value was set. `FALSE` if the index is out of range, or data type identified by key is not a list. |
 
 
 ###### *Example*
@@ -2776,7 +2776,7 @@ _**Description**_: Trims an existing list so that it will contain only a specifi
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | return `FALSE` if the key identify a non-list value. |
+| `Redis\|bool` | return `FALSE` if the key identify a non-list value. |
 
 
 ###### *Example*
@@ -2804,7 +2804,7 @@ _**Description**_: Returns and removes the last element of the list.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|string|bool` | if command executed successfully `FALSE` in case of failure (empty list) |
+| `Redis\|array\|string\|bool` | if command executed successfully `FALSE` in case of failure (empty list) |
 
 
 ###### *Example*
@@ -2830,7 +2830,7 @@ _**Description**_: Pops a value from the tail of a list, and pushes it to the fr
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | The element that was moved in case of success, `FALSE` in case of failure. |
+| `Redis\|string\|false` | The element that was moved in case of success, `FALSE` in case of failure. |
 
 
 ###### *Example*
@@ -2878,7 +2878,7 @@ $redis->rPush($key, $entry [, $entry, $entry]);
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
+| `Redis\|int\|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
 
 
 ###### *Examples*
@@ -2906,7 +2906,7 @@ _**Description**_: Adds the string value to the tail (right) of the list if the 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
+| `Redis\|int\|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
 
 
 ###### *Examples*
@@ -2935,7 +2935,7 @@ If the list didn't exist or is empty, the command returns 0. If the data type id
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The size of the list identified by Key exists. `FALSE` if the data type identified by Key is not list |
+| `Redis\|int\|false` | The size of the list identified by Key exists. `FALSE` if the data type identified by Key is not list |
 
 
 ###### *Example*
@@ -2982,7 +2982,7 @@ _**Description**_: Adds a value to the set value stored at key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the number of elements added to the set. |
+| `Redis\|int\|false` | the number of elements added to the set. |
 
 ###### *Example*
 ~~~php
@@ -3004,7 +3004,7 @@ _**Description**_: Returns the cardinality of the set identified by key.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the cardinality of the set identified by key, 0 if the set doesn't exist. |
+| `Redis\|int\|false` | the cardinality of the set identified by key, 0 if the set doesn't exist. |
 
 ###### *Example*
 ~~~php
@@ -3030,7 +3030,7 @@ _**Description**_: Performs the difference between N sets and returns it.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | The difference of the first set will all the others. |
+| `Redis\|array\|false` | The difference of the first set will all the others. |
 
 
 ###### *Example*
@@ -3051,7 +3051,7 @@ var_dump($redis->sDiff('s0', 's1', 's2'));
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | all elements of s0 that are neither in s1 nor in s2. |
+| `Redis\|array\|false` | all elements of s0 that are neither in s1 nor in s2. |
 
 ~~~
 array(2) {
@@ -3077,7 +3077,7 @@ _**Description**_: Performs the same action as sDiff, but stores the result in t
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
+| `Redis\|int\|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
 
 
 ###### *Example*
@@ -3099,7 +3099,7 @@ var_dump($redis->sMembers('dst'));
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the number of elements of s0 that are neither in s1 nor in s2. |
+| `Redis\|int\|false` | the number of elements of s0 that are neither in s1 nor in s2. |
 
 ~~~
 int(2)
@@ -3122,14 +3122,14 @@ is missing, `FALSE` is returned.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `array|string` | The first SET key to intersect. |
+| `key` | `array\|string` | The first SET key to intersect. |
 | `other_keys` | `string` | One or more Redis SET keys. |
 
 ###### *Return value*
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | Array, containing the result of the intersection between those keys. If the intersection between the different sets is empty, the return value will be an empty array. |
+| `Redis\|array\|false` | Array, containing the result of the intersection between those keys. If the intersection between the different sets is empty, the return value will be an empty array. |
 
 
 ###### *Examples*
@@ -3166,14 +3166,14 @@ _**Description**_: Performs a sInter command and stores the result in a new set.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `array|string` | Either a string key, or an array of keys (with at least two elements, consisting of the destination key name and one or more source keys names. |
+| `key` | `array\|string` | Either a string key, or an array of keys (with at least two elements, consisting of the destination key name and one or more source keys names. |
 | `other_keys` | `string` | If the first argument was a string, subsequent arguments should be source key names. |
 
 ###### *Return value*
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
+| `Redis\|int\|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
 
 
 ###### *Example*
@@ -3220,7 +3220,7 @@ _**Description**_: Checks if `value` is a member of the set stored at the key `k
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise. |
+| `Redis\|bool` | `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise. |
 
 ###### *Example*
 ~~~php
@@ -3246,7 +3246,7 @@ _**Description**_: Returns the contents of a set.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | An array of elements, the contents of the set. |
+| `Redis\|array\|false` | An array of elements, the contents of the set. |
 
 
 ###### *Example*
@@ -3287,7 +3287,7 @@ _**Description**_: Moves the specified member from the set at srcKey to the set 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned. |
+| `Redis\|bool` | If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned. |
 
 ###### *Example*
 ~~~php
@@ -3315,13 +3315,13 @@ _**Description**_: Removes and returns a random element from the set value at Ke
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|array|false` | "popped" value `FALSE` if set identified by key is empty or doesn't exist. |
+| `Redis\|string\|array\|false` | "popped" value `FALSE` if set identified by key is empty or doesn't exist. |
 
 ###### *Return value (with count argument)*
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|array|false` | Member(s) returned or an empty array if the set doesn't exist `FALSE` on error if the key is not a set |
+| `Redis\|string\|array\|false` | Member(s) returned or an empty array if the set doesn't exist `FALSE` on error if the key is not a set |
 
 ###### *Example*
 ~~~php
@@ -3350,7 +3350,7 @@ _**Description**_: Returns a random element from the set value at Key, without r
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|string|false` | If no count is provided, a random *String* value from the set will be returned. If a count is provided, an array of values from the set will be returned. Read about the different ways to use the count here: [SRANDMEMBER](http://redis.io/commands/srandmember) `FALSE` if set identified by key is empty or doesn't exist. |
+| `Redis\|array\|string\|false` | If no count is provided, a random *String* value from the set will be returned. If a count is provided, an array of values from the set will be returned. Read about the different ways to use the count here: [SRANDMEMBER](http://redis.io/commands/srandmember) `FALSE` if set identified by key is empty or doesn't exist. |
 
 ###### *Example*
 ~~~php
@@ -3385,7 +3385,7 @@ _**Description**_: Removes the specified member from the set value stored at key
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of elements removed from the set. |
+| `Redis\|int\|false` | The number of elements removed from the set. |
 
 ###### *Example*
 ~~~php
@@ -3410,7 +3410,7 @@ _**Description**_: Performs the union between N sets and returns it.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | The union of all these sets.; *Note:** `sUnion` can also take a single array with keys (see example below). |
+| `Redis\|array\|false` | The union of all these sets.; *Note:** `sUnion` can also take a single array with keys (see example below). |
 
 
 ###### *Example*
@@ -3435,7 +3435,7 @@ var_dump($redis->sUnion(['s0', 's1', 's2']));
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | all elements that are either in s0 or in s1 or in s2. |
+| `Redis\|array\|false` | all elements that are either in s0 or in s1 or in s2. |
 
 ~~~
 array(4) {
@@ -3466,7 +3466,7 @@ _**Description**_: Performs the same action as sUnion, but stores the result in 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
+| `Redis\|int\|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
 
 
 ###### *Example*
@@ -3487,7 +3487,7 @@ var_dump($redis->sMembers('dst'));
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the number of elements that are either in s0 or in s1 or in s2. |
+| `Redis\|int\|false` | the number of elements that are either in s0 or in s1 or in s2. |
 
 ~~~
 int(4)
@@ -3512,7 +3512,7 @@ _**Description**_: Scan a set for members
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `key` | `string` | The Redis SET key in question. |
-| `iterator` | `null|int|string` | A reference to an iterator which should be initialized to NULL that PhpRedis will update with the value returned from Redis after each subsequent call to SSCAN. Once this cursor is zero you know all members have been traversed. |
+| `iterator` | `null\|int\|string` | A reference to an iterator which should be initialized to NULL that PhpRedis will update with the value returned from Redis after each subsequent call to SSCAN. Once this cursor is zero you know all members have been traversed. |
 | `pattern` | `?string` | An optional glob style pattern to match against, so Redis only returns the subset of members matching this pattern. |
 | `count` | `int` | A hint to Redis as to how many members it should scan in one command before returning members for that iteration. |
 
@@ -3520,7 +3520,7 @@ _**Description**_: Scan a set for members
 
 | Type | Description |
 | --- | --- | --- |
-| `array|false` | PHPRedis will return an array of keys or FALSE when we're done iterating |
+| `array\|false` | PHPRedis will return an array of keys or FALSE when we're done iterating |
 
 
 ###### *Example*
@@ -3616,14 +3616,14 @@ $redis->zAdd($key, [ $options ,] $score, $value [, $score1, $value1, ...]);
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `key` | `string` | The sorted set in question. |
-| `score_or_options` | `array|float` | Either the initial score or an options array (NX, XX, GT, LT, CH, INCR). |
+| `score_or_options` | `array\|float` | Either the initial score or an options array (NX, XX, GT, LT, CH, INCR). |
 | `more_scores_and_mems` | `mixed` | A variadic number of additional scores and members. |
 
 ###### *Return value*
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|float|false` | 1 if the element is added. 0 otherwise. |
+| `Redis\|int\|float\|false` | 1 if the element is added. 0 otherwise. |
 
 
 ###### *Example*
@@ -3651,7 +3651,7 @@ _**Description**_: Returns the cardinality of an ordered set.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | , the set's cardinality |
+| `Redis\|int\|false` | , the set's cardinality |
 
 
 ###### *Example*
@@ -3671,14 +3671,14 @@ _**Description**_: Returns the *number* of elements of the sorted set stored at 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `key` | `string` | The sorted set to check. |
-| `start` | `int|string` | The minimum score to include in the count |
-| `end` | `int|string` | The maximum score to include in the count NOTE: In addition to a floating point score you may pass the special values of '-inf' and '+inf' meaning negative and positive infinity, respectively. |
+| `start` | `int\|string` | The minimum score to include in the count |
+| `end` | `int\|string` | The maximum score to include in the count NOTE: In addition to a floating point score you may pass the special values of '-inf' and '+inf' meaning negative and positive infinity, respectively. |
 
 ###### *Return value*
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | the size of a corresponding zRangeByScore. |
+| `Redis\|int\|false` | the size of a corresponding zRangeByScore. |
 
 
 ###### *Example*
@@ -3706,7 +3706,7 @@ The second argument is a set of options.  It can define `WITHSCORES` so that the
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | The result of the difference of sets. |
+| `Redis\|array\|false` | The result of the difference of sets. |
 
 
 ###### *Example*
@@ -3747,7 +3747,7 @@ _**Description**_: Computes the difference between the first and all successive 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of values in the new sorted set. |
+| `Redis\|int\|false` | The number of values in the new sorted set. |
 
 
 ###### *Example*
@@ -3788,7 +3788,7 @@ _**Description**_: Increments the score of a member from a sorted set by a given
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|float|false` | The new score of the member or false on failure. |
+| `Redis\|float\|false` | The new score of the member or false on failure. |
 
 
 ###### *Examples*
@@ -3818,7 +3818,7 @@ The third argument is a set of options.  It can define the `AGGREGATE` option wh
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | The result of the intersection of sets. |
+| `Redis\|array\|false` | The result of the intersection of sets. |
 
 
 ###### *Example*
@@ -3862,7 +3862,7 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of values in the new sorted set. |
+| `Redis\|int\|false` | The number of values in the new sorted set. |
 
 
 ###### *Example*
@@ -3907,7 +3907,7 @@ _**Description**_: Returns the scores of the given members in the specified sort
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | or *FALSE* when the key is not found. Array entries corresponding to members that do not exist will be `false`. |
+| `Redis\|array\|false` | or *FALSE* when the key is not found. Array entries corresponding to members that do not exist will be `false`. |
 
 
 ###### *Example*
@@ -3956,15 +3956,15 @@ Start and stop are interpreted as zero-based indices:
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `key` | `string` | The sorted set in question. |
-| `start` | `string|int` | The starting index we want to return. |
-| `end` | `string|int` | The final index we want to return. |
-| `options` | `array|bool|null` | This value may either be an array of options to pass to the command, or for historical purposes a boolean which controls just the 'WITHSCORES' option. $options = [ 'WITHSCORES' => true, # Return both scores and members. 'LIMIT' => [10, 10], # Start at offset 10 and return 10 elements. 'REV' # Return the elements in reverse order 'BYSCORE', # Treat `start` and `end` as scores instead 'BYLEX' # Treat `start` and `end` as lexicographical values. ]; Note: `BYLEX` and `BYSCORE` are mutually exclusive. |
+| `start` | `string\|int` | The starting index we want to return. |
+| `end` | `string\|int` | The final index we want to return. |
+| `options` | `array\|bool\|null` | This value may either be an array of options to pass to the command, or for historical purposes a boolean which controls just the 'WITHSCORES' option. $options = [ 'WITHSCORES' => true, # Return both scores and members. 'LIMIT' => [10, 10], # Start at offset 10 and return 10 elements. 'REV' # Return the elements in reverse order 'BYSCORE', # Treat `start` and `end` as scores instead 'BYLEX' # Treat `start` and `end` as lexicographical values. ]; Note: `BYLEX` and `BYSCORE` are mutually exclusive. |
 
 ###### *Return value*
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | containing the values in specified range. |
+| `Redis\|array\|false` | containing the values in specified range. |
 
 
 ###### *Example*
@@ -3997,7 +3997,7 @@ Two options are available: `withscores => TRUE`, and `limit => [$offset, $count]
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | containing the values in specified range. |
+| `Redis\|array\|false` | containing the values in specified range. |
 
 
 ###### *Example*
@@ -4030,7 +4030,7 @@ _**Description**_:  Returns a lexicographical range of members in a sorted set, 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | containing the values in the specified range. |
+| `Redis\|array\|false` | containing the values in the specified range. |
 
 
 ###### *Example*
@@ -4058,7 +4058,7 @@ _**Description**_: Returns the rank of a given member in the specified sorted se
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | , the item's rank. |
+| `Redis\|int\|false` | , the item's rank. |
 
 
 ###### *Example*
@@ -4085,7 +4085,7 @@ $redis->zRem($key, $member [, $member ...]);
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of members deleted. |
+| `Redis\|int\|false` | The number of members deleted. |
 
 
 ###### *Example*
@@ -4110,7 +4110,7 @@ _**Description**_: Deletes the elements of the sorted set stored at the specifie
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of values deleted from the sorted set |
+| `Redis\|int\|false` | The number of values deleted from the sorted set |
 
 
 ###### *Example*
@@ -4138,7 +4138,7 @@ _**Description**_: Deletes the elements of the sorted set stored at the specifie
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of values deleted from the sorted set |
+| `Redis\|int\|false` | The number of values deleted from the sorted set |
 
 
 ###### *Example*
@@ -4168,7 +4168,7 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | containing the values in specified range. |
+| `Redis\|array\|false` | containing the values in specified range. |
 
 
 ###### *Example*
@@ -4197,7 +4197,7 @@ _**Description**_: Returns the score of a given member in the specified sorted s
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|float|false` | or *FALSE* when the value is not found |
+| `Redis\|float\|false` | or *FALSE* when the value is not found |
 
 
 ###### *Example*
@@ -4225,7 +4225,7 @@ The third argument is a set of options.  It can define the `AGGREGATE` option wh
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | The result of the union of sets. |
+| `Redis\|array\|false` | The result of the union of sets. |
 
 
 ###### *Example*
@@ -4267,7 +4267,7 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of values in the new sorted set. |
+| `Redis\|int\|false` | The number of values in the new sorted set. |
 
 
 ###### *Example*
@@ -4301,7 +4301,7 @@ _**Description**_: Scan a sorted set for members, with optional pattern and coun
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `key` | `string` | The sorted set to scan. |
-| `iterator` | `null|int|string` | A reference to an iterator that should be initialized to NULL initially, that will be updated after each subsequent call to ZSCAN. Once the iterator has returned to zero the scan is complete |
+| `iterator` | `null\|int\|string` | A reference to an iterator that should be initialized to NULL initially, that will be updated after each subsequent call to ZSCAN. Once the iterator has returned to zero the scan is complete |
 | `pattern` | `?string` | An optional glob-style pattern that limits which members are returned during the scanning process. |
 | `count` | `int` | A hint for Redis that tells it how many elements it should test before returning from the call. The higher the more work Redis may do in any one given call to ZSCAN potentially blocking for longer periods of time. |
 
@@ -4309,7 +4309,7 @@ _**Description**_: Scan a sorted set for members, with optional pattern and coun
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | PHPRedis will return matching keys from Redis, or FALSE when iteration is complete |
+| `Redis\|array\|false` | PHPRedis will return matching keys from Redis, or FALSE when iteration is complete |
 
 
 ###### *Example*
@@ -4346,7 +4346,7 @@ $redis->pfAdd($key, Array $elements);
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int` | 1 if at least 1 HyperLogLog internal register was altered. 0 otherwise. |
+| `Redis\|int` | 1 if at least 1 HyperLogLog internal register was altered. 0 otherwise. |
 
 
 ###### *Example*
@@ -4370,13 +4370,13 @@ $redis->pfCount(Array $keys);
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key_or_keys` | `array|string` | Either one key or an array of keys |
+| `key_or_keys` | `array\|string` | Either one key or an array of keys |
 
 ###### *Return value*
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The approximated number of unique elements observed via [pfAdd](#pfAdd). |
+| `Redis\|int\|false` | The approximated number of unique elements observed via [pfAdd](#pfAdd). |
 
 
 ###### *Example*
@@ -4411,7 +4411,7 @@ $redis->pfMerge($destkey, Array $sourceKeys);
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `TRUE` on success, `FALSE` on error. |
+| `Redis\|bool` | `TRUE` on success, `FALSE` on error. |
 
 
 ###### *Example*
@@ -4440,7 +4440,7 @@ _**Description**_:  Add one or more geospatial items to the specified key.  This
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of elements added to the geospatial key. |
+| `Redis\|int\|false` | The number of elements added to the geospatial key. |
 
 
 ###### *Example*
@@ -4469,7 +4469,7 @@ _**Description**_:  Retrieve Geohash strings for one or more elements of a geosp
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | One or more Redis Geohash encoded strings. |
+| `Redis\|array\|false` | One or more Redis Geohash encoded strings. |
 
 
 ###### *Example*
@@ -4503,7 +4503,7 @@ _**Description**_:  Return longitude, latitude positions for each requested memb
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | One or more longitude/latitude positions |
+| `Redis\|array\|false` | One or more longitude/latitude positions |
 
 
 ###### *Example*
@@ -4553,7 +4553,7 @@ _**Description**_:  Return the distance between two members in a geospatial set.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|float|false` | The distance between the two passed members in the units requested (meters by default). |
+| `Redis\|float\|false` | The distance between the two passed members in the units requested (meters by default). |
 
 
 ###### *Example*
@@ -4771,7 +4771,7 @@ _**Description**_:  Acknowledge one or more messages on behalf of a consumer gro
 
 | Type | Description |
 | --- | --- | --- |
-| `int|false` | The number of messages Redis reports as acknowledged. |
+| `int\|false` | The number of messages Redis reports as acknowledged. |
 
 
 ###### *Example*
@@ -4793,7 +4793,7 @@ _**Description**_:  Add a message to a stream
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|string|false` | The added message ID |
+| `Redis\|string\|false` | The added message ID |
 
 
 ###### *Example*
@@ -4829,7 +4829,7 @@ $options = [
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|bool` | Either an array of message IDs along with corresponding data, or just an array of IDs (if the 'JUSTID' option was passed). |
+| `Redis\|array\|bool` | Either an array of message IDs along with corresponding data, or just an array of IDs (if the 'JUSTID' option was passed). |
 
 
 ###### *Example*
@@ -4867,7 +4867,7 @@ _**Description**_:  Delete one or more messages from a stream.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of messages removed |
+| `Redis\|int\|false` | The number of messages removed |
 
 
 ###### *Example*
@@ -4943,7 +4943,7 @@ _**Description**_:  Get the length of a given stream
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of messages in the stream. |
+| `Redis\|int\|false` | The number of messages in the stream. |
 
 
 ###### *Example*
@@ -4965,7 +4965,7 @@ _**Description**_:  Get information about pending messages in a given stream.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|false` | Information about the pending messages, in various forms depending on the specific invocation of XPENDING. |
+| `Redis\|array\|false` | Information about the pending messages, in various forms depending on the specific invocation of XPENDING. |
 
 
 ###### *Examples*
@@ -4988,7 +4988,7 @@ _**Description**_:  Get a range of messages from a given stream.
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|bool` | The messages in the stream within the requested range. |
+| `Redis\|array\|bool` | The messages in the stream within the requested range. |
 
 
 ###### *Example*
@@ -5014,7 +5014,7 @@ _**Description**_:  Read data from one or more streams and only return IDs great
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|bool` | The messages in the stream newer than the IDs passed to Redis (if any). |
+| `Redis\|array\|bool` | The messages in the stream newer than the IDs passed to Redis (if any). |
 
 
 ###### *Example*
@@ -5063,7 +5063,7 @@ _**Description**_:  This method is similar to xRead except that it supports read
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|bool` | The messages delivered to this consumer group (if any). |
+| `Redis\|array\|bool` | The messages delivered to this consumer group (if any). |
 
 
 ###### *Examples*
@@ -5092,7 +5092,7 @@ _**Description**_:  This is identical to xRange except the results come back in 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|bool` | The messages in the range specified. |
+| `Redis\|array\|bool` | The messages in the range specified. |
 
 
 ###### *Example*
@@ -5114,7 +5114,7 @@ _**Description**_:  Trim the stream length to a given maximum.  If the "approxim
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|int|false` | The number of messages trimmed from the stream. |
+| `Redis\|int\|false` | The number of messages trimmed from the stream. |
 
 
 ###### *Example*
@@ -5175,7 +5175,7 @@ _**Description**_: Remove one or more channel subscriptions. When all active cha
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|bool` | Outside of a subscription loop the method returns `true` on success. When invoked from within a subscription callback the method returns the server response array (`['unsubscribe', $channel, $remaining]`) until all subscriptions have been removed. |
+| `Redis\|array\|bool` | Outside of a subscription loop the method returns `true` on success. When invoked from within a subscription callback the method returns the server response array (`['unsubscribe', $channel, $remaining]`) until all subscriptions have been removed. |
 
 
 ###### *Example*
@@ -5223,7 +5223,7 @@ _**Description**_: Remove one or more pattern subscriptions that were registered
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|array|bool` | The channels that were removed. |
+| `Redis\|array\|bool` | The channels that were removed. |
 
 
 ###### *Example*
@@ -5336,7 +5336,7 @@ Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single 
 
 | Type | Description |
 | --- | --- | --- |
-| `Redis|bool` | `multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called. |
+| `Redis\|bool` | `multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called. |
 
 
 ###### *Example*
@@ -5363,7 +5363,7 @@ If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction wi
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `array|string` | Either an array with one or more key names, or a string key name |
+| `key` | `array\|string` | Either an array with one or more key names, or a string key name |
 | `other_keys` | `string` | If the first argument was passed as a string, any number of additional string key names may be passed variadically. |
 
 ###### *Example*
@@ -5503,7 +5503,7 @@ None.
 
 | Type | Description |
 | --- | --- | --- |
-| `string|null` | A string with the last returned script based error message, or NULL if there is no error |
+| `string\|null` | A string with the last returned script based error message, or NULL if there is no error |
 
 
 ###### *Examples*
@@ -5821,7 +5821,7 @@ None
 
 | Type | Description |
 | --- | --- | --- |
-| `float|false` | The timeout (DOUBLE) specified in our connect call or FALSE if we're not connected |
+| `float\|false` | The timeout (DOUBLE) specified in our connect call or FALSE if we're not connected |
 
 
 #### getReadTimeout
@@ -5850,7 +5850,7 @@ None
 
 | Type | Description |
 | --- | --- | --- |
-| `string|null` | Returns the persistent id phpredis is using (which will only be set if connected with pconnect), NULL if we're not using a persistent ID, and FALSE if we're not connected |
+| `string\|null` | Returns the persistent id phpredis is using (which will only be set if connected with pconnect), NULL if we're not using a persistent ID, and FALSE if we're not connected |
 
 
 #### getAuth
