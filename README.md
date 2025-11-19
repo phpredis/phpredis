@@ -260,17 +260,20 @@ _**Description**_: Connects to a Redis instance. If phpredis cannot reach the se
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `host` | `string` | the hostname/FQDN/IP address or the path to a unix domain socket; since v5.0.0 it is possible to specify schema |
-| `port` | `int` | actual port (e.g. `6379`) or `-1` (or `0`) for unix domain socket; setting to < `0` with non-UDS will assume default of `6379`, optional |
-| `timeout` | `float` | value in seconds (optional, default is 0 meaning it will use default_socket_timeout) |
-| `reserved` | — | should be '' if retry_interval is specified |
-| `retry_interval` | `int` | value in milliseconds, optional |
-| `read_timeout` | `float` | value in seconds (optional, default is 0 meaning it will use default_socket_timeout) |
-| `others` | `array` | with PhpRedis >= 5.3.0, it allows setting _auth_ and [_stream_](https://www.php.net/manual/en/context.ssl.php) configuration. |
+| `host` | `string` | The Redis server hostname or IP address. |
+| `port` | `int` | The Redis server port. Defaults to 6379. |
+| `timeout` | `float` | The connection timeout in seconds. Defaults to 0 (no timeout). |
+| `persistent_id` | `?string` | If set, a persistent connection will be made with this ID. |
+| `retry_interval` | `int` | The number of milliseconds to wait between connection attempts. |
+| `read_timeout` | `float` | The read timeout in seconds. Defaults to 0 (no timeout). |
+| `context` | `?array` | An optional stream context to use when connecting. See `\Redis::__construct()` for more details. |
 
 ###### *Return value*
 
-*BOOL*: `TRUE` on success. Failures typically raise a `RedisException`, though in some edge cases `FALSE` may be returned instead.
+| Type | Description |
+| --- | --- | --- |
+| `bool` | `TRUE` on success. Failures typically raise a `RedisException`, though in some edge cases `FALSE` may be returned instead. |
+
 
 ###### *Example*
 
@@ -345,16 +348,20 @@ persistent equivalents.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `host` | `string` | the hostname/FQDN/IP address or the path to a unix domain socket; since v5.0.0 it is possible to specify schema |
-| `port` | `int` | actual port (e.g. `6379`) or `-1` (or `0`) for unix domain socket; setting to < `0` with non-UDS will assume default of `6379`, optional |
-| `timeout` | `float` | value in seconds (optional, default is 0 meaning it will use default_socket_timeout) |
-| `persistent_id` | `string` | identity for the requested persistent connection |
-| `retry_interval` | `int` | value in milliseconds (optional) |
-| `read_timeout` | `float` | value in seconds (optional, default is 0 meaning it will use default_socket_timeout) |
+| `host` | `string` | The Redis server hostname. |
+| `port` | `int` | The Redis server port. |
+| `timeout` | `float` | Connection timeout in seconds. |
+| `persistent_id` | `?string` | An optional persistent ID to use for the connection. |
+| `retry_interval` | `int` | The number of microseconds to wait before retrying a connection. |
+| `read_timeout` | `float` | Read timeout in seconds. |
+| `context` | `?array` | An optional stream context array. |
 
 ###### *Return value*
 
-*BOOL*: `TRUE` on success, `FALSE` on error.
+| Type | Description |
+| --- | --- | --- |
+| `bool` | `TRUE` on success, `FALSE` on error. |
+
 
 ###### *Example*
 
@@ -379,12 +386,14 @@ _**Description**_: Authenticate the connection using a password or a username an
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `password` | `MIXED` | — |
+| `credentials` | `mixed` | A string password, or an array with one or two string elements. |
 
 ###### *Return value*
-*BOOL*: `TRUE` if the connection is authenticated, `FALSE` otherwise.
 
-*Note*: In order to authenticate with a username and password you need Redis >= 6.0.
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if the connection is authenticated, `FALSE` otherwise. In order to authenticate with a username and password you need Redis >= 6.0. |
+
 
 ###### *Example*
 ~~~php
@@ -410,10 +419,14 @@ _**Description**_: Change the selected database for the current connection.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `dbindex` | `INTEGER` | the database number to switch to. |
+| `db` | `int` | The database to select. Note that by default Redis has 16 databases (0-15). |
 
 ###### *Return value*
-`TRUE` in case of success, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+
 ###### *Example*
 See method for example: [move](#move)
 
@@ -425,13 +438,15 @@ _**Description**_:  Swap one Redis database with another atomically
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `db1` | `INTEGER` | — |
-| `db2` | `INTEGER` | — |
+| `src` | `int` | The source database number |
+| `dst` | `int` | The destination database number |
 
 ###### *Return value*
-`TRUE` on success and `FALSE` on failure.
 
-*Note*: Requires Redis >= 4.0.0
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` on success and `FALSE` on failure. Requires Redis >= 4.0.0 |
+
 
 ###### *Example*
 ~~~php
@@ -449,7 +464,11 @@ _**Description**_: Disconnects from the Redis instance.
 None.
 
 ###### *Return value*
-*BOOL*: `TRUE` on success, `FALSE` on failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `bool` | `TRUE` on success, `FALSE` on failure. |
+
 
 #### setOption
 -----
@@ -459,11 +478,15 @@ _**Description**_: Set client option.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `parameter name` | — | — |
-| `parameter value` | — | — |
+| `option` | `int` | The option constant. |
+| `value` | `mixed` | The option value. |
 
 ###### *Return value*
-*BOOL*: `TRUE` on success, `FALSE` on error.
+
+| Type | Description |
+| --- | --- | --- |
+| `bool` | `TRUE` on success, `FALSE` on error. |
+
 
 ###### *Example*
 ~~~php
@@ -499,10 +522,14 @@ _**Description**_: Get client option.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `parameter name` | — | — |
+| `option` | `int` | See command documentation. |
 
 ###### *Return value*
-Parameter value.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | The setting itself or false on failure |
+
 
 ###### *Example*
 ~~~php
@@ -521,7 +548,11 @@ $redis->ping([string $message]);
 ~~~
 
 ###### *Return value*
-*Mixed*:  This method returns `TRUE` on success, or the passed string if called with an argument.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | This method returns `TRUE` on success, or the passed string if called with an argument. |
+
 
 ###### *Example*
 ~~~php
@@ -542,16 +573,14 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| — | `STRING` | The message to send. |
+| `str` | `string` | The string to echo |
 
 ###### *Return value*
 
-*STRING*: the same message.
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | the same message. ### Retry and backoff 1. [Maximum retries](#maximum-retries) 1. [Backoff algorithms](#backoff-algorithms) |
 
-### Retry and backoff
-
-1. [Maximum retries](#maximum-retries)
-1. [Backoff algorithms](#backoff-algorithms)
 
 #### Maximum retries
 You can set and get the maximum retries upon connection issues using the `OPT_MAX_RETRIES` option. Note that this is the number of _retries_, meaning if you set this option to _n_, there will be a maximum _n+1_ attempts overall. Defaults to 10.
@@ -610,7 +639,8 @@ _**Description**_: Execute the Redis ACL command.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `...$args` | `mixed` | Variadic ACL subcommand arguments (at least one for `Redis`, two for `RedisCluster`). |
+| `subcmd` | `string` | See command documentation. |
+| `args` | `string` | See command documentation. |
 
 ###### *Example*
 ~~~php
@@ -631,7 +661,11 @@ _**Description**_: Start the background rewrite of AOF (Append-Only File)
 None.
 
 ###### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+
 
 ###### *Example*
 ~~~php
@@ -647,7 +681,11 @@ _**Description**_: Asynchronously save the dataset to disk (in background)
 None.
 
 ###### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`. |
+
 
 ###### *Example*
 ~~~php
@@ -664,8 +702,11 @@ $redis->config(string $operation, string|array|null $key = NULL, ?string $value 
 ~~~
 
 ###### *Return value*
-*Associative array* for `GET`, key(s) -> value(s)
-*bool* for `SET`, `RESETSTAT`, and `REWRITE`
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | for `GET`, key(s) -> value(s) for `SET`, `RESETSTAT`, and `REWRITE` |
+
 
 ###### *Examples*
 ~~~php
@@ -685,7 +726,11 @@ _**Description**_: Return the number of keys in selected database.
 None.
 
 ###### *Return value*
-*INTEGER*: DB size, in number of keys.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | DB size, in number of keys. |
+
 
 ###### *Example*
 ~~~php
@@ -701,10 +746,14 @@ _**Description**_: Remove all keys from all databases.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `async` | `bool` | requires server version 4.0.0 or greater |
+| `sync` | `?bool` | Whether to perform the task in a blocking or non-blocking way. |
 
 ###### *Return value*
-*BOOL*: Always `TRUE`.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | Always `TRUE`. |
+
 
 ###### *Example*
 ~~~php
@@ -721,7 +770,11 @@ $redis->flushdb(?bool $sync = NULL): Redis|bool;
 ~~~
 
 ###### *Return value*
-*BOOL*:  This command returns true on success and false on failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | This command returns true on success and false on failure. |
+
 
 ###### *Example*
 ~~~php
@@ -756,7 +809,7 @@ which will modify what is returned.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `option` | — | The option to provide redis (e.g. "COMMANDSTATS", "CPU") |
+| `sections` | `string` | Optional section(s) you wish Redis server to return. |
 
 ###### *Example*
 ~~~php
@@ -774,7 +827,11 @@ _**Description**_: Returns the timestamp of the last disk save.
 None.
 
 ###### *Return value*
-*INT*: timestamp.
+
+| Type | Description |
+| --- | --- | --- |
+| `int` | The unix timestamp of the last save time |
+
 
 ###### *Example*
 ~~~php
@@ -790,7 +847,11 @@ _**Description**_: Synchronously save the dataset to disk (wait to complete)
 None.
 
 ###### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`. |
+
 
 ###### *Example*
 ~~~php
@@ -805,11 +866,15 @@ _**Description**_: Block the client until a specified number of replicas acknowl
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `numreplicas` | `int` | The number of replicas that must confirm the write. |
-| `timeout` | `int` | Maximum time to wait in milliseconds (`0` to wait indefinitely). |
+| `numreplicas` | `int` | The number of replicas we want to confirm write operations |
+| `timeout` | `int` | How long to wait (zero meaning forever). |
 
 ###### *Return value*
-*INT*: The number of replicas that acknowledged the write before timing out, or `FALSE` on error.
+
+| Type | Description |
+| --- | --- | --- |
+| `int|false` | The number of replicas that acknowledged the write before timing out, or `FALSE` on error. |
+
 
 ###### *Example*
 ~~~php
@@ -829,12 +894,16 @@ _**Description**_: Block until Redis has durably written recent changes to the l
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `numlocal` | `int` | Minimum number of local AOF fsync operations to wait for. |
-| `numreplicas` | `int` | Number of replicas that must acknowledge the write. |
-| `timeout` | `int` | Maximum time to wait in milliseconds (`0` to wait indefinitely). |
+| `numlocal` | `int` | See command documentation. |
+| `numreplicas` | `int` | See command documentation. |
+| `timeout` | `int` | Operation timeout. |
 
 ###### *Return value*
-*ARRAY*: Two integers, where element `0` is the number of local fsync operations performed and element `1` is the number of replica acknowledgements, or `FALSE` on error.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | Two integers, where element `0` is the number of local fsync operations performed and element `1` is the number of replica acknowledgements, or `FALSE` on error. |
+
 
 ###### *Example*
 ~~~php
@@ -853,11 +922,15 @@ _**Description**_: Changes the slave status
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `host` | `string` | Master hostname or IP. Omit both parameters to stop replicating. |
-| `port` | `int` | Master port. |
+| `host` | `?string` | See command documentation. |
+| `port` | `int` | See command documentation. |
 
 ###### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+
 
 ###### *Example*
 ~~~php
@@ -875,8 +948,11 @@ _**Description**_: Return the current server time.
 (none)
 
 ###### *Return value*
-If successful, the time will come back as an associative array with element zero being
-the unix timestamp, and element one being microseconds.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array` | If successful, the time will come back as an associative array with element zero being the unix timestamp, and element one being microseconds. |
+
 
 ###### *Examples*
 ~~~php
@@ -891,17 +967,17 @@ _**Description**_: Access the Redis slowLog
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Operation` | `string` | This can be either `GET`, `LEN`, or `RESET` |
-| `Length` | `integer` | , optional: If executing a `SLOWLOG GET` command, you can pass an optional length. |
+| `operation` | `string` | The operation you wish to perform. This can be one of the following values: 'GET' - Retrieve the Redis slowlog as an array. 'LEN' - Retrieve the length of the slowlog. 'RESET' - Remove all slowlog entries. |
+| `length` | `int` | This optional argument can be passed when operation is 'get' and will specify how many elements to retrieve. If omitted Redis will send up to a default number of entries, which is configurable. Note: With Redis >= 7.0.0 you can send -1 to mean "all". |
 
 #####
 
 ###### *Return value*
-The return value of SLOWLOG will depend on which operation was performed.
-SLOWLOG GET: Array of slowLog entries, as provided by Redis
-SLOGLOG LEN: Integer, the length of the slowLog
-SLOWLOG RESET: Boolean, depending on success
-#####
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | The return value of SLOWLOG will depend on which operation was performed. SLOWLOG GET: Array of slowLog entries, as provided by Redis SLOGLOG LEN: Integer, the length of the slowLog SLOWLOG RESET: Boolean, depending on success ##### |
+
 
 ###### *Examples*
 ~~~php
@@ -974,10 +1050,14 @@ _**Description**_: Get the value related to the specified key
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `string` | The key to query |
 
 ###### *Return value*
-*String* or *Bool*: If key doesn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | or *Bool*: If key doesn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned. |
+
 
 ###### *Examples*
 
@@ -993,8 +1073,8 @@ _**Description**_: Get the value related to the specified key and set its expira
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `options array` | — | (optional) with the following keys: |
+| `key` | `string` | The key to query |
+| `options` | `array` | Options to modify how the command works. $options = [ 'EX' => <seconds> # Expire in N seconds 'PX' => <milliseconds> # Expire in N milliseconds 'EXAT' => <timestamp> # Expire at a unix timestamp (in seconds) 'PXAT' => <mstimestamp> # Expire at a unix timestamp (in milliseconds); 'PERSIST' # Remove any configured expiration on the key. ]; |
 
   * `EX` - expire time in seconds
   * `PX` - expire time in milliseconds
@@ -1003,7 +1083,11 @@ _**Description**_: Get the value related to the specified key and set its expira
   * `PERSIST` - remove the expiration from the key
 
 ###### *Return value*
-*String* or *Bool*: If key doesn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|bool` | or *Bool*: If key doesn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned. |
+
 
 ###### *Examples*
 
@@ -1019,12 +1103,16 @@ _**Description**_: Set the string value in argument as value of the key. If you'
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | — |
-| `Value` | — | — |
-| `Timeout or Options Array` | — | (optional). If you pass an integer, phpredis will redirect to SETEX, and will try to use Redis >= 2.6.12 extended options if you pass an array with valid values |
+| `key` | `string` | The key name to set. |
+| `value` | `mixed` | The value to set the key to. |
+| `options` | `mixed` | Either an array with options for how to perform the set or an integer with an expiration. If an expiration is set PhpRedis will actually send the `SETEX` command. OPTION DESCRIPTION ------------ -------------------------------------------------------------- ['EX' => 60] expire 60 seconds. ['PX' => 6000] expire in 6000 milliseconds. ['EXAT' => time() + 10] expire in 10 seconds. ['PXAT' => time()*1000 + 1000] expire in 1 second. ['KEEPTTL' => true] Redis will not update the key's current TTL. ['XX'] Only set the key if it already exists. ['NX'] Only set the key if it doesn't exist. ['GET'] Instead of returning `+OK` return the previous value of the key or NULL if the key didn't exist. |
 
 ###### *Return value*
-*Bool* `TRUE` if the command is successful.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|bool` | `TRUE` if the command is successful. |
+
 
 ###### *Examples*
 ~~~php
@@ -1050,12 +1138,16 @@ _**Description**_: Set the string value in argument as value of the key, with a 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | — |
-| — | `TTL` | — |
-| `Value` | — | — |
+| `key` | `string` | The name of the key to set. |
+| `expire` | `int` | The key's expiration in seconds. |
+| `value` | `mixed` | The value to set the key. |
 
 ###### *Return value*
-*Bool* `TRUE` if the command is successful, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if the command is successful, `FALSE` in case of failure. |
+
 
 ###### *Examples*
 
@@ -1072,11 +1164,15 @@ _**Description**_: Set the string value in argument as value of the key if the k
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | — |
-| `Value` | — | — |
+| `key` | `string` | The key name to set. |
+| `value` | `mixed` | What to set the key to. |
 
 ###### *Return value*
-*Bool* `TRUE` if the command is successful, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if the command is successful, `FALSE` in case of failure. |
+
 
 ###### *Examples*
 ~~~php
@@ -1092,12 +1188,17 @@ _**Description**_: Remove specified keys.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keys` | `array|string` | Either an array of keys or a variadic list of string arguments (`key1`, `key2`, …). |
+| `key` | `array|string` | Either an array with one or more key names or a string with the name of a key. |
+| `other_keys` | `string` | One or more additional keys passed in a variadic fashion. |
 
 *Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
 
 ###### *Return value*
-*Long* Number of keys deleted (`0` if none existed to start with), `FALSE` in case of unexpected failure (i.e. connection, etc.)
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | Number of keys deleted (`0` if none existed to start with), `FALSE` in case of unexpected failure (i.e. connection, etc.) |
+
 
 ###### *Examples*
 ~~~php
@@ -1124,10 +1225,15 @@ _**Description**_: Verify if the specified key exists.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `mixed` | Either an array of keys or a string key |
+| `other_keys` | `mixed` | If the previous argument was a string, you may send any number of additional keys to test. |
 
 ###### *Return value*
-*Long* Number of keys tested that exist (`0` if none do), `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|bool` | Number of keys tested that exist (`0` if none do), `FALSE` in case of failure. |
+
 
 ###### *Examples*
 ~~~php
@@ -1150,11 +1256,15 @@ _**Description**_: Increment the number stored at key by one. If the second argu
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | — | value that will be added to key (only for incrBy) |
+| `key` | `string` | The key to increment. |
+| `value` | `int` | The amount to increment. |
 
 ###### *Return value*
-*INT* the new value
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the new value |
+
 
 ###### *Examples*
 ~~~php
@@ -1179,11 +1289,15 @@ _**Description**_: Increment the key with floating point precision.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | `float` | value that will be added to the key |
+| `key` | `string` | The key to increment |
+| `value` | `float` | How much to increment (or decrement) the value. |
 
 ###### *Return value*
-*FLOAT* the new value
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|float|false` | The new value of the key or false if the key didn't contain a string. |
+
 
 ###### *Examples*
 ~~~php
@@ -1203,11 +1317,15 @@ _**Description**_: Decrement the number stored at key by one. If the second argu
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | — | value that will be subtracted to key (only for decrBy) |
+| `key` | `string` | The integer key to decrement. |
+| `value` | `int` | How much to decrement the key. |
 
 ###### *Return value*
-*INT* the new value
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The new value of the key or false on failure. |
+
 
 ###### *Examples*
 ~~~php
@@ -1231,10 +1349,14 @@ _**Description**_: Get the values of all the specified keys. If one or more keys
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| — | `Array` | containing the list of the keys |
+| `keys` | `array` | The keys to retrieve |
 
 ###### *Return value*
-*Array*: Array containing the values related to keys in argument
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | Array containing the values related to keys in argument |
+
 
 ###### *Examples*
 ~~~php
@@ -1252,11 +1374,15 @@ _**Description**_: Sets a value and returns the previous entry at that key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
-| `value` | `STRING` | — |
+| `key` | `string` | The key to set. |
+| `value` | `mixed` | The value to set the key to. |
 
 ###### *Return value*
-A string, the previous value located at this key.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | A string, the previous value located at this key. |
+
 ###### *Example*
 ~~~php
 $redis->set('x', '42');
@@ -1272,7 +1398,11 @@ _**Description**_: Returns a random key.
 
 None.
 ###### *Return value*
-*STRING*: an existing key in redis.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | an existing key in redis. |
+
 
 ###### *Example*
 ~~~php
@@ -1288,11 +1418,15 @@ _**Description**_: Moves a key to a different database.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key, the key to move. |
-| `dbindex` | `INTEGER` | the database number to move the key to. |
+| `key` | `string` | The key to move |
+| `index` | `int` | See command documentation. |
 
 ###### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+
 ###### *Example*
 
 ~~~php
@@ -1310,11 +1444,15 @@ _**Description**_: Renames a key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `srckey` | `STRING` | the key to rename. |
-| `dstkey` | `STRING` | the new name for the key. |
+| `old_name` | `string` | The original name of the key |
+| `new_name` | `string` | The new name for the key |
 
 ###### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+
 ###### *Example*
 ~~~php
 $redis->set('x', '42');
@@ -1338,7 +1476,11 @@ public function pexpire(string $key, int $milliseconds, ?string $mode = NULL): R
 ~~~
 
 ###### *Return value*
-*BOOL*: `TRUE` if an expiration was set, and `FALSE` on failure or if one was not set.  You can distinguish between an error and an expiration not being set by checking `getLastError()`.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if an expiration was set, and `FALSE` on failure or if one was not set. You can distinguish between an error and an expiration not being set by checking `getLastError()`. |
+
 ###### *Example*
 ~~~php
 $redis->set('x', '42');
@@ -1358,7 +1500,11 @@ public function pexpireat(string $key, int $unix_timestamp_millis, ?string $mode
 ~~~
 
 ###### *Return value*
-*BOOL*: `TRUE` if an expiration was set and `FALSE` if one was not set or in the event of an error. You can detect an actual error by checking `getLastError()`.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if an expiration was set and `FALSE` if one was not set or in the event of an error. You can detect an actual error by checking `getLastError()`. |
+
 
 ###### *Example*
 ~~~php
@@ -1376,10 +1522,14 @@ _**Description**_: Returns the keys that match a certain pattern.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `pattern` | `STRING` | using '*' as a wildcard. |
+| `pattern` | `string` | Optional glob-style match pattern. |
 
 ###### *Return value*
-*Array of STRING*: The keys that match a certain pattern.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|list<string>|false` | The keys that match a certain pattern. |
+
 
 ###### *Example*
 ~~~php
@@ -1395,14 +1545,17 @@ _**Description**_:  Scan the keyspace for keys
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `LONG (reference)` | — | Iterator, initialized to NULL |
-| `STRING, Optional` | — | Pattern to match |
-| `LONG, Optional` | — | Count of keys per iteration (only a suggestion to Redis) |
+| `iterator` | `null|int|string` | The cursor returned by Redis for every subsequent call to SCAN. On the initial invocation of the call, it should be initialized by the caller to NULL. Each time SCAN is invoked, the iterator will be updated to a new number, until finally Redis will set the value to zero, indicating that the scan is complete. |
+| `pattern` | `?string` | An optional glob-style pattern for matching key names. If passed as NULL, it is the equivalent of sending '*' (match every key). |
+| `count` | `int` | A hint to redis that tells it how many keys to return in a single call to SCAN. The larger the number, the longer Redis may block clients while iterating the key space. |
+| `type` | `?string` | An optional argument to specify which key types to scan (e.g. 'STRING', 'LIST', 'SET') |
 
 ###### *Return value*
-*Array, boolean*:  This function will return an array of keys or FALSE if Redis returns zero keys
 
-*Note*: SCAN is a "directed node" command in [RedisCluster](cluster.md#directed-node-commands)
+| Type | Description |
+| --- | --- | --- |
+| `array|false` | This function will return an array of keys or FALSE if Redis returns zero keys SCAN is a "directed node" command in [RedisCluster](cluster.md#directed-node-commands) |
+
 
 ###### *Example*
 ~~~php
@@ -1444,11 +1597,15 @@ _**Description**_: Describes the object pointed to by a key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `info` | `string` | Attribute to retrieve (`encoding`, `refcount`, or `idletime`). |
-| `key` | `string` | Key to inspect. |
+| `subcommand` | `string` | The subcommand to execute. This can be either 'encoding', 'freq', or 'idle'. |
+| `key` | `string` | The key to query. |
 
 ###### *Return value*
-*STRING* for "encoding", *LONG* for "refcount" and "idletime", `FALSE` if the key doesn't exist.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|string|false` | for "encoding", *LONG* for "refcount" and "idletime", `FALSE` if the key doesn't exist. |
+
 
 ###### *Example*
 ~~~php
@@ -1465,17 +1622,14 @@ _**Description**_: Returns the type of data pointed by a given key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
+| `key` | `string` | The key to check |
 
 ###### *Return value*
 
-Depending on the type of the data pointed by the key, this method will return the following value:
-string: Redis::REDIS_STRING
-set: Redis::REDIS_SET
-list: Redis::REDIS_LIST
-zset: Redis::REDIS_ZSET
-hash: Redis::REDIS_HASH
-other: Redis::REDIS_NOT_FOUND
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | Depending on the type of the data pointed by the key, this method will return the following value: string: Redis::REDIS_STRING set: Redis::REDIS_SET list: Redis::REDIS_LIST zset: Redis::REDIS_ZSET hash: Redis::REDIS_HASH other: Redis::REDIS_NOT_FOUND |
+
 
 ###### *Example*
 ~~~php
@@ -1490,11 +1644,15 @@ _**Description**_: Append specified string to the string stored in specified key
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | — |
-| `Value` | — | — |
+| `key` | `string` | The key in question |
+| `value` | `mixed` | The data to append to the key. |
 
 ###### *Return value*
-*INTEGER*: Size of the value after the append
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | Size of the value after the append |
+
 
 ###### *Example*
 ~~~php
@@ -1511,12 +1669,16 @@ _**Description**_: Return a substring of a larger string
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | — | — |
-| `end` | — | — |
+| `key` | `string` | The string to query. |
+| `start` | `int` | The zero-based starting index. |
+| `end` | `int` | The zero-based ending index. |
 
 ###### *Return value*
-*STRING*: the substring
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | The substring or false on failure. |
+
 
 ###### *Example*
 ~~~php
@@ -1533,12 +1695,16 @@ _**Description**_: Changes a substring of a larger string.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `offset` | — | — |
-| `value` | — | — |
+| `key` | `string` | The key to update |
+| `index` | `int` | Where to insert the provided value |
+| `value` | `string` | The value to copy into the string. |
 
 ###### *Return value*
-*STRING*: the length of the string after it was modified.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the length of the string after it was modified. |
+
 
 ###### *Example*
 ~~~php
@@ -1555,10 +1721,14 @@ _**Description**_: Get the length of a string value.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `string` | The key we want the length of. |
 
 ###### *Return value*
-*INTEGER*
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The length of the string key if it exists, zero if it does not, and false on failure. |
+
 
 ###### *Example*
 ~~~php
@@ -1574,11 +1744,15 @@ _**Description**_: Return a single bit out of a larger string
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `offset` | — | — |
+| `key` | `string` | The key to query. |
+| `idx` | `int` | The Nth bit that we want to query. |
 
 ###### *Return value*
-*LONG*: the bit value (0 or 1)
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the bit value (0 or 1) |
+
 
 ###### *Example*
 ~~~php
@@ -1595,12 +1769,16 @@ _**Description**_: Changes a single bit of a string.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `offset` | — | — |
-| `value` | `bool` | or int (1 or 0) |
+| `key` | `string` | The Redis STRING key to modify |
+| `idx` | `int` | See command documentation. |
+| `value` | `bool` | Whether to set the bit to zero or one. |
 
 ###### *Return value*
-*LONG*: 0 or 1, the value of the bit before it was set.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | 0 or 1, the value of the bit before it was set. |
+
 
 ###### *Example*
 ~~~php
@@ -1618,13 +1796,17 @@ _**Description**_: Bitwise operation on multiple keys.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `operation` | — | either "AND", "OR", "NOT", "XOR" |
-| `ret_key` | — | return key |
-| `key1` | — | — |
-| `key2...` | — | — |
+| `operation` | `string` | See command documentation. |
+| `deskey` | `string` | See command documentation. |
+| `srckey` | `string` | See command documentation. |
+| `other_keys` | `string` | Additional keys. |
 
 ###### *Return value*
-*LONG*: The size of the string stored in the destination key.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The size of the string stored in the destination key. |
+
 
 #### bitCount
 -----
@@ -1634,10 +1816,17 @@ _**Description**_: Count bits in a string.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `string` | The key in question (must be a string key) |
+| `start` | `int` | The index where Redis should start counting. If omitted it defaults to zero, which means the start of the string. |
+| `end` | `int` | The index where Redis should stop counting. If omitted it defaults to -1, meaning the very end of the string. |
+| `bybit` | `bool` | Whether or not Redis should treat $start and $end as bit positions, rather than bytes. |
 
 ###### *Return value*
-*LONG*: The number of bits set to 1 in the value behind the input key.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of bits set to 1 in the value behind the input key. |
+
 
 #### sort
 -----
@@ -1647,8 +1836,8 @@ _**Description**_: Sort the elements in a list, set or sorted set.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
-| `Options` | — | [key => value, ...] - optional, with the following keys and values: |
+| `key` | `string` | The key you wish to sort |
+| `options` | `?array` | Various options controlling how you would like the data sorted. See blow for a detailed description of this options array. |
 
 ~~~
     'by' => 'some_pattern_*',
@@ -1659,7 +1848,11 @@ _**Description**_: Sort the elements in a list, set or sorted set.
     'store' => 'external-key'
 ~~~
 ###### *Return value*
-An array of values, or a number corresponding to the number of elements stored if that was used.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | An array of values, or a number corresponding to the number of elements stored if that was used. |
+
 
 ###### *Example*
 ~~~php
@@ -1686,10 +1879,14 @@ _**Description**_: Returns the time to live left for a given key in seconds (ttl
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
+| `key` | `string` | The Key we want the TTL for. |
 
 ###### *Return value*
-*LONG*: The time to live in seconds. If the key has no ttl, `-1` will be returned, and `-2` if the key doesn't exist.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The time to live in seconds. If the key has no ttl, `-1` will be returned, and `-2` if the key doesn't exist. |
+
 
 ###### *Example*
 ~~~php
@@ -1704,10 +1901,14 @@ _**Description**_: Remove the expiration timer from a key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
+| `key` | `string` | The key to operate against. |
 
 ###### *Return value*
-*BOOL*: `TRUE` if a timeout was removed, `FALSE` if the key didn’t exist or didn’t have an expiration timer.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if a timeout was removed, `FALSE` if the key didn’t exist or didn’t have an expiration timer. |
+
 
 ###### *Example*
 ~~~php
@@ -1722,10 +1923,14 @@ _**Description**_: Sets multiple key-value pairs in one atomic command. MSETNX o
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Pairs` | — | [key => value, ...] |
+| `key_values` | `array` | An array with keys and their values. |
 
 ###### *Return value*
-*Bool* `TRUE` in case of success, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
+
 
 ###### *Example*
 ~~~php
@@ -1751,10 +1956,14 @@ that comes out of DUMP is a binary representation of the key as Redis stores it.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `string` | — |
+| `key` | `string` | The key to dump. |
 
 ###### *Return value*
-The Redis encoded value of the key, or FALSE if the key doesn't exist
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | The Redis encoded value of the key, or FALSE if the key doesn't exist |
+
 ###### *Examples*
 ~~~php
 $redis->set('foo', 'bar');
@@ -1768,9 +1977,10 @@ _**Description**_: Restore a key from the result of a DUMP operation.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `string` | The key name |
-| `ttl` | — | integer.  How long the key should live (if zero, no expire will be set on the key) |
-| `value` | — | string (binary).  The Redis encoded key value (from DUMP) |
+| `key` | `string` | The name of the key you wish to create. |
+| `ttl` | `int` | What Redis should set the key's TTL (in milliseconds) to once it is created. Zero means no TTL at all. |
+| `value` | `string` | The serialized binary value of the string (generated by DUMP). |
+| `options` | `?array` | An array of additional options that modifies how the command operates. $options = [ 'ABSTTL' # If this is present, the `$ttl` provided by the user should # be an absolute timestamp, in milliseconds() 'REPLACE' # This flag instructs Redis to store the key even if a key with # that name already exists. 'IDLETIME' => int # Tells Redis to set the keys internal 'idletime' value to a # specific number (see the Redis command OBJECT for more info). 'FREQ' => int # Tells Redis to set the keys internal 'FREQ' value to a specific # number (this relates to Redis' LFU eviction algorithm). ]; |
 
 ###### *Examples*
 ~~~php
@@ -1790,13 +2000,14 @@ that version to call `migrate` with an array of keys.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `host` | `string` | The destination host |
-| `port` | `integer` | The TCP port to connect to. |
-| `key(s)` | `string` | or array. |
-| `destination-db` | `integer` | The target DB. |
-| `timeout` | `integer` | The maximum amount of time given to this transfer. |
-| `copy` | `boolean` | optional.  Should we send the COPY flag to redis. |
-| `replace` | `boolean` | optional.  Should we send the REPLACE flag to redis |
+| `host` | `string` | The destination redis host. |
+| `port` | `int` | The destination redis port. |
+| `key` | `string|array` | The key or array of keys to migrate. |
+| `dstdb` | `int` | The destination database index. |
+| `timeout` | `int` | The timeout for the operation in milliseconds. |
+| `copy` | `bool` | Whether to copy the key(s) or move them. |
+| `replace` | `bool` | Whether to replace existing keys on the destination. |
+| `credentials` | `mixed` | Optional credentials for authenticating to the destination server. |
 
 ###### *Examples*
 ~~~php
@@ -1835,12 +2046,15 @@ _**Description**_: Adds a value to the hash stored at key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `hashKey` | — | — |
-| `value` | — | — |
+| `key` | `string` | The hash to create/update. |
+| `fields_and_vals` | `mixed` | Argument pairs of fields and values. Alternatively, an associative array with the fields and their values. |
 
 ###### *Return value*
-*LONG* `1` if value didn't exist and was added successfully, `0` if the value was already present and was replaced, `FALSE` if there was an error.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | `1` if value didn't exist and was added successfully, `0` if the value was already present and was replaced, `FALSE` if there was an error. |
+
 ###### *Example*
 ~~~php
 $redis->del('h')
@@ -1856,7 +2070,11 @@ $redis->hGet('h', 'key1'); /* returns "plop" */
 _**Description**_: Adds a value to the hash stored at key only if this field isn't already in the hash.
 
 ###### *Return value*
-*BOOL* `TRUE` if the field was set, `FALSE` if it was already present.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if the field was set, `FALSE` if it was already present. |
+
 
 ###### *Example*
 ~~~php
@@ -1873,12 +2091,14 @@ _**Description**_: Gets a value from the hash stored at key. If the hash table d
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `hashKey` | — | — |
+| `key` | `string` | The key name. |
+| `member` | `string` | The set member name. |
 
 ###### *Return value*
-*STRING* The value, if the command executed successfully
-*BOOL* `FALSE` in case of failure
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | The value, if the command executed successfully `FALSE` in case of failure |
 
 
 #### hLen
@@ -1888,10 +2108,14 @@ _**Description**_: Returns the length of a hash, in number of items
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `string` | The hash to check. |
 
 ###### *Return value*
-*LONG* the number of items in a hash, `FALSE` if the key doesn't exist or isn't a hash.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the number of items in a hash, `FALSE` if the key doesn't exist or isn't a hash. |
+
 ###### *Example*
 ~~~php
 $redis->del('h')
@@ -1907,14 +2131,17 @@ _**Description**_: Removes a value from the hash stored at key. If the hash tabl
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `hashKey1` | — | — |
-| `hashKey2` | — | — |
+| `key` | `string` | The hash key in question. |
+| `field` | `string` | The first field to remove |
+| `other_fields` | `string` | One or more additional fields to remove. |
 
 ...
 
 ###### *Return value*
-*LONG* the number of deleted keys, 0 if the key doesn't exist, `FALSE` if the key isn't a hash.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the number of deleted keys, 0 if the key doesn't exist, `FALSE` if the key isn't a hash. |
 
 
 #### hKeys
@@ -1925,10 +2152,14 @@ _**Description**_: Returns the keys in a hash, as an array of strings.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
+| `key` | `string` | The hash to query. |
 
 ###### *Return value*
-An array of elements, the keys of the hash. This works like PHP's array_keys().
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|list<string>|false` | An array of elements, the keys of the hash. This works like PHP's array_keys(). |
+
 
 ###### *Example*
 ~~~php
@@ -1963,10 +2194,14 @@ _**Description**_: Returns the values in a hash, as an array of strings.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
+| `key` | `string` | The hash to query. |
 
 ###### *Return value*
-An array of elements, the values of the hash. This works like PHP's array_values().
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|list<mixed>|false` | An array of elements, the values of the hash. This works like PHP's array_values(). |
+
 
 ###### *Example*
 ~~~php
@@ -2001,10 +2236,14 @@ _**Description**_: Returns the whole hash, as an array of strings indexed by str
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
+| `key` | `string` | The hash to query. |
 
 ###### *Return value*
-An array of elements, the contents of the hash.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array<string|int,` | An array of elements, the contents of the hash. |
+
 
 ###### *Example*
 ~~~php
@@ -2038,11 +2277,15 @@ _**Description**_: Verify if the specified member exists in a key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `memberKey` | — | — |
+| `key` | `string` | The hash to query. |
+| `field` | `string` | The field to check |
 
 ###### *Return value*
-*BOOL*: If the member exists in the hash table, return `TRUE`, otherwise return `FALSE`.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | If the member exists in the hash table, return `TRUE`, otherwise return `FALSE`. |
+
 ###### *Examples*
 ~~~php
 $redis->hSet('h', 'a', 'x');
@@ -2057,12 +2300,16 @@ _**Description**_: Increments the value of a member from a hash by a given amoun
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `member` | — | — |
-| `value` | `integer` | value that will be added to the member's value |
+| `key` | `string` | The hash to modify |
+| `field` | `string` | The field to increment |
+| `value` | `int` | How much to increment the value. |
 
 ###### *Return value*
-*LONG* the new value
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The new value of the field. |
+
 ###### *Examples*
 ~~~php
 $redis->del('h');
@@ -2077,12 +2324,16 @@ _**Description**_: Increments the value of a hash member by the provided float v
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `member` | — | — |
-| `value` | `float` | value that will be added to the member's value |
+| `key` | `string` | The hash with the field to increment. |
+| `field` | `string` | The field to increment. |
+| `value` | `float` | The value to use. |
 
 ###### *Return value*
-*FLOAT* the new value
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|float|false` | The field value after incremented. |
+
 ###### *Examples*
 ~~~php
 $redis->del('h');
@@ -2098,11 +2349,15 @@ _**Description**_: Fills in a whole hash. Non-string values are converted to str
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `members` | — | key → value array |
+| `key` | `string` | The hash to create/update |
+| `fieldvals` | `array` | An associative array with fields and their values. |
 
 ###### *Return value*
-*BOOL*
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | True if the operation was successful |
+
 ###### *Examples*
 ~~~php
 $redis->del('user:1');
@@ -2117,11 +2372,15 @@ _**Description**_: Retrieve the values associated to the specified fields in the
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `memberKeys` | `Array` | — |
+| `key` | `string` | The hash to query. |
+| `fields` | `array` | One or more fields to query in the hash. |
 
 ###### *Return value*
-*Array* An array of elements, the values of the specified fields in the hash, with the hash keys as array keys.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | An array of elements, the values of the specified fields in the hash, with the hash keys as array keys. |
+
 ###### *Examples*
 ~~~php
 $redis->del('h');
@@ -2137,13 +2396,17 @@ _**Description**_:  Scan a HASH value for members, with an optional pattern and 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `String` | — |
-| `iterator` | `Long` | (reference) |
-| `pattern` | — | Optional pattern to match against |
-| `count` | — | How many keys to return in a go (only a suggestion to Redis) |
+| `key` | `string` | The hash to query. |
+| `iterator` | `null|int|string` | The scan iterator, which should be initialized to NULL before the first call. This value will be updated after every call to hscan, until it reaches zero meaning the scan is complete. |
+| `pattern` | `?string` | An optional glob-style pattern to filter fields with. |
+| `count` | `int` | An optional hint to Redis about how many fields and values to return per HSCAN. |
 
 ###### *Return value*
-*Array* An array of members that match our pattern
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|bool` | An array of members that match our pattern |
+
 
 ###### *Examples*
 ~~~php
@@ -2164,30 +2427,15 @@ _**Description**_: Get the string length of the value associated with field in t
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `String` | — |
-| `field` | `String` | — |
+| `key` | `string` | The hash to query. |
+| `field` | `string` | The field to query. |
 
 ###### *Return value*
-*LONG* the string length of the value associated with field, or zero when field is not present in the hash or key does not exist at all.
 
-### Lists
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the string length of the value associated with field, or zero when field is not present in the hash or key does not exist at all.; ### Lists; [blPop, brPop](#blpop-brpop) - Remove and get the first/last element in a list; [bRPopLPush](#brpoplpush) - Pop a value from a list, push it to another list and return it; [lIndex](#lindex) - Get an element from a list by its index; [lInsert](#linsert) - Insert an element before or after another element in a list; [lLen](#llen) - Get the length/size of a list; [lPop](#lpop) - Remove and get the first element in a list; [lPush](#lpush) - Prepend one or multiple values to a list; [lPushx](#lpushx) - Prepend a value to a list, only if the list exists; [lRange](#lrange) - Get a range of elements from a list; [lRem](#lrem) - Remove elements from a list; [lSet](#lset) - Set the value of an element in a list by its index; [lTrim](#ltrim) - Trim a list to the specified range; [rPop](#rpop) - Remove and get the last element in a list; [rPopLPush](#rpoplpush) - Remove the last element in a list, append it to another list and return it (redis >= 1.1); [rPush](#rpush) - Append one or multiple values to a list; [rPushX](#rpushx) - Append a value to a list, only if the list exists |
 
-* [blPop, brPop](#blpop-brpop) - Remove and get the first/last element in a list
-* [bRPopLPush](#brpoplpush) - Pop a value from a list, push it to another list and return it
-* [lIndex](#lindex) - Get an element from a list by its index
-* [lInsert](#linsert) - Insert an element before or after another element in a list
-* [lLen](#llen) - Get the length/size of a list
-* [lPop](#lpop) - Remove and get the first element in a list
-* [lPush](#lpush) - Prepend one or multiple values to a list
-* [lPushx](#lpushx) - Prepend a value to a list, only if the list exists
-* [lRange](#lrange) - Get a range of elements from a list
-* [lRem](#lrem) - Remove elements from a list
-* [lSet](#lset) - Set the value of an element in a list by its index
-* [lTrim](#ltrim) - Trim a list to the specified range
-* [rPop](#rpop) - Remove and get the last element in a list
-* [rPopLPush](#rpoplpush) - Remove the last element in a list, append it to another list and return it (redis >= 1.1)
-* [rPush](#rpush) - Append one or multiple values to a list
-* [rPushX](#rpushx) - Append a value to a list, only if the list exists
 
 #### blPop, brPop
 -----
@@ -2198,8 +2446,9 @@ If all the list identified by the keys passed in arguments are empty, blPop will
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| — | `ARRAY` | containing the keys of the lists |
-| `Timeout` | `INTEGER` | — |
+| `key_or_keys` | `string|array` | This can either be a string key or an array of one or more keys. |
+| `timeout_or_key` | `string|float|int` | If the previous argument was a string key, this can either be an additional key, or the timeout you wish to send to the command. |
+| `extra_args` | `mixed` | See command documentation. |
 
 Or
 *STRING* Key1
@@ -2210,7 +2459,11 @@ Or
 *INTEGER* Timeout
 
 ###### *Return value*
-*ARRAY* ['listName', 'element']
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|null|false` | Can return various things depending on command and data in Redis. |
+
 
 ###### *Example*
 ~~~php
@@ -2248,12 +2501,16 @@ _**Description**_: A blocking version of `rPopLPush`, with an integral timeout i
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | srckey |
-| `Key` | — | dstkey |
-| `timeout` | `Long` | — |
+| `src` | `string` | The source list |
+| `dst` | `string` | The destination list |
+| `timeout` | `int|float` | The number of seconds to wait. Note that you must be connected to Redis >= 6.0.0 to send a floating point timeout. |
 
 ###### *Return value*
-*STRING* The element that was moved in case of success, `FALSE` in case of timeout.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | The element that was moved in case of success, `FALSE` in case of timeout. |
+
 
 #### lIndex
 -----
@@ -2268,12 +2525,15 @@ Return `FALSE` in case of a bad index or a key that doesn't point to a list.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `index` | — | — |
+| `key` | `string` | The key to query |
+| `index` | `int` | The index to check. |
 
 ###### *Return value*
-*String* the element at this index
-*Bool* `FALSE` if the key identifies a non-string data type, or no value corresponds to this index in the list `Key`.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | the element at this index `FALSE` if the key identifies a non-string data type, or no value corresponds to this index in the list `Key`. |
+
 
 ###### *Example*
 ~~~php
@@ -2296,13 +2556,17 @@ If the list didn't exists, or the pivot didn't exists, the value is not inserted
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `position` | — | Redis::BEFORE \| Redis::AFTER |
-| `pivot` | — | — |
-| `value` | — | — |
+| `key` | `string` | The key name. |
+| `pos` | `string` | See command documentation. |
+| `pivot` | `mixed` | See command documentation. |
+| `value` | `mixed` | The value to use. |
 
 ###### *Return value*
-The number of the elements in the list, -1 if the pivot didn't exists.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of the elements in the list, -1 if the pivot didn't exists. |
+
 
 ###### *Example*
 ~~~php
@@ -2330,11 +2594,15 @@ _**Description**_: Return and remove the first element of the list.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `string` | The list to pop from. |
+| `count` | `int` | Optional number of elements to remove. By default one element is popped. |
 
 ###### *Return value*
-*STRING* if command executed successfully
-*BOOL* `FALSE` in case of failure (empty list)
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool|string|array` | if command executed successfully `FALSE` in case of failure (empty list) |
+
 
 ###### *Example*
 ~~~php
@@ -2354,7 +2622,11 @@ $redis->lPush($key, $entry [, $entry, $entry]);
 ~~~
 
 ###### *Return value*
-*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
+
 
 ###### *Examples*
 ~~~php
@@ -2376,11 +2648,15 @@ _**Description**_: Adds the string value to the head (left) of the list if the l
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | `String` | value to push in key |
+| `key` | `string` | The key to prepend to. |
+| `value` | `mixed` | The value to prepend. |
 
 ###### *Return value*
-*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
+
 
 ###### *Examples*
 ~~~php
@@ -2402,12 +2678,16 @@ _**Description**_: Returns the specified elements of the list stored at the spec
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | — | — |
-| `end` | — | — |
+| `key` | `string` | The list to query. |
+| `start` | `int` | The beginning index to retrieve. This number can be negative meaning start from the end of the list. |
+| `end` | `int` | The end index to retrieve. This can also be negative to start from the end of the list. |
 
 ###### *Return value*
-*Array* containing the values in specified range.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | containing the values in specified range. |
+
 
 ###### *Example*
 ~~~php
@@ -2427,13 +2707,16 @@ _**Description**_: Removes the first `count` occurrences of the value element fr
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | — | — |
-| `count` | — | — |
+| `key` | `string` | The list to truncate. |
+| `value` | `mixed` | The value to remove. |
+| `count` | `int` | How many elements matching the value to remove. |
 
 ###### *Return value*
-*LONG* the number of elements to remove
-*BOOL* `FALSE` if the value identified by key is not a list.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the number of elements to remove `FALSE` if the value identified by key is not a list. |
+
 
 ###### *Example*
 ~~~php
@@ -2456,12 +2739,16 @@ _**Description**_: Set the list at index with the new value.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `index` | — | — |
-| `value` | — | — |
+| `key` | `string` | The list to modify. |
+| `index` | `int` | The position of the element to change. |
+| `value` | `mixed` | The new value. |
 
 ###### *Return value*
-*BOOL* `TRUE` if the new value was set. `FALSE` if the index is out of range, or data type identified by key is not a list.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if the new value was set. `FALSE` if the index is out of range, or data type identified by key is not a list. |
+
 
 ###### *Example*
 ~~~php
@@ -2481,13 +2768,16 @@ _**Description**_: Trims an existing list so that it will contain only a specifi
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | — | — |
-| `stop` | — | — |
+| `key` | `string` | The list to trim |
+| `start` | `int` | The starting index to keep |
+| `end` | `int` | The ending index to keep. |
 
 ###### *Return value*
-*Array*
-*Bool* return `FALSE` if the key identify a non-list value.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | return `FALSE` if the key identify a non-list value. |
+
 
 ###### *Example*
 ~~~php
@@ -2507,11 +2797,15 @@ _**Description**_: Returns and removes the last element of the list.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `string` | A redis LIST key name. |
+| `count` | `int` | The maximum number of elements to pop at once. NOTE: The `count` argument requires Redis >= 6.2.0 |
 
 ###### *Return value*
-*STRING* if command executed successfully
-*BOOL* `FALSE` in case of failure (empty list)
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|string|bool` | if command executed successfully `FALSE` in case of failure (empty list) |
+
 
 ###### *Example*
 ~~~php
@@ -2529,11 +2823,15 @@ _**Description**_: Pops a value from the tail of a list, and pushes it to the fr
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | srckey |
-| `Key` | — | dstkey |
+| `srckey` | `string` | The source key to pop from. |
+| `dstkey` | `string` | The destination key to push to. |
 
 ###### *Return value*
-*STRING* The element that was moved in case of success, `FALSE` in case of failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | The element that was moved in case of success, `FALSE` in case of failure. |
+
 
 ###### *Example*
 ~~~php
@@ -2577,7 +2875,11 @@ $redis->rPush($key, $entry [, $entry, $entry]);
 ~~~
 
 ###### *Return value*
-*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
+
 
 ###### *Examples*
 ~~~php
@@ -2597,11 +2899,15 @@ _**Description**_: Adds the string value to the tail (right) of the list if the 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | `String` | value to push in key |
+| `key` | `string` | The key to prepend to. |
+| `value` | `mixed` | The value to prepend. |
 
 ###### *Return value*
-*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The new length of the list in case of success, `FALSE` in case of Failure. |
+
 
 ###### *Examples*
 ~~~php
@@ -2623,11 +2929,14 @@ If the list didn't exist or is empty, the command returns 0. If the data type id
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | — |
+| `key` | `string` | The list |
 
 ###### *Return value*
-*LONG* The size of the list identified by Key exists.
-*BOOL* `FALSE` if the data type identified by Key is not list
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The size of the list identified by Key exists. `FALSE` if the data type identified by Key is not list |
+
 
 ###### *Example*
 ~~~php
@@ -2665,11 +2974,16 @@ _**Description**_: Adds a value to the set value stored at key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | — | — |
+| `key` | `string` | The key name |
+| `value` | `mixed` | A value to add to the set. |
+| `other_values` | `mixed` | One or more additional values to add |
 
 ###### *Return value*
-*LONG* the number of elements added to the set.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the number of elements added to the set. |
+
 ###### *Example*
 ~~~php
 $redis->sAdd('key1' , 'member1'); /* 1, 'key1' => {'member1'} */
@@ -2684,10 +2998,14 @@ _**Description**_: Returns the cardinality of the set identified by key.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `string` | The set to get the cardinality of. |
 
 ###### *Return value*
-*LONG* the cardinality of the set identified by key, 0 if the set doesn't exist.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the cardinality of the set identified by key, 0 if the set doesn't exist. |
+
 ###### *Example*
 ~~~php
 $redis->sAdd('key1' , 'member1');
@@ -2705,10 +3023,15 @@ _**Description**_: Performs the difference between N sets and returns it.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Keys` | — | key1, key2, ... , keyN: Any number of keys corresponding to sets in redis. |
+| `key` | `string` | The first set |
+| `other_keys` | `string` | One or more additional sets |
 
 ###### *Return value*
-*Array of strings*: The difference of the first set will all the others.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | The difference of the first set will all the others. |
+
 
 ###### *Example*
 ~~~php
@@ -2724,7 +3047,12 @@ $redis->sAdd('s2', '3');
 
 var_dump($redis->sDiff('s0', 's1', 's2'));
 ~~~
-Return value: all elements of s0 that are neither in s1 nor in s2.
+###### *Return value*
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | all elements of s0 that are neither in s1 nor in s2. |
+
 ~~~
 array(2) {
   [0]=>
@@ -2741,11 +3069,16 @@ _**Description**_: Performs the same action as sDiff, but stores the result in t
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | dstkey, the key to store the diff into. |
-| `Keys` | — | key1, key2, ... , keyN: Any number of keys corresponding to sets in redis |
+| `dst` | `string` | The key where to store the result |
+| `key` | `string` | The first key to perform the DIFF on |
+| `other_keys` | `string` | One or more additional keys. |
 
 ###### *Return value*
-*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
+
 
 ###### *Example*
 ~~~php
@@ -2762,7 +3095,12 @@ $redis->sAdd('s2', '3');
 var_dump($redis->sDiffStore('dst', 's0', 's1', 's2'));
 var_dump($redis->sMembers('dst'));
 ~~~
-Return value: the number of elements of s0 that are neither in s1 nor in s2.
+###### *Return value*
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the number of elements of s0 that are neither in s1 nor in s2. |
+
 ~~~
 int(2)
 array(2) {
@@ -2784,12 +3122,15 @@ is missing, `FALSE` is returned.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key1` | `string` | Key for the first set. |
-| `...keyN` | `string` | Additional set keys to intersect. |
+| `key` | `array|string` | The first SET key to intersect. |
+| `other_keys` | `string` | One or more Redis SET keys. |
 
 ###### *Return value*
 
-Array, containing the result of the intersection between those keys. If the intersection between the different sets is empty, the return value will be an empty array.
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | Array, containing the result of the intersection between those keys. If the intersection between the different sets is empty, the return value will be an empty array. |
+
 
 ###### *Examples*
 ~~~php
@@ -2825,11 +3166,15 @@ _**Description**_: Performs a sInter command and stores the result in a new set.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | dstkey, the key to store the diff into. |
-| `Keys` | — | key1, key2... keyN. key1..keyN are intersected as in sInter. |
+| `key` | `array|string` | Either a string key, or an array of keys (with at least two elements, consisting of the destination key name and one or more source keys names. |
+| `other_keys` | `string` | If the first argument was a string, subsequent arguments should be source key names. |
 
 ###### *Return value*
-*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
+
 
 ###### *Example*
 ~~~php
@@ -2868,11 +3213,15 @@ _**Description**_: Checks if `value` is a member of the set stored at the key `k
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | — | — |
+| `key` | `string` | The redis set to check. |
+| `value` | `mixed` | The value to test. |
 
 ###### *Return value*
-*BOOL* `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise. |
+
 ###### *Example*
 ~~~php
 $redis->sAdd('key1' , 'member1');
@@ -2891,10 +3240,14 @@ _**Description**_: Returns the contents of a set.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | key |
+| `key` | `string` | The set name. |
 
 ###### *Return value*
-An array of elements, the contents of the set.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | An array of elements, the contents of the set. |
+
 
 ###### *Example*
 ~~~php
@@ -2926,12 +3279,16 @@ _**Description**_: Moves the specified member from the set at srcKey to the set 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `srcKey` | — | — |
-| `dstKey` | — | — |
-| `member` | — | — |
+| `src` | `string` | The source set. |
+| `dst` | `string` | The destination set. |
+| `value` | `mixed` | The member you wish to move. |
 
 ###### *Return value*
-*BOOL* If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned. |
+
 ###### *Example*
 ~~~php
 $redis->sAdd('key1' , 'member11');
@@ -2951,15 +3308,21 @@ _**Description**_: Removes and returns a random element from the set value at Ke
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `count` | `Integer` | optional |
+| `key` | `string` | The set in question. |
+| `count` | `int` | An optional number of members to pop. This defaults to removing one element. |
 
 ###### *Return value (without count argument)*
-*String* "popped" value
-*Bool* `FALSE` if set identified by key is empty or doesn't exist.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|array|false` | "popped" value `FALSE` if set identified by key is empty or doesn't exist. |
+
 ###### *Return value (with count argument)*
-*Array*: Member(s) returned or an empty array if the set doesn't exist
-*Bool*: `FALSE` on error if the key is not a set
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|array|false` | Member(s) returned or an empty array if the set doesn't exist `FALSE` on error if the key is not a set |
+
 ###### *Example*
 ~~~php
 $redis->sAdd('key1' , 'member1');
@@ -2980,14 +3343,15 @@ _**Description**_: Returns a random element from the set value at Key, without r
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `count` | — | (Integer, optional) |
+| `key` | `string` | The set to query. |
+| `count` | `int` | An optional count of members to return. If this value is positive, Redis will return *up to* the requested number but with unique elements that will never repeat. This means you may receive fewer then `$count` replies. If the number is negative, Redis will return the exact number requested but the result may contain duplicate elements. |
 
 ###### *Return value*
-If no count is provided, a random *String* value from the set will be returned. If a count
-is provided, an array of values from the set will be returned.  Read about the different
-ways to use the count here: [SRANDMEMBER](http://redis.io/commands/srandmember)
-*Bool* `FALSE` if set identified by key is empty or doesn't exist.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|string|false` | If no count is provided, a random *String* value from the set will be returned. If a count is provided, an array of values from the set will be returned. Read about the different ways to use the count here: [SRANDMEMBER](http://redis.io/commands/srandmember) `FALSE` if set identified by key is empty or doesn't exist. |
+
 ###### *Example*
 ~~~php
 $redis->sAdd('key1' , 'member1');
@@ -3013,11 +3377,16 @@ _**Description**_: Removes the specified member from the set value stored at key
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `member` | — | — |
+| `key` | `string` | The Redis SET key in question. |
+| `value` | `mixed` | The first value to remove. |
+| `other_values` | `mixed` | One or more additional values to remove. |
 
 ###### *Return value*
-*LONG* The number of elements removed from the set.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of elements removed from the set. |
+
 ###### *Example*
 ~~~php
 $redis->sAdd('key1' , 'member1');
@@ -3034,12 +3403,15 @@ _**Description**_: Performs the union between N sets and returns it.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Keys` | — | key1, key2, ... , keyN: Any number of keys corresponding to sets in redis. |
+| `key` | `string` | The first SET to do a union with |
+| `other_keys` | `string` | One or more subsequent keys |
 
 ###### *Return value*
-*Array of strings*: The union of all these sets.
 
-**Note:** `sUnion` can also take a single array with keys (see example below).
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | The union of all these sets.; *Note:** `sUnion` can also take a single array with keys (see example below). |
+
 
 ###### *Example*
 ~~~php
@@ -3059,7 +3431,12 @@ var_dump($redis->sUnion('s0', 's1', 's2'));
 var_dump($redis->sUnion(['s0', 's1', 's2']));
 
 ~~~
-Return value: all elements that are either in s0 or in s1 or in s2.
+###### *Return value*
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | all elements that are either in s0 or in s1 or in s2. |
+
 ~~~
 array(4) {
   [0]=>
@@ -3081,11 +3458,16 @@ _**Description**_: Performs the same action as sUnion, but stores the result in 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | dstkey, the key to store the diff into. |
-| `Keys` | — | key1, key2, ... , keyN: Any number of keys corresponding to sets in redis. |
+| `dst` | `string` | The destination key |
+| `key` | `string` | The first source key |
+| `other_keys` | `string` | One or more additional source keys |
 
 ###### *Return value*
-*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The cardinality of the resulting set, or `FALSE` in case of a missing key. |
+
 
 ###### *Example*
 ~~~php
@@ -3101,7 +3483,12 @@ $redis->sAdd('s2', '4');
 var_dump($redis->sUnionStore('dst', 's0', 's1', 's2'));
 var_dump($redis->sMembers('dst'));
 ~~~
-Return value: the number of elements that are either in s0 or in s1 or in s2.
+###### *Return value*
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the number of elements that are either in s0 or in s1 or in s2. |
+
 ~~~
 int(4)
 array(4) {
@@ -3124,13 +3511,17 @@ _**Description**_: Scan a set for members
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `Key` | — | The set to search |
-| `iterator` | `LONG` | (reference) to the iterator as we go |
-| `pattern` | `String` | optional pattern to match against |
-| `count` | — | How many members to return at a time (Redis might return a different amount) |
+| `key` | `string` | The Redis SET key in question. |
+| `iterator` | `null|int|string` | A reference to an iterator which should be initialized to NULL that PhpRedis will update with the value returned from Redis after each subsequent call to SSCAN. Once this cursor is zero you know all members have been traversed. |
+| `pattern` | `?string` | An optional glob style pattern to match against, so Redis only returns the subset of members matching this pattern. |
+| `count` | `int` | A hint to Redis as to how many members it should scan in one command before returning members for that iteration. |
 
 ###### *Return value*
-*Array, boolean*: PHPRedis will return an array of keys or FALSE when we're done iterating
+
+| Type | Description |
+| --- | --- | --- |
+| `array|false` | PHPRedis will return an array of keys or FALSE when we're done iterating |
+
 
 ###### *Example*
 ~~~php
@@ -3224,15 +3615,16 @@ $redis->zAdd($key, [ $options ,] $score, $value [, $score1, $value1, ...]);
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `string` | — |
-| `options` | `array` | (optional) |
-| `score` | `double` | — |
-| `value` | `string` | — |
-| `score1` | `double` | — |
-| `value1` | `string` | — |
+| `key` | `string` | The sorted set in question. |
+| `score_or_options` | `array|float` | Either the initial score or an options array (NX, XX, GT, LT, CH, INCR). |
+| `more_scores_and_mems` | `mixed` | A variadic number of additional scores and members. |
 
 ###### *Return value*
-*Long* 1 if the element is added. 0 otherwise.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|float|false` | 1 if the element is added. 0 otherwise. |
+
 
 ###### *Example*
 ~~~php
@@ -3253,10 +3645,14 @@ _**Description**_: Returns the cardinality of an ordered set.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
+| `key` | `string` | The sorted set to retrieve cardinality from. |
 
 ###### *Return value*
-*Long*, the set's cardinality
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | , the set's cardinality |
+
 
 ###### *Example*
 ~~~php
@@ -3274,12 +3670,16 @@ _**Description**_: Returns the *number* of elements of the sorted set stored at 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | `string` | — |
-| `end` | `string` | — |
+| `key` | `string` | The sorted set to check. |
+| `start` | `int|string` | The minimum score to include in the count |
+| `end` | `int|string` | The maximum score to include in the count NOTE: In addition to a floating point score you may pass the special values of '-inf' and '+inf' meaning negative and positive infinity, respectively. |
 
 ###### *Return value*
-*LONG* the size of a corresponding zRangeByScore.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | the size of a corresponding zRangeByScore. |
+
 
 ###### *Example*
 ~~~php
@@ -3299,11 +3699,15 @@ The second argument is a set of options.  It can define `WITHSCORES` so that the
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `arrayZSetKeys` | — | — |
-| `arrayOptions` | — | One option is available: `withscores => TRUE`. |
+| `keys` | `array` | One or more sorted sets. |
+| `options` | `?array` | An array which can contain ['WITHSCORES' => true] if you want Redis to return members and scores. |
 
 ###### *Return value*
-*ARRAY* The result of the difference of sets.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | The result of the difference of sets. |
+
 
 ###### *Example*
 ~~~php
@@ -3336,11 +3740,15 @@ _**Description**_: Computes the difference between the first and all successive 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keyOutput` | — | — |
-| `arrayZSetKeys` | — | — |
+| `dst` | `string` | The destination set name. |
+| `keys` | `array` | One or more source key names |
 
 ###### *Return value*
-*LONG* The number of values in the new sorted set.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of values in the new sorted set. |
+
 
 ###### *Example*
 ~~~php
@@ -3372,12 +3780,16 @@ _**Description**_: Increments the score of a member from a sorted set by a given
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `value` | `double` | value that will be added to the member's score |
-| `member` | — | — |
+| `key` | `string` | The sorted set in question. |
+| `value` | `float` | How much to increment the score. |
+| `member` | `mixed` | The set member name. |
 
 ###### *Return value*
-*DOUBLE* the new value
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|float|false` | The new score of the member or false on failure. |
+
 
 ###### *Examples*
 ~~~php
@@ -3398,12 +3810,16 @@ The third argument is a set of options.  It can define the `AGGREGATE` option wh
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `arrayZSetKeys` | — | — |
-| `arrayWeights` | — | — |
-| `arrayOptions` | — | Two options are available: `withscores => TRUE`, and `aggregate => $behaviour`.  Either "SUM", "MIN", or "MAX" defines the behaviour to use on duplicate entries during the zinter. |
+| `keys` | `array` | One or more sorted sets. |
+| `weights` | `?array` | An optional array of weights to be applied to each set when performing the intersection. |
+| `options` | `?array` | Options for how Redis should combine duplicate elements when performing the intersection. See Redis::zunion() for details. |
 
 ###### *Return value*
-*ARRAY* The result of the intersection of sets.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | The result of the intersection of sets. |
+
 
 ###### *Example*
 ~~~php
@@ -3437,13 +3853,17 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keyOutput` | — | — |
-| `arrayZSetKeys` | — | — |
-| `arrayWeights` | — | — |
-| `aggregateFunction` | — | Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zinterstore. |
+| `dst` | `string` | The destination sorted set to store the intersected values. |
+| `keys` | `array` | One or more sorted set key names. |
+| `weights` | `?array` | An optional array of floats to weight each passed input set. |
+| `aggregate` | `?string` | An optional aggregation method to use. 'SUM' - Store sum of all intersected members (this is the default). 'MIN' - Store minimum value for each intersected member. 'MAX' - Store maximum value for each intersected member. |
 
 ###### *Return value*
-*LONG* The number of values in the new sorted set.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of values in the new sorted set. |
+
 
 ###### *Example*
 ~~~php
@@ -3479,11 +3899,16 @@ _**Description**_: Returns the scores of the given members in the specified sort
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `members` | — | member1, member2, ... , memberN: Any number of members in the specified sorted set. |
+| `key` | `string` | The sorted set |
+| `member` | `mixed` | The first member to return the score from |
+| `other_members` | `mixed` | One or more additional members to return the scores of. |
 
 ###### *Return value*
-*ARRAY* or *FALSE* when the key is not found.  Array entries corresponding to members that do not exist will be `false`.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | or *FALSE* when the key is not found. Array entries corresponding to members that do not exist will be `false`. |
+
 
 ###### *Example*
 ~~~php
@@ -3530,13 +3955,17 @@ Start and stop are interpreted as zero-based indices:
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | `long` | — |
-| `end` | `long` | — |
-| `withscores` | `bool` | = false |
+| `key` | `string` | The sorted set in question. |
+| `start` | `string|int` | The starting index we want to return. |
+| `end` | `string|int` | The final index we want to return. |
+| `options` | `array|bool|null` | This value may either be an array of options to pass to the command, or for historical purposes a boolean which controls just the 'WITHSCORES' option. $options = [ 'WITHSCORES' => true, # Return both scores and members. 'LIMIT' => [10, 10], # Start at offset 10 and return 10 elements. 'REV' # Return the elements in reverse order 'BYSCORE', # Treat `start` and `end` as scores instead 'BYLEX' # Treat `start` and `end` as lexicographical values. ]; Note: `BYLEX` and `BYSCORE` are mutually exclusive. |
 
 ###### *Return value*
-*Array* containing the values in specified range.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | containing the values in specified range. |
+
 
 ###### *Example*
 ~~~php
@@ -3557,15 +3986,19 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | `string` | — |
-| `end` | `string` | — |
-| `options` | `array` | — |
+| `key` | `string` | The sorted set to query. |
+| `start` | `string` | The minimum score of elements that Redis should return. |
+| `end` | `string` | The maximum score of elements that Redis should return. |
+| `options` | `array` | Options that change how Redis will execute the command. OPTION TYPE MEANING 'WITHSCORES' bool Whether to also return scores. 'LIMIT' [offset, count] Limit the reply to a subset of elements. |
 
 Two options are available: `withscores => TRUE`, and `limit => [$offset, $count]`
 
 ###### *Return value*
-*Array* containing the values in specified range.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | containing the values in specified range. |
+
 
 ###### *Example*
 ~~~php
@@ -3587,14 +4020,18 @@ _**Description**_:  Returns a lexicographical range of members in a sorted set, 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | The ZSET you wish to run against |
-| `min` | — | The minimum alphanumeric value you wish to get |
-| `max` | — | The maximum alphanumeric value you wish to get |
-| `offset` | — | Optional argument if you wish to start somewhere other than the first element. |
-| `limit` | — | Optional argument if you wish to limit the number of elements returned. |
+| `key` | `string` | The sorted set to retrieve elements from |
+| `min` | `string` | The minimum legographical value to return |
+| `max` | `string` | The maximum legographical value to return |
+| `offset` | `int` | An optional offset within the matching values to return |
+| `count` | `int` | An optional count to limit the replies to (used in conjunction with offset) |
 
 ###### *Return value*
-*Array* containing the values in the specified range.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | containing the values in the specified range. |
+
 
 ###### *Example*
 ~~~php
@@ -3614,11 +4051,15 @@ _**Description**_: Returns the rank of a given member in the specified sorted se
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `member` | — | — |
+| `key` | `string` | The sorted set to check. |
+| `member` | `mixed` | The member to test. |
 
 ###### *Return value*
-*Long*, the item's rank.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | , the item's rank. |
+
 
 ###### *Example*
 ~~~php
@@ -3641,7 +4082,11 @@ $redis->zRem($key, $member [, $member ...]);
 ~~~
 
 ###### *Return value*
-*LONG:* The number of members deleted.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of members deleted. |
+
 
 ###### *Example*
 ~~~php
@@ -3657,12 +4102,16 @@ _**Description**_: Deletes the elements of the sorted set stored at the specifie
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | `LONG` | — |
-| `end` | `LONG` | — |
+| `key` | `string` | The sorted set where we want to remove members. |
+| `start` | `int` | The rank when we want to start removing members |
+| `end` | `int` | The rank we want to stop removing membersk. |
 
 ###### *Return value*
-*LONG* The number of values deleted from the sorted set
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of values deleted from the sorted set |
+
 
 ###### *Example*
 ~~~php
@@ -3681,12 +4130,16 @@ _**Description**_: Deletes the elements of the sorted set stored at the specifie
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | `double` | or "+inf" or "-inf" string |
-| `end` | `double` | or "+inf" or "-inf" string |
+| `key` | `string` | The sorted set where we want to remove members. |
+| `start` | `string` | The lowest score to remove. |
+| `end` | `string` | The highest score to remove. |
 
 ###### *Return value*
-*LONG* The number of values deleted from the sorted set
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of values deleted from the sorted set |
+
 
 ###### *Example*
 ~~~php
@@ -3706,13 +4159,17 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `start` | `long` | — |
-| `end` | `long` | — |
-| `withscores` | `bool` | = false |
+| `key` | `string` | The sorted set in question. |
+| `start` | `int` | The index to start listing elements |
+| `end` | `int` | The index to stop listing elements. |
+| `scores` | `mixed` | Whether or not Redis should also return each members score. See the example below demonstrating how it may be used. |
 
 ###### *Return value*
-*Array* containing the values in specified range.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | containing the values in specified range. |
+
 
 ###### *Example*
 ~~~php
@@ -3733,11 +4190,15 @@ _**Description**_: Returns the score of a given member in the specified sorted s
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | — | — |
-| `member` | — | — |
+| `key` | `string` | The sorted set to query. |
+| `member` | `mixed` | The member we wish to query. |
 
 ###### *Return value*
-*Double* or *FALSE* when the value is not found
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|float|false` | or *FALSE* when the value is not found |
+
 
 ###### *Example*
 ~~~php
@@ -3756,12 +4217,16 @@ The third argument is a set of options.  It can define the `AGGREGATE` option wh
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `arrayZSetKeys` | — | — |
-| `arrayWeights` | — | — |
-| `arrayOptions` | — | Two options are available: `withscores => TRUE`, and `aggregate => $behaviour`.  Either "SUM", "MIN", or "MAX" defines the behaviour to use on duplicate entries during the zunion. |
+| `keys` | `array` | One or more sorted set key names |
+| `weights` | `?array` | An optional array with floating point weights used when performing the union. Note that if this argument is passed, it must contain the same number of elements as the $keys array. |
+| `options` | `?array` | An array that modifies how this command functions. $options = [ # By default when members exist in more than one set Redis will SUM # total score for each match. Instead, it can return the AVG, MIN, # or MAX value based on this option. 'AGGREGATE' => 'sum' | 'min' | 'max' # Whether Redis should also return each members aggregated score. 'WITHSCORES' => true | false ] |
 
 ###### *Return value*
-*ARRAY* The result of the union of sets.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | The result of the union of sets. |
+
 
 ###### *Example*
 ~~~php
@@ -3793,13 +4258,17 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keyOutput` | — | — |
-| `arrayZSetKeys` | — | — |
-| `arrayWeights` | — | — |
-| `aggregateFunction` | — | Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zunionstore. |
+| `dst` | `string` | The destination set to store the union. |
+| `keys` | `array` | One or more input keys on which to perform our union. |
+| `weights` | `?array` | An optional weights array used to weight each input set. |
+| `aggregate` | `?string` | An optional modifier in how Redis will combine duplicate members. Valid: 'MIN', 'MAX', 'SUM'. |
 
 ###### *Return value*
-*LONG* The number of values in the new sorted set.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of values in the new sorted set. |
+
 
 ###### *Example*
 ~~~php
@@ -3831,13 +4300,17 @@ _**Description**_: Scan a sorted set for members, with optional pattern and coun
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `String` | the set to scan |
-| `iterator` | — | Long (reference), initialized to NULL |
-| `pattern` | — | String (optional), the pattern to match |
-| `count` | — | How many keys to return per iteration (Redis might return a different number) |
+| `key` | `string` | The sorted set to scan. |
+| `iterator` | `null|int|string` | A reference to an iterator that should be initialized to NULL initially, that will be updated after each subsequent call to ZSCAN. Once the iterator has returned to zero the scan is complete |
+| `pattern` | `?string` | An optional glob-style pattern that limits which members are returned during the scanning process. |
+| `count` | `int` | A hint for Redis that tells it how many elements it should test before returning from the call. The higher the more work Redis may do in any one given call to ZSCAN potentially blocking for longer periods of time. |
 
 ###### *Return value*
-*Array, boolean* PHPRedis will return matching keys from Redis, or FALSE when iteration is complete
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | PHPRedis will return matching keys from Redis, or FALSE when iteration is complete |
+
 
 ###### *Example*
 ~~~php
@@ -3866,11 +4339,15 @@ $redis->pfAdd($key, Array $elements);
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `string` | HyperLogLog to update. |
-| `values` | `array` | Elements to add to the structure. |
+| `key` | `string` | The key in question. |
+| `elements` | `array` | One or more elements to add. |
 
 ###### *Return value*
-*Integer*:  1 if at least 1 HyperLogLog internal register was altered. 0 otherwise.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int` | 1 if at least 1 HyperLogLog internal register was altered. 0 otherwise. |
+
 
 ###### *Example*
 ~~~php
@@ -3893,11 +4370,14 @@ $redis->pfCount(Array $keys);
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `key` | `string` | Single HyperLogLog key to inspect. |
-| `keys` | `array` | Optional list of keys whose cardinalities should be aggregated. |
+| `key_or_keys` | `array|string` | Either one key or an array of keys |
 
 ###### *Return value*
-*Integer*:  The approximated number of unique elements observed via [pfAdd](#pfAdd).
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The approximated number of unique elements observed via [pfAdd](#pfAdd). |
+
 
 ###### *Example*
 ~~~php
@@ -3924,11 +4404,15 @@ $redis->pfMerge($destkey, Array $sourceKeys);
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `destination` | `string` | Target HyperLogLog to create or overwrite. |
-| `sourceKeys` | `array` | Keys whose HyperLogLogs should be merged. |
+| `dst` | `string` | The destination key. |
+| `srckeys` | `array` | One or more source keys. |
 
 ###### *Return value*
-*BOOL*: `TRUE` on success, `FALSE` on error.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `TRUE` on success, `FALSE` on error. |
+
 
 ###### *Example*
 ~~~php
@@ -3953,7 +4437,11 @@ $redis->geoAdd($key, $longitude, $latitude, $member [, $longitude, $latitude, $m
 _**Description**_:  Add one or more geospatial items to the specified key.  This function must be called with at least one _longitude, latitude, member_ triplet.
 
 ###### *Return value*
-*Integer*:  The number of elements added to the geospatial key.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of elements added to the geospatial key. |
+
 
 ###### *Example*
 ~~~php
@@ -3978,7 +4466,11 @@ $redis->geoHash($key, $member [, $member, $member, ...]);
 _**Description**_:  Retrieve Geohash strings for one or more elements of a geospatial index.
 
 ###### *Return value*
-*Array*:  One or more Redis Geohash encoded strings.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | One or more Redis Geohash encoded strings. |
+
 
 ###### *Example*
 ~~~php
@@ -4008,7 +4500,11 @@ $redis->geoPos($key, $member [, $member, $member, ...]);
 _**Description**_:  Return longitude, latitude positions for each requested member.
 
 ###### *Return value*
-*Array*:  One or more longitude/latitude positions
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | One or more longitude/latitude positions |
+
 
 ###### *Example*
 ~~~php
@@ -4054,7 +4550,11 @@ _**Description**_:  Return the distance between two members in a geospatial set.
 * 'ft' => Feet
 
 ###### *Return value*
-*Double*:  The distance between the two passed members in the units requested (meters by default).
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|float|false` | The distance between the two passed members in the units requested (meters by default). |
+
 
 ###### *Example*
 ~~~php
@@ -4116,7 +4616,11 @@ The georadius command can be called with various options that control how Redis 
  *Note*:  When using `STORE[DIST]` in Redis Cluster, the store key must has to the same slot as the query key or you will get a `CROSSLOT` error.
 
 ###### *Return value*
-*Mixed*:  When no `STORE` option is passed, this function returns an array of results.  If it is passed this function returns the number of stored entries.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | When no `STORE` option is passed, this function returns an array of results. If it is passed this function returns the number of stored entries. |
+
 
 ###### *Example*
 ~~~php
@@ -4203,7 +4707,11 @@ _**Description**_: This method is identical to [geoRadius](#georadius) except th
 See [geoRadius](#georadius) command for options array.
 
 ###### *Return value*
-*Array*:  The zero or more entries that are close enough to the member given the distance and radius specified.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | The zero or more entries that are close enough to the member given the distance and radius specified. |
+
 
 ###### *Example*
 ~~~php
@@ -4260,7 +4768,11 @@ $obj_redis->xAck($stream, $group, $arr_messages);
 _**Description**_:  Acknowledge one or more messages on behalf of a consumer group.
 
 ###### *Return value*
-*long*:  The number of messages Redis reports as acknowledged.
+
+| Type | Description |
+| --- | --- | --- |
+| `int|false` | The number of messages Redis reports as acknowledged. |
+
 
 ###### *Example*
 ~~~php
@@ -4278,7 +4790,11 @@ $obj_redis->xAdd($str_key, $str_id, $arr_message[, $i_maxlen, $boo_approximate])
 _**Description**_:  Add a message to a stream
 
 ###### *Return value*
-*String*:  The added message ID
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|string|false` | The added message ID |
+
 
 ###### *Example*
 ~~~php
@@ -4310,7 +4826,11 @@ $options = [
 ~~~
 
 ###### *Return value*
-*Array*:  Either an array of message IDs along with corresponding data, or just an array of IDs (if the 'JUSTID' option was passed).
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|bool` | Either an array of message IDs along with corresponding data, or just an array of IDs (if the 'JUSTID' option was passed). |
+
 
 ###### *Example*
 ~~~php
@@ -4344,7 +4864,11 @@ $obj_redis->xDel($str_key, $arr_ids);
 _**Description**_:  Delete one or more messages from a stream.
 
 ###### *Return value*
-*long*:  The number of messages removed
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of messages removed |
+
 
 ###### *Example*
 ~~~php
@@ -4366,7 +4890,11 @@ $obj_redis->xGroup('DELCONSUMER', $str_key, $str_group, $str_consumer_name);
 _**Description**_:  This command is used to create, destroy, or manage consumer groups.
 
 ###### *Return value*
-*Mixed*:  This command returns different types depending on the specific XGROUP command executed.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | This command returns different types depending on the specific XGROUP command executed. |
+
 
 ###### *Example*
 ~~~php
@@ -4389,7 +4917,11 @@ $obj_redis->xInfo('HELP');
 _**Description**_:  Get information about a stream or consumer groups.
 
 ###### *Return value*
-*Mixed*:  This command returns different types depending on which subcommand is used.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | This command returns different types depending on which subcommand is used. |
+
 
 ###### *Example*
 ~~~php
@@ -4408,7 +4940,11 @@ $obj_redis->xLen($str_stream);
 _**Description**_:  Get the length of a given stream
 
 ###### *Return value*
-*Long*:  The number of messages in the stream.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of messages in the stream. |
+
 
 ###### *Example*
 ~~~php
@@ -4426,7 +4962,11 @@ $obj_redis->xPending($str_stream, $str_group [, $str_start, $str_end, $i_count, 
 _**Description**_:  Get information about pending messages in a given stream.
 
 ###### *Return value*
-*Array*:  Information about the pending messages, in various forms depending on the specific invocation of XPENDING.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|false` | Information about the pending messages, in various forms depending on the specific invocation of XPENDING. |
+
 
 ###### *Examples*
 ~~~php
@@ -4445,7 +4985,11 @@ $obj_redis->xRange($str_stream, $str_start, $str_end [, $i_count]);
 _**Description**_:  Get a range of messages from a given stream.
 
 ###### *Return value*
-*Array*:  The messages in the stream within the requested range.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|bool` | The messages in the stream within the requested range. |
+
 
 ###### *Example*
 ~~~php
@@ -4467,7 +5011,11 @@ $obj_redis->xRead($arr_streams [, $i_count, $i_block]);
 _**Description**_:  Read data from one or more streams and only return IDs greater than sent in the command.
 
 ###### *Return value*
-*Array*:  The messages in the stream newer than the IDs passed to Redis (if any).
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|bool` | The messages in the stream newer than the IDs passed to Redis (if any). |
+
 
 ###### *Example*
 ~~~php
@@ -4512,7 +5060,11 @@ $obj_redis->xReadGroup($str_group, $str_consumer, $arr_streams [, $i_count, $i_b
 _**Description**_:  This method is similar to xRead except that it supports reading messages for a specific consumer group.
 
 ###### *Return value*
-*Array*:  The messages delivered to this consumer group (if any).
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|bool` | The messages delivered to this consumer group (if any). |
+
 
 ###### *Examples*
 ~~~php
@@ -4537,7 +5089,11 @@ $obj_redis->xRevRange($str_stream, $str_end, $str_start [, $i_count]);
 _**Description**_:  This is identical to xRange except the results come back in reverse order.  Also note that Redis reverses the order of "start" and "end".
 
 ###### *Return value*
-*Array*:  The messages in the range specified.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|bool` | The messages in the range specified. |
+
 
 ###### *Example*
 ~~~php
@@ -4555,7 +5111,11 @@ $obj_redis->xTrim($str_stream, $i_max_len [, $boo_approximate]);
 _**Description**_:  Trim the stream length to a given maximum.  If the "approximate" flag is passed, Redis will use your size as a hint but only trim trees in whole nodes (this is more efficient).
 
 ###### *Return value*
-*long*:  The number of messages trimmed from the stream.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|int|false` | The number of messages trimmed from the stream. |
+
 
 ###### *Example*
 ~~~php
@@ -4583,9 +5143,8 @@ _**Description**_: Subscribe to channels. Warning: this function will probably c
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `channels` | — | an array of channels to subscribe to |
-| `either a string or [$instance` | `callback` | 'method_name']. The callback function receives 3 parameters: the redis instance, the channel name, and the message. |
-| `return value` | `Mixed` | Any non-null return value in the callback will be returned to the caller. |
+| `channels` | `array` | One or more channel names. |
+| `cb` | `callable` | The callback PhpRedis will invoke when we receive a message from one of the subscribed channels. |
 
 Calling `$redis->unsubscribe()` inside the callback removes the provided channels. Once all channel subscriptions have been removed (for example by omitting the parameter so every channel is removed) PhpRedis leaves pub/sub mode and returns control to your script, which is the safest way to exit a `subscribe()` loop from within the callback.
 
@@ -4610,10 +5169,14 @@ _**Description**_: Remove one or more channel subscriptions. When all active cha
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `channels` | — | an array of channels to unsubscribe from. Passing an empty array, or omitting the parameter while inside an active subscription loop, unsubscribes from every channel. |
+| `channels` | `array` | One or more channels to unsubscribe from. |
 
 ###### *Return value*
-*Redis|array|bool*: Outside of a subscription loop the method returns `true` on success. When invoked from within a subscription callback the method returns the server response array (`['unsubscribe', $channel, $remaining]`) until all subscriptions have been removed.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|bool` | Outside of a subscription loop the method returns `true` on success. When invoked from within a subscription callback the method returns the server response array (`['unsubscribe', $channel, $remaining]`) until all subscriptions have been removed. |
+
 
 ###### *Example*
 ~~~php
@@ -4628,9 +5191,8 @@ _**Description**_: Subscribe to channels by pattern. Warning: this function will
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `patterns` | — | An array of patterns to match |
-| `Either a string or an array with an object and method. The callback will get four arguments ($redis` | `callback` | $pattern, $channel, $message) |
-| `return value` | `Mixed` | Any non-null return value in the callback will be returned to the caller. |
+| `patterns` | `array` | One or more patterns to subscribe to. |
+| `cb` | `callable` | A callback with the following prototype: function ($redis, $channel, $message) { } |
 
 When you no longer need a pattern subscription call `$redis->punsubscribe()` from inside the callback. PhpRedis tracks the exact patterns you subscribed to and exits pub/sub mode once no patterns remain (including when the parameter is omitted to remove every pattern).
 
@@ -4655,10 +5217,14 @@ _**Description**_: Remove one or more pattern subscriptions that were registered
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `patterns` | — | An array of patterns to unsubscribe from. |
+| `patterns` | `array` | One or more glob-style patterns of channel names. |
 
 ###### *Return value*
-*Redis|array|bool*: The channels that were removed.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|array|bool` | The channels that were removed. |
+
 
 ###### *Example*
 ~~~php
@@ -4677,8 +5243,8 @@ _**Description**_: Publish messages to channels. Warning: this function will pro
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `channel` | — | a channel to publish to |
-| `message` | `string` | — |
+| `channel` | `string` | The channel to publish to. |
+| `message` | `string` | The message itself. |
 
 ###### *Example*
 ~~~php
@@ -4693,13 +5259,15 @@ _**Description**_: A command allowing you to get information on the Redis pub/su
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keyword` | `String` | which can be: "channels", "numsub", or "numpat" |
-| `argument` | — | Optional, variant.  For the "channels" subcommand, you can pass a string pattern.  For "numsub" an array of channel names. |
+| `command` | `string` | The PubSub command to execute. This can be one of: |
+| `arg` | `mixed` | An optional argument to the command. |
 
 ###### *Return value*
-*CHANNELS*: Returns an array where the members are the matching channels.
-*NUMSUB*:  Returns a key/value array where the keys are channel names and values are their counts.
-*NUMPAT*:  Integer return containing the number active pattern subscriptions
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | Returns an array where the members are the matching channels. Returns a key/value array where the keys are channel names and values are their counts. Integer return containing the number active pattern subscriptions |
+
 
 ###### *Example*
 ~~~php
@@ -4722,11 +5290,15 @@ _**Description**_: A method to execute any arbitrary command against the a Redis
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `command` | `string` | Redis command name. |
-| `...$arguments` | `mixed` | Additional arguments (strings, integers, floats, etc.). At least one argument is required. |
+| `command` | `string` | The command to execute |
+| `args` | `mixed` | One or more arguments to pass to the command. |
 
 ###### *Return value*
-The return value can be various types depending on what the server itself returns. No post processing is done to the returned value and it must be handled by the client code.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | The return value can be various types depending on what the server itself returns. No post processing is done to the returned value and it must be handled by the client code. |
+
 
 ###### *Example*
 ```php
@@ -4756,12 +5328,16 @@ _**Description**_: Enter and exit transactional mode.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `mode` | `int` | Optional; `Redis::MULTI` (default) for transactions or `Redis::PIPELINE` for non-atomic batching. |
+| `value` | `int` | The type of transaction to start. This can either be `Redis::MULTI` or `Redis::PIPELINE'. |
 
 Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single transaction; a `Redis::PIPELINE` block is simply transmitted faster to the server, but without any guarantee of atomicity. `discard` cancels a transaction.
 
 ###### *Return value*
-`multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called.
+
+| Type | Description |
+| --- | --- | --- |
+| `Redis|bool` | `multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called. |
+
 
 ###### *Example*
 ~~~php
@@ -4787,7 +5363,8 @@ If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction wi
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `keys` | `string` | for one key or array for a list of keys |
+| `key` | `array|string` | Either an array with one or more key names, or a string key name |
+| `other_keys` | `string` | If the first argument was passed as a string, any number of additional string key names may be passed variadically. |
 
 ###### *Example*
 ~~~php
@@ -4819,14 +5396,16 @@ _**Description**_: Evaluate a LUA script serverside
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `script` | — | string. |
-| `args` | `array` | optional. |
-| `num_keys` | `int` | optional. |
+| `script` | `string` | A string containing the LUA script |
+| `args` | `array` | An array of arguments to pass to this script |
+| `num_keys` | `int` | How many of the arguments are keys. This is needed as redis distinguishes between key name arguments and other data. |
 
 ###### *Return value*
-Mixed.  What is returned depends on what the LUA script itself returns, which could be a scalar value (int/string), or an array.
-Arrays that are returned can also contain other arrays, if that's how it was set up in your LUA script.  If there is an error
-executing the LUA script, the getLastError() function can tell you the message that came back from Redis (e.g. compile error).
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | Mixed. What is returned depends on what the LUA script itself returns, which could be a scalar value (int/string), or an array. Arrays that are returned can also contain other arrays, if that's how it was set up in your LUA script. If there is an error executing the LUA script, the getLastError() function can tell you the message that came back from Redis (e.g. compile error). |
+
 
 ###### *Examples*
 ~~~php
@@ -4851,12 +5430,16 @@ either by running it or via the SCRIPT LOAD command.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `script_sha` | `string` | The sha1 encoded hash of the script you want to run. |
-| `args` | `array` | optional.  Arguments to pass to the LUA script. |
-| `num_keys` | `int` | optional.  The number of arguments that should go into the KEYS array, vs. the ARGV array when Redis spins the script |
+| `sha1` | `string` | The SHA1 hash of the lua code. Note that the script must already exist on the server, either having been loaded with `SCRIPT LOAD` or having been executed directly with `EVAL` first. |
+| `args` | `array` | Arguments to send to the script. |
+| `num_keys` | `int` | The number of arguments that are keys |
 
 ###### *Return value*
-Mixed.  See EVAL
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | Returns whatever the specific script does. |
+
 
 ###### *Examples*
 ~~~php
@@ -4878,10 +5461,11 @@ $redis->script('exists', $script1, [$script2, $script3, ...]);
 ~~~
 
 ###### *Return value*
-* SCRIPT LOAD will return the SHA1 hash of the passed script on success, and FALSE on failure.
-* SCRIPT FLUSH should always return TRUE
-* SCRIPT KILL will return true if a script was killed and false if not
-* SCRIPT EXISTS will return an array with TRUE or FALSE for each passed script
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | SCRIPT LOAD will return the SHA1 hash of the passed script on success, and FALSE on failure.; SCRIPT FLUSH should always return TRUE; SCRIPT KILL will return true if a script was killed and false if not; SCRIPT EXISTS will return an array with TRUE or FALSE for each passed script |
+
 
 #### client
 -----
@@ -4902,27 +5486,25 @@ $redis->client('kill', <ip:port>); // Kill the process at ip:port
 ~~~
 
 ###### *Return value*
-This will vary depending on which client command was executed.
 
-* CLIENT LIST will return an array of arrays with client information.
-* CLIENT GETNAME will return the client name or false if none has been set
-* CLIENT SETNAME will return true if it can be set and false if not
-* CLIENT KILL will return true if the client can be killed, and false if not
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | This will vary depending on which client command was executed.; CLIENT LIST will return an array of arrays with client information.; CLIENT GETNAME will return the client name or false if none has been set; CLIENT SETNAME will return true if it can be set and false if not; CLIENT KILL will return true if the client can be killed, and false if not; Note: phpredis will attempt to reconnect so you can actually kill your own connection; but may not notice losing it! |
 
-Note:  phpredis will attempt to reconnect so you can actually kill your own connection
-but may not notice losing it!
 #### getLastError
 -----
 _**Description**_: The last error message (if any)
 
 ###### *Parameters*
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `none` | — | — |
+None.
 
 ###### *Return value*
-A string with the last returned script based error message, or NULL if there is no error
+
+| Type | Description |
+| --- | --- | --- |
+| `string|null` | A string with the last returned script based error message, or NULL if there is no error |
+
 
 ###### *Examples*
 ~~~php
@@ -4937,12 +5519,14 @@ _**Description**_: Clear the last error message
 
 ###### *Parameters*
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `none` | — | — |
+None.
 
 ###### *Return value*
-*BOOL* TRUE
+
+| Type | Description |
+| --- | --- | --- |
+| `bool` | This should always return true or throw an exception if we're not connected. |
+
 
 ###### *Examples*
 ~~~php
@@ -4976,10 +5560,14 @@ _**Description**_: Compress a string using whatever `Redis::OPT_COMPRESSION` is 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `value` | `string` | The string to compress. |
+| `value` | `string` | The value to be compressed |
 
 ###### *Return value*
-*string* Returns the compressed string, or the original value if compression is disabled.
+
+| Type | Description |
+| --- | --- | --- |
+| `string` | Returns the compressed string, or the original value if compression is disabled. |
+
 
 ###### *Examples*
 ~~~php
@@ -4995,10 +5583,14 @@ _**Description**_: Reverse `_compress` by uncompressing a string with the compre
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `value` | `string` | The raw compressed value to uncompress. |
+| `value` | `string` | The compressed value to uncompress. |
 
 ###### *Return value*
-*string* Returns the uncompressed value. Throws an exception if the payload is invalid for the configured compressor.
+
+| Type | Description |
+| --- | --- | --- |
+| `string` | Returns the uncompressed value. Throws an exception if the payload is invalid for the configured compressor. |
+
 
 ###### *Examples*
 ~~~php
@@ -5018,10 +5610,14 @@ will change Array values to 'Array', and Objects to 'Object'.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `value` | `mixed` | The value to be serialized. |
+| `value` | `mixed` | The value to serialize |
 
 ###### *Return value*
-*string* The serialized representation of the value.
+
+| Type | Description |
+| --- | --- | --- |
+| `string` | The serialized representation of the value. |
+
 
 ###### *Examples*
 ~~~php
@@ -5045,10 +5641,14 @@ and the data passed in is malformed, an exception will be thrown.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `value` | `string` | The value to be unserialized. |
+| `value` | `string` | The value to unserialize |
 
 ###### *Return value*
-*mixed* The PHP value represented by the serialized string.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | The PHP value represented by the serialized string. |
+
 
 ###### *Examples*
 ~~~php
@@ -5064,10 +5664,14 @@ _**Description**_: Pack a value the same way PhpRedis does internally by first s
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `value` | `mixed` | The PHP value to pack. |
+| `value` | `mixed` | The value to pack |
 
 ###### *Return value*
-*string* The packed payload that would be sent to Redis.
+
+| Type | Description |
+| --- | --- | --- |
+| `string` | The packed payload that would be sent to Redis. |
+
 
 ###### *Examples*
 ~~~php
@@ -5084,10 +5688,14 @@ _**Description**_: Reverse `_pack` by uncompressing and then unserializing a pay
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `value` | `string` | The packed payload to unpack. |
+| `value` | `string` | The value which has been serialized and compressed. |
 
 ###### *Return value*
-*mixed* The unpacked PHP value.
+
+| Type | Description |
+| --- | --- | --- |
+| `mixed` | The unpacked PHP value. |
+
 
 ###### *Examples*
 ~~~php
@@ -5102,10 +5710,14 @@ _**Description**_: A utility method to prefix the value with the prefix setting 
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `value` | `string` | The value you wish to prefix. |
+| `key` | `string` | The key/string to prefix |
 
 ###### *Return value*
-*string* Returns the prefixed value when a prefix is configured, or the original string otherwise.
+
+| Type | Description |
+| --- | --- | --- |
+| `string` | Returns the prefixed value when a prefix is configured, or the original string otherwise. |
+
 
 ###### *Examples*
 ~~~php
@@ -5121,10 +5733,14 @@ _**Description**_: Compute the XXH3 digest of a PHP value after it has been `_pa
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `value` | `mixed` | The PHP value to digest. |
+| `value` | `mixed` | The value to compute the digest for. |
 
 ###### *Return value*
-*string* A 16 character hex string containing the XXH3 digest.
+
+| Type | Description |
+| --- | --- | --- |
+| `string` | A 16 character hex string containing the XXH3 digest. |
+
 
 ###### *Examples*
 ~~~php
@@ -5142,7 +5758,11 @@ _**Description**_:  A method to determine if a phpredis object thinks it's conne
 None
 
 ###### *Return value*
-*Boolean* Returns TRUE if phpredis thinks it's connected and FALSE if not
+
+| Type | Description |
+| --- | --- | --- |
+| `bool` | Returns TRUE if phpredis thinks it's connected and FALSE if not |
+
 
 #### getHost
 -----
@@ -5153,7 +5773,10 @@ _**Description**_:  Retrieve our host or unix socket that we're connected to
 None
 
 ###### *Return value*
-*Mixed* The host or unix socket we're connected to or FALSE if we're not connected
+
+| Type | Description |
+| --- | --- | --- |
+| `string` | The host or unix socket we're connected to or FALSE if we're not connected |
 
 
 #### getPort
@@ -5165,7 +5788,11 @@ _**Description**_:  Get the port we're connected to
 None
 
 ###### *Return value*
-*Mixed* Returns the port we're connected to or FALSE if we're not connected
+
+| Type | Description |
+| --- | --- | --- |
+| `int` | Returns the port we're connected to or FALSE if we're not connected |
+
 
 #### getDbNum
 -----
@@ -5176,7 +5803,11 @@ _**Description**_:  Get the database number phpredis is pointed to
 None
 
 ###### *Return value*
-*Mixed* Returns the database number (LONG) phpredis thinks it's pointing to or FALSE if we're not connected
+
+| Type | Description |
+| --- | --- | --- |
+| `int` | Returns the database number (LONG) phpredis thinks it's pointing to or FALSE if we're not connected |
+
 
 #### getTimeout
 -----
@@ -5187,7 +5818,11 @@ _**Description**_:  Get the (write) timeout in use for phpredis
 None
 
 ###### *Return value*
-*Mixed* The timeout (DOUBLE) specified in our connect call or FALSE if we're not connected
+
+| Type | Description |
+| --- | --- | --- |
+| `float|false` | The timeout (DOUBLE) specified in our connect call or FALSE if we're not connected |
+
 
 #### getReadTimeout
 _**Description**_:  Get the read timeout specified to phpredis or FALSE if we're not connected
@@ -5197,7 +5832,11 @@ _**Description**_:  Get the read timeout specified to phpredis or FALSE if we're
 None
 
 ###### *Return value*
-*Mixed*  Returns the read timeout (which can be set using setOption and Redis::OPT_READ_TIMEOUT) or FALSE if we're not connected
+
+| Type | Description |
+| --- | --- | --- |
+| `float` | Returns the read timeout (which can be set using setOption and Redis::OPT_READ_TIMEOUT) or FALSE if we're not connected |
+
 
 #### getPersistentID
 -----
@@ -5208,8 +5847,11 @@ _**Description**_:  Gets the persistent ID that phpredis is using
 None
 
 ###### *Return value*
-*Mixed* Returns the persistent id phpredis is using (which will only be set if connected with pconnect), NULL if we're not
-using a persistent ID, and FALSE if we're not connected
+
+| Type | Description |
+| --- | --- | --- |
+| `string|null` | Returns the persistent id phpredis is using (which will only be set if connected with pconnect), NULL if we're not using a persistent ID, and FALSE if we're not connected |
+
 
 #### getAuth
 -----
