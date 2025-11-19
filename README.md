@@ -579,7 +579,12 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 | Type | Description |
 | --- | --- |
-| `Redis\|string\|false` | the same message. ### Retry and backoff 1. [Maximum retries](#maximum-retries) 1. [Backoff algorithms](#backoff-algorithms) |
+| `string\|false` | The same message, or `false` on failure. |
+
+### Retry and backoff
+
+1. [Maximum retries](#maximum-retries)
+1. [Backoff algorithms](#backoff-algorithms)
 
 
 #### Maximum retries
