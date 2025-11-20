@@ -533,7 +533,7 @@ _**Description**_: Get client option.
 
 ###### *Example*
 ~~~php
-// Retreive the current serializer option
+// Retrieve the current serializer option
 $redis->getOption(Redis::OPT_SERIALIZER);
 ~~~
 
