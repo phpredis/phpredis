@@ -87,22 +87,22 @@ phpredis can also connect to a unix domain socket: `session.save_path = "unix://
 #### Examples
 
 Multiple Redis servers:
-~~~
+```ini
 session.save_handler = redis
 session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2&read_timeout=2.5"
-~~~
+```
 
 Login to Redis using username and password:
-~~~
+```ini
 session.save_handler = redis
 session.save_path = "tcp://127.0.0.1:6379?auth[]=user&auth[]=password"
-~~~
+```
 
 Login to Redis using username, password, and set prefix:
-~~~
+```ini
 session.save_handler = redis
 session.save_path = "tcp://127.0.0.1:6379?auth[]=user&auth[]=password&prefix=user_PHPREDIS_SESSION:"
-~~~
+```
 
 #### Session locking
 
@@ -110,7 +110,7 @@ session.save_path = "tcp://127.0.0.1:6379?auth[]=user&auth[]=password&prefix=use
 So locking may not work properly in RedisArray or RedisCluster environments.
 
 The following INI variables can be used to configure session locking:
-~~~
+```ini
 ; Should the locking be enabled? Defaults to: 0.
 redis.session.locking_enabled = 1
 ; How long should the lock live (in seconds)? Defaults to: value of max_execution_time.
@@ -119,23 +119,23 @@ redis.session.lock_expire = 60
 redis.session.lock_wait_time = 50000
 ; Maximum number of times to retry (-1 means infinite). Defaults to: 100
 redis.session.lock_retries = 2000
-~~~
+```
 
 #### Session compression
 
 The following INI variables can be used to configure session compression:
-~~~
+```ini
 ; Should session compression be enabled? Possible values are zstd, lzf, lz4, none. Defaults to: none
 redis.session.compression = zstd
 ; What compression level should be used? Compression level depends on used library. For most deployments range 1-9 should be fine. Defaults to: 3
 redis.session.compression_level = 3
-~~~
+```
 
 ### Running the unit tests
 
 phpredis uses a small custom unit test suite for testing functionality of the various classes.  To run tests, simply do the following:
 
-~~~
+```bash
 # Run tests for Redis class (note this is the default)
 php tests/TestRedis.php --class Redis
 
@@ -151,14 +151,14 @@ tests/make-cluster.sh stop
 
 # Run tests for RedisSentinel class
 php tests/TestRedis.php --class RedisSentinel
-~~~
+```
 
 Note that it is possible to run only tests which match a substring of the test itself by passing the additional argument '--test <str>' when invoking.
 
-~~~
+```bash
 # Just run the 'echo' test
 php tests/TestRedis.php --class Redis --test echo
-~~~
+```
 
 ## API Documentation
 
@@ -228,15 +228,15 @@ unreachable server (such as a key not existing, an invalid command, etc), phpred
 _**Description**_: Available Redis Constants
 
 Redis data types, as returned by [type](#type)
-~~~
-Redis::REDIS_STRING - String
-Redis::REDIS_SET - Set
-Redis::REDIS_LIST - List
-Redis::REDIS_ZSET - Sorted set
-Redis::REDIS_HASH - Hash
-Redis::REDIS_STREAM - Stream    
-Redis::REDIS_VECTORSET - Vector set
-Redis::REDIS_NOT_FOUND - Not found / other
+~~~php
+Redis::REDIS_STRING
+Redis::REDIS_SET
+Redis::REDIS_LIST
+Redis::REDIS_ZSET
+Redis::REDIS_HASH
+Redis::REDIS_STREAM
+Redis::REDIS_VECTORSET
+Redis::REDIS_NOT_FOUND
 ~~~
 
 ### Connection
@@ -533,8 +533,7 @@ _**Description**_: Get client option.
 
 ###### *Example*
 ~~~php
-// return Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP,
-//        Redis::SERIALIZER_IGBINARY, Redis::SERIALIZER_MSGPACK or Redis::SERIALIZER_JSON
+// Retreive the current serializer option
 $redis->getOption(Redis::OPT_SERIALIZER);
 ~~~
 
