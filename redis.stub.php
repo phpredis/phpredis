@@ -924,6 +924,10 @@ class Redis {
      * **NOTE**:  We recommend calling this function with an array and a timeout as the other strategy
      *            may be deprecated in future versions of PhpRedis
      *
+     * Whether called with an array of keys or variadic keys and a timeout, the two
+     * forms are functionally identical.  Redis returns `[key, member, score]` for
+     * the element popped, or an empty array if the timeout is reached.
+     *
      * @see https://redis.io/docs/latest/commands/bzpopmax/
      *
      * @param string|array $key            Either a string key or an array of one or more keys.
@@ -1138,6 +1142,14 @@ class Redis {
      *                                    when connecting.
      *                                    See `\Redis::__construct()` for more
      *                                    details.
+     *
+     *                                    You can also pass authentication and TLS stream context
+     *                                    information through this array.  When the `host` begins
+     *                                    with `tls://` PhpRedis will forward any `stream` context
+     *                                    options directly to `stream_socket_client()`.  Common
+     *                                    options you may wish to set include `verify_peer`,
+     *                                    `verify_peer_name`, `peer_name`, `cafile`, `capath`,
+     *                                    `local_cert`, `local_pk`, and `passphrase`.
      * @return bool Whether the connection was successful.
      *
      * @throws RedisException On connection errors.
@@ -1151,6 +1163,21 @@ class Redis {
      * } catch (Exception $ex) {
      *     fprintf(STDERR, "Error: {$ex->getMessage()}\n");
      * }
+     *
+     * // Provide authentication and a TLS stream context on connect.
+     * $redis->connect('tls://redis.example.com', 6380, 1.5, null, 0, 0, [
+     *     'auth' => ['app-user', 'strong-password'],
+     *     'stream' => [
+     *         'verify_peer' => true,
+     *         'verify_peer_name' => true,
+     *         'peer_name' => 'redis.example.com',
+     *         'cafile' => '/etc/ssl/redis-ca.pem',
+     *         'local_cert' => '/etc/ssl/client.crt',
+     *         'local_pk' => '/etc/ssl/client.key',
+     *     ],
+     * ]);
+     *
+     * NOTE:  `open` is an alias for `connect` and will be removed in a future version of PhpRedis.
      */
     public function connect(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null,
                             int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
@@ -1748,6 +1775,11 @@ class Redis {
      *                            'STOREDIST' => <string>
      *                        ];
      *                        ```
+     *
+     * NOTE:  When using `STORE` or `STOREDIST` in Redis Cluster, the destination key
+     *        must hash to the same slot as the query key or Redis will raise a CROSSLOT
+     *        error.  If both `ASC` and `DESC` are passed, the option specified last
+     *        wins.
      *
      * @return mixed This command can return various things, depending on the options passed.
      *
@@ -3057,6 +3089,9 @@ class Redis {
      *
      * // Move the key to localhost:9999 with a 5 second timeout
      * var_dump($redis->migrate('localhost', 9999, 'foo', 0, 5000));
+     *
+     * // Migrate multiple keys (Redis >= 3.0.6)
+     * $redis->migrate('backup', 6379, ['key1', 'key2', 'key3'], 0, 3600);
      */
     public function migrate(string $host, int $port, string|array $key, int $dstdb, int $timeout,
                             bool $copy = false, bool $replace = false,
@@ -3161,6 +3196,11 @@ class Redis {
     /**
      * Connects to a Redis server creating or reusing a persistent connection.
      *
+     * Persistent connections remain open until the PHP process ends so take care to
+     * avoid exhausting file descriptors if you create many of them.  As of PhpRedis
+     * 4.2.1 you can enable connection pooling with the INI directive
+     * `redis.pconnect.pooling_enabled=1` (not supported in threaded builds).
+     *
      * @param string      $host          The Redis server hostname.
      * @param int         $port          The Redis server port.
      * @param float       $timeout       Connection timeout in seconds.
@@ -3177,9 +3217,12 @@ class Redis {
      * try {
      *     $redis = new Redis();
      *     $redis->pconnect('localhost', 6379);
+     *     $redis->pconnect('tls://localhost', 6379, 2.5, 'tls');
      * } catch (Exception $ex) {
      *    echo "Could not connect to Redis: ", $ex->getMessage(), "\n";
      * }
+     *
+     * NOTE:  `popen` is an alias for `pconnect` and will be removed in a future version of PhpRedis.
      */
     public function pconnect(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
 
@@ -3805,10 +3848,17 @@ class Redis {
      * @param int    $count  An optional number of members to pop.   This defaults to
      *                       removing one element.
      *
+     * @return Redis|string|array|false When called without a count, returns a single member
+     *                                  or false if the set is empty.  When a count is provided,
+     *                                  returns an array of members (which may be empty if the set
+     *                                  does not exist) or false on error.
+     *
      * @example
      * $redis->del('numbers', 'evens');
      * $redis->sAdd('numbers', 'zero', 'one', 'two', 'three', 'four');
      * $redis->sPop('numbers');
+     * $redis->sAdd('letters', 'a', 'b', 'c');
+     * $redis->sPop('letters', 3); // Return up to three members.
      */
     public function sPop(string $key, int $count = 0): Redis|string|array|false;
 
@@ -4069,6 +4119,12 @@ class Redis {
      * | OPT_BACKOFF_BASE | int | The minimum delay between retries when backing off. |
      * | OPT_BACKOFF_CAP  | int | The maximum delay between replies when backing off. |
      *
+     * When using `OPT_SCAN` you may pass `Redis::SCAN_RETRY` to have PhpRedis
+     * automatically reissue SCAN commands when Redis returns an empty result with
+     * a non-zero iterator, or `Redis::SCAN_NORETRY` for the raw behaviour.  You can
+     * also control whether the current key prefix is automatically applied to the
+     * SCAN `MATCH` pattern via `Redis::SCAN_PREFIX` and `Redis::SCAN_NOPREFIX`.
+     *
      * @see Redis::getOption()
      * @see Redis::__construct() for details about backoff strategies.
      *
@@ -4079,6 +4135,13 @@ class Redis {
      *
      * @example
      * $redis->setOption(Redis::OPT_PREFIX, 'app:');
+     * $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);
+     *
+     * // Configure SCAN behaviour.
+     * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
+     * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+     * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
+     * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
      *
      */
     public function setOption(int $option, mixed $value): bool;
@@ -5522,6 +5585,10 @@ class Redis {
      *                        OPTION       TYPE            MEANING
      *                        'WITHSCORES' bool            Whether to also return scores.
      *                        'LIMIT'      [offset, count] Limit the reply to a subset of elements.
+     *
+     *                        In addition to numeric scores you may pass '-inf' and '+inf' to
+     *                        select all elements greater than or equal to/less than or equal to
+     *                        the provided bound.
      *
      * @return Redis|array|false The number of matching elements or false on failure.
      *
