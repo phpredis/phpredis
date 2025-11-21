@@ -46,7 +46,6 @@ The best way to support the project is through [GitHub Sponsors](https://github.
    * [Connection](#connection)
    * [Retry and backoff](#retry-and-backoff)
    * [Transactions](#transactions)
-   * [Scripting](#scripting)
    * [Local Helper Methods](#local-helper-methods)
    * [Introspection](#introspection)
 
@@ -607,7 +606,7 @@ $redis->setOption(Redis::OPT_BACKOFF_BASE, 500); // base for backoff computation
 $redis->setOption(Redis::OPT_BACKOFF_CAP, 750); // backoff time capped at 750ms
 ~~~
 
-Transactions
+### Transactions
 
 1. [multi, exec, discard](#multi-exec-discard) - Enter and exit transactional mode
 2. [watch, unwatch](#watch-unwatch) - Watches a key for modifications by another client.
@@ -674,7 +673,6 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 
 These helpers expose the exact logic PhpRedis uses locally for serialization, compression, and prefixing.
 
-* [getDBNum](#getdbnum) - Get the currently selected database number
 * [getLastError](#getlasterror) - The last error message (if any)
 * [clearLastError](#clearlasterror) - Clear the last error message
 * [_compress](#_compress) - Compress a string with the configured compression option
@@ -928,6 +926,15 @@ $digest = $redis->_digest(['foo' => 'bar']);
 ~~~
 
 ### Introspection
+
+1. [isConnected](#isconnected) - Check if PhpRedis believes it is connected
+1. [getHost](#gethost) - Retrieve the configured host or unix socket
+1. [getPort](#getport) - Retrieve the configured port
+1. [getDbNum](#getdbnum) - Get the currently selected database number
+1. [getTimeout](#gettimeout) - Get the write timeout value
+1. [getReadTimeout](#getreadtimeout) - Get the configured read timeout
+1. [getPersistentID](#getpersistentid) - Get the persistent ID for the connection
+1. [getAuth](#getauth) - Retrieve authentication credentials in use
 
 #### isConnected
 -----
