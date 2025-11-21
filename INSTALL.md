@@ -1,18 +1,14 @@
-# Installation with PIE from packagist
+# Installation options
 
-To pull latest stable released version, from [packagist](https://packagist.org/packages/phpredis/phpredis)
+phpredis can be installed from PECL, from source, or with pre-built packages provided by most distributions.
 
-~~~
-pie install phpredis/phpredis
-~~~
+## PECL
 
-# Installation from pecl
+Pull the latest stable release from [PECL](https://pecl.php.net/package/redis):
 
-To pull latest stable released version, from [pecl](https://pecl.php.net/package/redis)
-
-~~~
+```bash
 pecl install redis
-~~~
+```
 
 Configure options can be passed as well:
 
@@ -20,89 +16,54 @@ Configure options can be passed as well:
 pecl install --configureoptions="enable-redis-msgpack='yes' enable-redis-igbinary='yes'" redis
 ```
 
-# Installation from sources
+## Build from source
 
-To build this extension for the sources tree:
-
-~~~
+```bash
 git clone https://github.com/phpredis/phpredis.git
 cd phpredis
 phpize
 ./configure [--enable-redis-igbinary] [--enable-redis-msgpack] [--enable-redis-lzf [--with-liblzf[=DIR]]] [--enable-redis-zstd] [--enable-redis-lz4]
 make && make install
-~~~
+```
 
-If you would like phpredis to serialize your data using the igbinary library, run configure with `--enable-redis-igbinary`.
-If you would like to use the msgpack serializer, run configure with `--enable-redis-msgpack` (note:  Requires php-msgpack >= 2.0.3)
-The extension also may compress data before sending it to Redis server, if you run configure with `--enable-redis-lzf`. If you want to use lzf library pre-installed into your system use `--with-liblzf` configuration option to specify the path where to search files.
-`make install` copies `redis.so` to an appropriate location, but you still need to enable the module in the PHP config file. To do so, either edit your php.ini or add a redis.ini file in `/etc/php5/conf.d` with the following contents: `extension=redis.so`.
+- `--enable-redis-igbinary` enables igbinary serialization.
+- `--enable-redis-msgpack` enables msgpack serialization (requires php-msgpack >= 2.0.3).
+- `--enable-redis-lzf` / `--with-liblzf` compress data with lzf.
+- `--enable-redis-zstd` / `--enable-redis-lz4` enable additional compression codecs.
 
-You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
+After `make install`, enable the extension (for example `echo "extension=redis.so" > /etc/php.d/redis.ini`) and confirm with `php -m | grep redis`.
 
-This extension exports a single class, [Redis](./README.md#class-redis) (and [RedisException](./README.md#class-redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
+## Composer / PIE
 
+If you use [PIE](https://github.com/cuaxin/pie) to install PHP extensions from [Packagist](https://packagist.org/packages/phpredis/phpredis):
+
+```bash
+pie install phpredis/phpredis
+```
 
 # Binary packages
 
-Most distributions provides pre-build binary packages of this extension.
+Most distributions provide a packaged extension. Package names vary by PHP version; replace the PHP version in the command if needed.
 
-## Windows:
+- Debian / Ubuntu: `sudo apt install php-redis`
+- Fedora: `sudo dnf install php-redis` (provided as php-pecl-redis)
+- RHEL / CentOS / Alma / Rocky: enable EPEL/Remi if required, then `sudo dnf install php-pecl-redis`
+- openSUSE Leap / Tumbleweed: `sudo zypper install php8-redis` (or matching PHP slot)
+- Arch Linux / Manjaro: `sudo pacman -S php-redis`
+- Alpine: `sudo apk add php82-redis` (replace 82 with your PHP minor)
+- macOS (Homebrew): `brew install php && pecl install redis`
+- Windows: download the DLL from [PECL](https://pecl.php.net/package/redis) or [windows.php.net](https://windows.php.net/downloads/pecl/releases/redis/)
+- MacPorts: `sudo port install php82-redis` (or the desired PHP slot)
 
-Follow the DLL link on the [https://pecl.php.net/package/redis](https://pecl.php.net/package/redis) page or use [https://windows.php.net/downloads/pecl/releases/redis/](https://windows.php.net/downloads/pecl/releases/redis/)
+# Notes for Docker
 
-## Fedora
+If you are building on the official `php` Docker images with Debian/Alpine bases, you can install via PECL and enable the extension:
 
-Fedora users can install the package from the official repository.
+```bash
+pecl install redis \
+  && docker-php-ext-enable redis
+```
 
-### Fedora ≥ 40, Version 6
+# Additional resources
 
-Installation of the [php-pecl-redis6](https://src.fedoraproject.org/rpms/php-pecl-redis6/) package:
-
-~~~
-dnf install php-redis
-~~~
-
-## CentOS / RHEL and clones
-
-Installation of the php-pecl-redis6 package, available for PHP ≥ 8.3:
-
-~~~
-dnf install php-redis
-~~~
-
-### openSUSE ≥ 15.1
-
-Installation of the [php7-redis](https://software.opensuse.org/package/php7-redis?search_term=php7-redis) package:
-
-~~~
-zypper in php7-redis
-~~~
-
-
-# Installation on OSX
-
-If the install fails on OSX, type the following commands in your shell before trying again:
-~~~
-MACOSX_DEPLOYMENT_TARGET=10.6
-CFLAGS="-arch i386 -arch x86_64 -g -Os -pipe -no-cpp-precomp"
-CCFLAGS="-arch i386 -arch x86_64 -g -Os -pipe"
-CXXFLAGS="-arch i386 -arch x86_64 -g -Os -pipe"
-LDFLAGS="-arch i386 -arch x86_64 -bind_at_load"
-export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
-~~~
-
-If that still fails and you are running Zend Server CE, try this right before "make": `./configure CFLAGS="-arch i386"`.
-
-Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tagged/phpredis).
-
-See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
-
-You can install it using MacPorts:
-
-- [Get macports-php](https://www.macports.org/)
-- `sudo port install php56-redis` (or php53-redis, php54-redis, php55-redis, php70-redis, php71-redis, php72-redis, php73-redis, php74-redis)
-
-# Building on Windows
-
-See [instructions from @char101](https://github.com/phpredis/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
-
+This extension exports [Redis](./README.md#class-redis) and [RedisException](./README.md#class-redisexception). A PHP stub for IDE completion is available at https://github.com/ukko/phpredis-phpdoc .
