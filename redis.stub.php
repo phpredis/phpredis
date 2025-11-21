@@ -4115,7 +4115,7 @@ class Redis {
      * | OPT_REPLY_LITERAL | bool | If set to true, PhpRedis will return the literal string Redis returns for LINE replies (e.g. '+OK'), rather than `true`. |
      * | OPT_COMPRESSION_LEVEL | int | Set a specific compression level if Redis is compressing data. |
      * | OPT_NULL_MULTIBULK_AS_NULL | bool | Causes PhpRedis to return `NULL` rather than `false` for NULL MULTIBULK replies |
-     * | OPT_BACKOFF_ALGORITHM | enum | The exponential backoff strategy to use. |
+     * | OPT_BACKOFF_ALGORITHM | enum | The exponential backoff strategy to use. Specifically `Redis::BACKOFF_ALGORITHM_*` |
      * | OPT_BACKOFF_BASE | int | The minimum delay between retries when backing off. |
      * | OPT_BACKOFF_CAP  | int | The maximum delay between replies when backing off. |
      *
