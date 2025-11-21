@@ -151,7 +151,15 @@ php tests/TestRedis.php --class Redis --test echo
 
 ## API Documentation
 
-The [API Documentation](https://phpredis.github.io/phpredis) are a work in progress, but will eventually replace our **ONE README TO RULE THEM ALL** docs.
+We automatically generate detailed and searchable API documentation for every class and method using [doctum](https://github.com/code-lts/doctum).
+
+[API Documentation](https://phpredis.github.io/phpredis) is available here.
+
+NOTE: To generate the docs yourself, you just need to have `doctum` on your path and can run
+
+```bash
+doctum update doctum-config.php
+```
 
 ## Classes and methods
 
