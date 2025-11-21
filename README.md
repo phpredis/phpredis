@@ -1563,7 +1563,6 @@ _**Description**_:  Scan the keyspace for keys
 
 ###### *Example*
 ~~~php
-
 /* Without enabling Redis::SCAN_RETRY (default condition) */
 $it = NULL;
 do {
