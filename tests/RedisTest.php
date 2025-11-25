@@ -61,23 +61,28 @@ class Redis_Test extends TestSuite {
         return Redis::RIGHT;
     }
 
-    protected function detectKeyDB(array $info) {
+    protected function detectKeyDB($info) {
+        if (!is_array($info))
+            return false;
+
         return strpos($info['executable'] ?? '', 'keydb') !== false ||
-               isset($info['keydb']) ||
-               isset($info['mvcc_depth']);
+               isset($info['keydb']) || isset($info['mvcc_depth']);
     }
 
-    protected function detectValkey(array $info) {
-        return isset($info['server_name']) && $info['server_name'] === 'valkey';
+    protected function detectValkey($info) {
+        return is_array($info) && ($info['executable'] ?? '') === 'valkey';
     }
 
     public function setUp() {
         $this->redis = $this->newInstance();
+
         $info = $this->redis->info();
-        $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
+
+        $this->version = $info['redis_version'] ?? '0.0.0';
+        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
+
         $this->is_keydb = $this->detectKeyDB($info);
         $this->is_valkey = $this->detectValKey($info);
-        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
     }
 
     protected function haveCommand(string $cmd): bool {
