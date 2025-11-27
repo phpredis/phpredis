@@ -2,6 +2,22 @@
 
 phpredis can be installed from PECL, from source, or with pre-built packages provided by most distributions.
 
+## PIE (PHP Installer for Extensions)
+
+If you use [PIE](https://github.com/cuaxin/pie) to install PHP extensions from [Packagist](https://packagist.org/packages/phpredis/phpredis):
+
+```bash
+pie install phpredis/phpredis
+```
+
+You can also install a specific tag:
+
+```bash
+pie install phpredis/phpredis:6.2.0
+pie install phpredis/phpredis:6.3.0RC1
+```
+**NOTE**: PHP has deprecated PECL and recommends using PIE for installing extensions.
+
 ## PECL
 
 Pull the latest stable release from [PECL](https://pecl.php.net/package/redis):
@@ -32,14 +48,6 @@ make && make install
 - `--enable-redis-zstd` / `--enable-redis-lz4` enable additional compression codecs.
 
 After `make install`, enable the extension (for example `echo "extension=redis.so" > /etc/php.d/redis.ini`) and confirm with `php -m | grep redis`.
-
-## Composer / PIE
-
-If you use [PIE](https://github.com/cuaxin/pie) to install PHP extensions from [Packagist](https://packagist.org/packages/phpredis/phpredis):
-
-```bash
-pie install phpredis/phpredis
-```
 
 # Binary packages
 
