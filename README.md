@@ -40,14 +40,14 @@ The best way to support the project is through [GitHub Sponsors](https://github.
    * [Redis Cluster support](./cluster.md#readme)
    * [Redis Sentinel support](./sentinel.md#readme)
    * [Running the unit tests](#running-the-unit-tests)
-2. [API Documentation](#api-documentation)
-3. [Classes and methods](#classes-and-methods)
+2. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
    * [Connection](#connection)
    * [Retry and backoff](#retry-and-backoff)
    * [Transactions](#transactions)
    * [Local Helper Methods](#local-helper-methods)
    * [Introspection](#introspection)
+3. [API Documentation](#api-documentation)
 
 ## Installing/Configuring
 

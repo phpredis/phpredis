@@ -4106,7 +4106,7 @@ class Redis {
      * | OPTION          | TYPE | DESCRIPTION |
      * | --------------- | ---- | ----------- |
      * | OPT_MAX_RETRIES | int  | The maximum number of times Redis will attempt to reconnect if it gets disconnected, before throwing an exception. |
-     * | OPT_SCAN        | enum | Redis::OPT_SCAN_RETRY, or Redis::OPT_SCAN_NORETRY.  Whether PhpRedis should automatically SCAN again when zero keys but a nonzero iterator are returned. |
+     * | OPT_SCAN        | enum |  `Redis::SCAN_RETRY` <br> `Redis::SCAN_NORETRY`.|
      * | OPT_SERIALIZER  | enum | Set the automatic data serializer.<br>`Redis::SERIALIZER_NONE`<br>`Redis::SERIALIZER_PHP`<br>`Redis::SERIALIZER_IGBINARY`<br>`Redis::SERIALIZER_MSGPACK`, `Redis::SERIALIZER_JSON`|
      * | OPT_PREFIX | string | A string PhpRedis will use to prefix every key we read or write. |
      * | OPT_READ_TIMEOUT | float | How long PhpRedis will block for a response from Redis before throwing a 'read error on connection' exception. |
@@ -4118,12 +4118,6 @@ class Redis {
      * | OPT_BACKOFF_ALGORITHM | enum | The exponential backoff strategy to use. Specifically `Redis::BACKOFF_ALGORITHM_*` |
      * | OPT_BACKOFF_BASE | int | The minimum delay between retries when backing off. |
      * | OPT_BACKOFF_CAP  | int | The maximum delay between replies when backing off. |
-     *
-     * When using `OPT_SCAN` you may pass `Redis::SCAN_RETRY` to have PhpRedis
-     * automatically reissue SCAN commands when Redis returns an empty result with
-     * a non-zero iterator, or `Redis::SCAN_NORETRY` for the raw behaviour.  You can
-     * also control whether the current key prefix is automatically applied to the
-     * SCAN `MATCH` pattern via `Redis::SCAN_PREFIX` and `Redis::SCAN_NOPREFIX`.
      *
      * @see Redis::getOption()
      * @see Redis::__construct() for details about backoff strategies.
