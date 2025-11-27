@@ -654,7 +654,9 @@ RedisSentinel::ckquorum</a>() &mdash; <em>Method in class <a href="RedisSentinel
 Redis::dbSize</a>() &mdash; <em>Method in class <a href="Redis.html">Redis</a></em></dt>
                     <dd><p>Return the number of keys in the currently selected Redis database.</p></dd><dt><a href="Redis.html#method_debug">
 Redis::debug</a>() &mdash; <em>Method in class <a href="Redis.html">Redis</a></em></dt>
-                    <dd></dd><dt><a href="Redis.html#method_decr">
+                    <dd><p>Execute the Redis <code>DEBUG</code> command. Note that this is disabled by default
+and can be very dangerous, even allowing you to crash the server. Use
+with caution</p></dd><dt><a href="Redis.html#method_decr">
 Redis::decr</a>() &mdash; <em>Method in class <a href="Redis.html">Redis</a></em></dt>
                     <dd><p>Decrement a Redis integer by 1 or a provided value.</p></dd><dt><a href="Redis.html#method_decrBy">
 Redis::decrBy</a>() &mdash; <em>Method in class <a href="Redis.html">Redis</a></em></dt>
@@ -1326,9 +1328,11 @@ RedisSentinel::masters</a>() &mdash; <em>Method in class <a href="RedisSentinel.
                     <dd></dd><dt><a href="RedisSentinel.html#method_myid">
 RedisSentinel::myid</a>() &mdash; <em>Method in class <a href="RedisSentinel.html">RedisSentinel</a></em></dt>
                     <dd></dd>        </dl><h2 id="letterO">O</h2>
-        <dl id="indexO"><dt><a href="Redis.html#method_open">
+        <dl id="indexO"><dt><a href="Redis.html#method_object">
+Redis::object</a>() &mdash; <em>Method in class <a href="Redis.html">Redis</a></em></dt>
+                    <dd><p>Get encoding and other information about a key.</p></dd><dt><a href="Redis.html#method_open">
 Redis::open</a>() &mdash; <em>Method in class <a href="Redis.html">Redis</a></em></dt>
-                    <dd><p>Get encoding and other information about a key.</p></dd><dt><a href="RedisArray.html#method_object">
+                    <dd></dd><dt><a href="RedisArray.html#method_object">
 RedisArray::object</a>() &mdash; <em>Method in class <a href="RedisArray.html">RedisArray</a></em></dt>
                     <dd></dd><dt><a href="RedisArray.html#method_open">
 RedisArray::open</a>() &mdash; <em>Method in class <a href="RedisArray.html">RedisArray</a></em></dt>
@@ -2203,7 +2207,7 @@ Redis::__construct</a>() &mdash; <em>Method in class <a href="Redis.html">Redis<
 options array it is also possible to connect to an instance at the same
 time.</p></dd><dt><a href="Redis.html#method___destruct">
 Redis::__destruct</a>() &mdash; <em>Method in class <a href="Redis.html">Redis</a></em></dt>
-                    <dd></dd><dt><a href="Redis.html#method__compress">
+                    <dd><p>Destructor to clean up the Redis object.</p></dd><dt><a href="Redis.html#method__compress">
 Redis::_compress</a>() &mdash; <em>Method in class <a href="Redis.html">Redis</a></em></dt>
                     <dd><p>Compress a value with the currently configured compressor (Redis::OPT_COMPRESSION)
 exactly the same way PhpRedis does before sending data to Redis.</p></dd><dt><a href="Redis.html#method__uncompress">
