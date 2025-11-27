@@ -3361,6 +3361,28 @@ class Redis {
      *       ->del('mylist')
      *       ->rpush('mylist', 'a', 'b', 'c')
      *       ->exec();
+     *
+     * @example
+     * // It is also possible to nest MULTI inside a PIPELINE
+     * $res = $redis->pipeline()
+     *              ->multi()->incr('t1:1')->incr('t1:2')->exec()
+     *              ->multi()->incr('t2:1')->incr('t2:2')->exec()
+     *              ->exec();
+     *
+     * print_r($res);
+     * // Array
+     * // (
+     * //     [0] => Array
+     * //         (
+     * //             [0] => 4
+     * //             [1] => 2
+     * //         )
+     * //
+     * //     [1] => Array
+     * //         (
+     * //             [0] => 2
+     * //             [1] => 4
+     * //         )
      */
     public function pipeline(): bool|Redis;
 

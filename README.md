@@ -40,7 +40,6 @@ The best way to support the project is through [GitHub Sponsors](https://github.
    * [Redis Cluster support](./cluster.md#readme)
    * [Redis Sentinel support](./sentinel.md#readme)
    * [Running the unit tests](#running-the-unit-tests)
-2. [API Documentation](#api-documentation)
 3. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
    * [Connection](#connection)
@@ -48,6 +47,7 @@ The best way to support the project is through [GitHub Sponsors](https://github.
    * [Transactions](#transactions)
    * [Local Helper Methods](#local-helper-methods)
    * [Introspection](#introspection)
+2. [API Documentation](#api-documentation)
 
 ## Installing/Configuring
 
@@ -149,25 +149,12 @@ Note that it is possible to run only tests which match a substring of the test i
 php tests/TestRedis.php --class Redis --test echo
 ```
 
-## API Documentation
-
-We automatically generate detailed and searchable API documentation for every class and method using [doctum](https://github.com/code-lts/doctum).
-
-[API Documentation](https://phpredis.github.io/phpredis) is available here.
-
-NOTE: To generate the docs yourself, you just need to have `doctum` on your path and can run
-
-```bash
-doctum update doctum-config.php
-```
-
 ## Classes and methods
 
 ### Usage
 
 1. [Class Redis](#class-redis)
 1. [Class RedisException](#class-redisexception)
-1. [Predefined constants](#predefined-constants)
 
 #### Class Redis
 -----
@@ -220,34 +207,14 @@ phpredis throws a [RedisException](#class-redisexception) object if it can't rea
 if the Redis service is down, or if the Redis host is overloaded. In any other problematic case that does not involve an
 unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
-#### Predefined constants
------
-_**Description**_: Available Redis Constants
-
-Redis data types, as returned by [type](#type)
-~~~php
-Redis::REDIS_STRING
-Redis::REDIS_SET
-Redis::REDIS_LIST
-Redis::REDIS_ZSET
-Redis::REDIS_HASH
-Redis::REDIS_STREAM
-Redis::REDIS_VECTORSET
-Redis::REDIS_NOT_FOUND
-~~~
-
 ### Connection
 
 1. [connect, open](#connect-open) - Connect to a server
 1. [pconnect, popen](#pconnect-popen) - Connect to a server (persistent)
 1. [auth](#auth) - Authenticate to the server
-1. [select](#select) - Change the selected database for the current connection
-1. [swapdb](#swapdb) - Swaps two Redis databases
 1. [close](#close) - Close the connection
 1. [setOption](#setoption) - Set client option
 1. [getOption](#getoption) - Get client option
-1. [ping](#ping) - Ping the server
-1. [echo](#echo) - Echo the given string
 
 #### connect, open
 -----
@@ -408,65 +375,6 @@ $redis->auth(['user' => 'phpredis', 'pass' => 'phpredis']);
 $redis->auth(['pass' => 'phpredis']);
 ~~~
 
-#### select
------
-_**Description**_: Change the selected database for the current connection.
-
-###### *Parameters*
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `db` | `int` | The database to select. Note that by default Redis has 16 databases (0-15). |
-
-###### *Return value*
-
-| Type | Description |
-| --- | --- |
-| `Redis\|bool` | `TRUE` in case of success, `FALSE` in case of failure. |
-
-###### *Example*
-See method for example: [move](#move)
-
-#### swapdb
------
-_**Description**_:  Swap one Redis database with another atomically
-
-###### *Parameters*
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `src` | `int` | The source database number |
-| `dst` | `int` | The destination database number |
-
-###### *Return value*
-
-| Type | Description |
-| --- | --- |
-| `Redis\|bool` | `TRUE` on success and `FALSE` on failure. Requires Redis >= 4.0.0 |
-
-
-###### *Example*
-~~~php
-$redis->swapdb(0, 1); /* Swaps DB 0 with DB 1 atomically */
-~~~
-
-#### close
------
-_**Description**_: Disconnects from the Redis instance.
-
-*Note*: Closing a persistent connection requires PhpRedis >= 4.2.0.
-
-###### *Parameters*
-
-None.
-
-###### *Return value*
-
-| Type | Description |
-| --- | --- |
-| `bool` | `TRUE` on success, `FALSE` on failure. |
-
-
 #### setOption
 -----
 _**Description**_: Set client option.
@@ -549,33 +457,6 @@ $redis->ping([string $message]);
 | --- | --- |
 | `Redis\|string\|false` | This method returns `TRUE` on success, or the passed string if called with an argument. |
 
-
-###### *Example*
-~~~php
-/* When called without an argument, PING returns `TRUE` */
-$redis->ping();
-
-/* If passed an argument, that argument is returned.  Here 'hello' will be returned */
-$redis->ping('hello');
-~~~
-
-*Note*:  Prior to PhpRedis 5.0.0 this command simply returned the string `+PONG`.
-
-#### echo
------
-_**Description**_: Sends a string to Redis, which replies with the same string
-
-###### *Parameters*
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `str` | `string` | The string to echo |
-
-###### *Return value*
-
-| Type | Description |
-| --- | --- |
-| `string\|false` | The same message, or `false` on failure. |
 
 ### Retry and backoff
 
@@ -1057,3 +938,16 @@ None
 
 #### *Return value*
 *Mixed*  Returns NULL if no username/password are set, the password string if a password is set, and a `[username, password]` array if authenticated with a username and password.
+
+## API Documentation
+
+We automatically generate detailed and searchable API documentation for every class and method using [doctum](https://github.com/code-lts/doctum).
+
+[API Documentation](https://phpredis.github.io/phpredis) is available here.
+
+NOTE: To generate the docs yourself, you just need to have `doctum` on your path and can run
+
+```bash
+doctum update doctum-config.php
+```
+
