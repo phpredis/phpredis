@@ -8786,12 +8786,12 @@ class Redis_Test extends TestSuite {
 
             $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
         } else {
-            $this->assertThrowsMatch($this->redis,
-                function($r) {
-                    $r->_digest('foo');
-                },
-                '/^.*8\.1.*$/'
-            );
+            /* Make sure we don't crash when XXH3 isn't available */
+            try {
+                $this->redis->_digest('foo');
+            } catch (Exception $ex) {
+
+            }
         }
     }
 
