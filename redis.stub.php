@@ -610,6 +610,13 @@ class Redis {
      */
     public function __construct(?array $options = null);
 
+    /**
+     * Destructor to clean up the Redis object.
+     *
+     * This method will disconnect from Redis. If the connection is persistento
+     * it will be stashed for future reuse.
+     *
+     */
     public function __destruct();
 
     /**
@@ -737,6 +744,9 @@ class Redis {
      * Execute Redis ACL subcommands.
      *
      * @see https://redis.io/docs/latest/commands/acl/
+     *
+     * @example
+     * $redis->acl('list');
      */
     public function acl(string $subcmd, string ...$args): mixed;
 
@@ -1061,7 +1071,22 @@ class Redis {
     /**
      * Closes the connection to Redis
      *
+     * This function will close the connection whether it is persistent or not.
+     *
      * @return bool Whether the connection was successfully closed.
+     *
+     * @example
+     * $redis = new Redis;
+     * $redis->pconnect('localhost', 6379);
+     * $id1 = $redis->client('id');
+     * $redis->close();
+     *
+     * $redis = new Redis;
+     * $redis->pconnect('localhost', 6379);
+     * $id2 = $redis->client('id');
+     *
+     * // Will print "id is different"
+     * printf("ID is %s\n", $id1 == $id2 ? 'the same' :  'different');
      */
     public function close(): bool;
 
@@ -1182,6 +1207,18 @@ class Redis {
      */
     public function dbSize(): Redis|int|false;
 
+    /**
+     * Execute the Redis `DEBUG` command. Note that this is disabled by default
+     * and can be very dangerous, even allowing you to crash the server. Use
+     * with caution
+     *
+     * @note The command has greatly increased in complexity since it was first
+     * added to PhpRedis, so you may need to use it via `Redis::rawCommand()`
+     * for certain subcommands.
+     *
+     * @param string $key The DEBUG subcommand to execute.
+     * @return Redis|string The result of the DEBUG command.
+     */
     public function debug(string $key): Redis|string;
 
     /**
