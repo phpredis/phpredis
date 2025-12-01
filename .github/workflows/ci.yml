@@ -253,6 +253,7 @@ jobs:
           phpize
           ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
           sudo make install
+          sudo mkdir -p "$(php-config --ini-dir)"
           echo 'extension = redis.so' | sudo tee -a "$(php-config --ini-dir)/90-redis.ini"
 
   windows:
