@@ -210,6 +210,45 @@ class Redis_Test extends TestSuite {
         $this->assertGT(-1, $ret[0] ?? -1);
     }
 
+    public function testClientNameNonPersistentOnConnect() {
+        if ($this->redis instanceof RedisCluster) {
+            $node = $this->redis->_masters()[0]; 
+            $this->assertEquals(false, $this->redis->client($node, 'getname'));
+        } else {
+            $this->assertEquals(false, $this->redis->client('getname'));
+        }
+    }
+
+    public function testClientNamePersistentOnConnect() {
+        $clientName = uniqid('phpredis_');
+        $r = new Redis([
+            'host' => $this->getHost(),
+            'port' => $this->getPort(),
+            'persistent' => true,
+            'client_name' => $clientName,
+            'auth' => $this->getAuth(),
+        ]);
+
+        if (version_compare($this->version, '6.0.0') < 0) {
+            // CLIENT SETNAME should have been used
+            $this->assertEquals($clientName, $r->client('getname'));
+            $r->close();
+            return;
+        }
+
+        $this->assertEquals($clientName, $r->client('getname'));
+
+        if (version_compare($this->version, '7.2.0') >= 0) {
+            $clientInfo = $r->client('info');
+
+            $this->assertIsArray($clientInfo);
+            $this->assertArrayKeyEquals($clientInfo, 'lib-name', 'phpredis');
+            $this->assertArrayKeyEquals($clientInfo, 'lib-ver', phpversion('redis'));
+        }
+
+        $r->close();
+    }
+
     // Run some simple tests against the PUBSUB command.  This is problematic, as we
     // can't be sure what's going on in the instance, but we can do some things.
     public function testPubSub() {
@@ -7676,6 +7715,9 @@ class Redis_Test extends TestSuite {
 
         // Test an empty xautoclaim reply
         $res = $this->redis->xAutoClaim('ships', 'combatants', 'Sisko', 0, '0-0');
+        if (!$this->assertIsArray($res)) {
+            return;
+        }
         $this->assertTrue(is_array($res) && (count($res) == 2 || count($res) == 3));
         if (count($res) == 2) {
             $this->assertEquals(['0-0', []], $res);

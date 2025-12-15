@@ -213,6 +213,7 @@ $redis = new Redis([
 *persistent*: mixed, If the value is a string it is used as a persistent ID. Non-strings are cast to boolean.
 *auth*: mixed, authentication information
 *database*: int, database number
+*client_name*: string, sets the client name for the connection (see [CLIENT SETNAME](#client))
 *ssl*: array, SSL context options
 
 #### Class RedisException
@@ -360,6 +361,13 @@ $redis->pconnect('tls://127.0.0.1'); // enable transport level security, port 63
 $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection than the two before.
 $redis->pconnect('127.0.0.1', 6379, 2.5, 'x'); // x is sent as persistent_id and would be another connection than the three before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection than the four before.
+
+/* Set client name for persistent connections */
+$redis->pconnect('127.0.0.1', 6379, 0, 'my-persistent-id', 0, 0, [
+    'client_name' => 'my-app-worker-1'
+]);
+// The client name will be set automatically when the connection is established
+// and will persist across requests for this persistent connection
 ~~~
 
 **Note:** `popen` is an alias for `pconnect` and will be removed in future versions of phpredis.
@@ -4500,6 +4508,24 @@ $redis->client('list'); // Get a list of clients
 $redis->client('getname'); // Get the name of the current connection
 $redis->client('setname', 'somename'); // Set the name of the current connection
 $redis->client('kill', <ip:port>); // Kill the process at ip:port
+~~~
+
+**Note:** The client name can also be set when establishing a connection using the `client_name` option in the context array (see [connect](#connect-open) and [pconnect](#pconnect-popen)). This is particularly useful with persistent connections, as the name will be set automatically when the connection is established and will persist across requests:
+
+~~~php
+// Set client name during connection
+$redis = new Redis();
+$redis->pconnect('127.0.0.1', 6379, 0, 'my-pool', 0, 0, [
+    'client_name' => 'api-server-1'
+]);
+
+// Or using the constructor
+$redis = new Redis([
+    'host' => '127.0.0.1',
+    'port' => 6379,
+    'persistent' => 'my-pool',
+    'client_name' => 'api-server-1'
+]);
 ~~~
 
 ###### *Return value*

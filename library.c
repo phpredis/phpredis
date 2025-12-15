@@ -238,6 +238,88 @@ redis_sock_set_auth_zval(RedisSock *redis_sock, zval *zv) {
 }
 
 PHP_REDIS_API void
+redis_sock_set_client_name_zval(RedisSock *redis_sock, zval *zv) {
+    zend_string *client_name = NULL;
+    const char *name_str;
+    size_t name_len;
+
+    if (Z_TYPE_P(zv) == IS_STRING) {
+        client_name = zval_get_string(zv);
+    } else {
+        return;
+    }
+
+    name_str = ZSTR_VAL(client_name);
+    name_len = ZSTR_LEN(client_name);
+    if (name_len > 0 && memchr(name_str, ' ', name_len) != NULL) {
+        zend_string_release(client_name);
+        redis_sock_set_err(redis_sock, ZEND_STRL("Client name cannot contain spaces"));
+        return;
+    }
+
+    if (redis_sock->client_name) {
+        zend_string_release(redis_sock->client_name);
+    }
+    redis_sock->client_name = client_name;
+}
+
+PHP_REDIS_API int
+redis_sock_set_client_info(RedisSock *redis_sock) {
+    smart_string cmd = {0};
+    char inbuf[256];
+    size_t len;
+
+    if (!redis_sock->persistent) {
+        return SUCCESS;
+    }
+
+    // CLIENT SETINFO is only available since Redis 7.2.0.
+    if (redis_version_less_than(&redis_sock->hello, 7, 2)) {
+        return SUCCESS;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmd, 3, "CLIENT");
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "SETINFO");
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "LIB-NAME");
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "phpredis");
+
+    if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0) {
+        efree(cmd.c);
+        return SUCCESS;
+    }
+    efree(cmd.c);
+
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+        return SUCCESS;
+    }
+
+    if (inbuf[0] == '-' &&
+        (redis_strncmp(inbuf, ZEND_STRL("-ERR unknown command")) == 0 ||
+         redis_strncmp(inbuf, ZEND_STRL("-ERR unknown subcommand")) == 0)) {
+        return SUCCESS;
+    }
+
+    cmd = (smart_string){0};
+    REDIS_CMD_INIT_SSTR_STATIC(&cmd, 3, "CLIENT");
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "SETINFO");
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "LIB-VER");
+    redis_cmd_append_sstr(&cmd, PHP_REDIS_VERSION, strlen(PHP_REDIS_VERSION));
+
+    if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0) {
+        efree(cmd.c);
+        return SUCCESS;
+    }
+    efree(cmd.c);
+
+    memset(inbuf, 0, sizeof(inbuf));
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+        return SUCCESS;
+    }
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API void
 redis_sock_free_auth(RedisSock *redis_sock) {
     if (redis_sock->user) {
         zend_string_release(redis_sock->user);
@@ -247,6 +329,14 @@ redis_sock_free_auth(RedisSock *redis_sock) {
     if (redis_sock->pass) {
         zend_string_release(redis_sock->pass);
         redis_sock->pass = NULL;
+    }
+}
+
+PHP_REDIS_API void
+redis_sock_free_client_name(RedisSock *redis_sock) {
+    if (redis_sock->client_name) {
+        zend_string_release(redis_sock->client_name);
+        redis_sock->client_name = NULL;
     }
 }
 
@@ -1369,6 +1459,8 @@ redis_parse_client_info(char *info, zval *z_ret)
 {
     char *p1, *s1 = NULL;
 
+    info[strcspn(info, "\r\n")] = '\0';
+
     ZVAL_FALSE(z_ret);
     if ((p1 = php_strtok_r(info, " ", &s1)) != NULL) {
         array_init(z_ret);
@@ -2036,10 +2128,150 @@ redis_client_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
 }
 
 static int
+redis_parse_hello_response(RedisSock *redis_sock, zval *z_ret)
+{
+    zval *zv;
+    char *endptr;
+
+    if (redis_sock->hello.server) {
+        zend_string_release(redis_sock->hello.server);
+    }
+
+    if ((zv = zend_hash_str_find(Z_ARRVAL_P(z_ret), ZEND_STRL("dragonfly_version")))) {
+        redis_sock->hello.server = zend_string_init(ZEND_STRL("dragonfly"), 0);
+    } else {
+        zv = zend_hash_str_find(Z_ARRVAL_P(z_ret), ZEND_STRL("server"));
+        redis_sock->hello.server = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
+    }
+
+    if (redis_sock->hello.version) {
+        zend_string_release(redis_sock->hello.version);
+    }
+    zv = zend_hash_str_find(Z_ARRVAL_P(z_ret), ZEND_STRL("version"));
+    redis_sock->hello.version = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
+
+    if (redis_sock->hello.version && ZSTR_LEN(redis_sock->hello.version) > 0) {
+        const char *vstr = ZSTR_VAL(redis_sock->hello.version);
+        redis_sock->hello.version_major = strtol(vstr, &endptr, 10);
+        if (endptr != vstr && *endptr == '.') {
+            redis_sock->hello.version_minor = strtol(endptr + 1, &endptr, 10);
+        } else {
+            redis_sock->hello.version_major = 0;
+            redis_sock->hello.version_minor = 0;
+        }
+    } else {
+        redis_sock->hello.version_major = 0;
+        redis_sock->hello.version_minor = 0;
+    }
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_sock_hello(RedisSock *redis_sock) {
+    smart_string cmd = {0};
+    zval z_ret;
+    char inbuf[1024];
+    char *endptr;
+    size_t len;
+    long n;
+    int argc;
+
+    if (!redis_sock->persistent) {
+        goto fallback;
+    }
+
+    argc = 1;
+    if (redis_sock->pass) {
+        argc += 3;
+    }
+    if (redis_sock->client_name) {
+        argc += 2;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmd, argc, "HELLO");
+    REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "2");
+
+    if (redis_sock->pass) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "AUTH");
+        if (redis_sock->user) {
+            redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->user), ZSTR_LEN(redis_sock->user));
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "default");
+        }
+        redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->pass), ZSTR_LEN(redis_sock->pass));
+    }
+
+    if (redis_sock->client_name) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "SETNAME");
+        redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->client_name), ZSTR_LEN(redis_sock->client_name));
+    }
+
+    if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0) {
+        smart_string_free(&cmd);
+        return FAILURE;
+    }
+    smart_string_free(&cmd);
+
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0)
+        return FAILURE;
+
+    if (inbuf[0] != '*')
+        goto fallback;
+
+    n = strtol(inbuf + 1, &endptr, 10);
+    if (inbuf + 1 == endptr || n < 0)
+        goto fallback;
+
+    array_init(&z_ret);
+    if (redis_read_multibulk_recursive(redis_sock, (int)n, 0, &z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        goto fallback;
+    }
+
+    if (array_zip_values_recursive(&z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        goto fallback;
+    }
+
+    if (redis_parse_hello_response(redis_sock, &z_ret) == SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        return SUCCESS;
+    }
+    zval_ptr_dtor_nogc(&z_ret);
+
+fallback:
+    if (redis_sock_auth(redis_sock) != SUCCESS)
+        return FAILURE;
+
+    if (redis_sock->client_name) {
+        REDIS_CMD_INIT_SSTR_STATIC(&cmd, 2, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmd, "SETNAME");
+        redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->client_name), ZSTR_LEN(redis_sock->client_name));
+
+        if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0) {
+            smart_string_free(&cmd);
+            return FAILURE;
+        }
+        smart_string_free(&cmd);
+
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+            return FAILURE;
+        }
+
+        if (strncmp(inbuf, "+OK", 3) != 0) {
+            return FAILURE;
+        }
+    }
+
+    return SUCCESS;
+}
+
+static int
 redis_hello_response(INTERNAL_FUNCTION_PARAMETERS,
                      RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
-    zval z_ret, *zv;
+    zval z_ret;
     int numElems;
 
     if (read_mbulk_header(redis_sock, &numElems) < 0)
@@ -2054,22 +2286,10 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS,
         goto fail;
     }
 
-    if (redis_sock->hello.server) {
-        zend_string_release(redis_sock->hello.server);
+    if (redis_parse_hello_response(redis_sock, &z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        goto fail;
     }
-
-    if ((zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("dragonfly_version")))) {
-        redis_sock->hello.server = zend_string_init(ZEND_STRL("dragonfly"), 0);
-    } else {
-        zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("server"));
-        redis_sock->hello.server = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
-    }
-
-    if (redis_sock->hello.version) {
-        zend_string_release(redis_sock->hello.version);
-    }
-    zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("version"));
-    redis_sock->hello.version = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
 
     zval_ptr_dtor_nogc(&z_ret);
 
@@ -3091,6 +3311,16 @@ redis_sock_configure(RedisSock *redis_sock, HashTable *opts)
                 REDIS_VALUE_EXCEPTION("Invalid backoff options");
                 return FAILURE;
             }
+        } else if (zend_string_equals_literal_ci(zkey, "client_name")) {
+            if (Z_TYPE_P(val) != IS_STRING) {
+                REDIS_VALUE_EXCEPTION("Invalid client_name - must be a string");
+                return FAILURE;
+            }
+            redis_sock_set_client_name_zval(redis_sock, val);
+            if (redis_sock->err) {
+                REDIS_VALUE_EXCEPTION(ZSTR_VAL(redis_sock->err));
+                return FAILURE;
+            }
         } else {
              php_error_docref(NULL, E_WARNING, "Skip unknown option '%s'", ZSTR_VAL(zkey));
         }
@@ -3262,7 +3492,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     if (redis_stream_detect_dirty(redis_sock->stream) != SUCCESS)
         goto failure;
 
-    redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
+    redis_sock->status = REDIS_SOCK_STATUS_REUSED;
     if (!INI_INT("redis.pconnect.echo_check_liveness")) {
         return SUCCESS;
     }
@@ -3338,6 +3568,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     const char *fmtstr = "%s://%s:%d";
     int host_len, usocket = 0, err = 0, tcp_flag = 1;
     ConnectionPool *p = NULL;
+    php_stream *stream = NULL;
 
     // Monotonically incrementing persistent id counter
     static unsigned long long counter = 0;
@@ -3408,10 +3639,28 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
         tv_ptr = &tv;
     }
 
-    redis_sock->stream = php_stream_xport_create(host, host_len,
-        0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
-        persistent_id ? ZSTR_VAL(persistent_id) : NULL,
-        tv_ptr, redis_sock->stream_ctx, &estr, &err);
+    if (persistent_id && !p) {
+        /* check for a cached persistent socket */
+        switch(php_stream_from_persistent_id(ZSTR_VAL(persistent_id), &stream)) {
+            case PHP_STREAM_PERSISTENT_SUCCESS:
+                redis_sock->stream = stream;
+                if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
+                    break;
+                }
+                /* fall through */
+            case PHP_STREAM_PERSISTENT_FAILURE:
+            default:
+                /* failed; get a new one */
+                ;
+        }
+    }
+
+    if (!redis_sock->stream) {
+        redis_sock->stream = php_stream_xport_create(host, host_len,
+            0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
+            persistent_id ? ZSTR_VAL(persistent_id) : NULL,
+            tv_ptr, redis_sock->stream_ctx, &estr, &err);
+    }
 
     if (persistent_id) {
         zend_string_release(persistent_id);
@@ -3427,13 +3676,15 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
 
     if (p) p->nb_active++;
 
-    /* Attempt to set TCP_NODELAY/TCP_KEEPALIVE if we're not using a unix socket. */
-    if (!usocket) {
-        php_netstream_data_t *sock = (php_netstream_data_t*)redis_sock->stream->abstract;
-        err = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char*) &tcp_flag, sizeof(tcp_flag));
-        PHPREDIS_NOTUSED(err);
-        err = setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (char*) &redis_sock->tcp_keepalive, sizeof(redis_sock->tcp_keepalive));
-        PHPREDIS_NOTUSED(err);
+    if (redis_sock->status != REDIS_SOCK_STATUS_REUSED) {
+        /* Attempt to set TCP_NODELAY/TCP_KEEPALIVE if we're not using a unix socket. */
+        if (!usocket) {
+            php_netstream_data_t *sock = (php_netstream_data_t*)redis_sock->stream->abstract;
+            err = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char*) &tcp_flag, sizeof(tcp_flag));
+            PHPREDIS_NOTUSED(err);
+            err = setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (char*) &redis_sock->tcp_keepalive, sizeof(redis_sock->tcp_keepalive));
+            PHPREDIS_NOTUSED(err);
+        }
     }
 
     php_stream_auto_cleanup(redis_sock->stream);
@@ -3448,7 +3699,8 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     php_stream_set_option(redis_sock->stream,
         PHP_STREAM_OPTION_WRITE_BUFFER, PHP_STREAM_BUFFER_NONE, NULL);
 
-    redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
+    if (redis_sock->status != REDIS_SOCK_STATUS_REUSED)
+        redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
 
     return SUCCESS;
 }
@@ -3468,9 +3720,11 @@ redis_sock_server_open(RedisSock *redis_sock)
             redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
             // fall through
         case REDIS_SOCK_STATUS_CONNECTED:
-            if (redis_sock_auth(redis_sock) != SUCCESS) {
-                break;
-            }
+            redis_sock_hello(redis_sock);
+            redis_sock_set_client_info(redis_sock);
+            redis_sock->status = REDIS_SOCK_STATUS_AUTHENTICATED;
+            // fall through
+        case REDIS_SOCK_STATUS_REUSED:
             redis_sock->status = REDIS_SOCK_STATUS_AUTHENTICATED;
             // fall through
         case REDIS_SOCK_STATUS_AUTHENTICATED:
@@ -3896,6 +4150,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
         }
     }
     redis_sock_free_auth(redis_sock);
+    redis_sock_free_client_name(redis_sock);
     redis_free_reply_callbacks(redis_sock);
     redis_sock_release_hello(&redis_sock->hello);
     efree(redis_sock);
