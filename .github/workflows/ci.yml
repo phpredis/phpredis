@@ -257,27 +257,50 @@ jobs:
           echo 'extension = redis.so' | sudo tee -a "$(php-config --ini-dir)/90-redis.ini"
 
   windows:
-    runs-on: windows-latest
-    continue-on-error: false
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
         php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         ts: [nts, ts]
     steps:
-      - name: Checkout
+      - name: Checkout phpredis (with submodules)
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Build phpredis
-        uses: php/php-windows-builder/extension@v1
+
+      - name: Checkout php-windows-builder
+        uses: actions/checkout@v4
         with:
-          php-version: ${{ matrix.php }}
-          build-directory: ${{ runner.temp }}\php-ext-build
-          arch: x64
-          ts: ${{ matrix.ts }}
-          args: --enable-redis
-          run-tests: 'false'
+          repository: php/php-windows-builder
+          ref: v1
+          path: php-windows-builder
+
+      - name: Build (local source)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          cd $env:GITHUB_WORKSPACE
+
+          # sanity: confirm submodule content exists
+          if (-not (Test-Path "liblzf\LICENSE")) {
+            git submodule update --init --recursive
+          }
+          if (-not (Test-Path "liblzf\LICENSE")) {
+            throw "still missing liblzf\LICENSE"
+          }
+
+          Import-Module `
+            "$env:GITHUB_WORKSPACE\php-windows-builder\extension\BuildPhpExtension" `
+            -Force
+
+          Invoke-PhpBuildExtension `
+            -PhpVersion "${{ matrix.php }}" `
+            -Arch x64 `
+            -Ts "${{ matrix.ts }}" `
+            -BuildDirectory "${{ runner.temp }}\php-ext-build" `
+            -Args "--enable-redis" `
+            -RunTests:$false
 
   pecl:
     runs-on: ubuntu-latest
