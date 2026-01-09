@@ -1706,8 +1706,9 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
                                         int decode)
 {
 
-    zval z_ret, z_sub;
     HashTable *keytable = Z_ARRVAL_P(z_tab);
+    zend_string *hkey, *tmp;
+    zval z_ret, z_sub;
 
     array_init_size(&z_ret, zend_hash_num_elements(keytable) / 2);
 
@@ -1722,13 +1723,14 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         }
 
         /* get current value, a key */
-        zend_string *hkey = Z_STR_P(z_key_p);
+        hkey = zval_get_tmp_string(z_key_p, &tmp);
 
         /* move forward */
         zend_hash_move_forward(keytable);
 
         /* fetch again */
         if ((z_value_p = zend_hash_get_current_data(keytable)) == NULL) {
+            zend_tmp_string_release(tmp);
             continue;   /* this should never happen, according to the PHP people. */
         }
 
@@ -1743,7 +1745,10 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         } else {
             ZVAL_ZVAL(&z_sub, z_value_p, 1, 0);
         }
+
         zend_symtable_update(Z_ARRVAL_P(&z_ret), hkey, &z_sub);
+
+        zend_tmp_string_release(tmp);
     }
 
     /* replace */
