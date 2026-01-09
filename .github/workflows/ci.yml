@@ -257,7 +257,7 @@ jobs:
           echo 'extension = redis.so' | sudo tee -a "$(php-config --ini-dir)/90-redis.ini"
 
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     continue-on-error: false
     strategy:
       fail-fast: false
