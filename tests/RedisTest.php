@@ -3074,6 +3074,23 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(0, $this->redis->zRevRank('z', 'five'));
     }
 
+    /* Regression for GitHub issue #2791 */
+    public function testZSetSerialization() {
+        $this->redis->del('zs_f', 'zs_a');
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+        $this->redis->zAdd('zs_f', 3.14, 3.14);
+        $this->redis->zAdd('zs_a', 1, ['foo', 'bar']);
+
+        $res_float = $this->redis->zRange('zs_f', 0, -1, true);
+        $this->assertEquals(['3.14' => 3.14], $res_float);
+
+        $res_array = @$this->redis->zRange('zs_a', 0, -1, true);
+        $this->assertEquals(['Array' => 1.0], $res_array);
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+    }
+
     public function testZRangeScoreArg() {
         $this->redis->del('{z}');
 
