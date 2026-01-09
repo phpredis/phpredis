@@ -257,7 +257,7 @@ jobs:
           echo 'extension = redis.so' | sudo tee -a "$(php-config --ini-dir)/90-redis.ini"
 
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     continue-on-error: false
     strategy:
       fail-fast: false
@@ -266,37 +266,16 @@ jobs:
         ts: [nts, ts]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
-      - name: Install PHP ${{ matrix.php }}
-        uses: php/setup-php-sdk@v0.11
-        id: setup-php-sdk
-        with:
-          version: ${{ matrix.php }}
-          arch: x64
-          ts: ${{matrix.ts}}
-          cache: true
-      - name: Install dependencies
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-          toolset: ${{steps.setup-php-sdk.outputs.toolset}}
       - name: Build phpredis
-        run: |
-          phpize
-          ./configure --enable-redis --with-prefix=${{steps.setup-php-sdk.outputs.prefix}}
-          nmake
-      - name: package
-        run: |
-          md binaries
-          copy LICENSE binaries
-          Get-ChildItem -Recurse -Filter "php_redis.dll" | ForEach-Object {Copy-Item -Path $_.FullName -Destination "binaries"}
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: php/php-windows-builder/extension@v1
         with:
-          name: redis-${{matrix.php}}-x64-${{matrix.ts}}
-          path: binaries
+          arch: x64
+          php-version: ${{ matrix.php }}
+          ts: ${{ matrix.ts }}
+          run-tests: false
 
   pecl:
     runs-on: ubuntu-latest
