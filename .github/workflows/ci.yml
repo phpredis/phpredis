@@ -273,6 +273,7 @@ jobs:
         uses: php/php-windows-builder/extension@v1
         with:
           php-version: ${{ matrix.php }}
+          build-directory: ${{ runner.temp }}\php-ext-build
           arch: x64
           ts: ${{ matrix.ts }}
           args: --enable-redis
