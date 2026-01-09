@@ -298,7 +298,6 @@ jobs:
             -PhpVersion "${{ matrix.php }}" `
             -Arch x64 `
             -Ts "${{ matrix.ts }}" `
-            -BuildDirectory "${{ runner.temp }}\php-ext-build" `
             -Args "--enable-redis" `
             -RunTests:$false
 
