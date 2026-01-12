@@ -2944,14 +2944,19 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 static inline zval *coerce_hash_field(zval *zv, zval *aux) {
+    char buf[32];
     zend_long lv;
+    size_t len;
 
     if (UNEXPECTED(Z_TYPE_P(zv) == IS_STRING &&
                    is_numeric_string(Z_STRVAL_P(zv),
                                      Z_STRLEN_P(zv), &lv, NULL, 0) == IS_LONG))
     {
-        ZVAL_LONG(aux, lv);
-        return aux;
+        len = snprintf(buf, sizeof(buf), "%ld", lv);
+        if (len == Z_STRLEN_P(zv) && redis_strncmp(Z_STRVAL_P(zv), buf, len) == 0) {
+            ZVAL_LONG(aux, lv);
+            return aux;
+        }
     }
 
     return zv;
