@@ -3490,6 +3490,37 @@ class Redis_Test extends TestSuite {
         $this->assertEqualsCanonicalizing(array_keys($hash), array_keys($res));
     }
 
+    /* Regression test for GitHub issue 2795 / PR 2796 */
+    public function testNumericStringEncoding() {
+        $fields = [
+            '0001', '0010', '-0005', '+0005', '1e3', '1E+3', '1e-3', '-1E-3',
+            '+1.5e2', '-2.25E+4', '0001e-2',
+        ];
+
+        $hashKey = 'hash:numeric-strings';
+        $this->assertIsInt($this->redis->del($hashKey));
+
+        $payload = [];
+        foreach ($fields as $index => $field) {
+            $payload[$field] = "value-{$index}";
+        }
+
+        $this->assertTrue($this->redis->hMset($hashKey, $payload));
+
+        $hmget = $this->redis->hMget($hashKey, $fields);
+        $this->assertEquals($payload, $hmget);
+
+        foreach ($payload as $key => $value) {
+            $this->assertTrue($this->redis->mset([$key => $value]));
+            $this->assertEquals([$value], $this->redis->mget([$key]));
+        }
+
+        $this->redis->del($hashKey);
+        if ($payload !== []) {
+            $this->redis->del(...array_keys($payload));
+        }
+    }
+
     public function testHRandField() {
         if (version_compare($this->version, '6.2.0') < 0)
             $this->MarkTestSkipped();
