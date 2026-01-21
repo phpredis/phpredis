@@ -117,7 +117,39 @@ print_r($obj_cluster->exec());
 ```
 
 ## Pipelining
-The RedisCluster class does not support pipelining as there is no way to detect whether the keys still live where our map indicates that they do and would therefore be inherently unsafe.  It would be possible to implement this support as an option if there is demand for such a feature.
+RedisCluster supports pipelining when all queued commands resolve to the same
+hash slot.  If any queued command targets a different slot, a
+`RedisClusterException` will be thrown when the command is queued.
+
+Hash tags are honored, so keys that share the same `{tag}` may be pipelined
+together.
+
+There are two ways to activate pipeline mode:
+
+**Method 1: Using `pipeline()`**
+```php
+$pipe = $obj_cluster->pipeline();
+$pipe->set('{user}1', 'a');
+$pipe->set('{user}2', 'b');
+$pipe->get('{user}1');
+print_r($pipe->exec());
+```
+
+**Method 2: Using `multi(Redis::PIPELINE)`**
+```php
+$pipe = $obj_cluster->multi(Redis::PIPELINE);
+$pipe->set('{user}1', 'a');
+$pipe->set('{user}2', 'b');
+$pipe->get('{user}1');
+print_r($pipe->exec());
+```
+
+Both methods are functionally equivalent. Use `exec()` to send all queued
+commands and receive their responses, or `discard()` to cancel the pipeline
+without executing any commands.
+
+Directed node commands (those taking `key_or_address`) and SCAN-style commands
+cannot be issued in pipeline mode.
 
 ## Multiple key commands
 Redis cluster does allow commands that operate on multiple keys, but only if all of those keys hash to the same slot.  Note that it is not enough that the keys are all on the same node, but must actually hash to the exact same hash slot.

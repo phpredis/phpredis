@@ -844,6 +844,7 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->flags->read_timeout = read_timeout;
     c->flags->persistent = persistent;
     c->subscribed_slot = -1;
+    c->pipeline_slot = -1;
     c->clusterdown = 0;
     c->failover = failover;
     c->err = NULL;
@@ -871,6 +872,7 @@ cluster_free(redisCluster *c, int free_ctx)
     /* Free any allocated prefix */
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
 
+    smart_string_free(&c->flags->pipeline_cmd);
     redis_sock_free_auth(c->flags);
     efree(c->flags);
 
@@ -1528,7 +1530,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 
     /* Enable multi mode on this slot if we've been directed to but haven't
      * send it to this node yet */
-    if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
+    if (IS_MULTI(c->flags) && c->cmd_sock->mode != MULTI) {
         if (cluster_send_multi(c, slot) == -1) {
             CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
             return -1;
@@ -1546,6 +1548,28 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
        (rtype != TYPE_EOF && rtype != c->reply_type)) return -1;
 
     /* Success */
+    return 0;
+}
+
+/* Send a pipeline buffer to a specific slot without reading replies */
+PHP_REDIS_API int cluster_send_pipeline(redisCluster *c, short slot,
+                                        const char *cmd, int cmd_len)
+{
+    if (!SLOT(c, slot)) {
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+            "The slot %d is not covered by any node in this cluster", slot);
+        return -1;
+    }
+
+    c->cmd_slot = slot;
+    c->cmd_sock = SLOT_SOCK(c, slot);
+    c->readonly = 0;
+
+    if (cluster_sock_write(c, cmd, cmd_len, 1) == -1) {
+        return -1;
+    }
+
+    c->flags->txBytes += cmd_len;
     return 0;
 }
 
@@ -1577,7 +1601,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
      * CLUSTERDOWN state from Redis Cluster. */
     do {
         /* Send MULTI to the socket if we're in MULTI mode but haven't yet */
-        if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
+        if (IS_MULTI(c->flags) && c->cmd_sock->mode != MULTI) {
             /* We have to fail if we can't send MULTI to the node */
             if (cluster_send_multi(c, slot) == -1) {
                 CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
@@ -1602,7 +1626,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         /* Handle MOVED or ASKING redirection */
         if (resp == 1) {
            /* Abort if we're in a transaction as it will be invalid */
-           if (c->flags->mode == MULTI) {
+           if (IS_MULTI(c->flags)) {
                CLUSTER_THROW_EXCEPTION("Can't process MULTI sequence when cluster is resharding", 0);
                return -1;
            }
@@ -1677,7 +1701,7 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
     if (c->reply_type != TYPE_BULK ||
        (resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
     {
-        if (c->flags->mode != MULTI) {
+        if (CLUSTER_IS_ATOMIC(c)) {
             RETURN_FALSE;
         } else {
             add_next_index_bool(&c->multi_resp, 0);
@@ -2744,6 +2768,42 @@ PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     // Set our return array
     zval_ptr_dtor_nogc(return_value);
     RETVAL_ZVAL(multi_resp, 0, 1);
+}
+
+/* Pipeline response handler */
+PHP_REDIS_API int cluster_pipeline_resp(INTERNAL_FUNCTION_PARAMETERS,
+                                        redisCluster *c)
+{
+    zval *multi_resp = &c->multi_resp;
+    uint8_t flags = c->flags->flags;
+    clusterFoldItem *fi = c->multi_head;
+    int resp;
+
+    array_init(multi_resp);
+
+    while (fi) {
+        c->cmd_slot = fi->slot;
+        c->cmd_sock = SLOT_SOCK(c, fi->slot);
+
+        resp = cluster_check_response(c, &c->reply_type);
+        if (resp < 0) {
+            zval_ptr_dtor_nogc(multi_resp);
+            return FAILURE;
+        } else if (resp == 1) {
+            zval_ptr_dtor_nogc(multi_resp);
+            CLUSTER_THROW_EXCEPTION(
+                "Pipelined commands were redirected, aborting pipeline", 0);
+            return FAILURE;
+        }
+
+        c->flags->flags = fi->flags;
+        fi->callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
+        c->flags->flags = flags;
+
+        fi = fi->next;
+    }
+
+    return SUCCESS;
 }
 
 /* Generic handler for MGET */

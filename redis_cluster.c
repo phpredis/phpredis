@@ -90,13 +90,54 @@ static void cluster_reset_multi(redisCluster *c) {
     c->flags->mode = ATOMIC;
 }
 
+static void cluster_reset_pipeline(redisCluster *c) {
+    smart_string_free(&c->flags->pipeline_cmd);
+    cluster_free_queue(c);
+    c->pipeline_slot = -1;
+    c->flags->mode = ATOMIC;
+}
+
+static int cluster_pipeline_check_slot(redisCluster *c, short slot) {
+    if (slot < 0 || slot >= REDIS_CLUSTER_SLOTS) {
+        CLUSTER_THROW_EXCEPTION("Unable to determine hash slot for pipeline", 0);
+        cluster_reset_pipeline(c);
+        return -1;
+    }
+
+    if (c->pipeline_slot == -1) {
+        c->pipeline_slot = slot;
+        return 0;
+    }
+
+    if (c->pipeline_slot != slot) {
+        CLUSTER_THROW_EXCEPTION(
+            "Pipelined commands must target the same hash slot", 0);
+        cluster_reset_pipeline(c);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int cluster_pipeline_enqueue(redisCluster *c, short slot, char *cmd,
+                                    int cmd_len, cluster_cb cb, void *ctx)
+{
+    if (cluster_pipeline_check_slot(c, slot) < 0) {
+        return -1;
+    }
+
+    smart_string_appendl(&c->flags->pipeline_cmd, cmd, cmd_len);
+    cluster_enqueue_response(c, slot, cb, ctx);
+    return 0;
+}
+
 void
 cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                     redis_cmd_cb cmd_cb, cluster_cb resp_cb, int readonly)
 {
     void *ctx = NULL;
     int cmd_len;
-    short slot;
+    short slot = -1;
     char *cmd;
 
     c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
@@ -107,6 +148,15 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         RETURN_FALSE;
     }
 
+    if (IS_PIPELINE(c->flags)) {
+        if (cluster_pipeline_enqueue(c, slot, cmd, cmd_len, resp_cb, ctx) < 0) {
+            efree(cmd);
+            RETURN_FALSE;
+        }
+        efree(cmd);
+        RETURN_ZVAL(getThis(), 1, 0);
+    }
+
     if (cluster_send_command(c, slot, cmd, cmd_len) < 0 || c->err != NULL) {
         efree(cmd);
         RETURN_FALSE;
@@ -114,7 +164,7 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     efree(cmd);
 
-    if (c->flags->mode == MULTI) {
+    if (IS_MULTI(c->flags)) {
         cluster_enqueue_response(c, slot, resp_cb, ctx);
         RETURN_ZVAL(getThis(), 1, 0);
     }
@@ -129,7 +179,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     void *ctx = NULL;
     int cmd_len;
-    short slot;
+    short slot = -1;
     char *cmd;
 
     c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
@@ -141,6 +191,15 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         RETURN_FALSE;
     }
 
+    if (IS_PIPELINE(c->flags)) {
+        if (cluster_pipeline_enqueue(c, slot, cmd, cmd_len, resp_cb, ctx) < 0) {
+            efree(cmd);
+            RETURN_FALSE;
+        }
+        efree(cmd);
+        RETURN_ZVAL(getThis(), 1, 0);
+    }
+
     if (cluster_send_command(c, slot, cmd, cmd_len) < 0 || c->err != NULL) {
         efree(cmd);
         RETURN_FALSE;
@@ -148,7 +207,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     efree(cmd);
 
-    if (c->flags->mode == MULTI) {
+    if (IS_MULTI(c->flags)) {
         cluster_enqueue_response(c, slot, resp_cb, ctx);
         RETURN_ZVAL(getThis(), 1, 0);
     }
@@ -190,6 +249,7 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
 
     // We're not currently subscribed anywhere
     cluster->subscribed_slot = -1;
+    cluster->pipeline_slot = -1;
 
     // Allocate our RedisSock we'll use to store prefix/serialization flags
     cluster->flags = ecalloc(1, sizeof(RedisSock));
@@ -560,6 +620,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     HashTable *ht_arr;
     HashPosition ptr;
     int i = 1, argc = ZEND_NUM_ARGS(), ht_free = 0;
+    zend_bool in_pipeline = IS_PIPELINE(c->flags);
     short slot;
 
     /* If we don't have any arguments we're invalid */
@@ -610,6 +671,15 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
     // Iterate over keys 2...N
     slot = kv.slot;
+    if (in_pipeline && cluster_pipeline_check_slot(c, slot) < 0) {
+        cluster_multi_free(&mc);
+        if (ht_free) {
+            zend_hash_destroy(ht_arr);
+            efree(ht_arr);
+        }
+        efree(z_args);
+        return -1;
+    }
     while (zend_hash_has_more_elements_ex(ht_arr, &ptr) ==SUCCESS) {
         if (get_key_ht(c, ht_arr, &ptr, &kv) < 0) {
             cluster_multi_free(&mc);
@@ -623,6 +693,19 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
         // If the slots have changed, kick off the keys we've aggregated
         if (slot != kv.slot) {
+            if (in_pipeline) {
+                if (kv.key_free) efree(kv.key);
+                cluster_multi_free(&mc);
+                if (ht_free) {
+                    zend_hash_destroy(ht_arr);
+                    efree(ht_arr);
+                }
+                efree(z_args);
+                CLUSTER_THROW_EXCEPTION(
+                    "Pipelined commands must target the same hash slot", 0);
+                cluster_reset_pipeline(c);
+                return -1;
+            }
             // Process this batch of MGET keys
             if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot,
                                     &mc, z_ret, i == argc, cb) < 0)
@@ -653,8 +736,28 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
     // If we've got straggler(s) process them
     if (mc.argc > 0) {
-        if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot,
-                                &mc, z_ret, 1, cb) < 0)
+        if (in_pipeline) {
+            clusterMultiCtx *ctx;
+
+            cluster_multi_fini(&mc);
+            ctx = emalloc(sizeof(*ctx));
+            ctx->z_multi = z_ret;
+            ctx->count = mc.argc;
+            ctx->last = 1;
+
+            if (cluster_pipeline_enqueue(c, slot, mc.cmd.c, mc.cmd.len,
+                                         cb, ctx) < 0)
+            {
+                efree(ctx);
+                cluster_multi_free(&mc);
+                if (ht_free) {
+                    zend_hash_destroy(ht_arr);
+                    efree(ht_arr);
+                }
+                return -1;
+            }
+        } else if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot,
+                                        &mc, z_ret, 1, cb) < 0)
         {
             cluster_multi_free(&mc);
             if (ht_free) {
@@ -693,6 +796,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     HashTable *ht_arr;
     HashPosition ptr;
     int i = 1, argc;
+    zend_bool in_pipeline = IS_PIPELINE(c->flags);
     short slot;
 
     // Parse our arguments
@@ -725,6 +829,10 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
     // While we've got more keys to set
     slot = kv.slot;
+    if (in_pipeline && cluster_pipeline_check_slot(c, slot) < 0) {
+        cluster_multi_free(&mc);
+        return -1;
+    }
     while (zend_hash_has_more_elements_ex(ht_arr, &ptr) ==SUCCESS) {
         // Pull the next key/value pair
         if (get_key_val_ht(c, ht_arr, &ptr, &kv) ==-1) {
@@ -733,6 +841,15 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
         // If the slots have changed, process responses
         if (slot != kv.slot) {
+            if (in_pipeline) {
+                if (kv.key_free) efree(kv.key);
+                if (kv.val_free) efree(kv.val);
+                cluster_multi_free(&mc);
+                CLUSTER_THROW_EXCEPTION(
+                    "Pipelined commands must target the same hash slot", 0);
+                cluster_reset_pipeline(c);
+                return -1;
+            }
             if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                                     slot, &mc, z_ret, i == argc, cb) < 0)
             {
@@ -759,8 +876,24 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
     // If we've got stragglers, process them too
     if (mc.argc > 0) {
-        if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, &mc,
-                                z_ret, 1, cb) < 0)
+        if (in_pipeline) {
+            clusterMultiCtx *ctx;
+
+            cluster_multi_fini(&mc);
+            ctx = emalloc(sizeof(*ctx));
+            ctx->z_multi = z_ret;
+            ctx->count = mc.argc;
+            ctx->last = 1;
+
+            if (cluster_pipeline_enqueue(c, slot, mc.cmd.c, mc.cmd.len,
+                                         cb, ctx) < 0)
+            {
+                efree(ctx);
+                cluster_multi_free(&mc);
+                return -1;
+            }
+        } else if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, &mc,
+                                        z_ret, 1, cb) < 0)
         {
             cluster_multi_free(&mc);
             return -1;
@@ -914,6 +1047,11 @@ PHP_METHOD(RedisCluster, keys) {
     char *pat, *cmd;
     clusterReply *resp;
     int i, cmd_len;
+
+    if (IS_PIPELINE(c->flags)) {
+        CLUSTER_THROW_EXCEPTION("KEYS can't be called in PIPELINE mode", 0);
+        RETURN_FALSE;
+    }
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &pat, &pat_len)
                              == FAILURE)
@@ -1809,12 +1947,26 @@ PHP_METHOD(RedisCluster, object) {
 
 /* {{{ proto null RedisCluster::subscribe(array chans, callable cb) */
 PHP_METHOD(RedisCluster, subscribe) {
+    redisCluster *c = GET_CONTEXT();
+
+    if (IS_PIPELINE(c->flags)) {
+        CLUSTER_THROW_EXCEPTION(
+            "SUBSCRIBE commands can't be called in PIPELINE mode", 0);
+        RETURN_FALSE;
+    }
     CLUSTER_PROCESS_KW_CMD("SUBSCRIBE", redis_subscribe_cmd, cluster_sub_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto null RedisCluster::psubscribe(array pats, callable cb) */
 PHP_METHOD(RedisCluster, psubscribe) {
+    redisCluster *c = GET_CONTEXT();
+
+    if (IS_PIPELINE(c->flags)) {
+        CLUSTER_THROW_EXCEPTION(
+            "PSUBSCRIBE commands can't be called in PIPELINE mode", 0);
+        RETURN_FALSE;
+    }
     CLUSTER_PROCESS_KW_CMD("PSUBSCRIBE", redis_subscribe_cmd, cluster_sub_resp, 0);
 }
 /* }}} */
@@ -1826,6 +1978,12 @@ static void generic_unsub_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     int cmd_len;
     void *ctx;
     short slot;
+
+    if (IS_PIPELINE(c->flags)) {
+        CLUSTER_THROW_EXCEPTION(
+            "Unsubscribe commands can't be called in PIPELINE mode", 0);
+        RETURN_FALSE;
+    }
 
     // There is not reason to unsubscribe outside of a subscribe loop
     if (c->subscribed_slot == -1) {
@@ -2091,24 +2249,66 @@ PHP_METHOD(RedisCluster, multi) {
         Z_PARAM_LONG(value)
     ZEND_PARSE_PARAMETERS_END();
 
-    if (value != MULTI) {
-        php_error_docref(NULL, E_WARNING, "RedisCluster does not support PIPELINING");
-    }
+    if (value == PIPELINE) {
+        if (IS_MULTI(c->flags)) {
+            php_error_docref(NULL, E_ERROR,
+                "Can't activate pipeline in MULTI mode!");
+            RETURN_FALSE;
+        }
 
-    if (c->flags->mode == MULTI) {
+        if (!IS_PIPELINE(c->flags)) {
+            c->flags->mode |= PIPELINE;
+            c->pipeline_slot = -1;
+            smart_string_free(&c->flags->pipeline_cmd);
+            cluster_free_queue(c);
+        }
+
+        RETURN_ZVAL(getThis(), 1, 0);
+    } else if (value == MULTI) {
+        if (IS_PIPELINE(c->flags)) {
+            php_error_docref(NULL, E_ERROR,
+                "Can't activate MULTI in PIPELINE mode!");
+            RETURN_FALSE;
+        }
+
+        if (IS_MULTI(c->flags)) {
+            php_error_docref(NULL, E_WARNING,
+                "RedisCluster is already in MULTI mode, ignoring");
+            RETURN_FALSE;
+        }
+
+        /* Flag that we're in MULTI mode */
+        c->flags->mode = MULTI;
+
+        c->flags->txBytes = 0;
+        c->flags->rxBytes = 0;
+
+        /* Return our object so we can chain MULTI calls */
+        RETVAL_ZVAL(getThis(), 1, 0);
+    } else {
         php_error_docref(NULL, E_WARNING,
-            "RedisCluster is already in MULTI mode, ignoring");
+            "Unknown mode sent to RedisCluster::multi");
+        RETURN_FALSE;
+    }
+}
+
+PHP_METHOD(RedisCluster, pipeline) {
+    redisCluster *c = GET_CONTEXT();
+
+    if (IS_MULTI(c->flags)) {
+        php_error_docref(NULL, E_ERROR,
+            "Can't activate pipeline in MULTI mode!");
         RETURN_FALSE;
     }
 
-    /* Flag that we're in MULTI mode */
-    c->flags->mode = MULTI;
+    if (!IS_PIPELINE(c->flags)) {
+        c->flags->mode |= PIPELINE;
+        c->pipeline_slot = -1;
+        smart_string_free(&c->flags->pipeline_cmd);
+        cluster_free_queue(c);
+    }
 
-    c->flags->txBytes = 0;
-    c->flags->rxBytes = 0;
-
-    /* Return our object so we can chain MULTI calls */
-    RETVAL_ZVAL(getThis(), 1, 0);
+    RETURN_ZVAL(getThis(), 1, 0);
 }
 
 /* {{{ proto bool RedisCluster::watch() */
@@ -2122,8 +2322,13 @@ PHP_METHOD(RedisCluster, watch) {
     zend_ulong slot;
     zend_string *zstr;
 
+    if (IS_PIPELINE(c->flags)) {
+        CLUSTER_THROW_EXCEPTION("WATCH command not allowed in PIPELINE mode", 0);
+        RETURN_FALSE;
+    }
+
     // Disallow in MULTI mode
-    if (c->flags->mode == MULTI) {
+    if (IS_MULTI(c->flags)) {
         php_error_docref(NULL, E_WARNING,
             "WATCH command not allowed in MULTI mode");
         RETURN_FALSE;
@@ -2202,6 +2407,11 @@ PHP_METHOD(RedisCluster, unwatch) {
     redisCluster *c = GET_CONTEXT();
     short slot;
 
+    if (IS_PIPELINE(c->flags)) {
+        CLUSTER_THROW_EXCEPTION("UNWATCH command not allowed in PIPELINE mode", 0);
+        RETURN_FALSE;
+    }
+
     // Send UNWATCH to nodes that need it
     for(slot = 0; slot < REDIS_CLUSTER_SLOTS; slot++) {
         if (c->master[slot] && SLOT_SOCK(c,slot)->watching) {
@@ -2225,9 +2435,44 @@ PHP_METHOD(RedisCluster, exec) {
     redisCluster *c = GET_CONTEXT();
     clusterFoldItem *fi;
 
+    if (IS_PIPELINE(c->flags)) {
+        if (c->flags->pipeline_cmd.len == 0 || c->multi_head == NULL) {
+            array_init(return_value);
+            cluster_reset_pipeline(c);
+            return;
+        }
+
+        if (c->pipeline_slot < 0 || c->pipeline_slot >= REDIS_CLUSTER_SLOTS ||
+            SLOT(c, c->pipeline_slot) == NULL)
+        {
+            cluster_reset_pipeline(c);
+            CLUSTER_THROW_EXCEPTION("Pipeline slot is not covered by this cluster", 0);
+            RETURN_FALSE;
+        }
+
+        if (cluster_send_pipeline(c, c->pipeline_slot,
+                                  c->flags->pipeline_cmd.c,
+                                  c->flags->pipeline_cmd.len) < 0)
+        {
+            cluster_reset_pipeline(c);
+            CLUSTER_THROW_EXCEPTION("Unable to send pipeline to node", 0);
+            RETURN_FALSE;
+        }
+
+        if (cluster_pipeline_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c) == FAILURE) {
+            cluster_reset_pipeline(c);
+            RETURN_FALSE;
+        }
+
+        RETVAL_ZVAL(&c->multi_resp, 0, 1);
+        cluster_reset_pipeline(c);
+        return;
+    }
+
     // Verify we are in fact in multi mode
-    if (CLUSTER_IS_ATOMIC(c)) {
-        php_error_docref(NULL, E_WARNING, "RedisCluster is not in MULTI mode");
+    if (!IS_MULTI(c->flags)) {
+        php_error_docref(NULL, E_WARNING,
+            "RedisCluster is not in MULTI or PIPELINE mode");
         RETURN_FALSE;
     }
 
@@ -2264,7 +2509,12 @@ PHP_METHOD(RedisCluster, exec) {
 PHP_METHOD(RedisCluster, discard) {
     redisCluster *c = GET_CONTEXT();
 
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (IS_PIPELINE(c->flags)) {
+        cluster_reset_pipeline(c);
+        RETURN_TRUE;
+    }
+
+    if (!IS_MULTI(c->flags)) {
         php_error_docref(NULL, E_WARNING, "Cluster is not in MULTI mode");
         RETURN_FALSE;
     }
@@ -2288,6 +2538,12 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg)
     short slot;
     char *key;
     zend_string *zstr;
+
+    if (IS_PIPELINE(c->flags)) {
+        CLUSTER_THROW_EXCEPTION(
+            "Directed node commands can't be issued in PIPELINE mode", 0);
+        return -1;
+    }
 
     /* If it's a string, treat it as a key.  Otherwise, look for a two
      * element array */
@@ -2424,7 +2680,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     /* Commands using this pass-through don't need to be enabled in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
         php_error_docref(0, E_WARNING,
-            "Command can't be issued in MULTI mode");
+            "Command can't be issued in MULTI or PIPELINE mode");
         RETURN_FALSE;
     }
 
@@ -2493,7 +2749,8 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
     // Can't be in MULTI mode
     if (!CLUSTER_IS_ATOMIC(c)) {
-        CLUSTER_THROW_EXCEPTION("SCAN type commands can't be called in MULTI mode!", 0);
+        CLUSTER_THROW_EXCEPTION(
+            "SCAN type commands can't be called in MULTI or PIPELINE mode!", 0);
         RETURN_FALSE;
     }
 
@@ -2672,7 +2929,8 @@ PHP_METHOD(RedisCluster, scan) {
 
     /* Can't be in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
-        CLUSTER_THROW_EXCEPTION("SCAN type commands can't be called in MULTI mode", 0);
+        CLUSTER_THROW_EXCEPTION(
+            "SCAN type commands can't be called in MULTI or PIPELINE mode", 0);
         RETURN_FALSE;
     }
 
@@ -2970,7 +3228,7 @@ PHP_METHOD(RedisCluster, script) {
     /* Commands using this pass-through don't need to be enabled in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
         php_error_docref(0, E_WARNING,
-            "Command can't be issued in MULTI mode");
+            "Command can't be issued in MULTI or PIPELINE mode");
         RETURN_FALSE;
     }
 

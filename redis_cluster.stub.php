@@ -772,10 +772,14 @@ class RedisCluster {
      */
     public function msetex(array $key_vals, int|float|array|null $expiry = null): Redis|int|false;
 
-    /* We only support Redis::MULTI in RedisCluster but take the argument
-       so we can test MULTI..EXEC with RedisTest.php and in the event
-       we add pipeline support in the future. */
+    /* RedisCluster supports MULTI and PIPELINE.  Pipeline commands must target
+       the same hash slot. */
     public function multi(int $value = Redis::MULTI): RedisCluster|bool;
+
+    /**
+     * Enter pipeline mode.  All queued commands must target the same hash slot.
+     */
+    public function pipeline(): RedisCluster|bool;
 
     /**
      * @see \Redis::object()

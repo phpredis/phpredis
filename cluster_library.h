@@ -66,8 +66,8 @@
 #define CLUSTER_CLEAR_REPLY(c) \
     *c->line_reply = '\0'; c->reply_len = 0;
 
-/* Helper to determine if we're in MULTI mode */
-#define CLUSTER_IS_ATOMIC(c) (c->flags->mode != MULTI)
+/* Helper to determine if we're in ATOMIC mode */
+#define CLUSTER_IS_ATOMIC(c) (c->flags->mode == ATOMIC)
 
 /* Helper that either returns false or adds false in multi mode */
 #define CLUSTER_RETURN_FALSE(c) \
@@ -210,6 +210,9 @@ typedef struct redisCluster {
 
     /* Variable to store MULTI response */
     zval multi_resp;
+
+    /* Hash slot for an active pipeline */
+    short pipeline_slot;
 
     /* Flag for when we get a CLUSTERDOWN error */
     short clusterdown;
@@ -373,6 +376,8 @@ PHP_REDIS_API short cluster_find_slot(redisCluster *c, const char *host,
     unsigned short port);
 PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
     int cmd_len, REDIS_REPLY_TYPE rtype);
+PHP_REDIS_API int cluster_send_pipeline(redisCluster *c, short slot,
+    const char *cmd, int cmd_len);
 
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     int failover, int persistent);
@@ -484,6 +489,8 @@ PHP_REDIS_API void cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
+PHP_REDIS_API int cluster_pipeline_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c);
 PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, int pull, mbulk_cb cb, zval *z_ret);
 
