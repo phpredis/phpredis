@@ -6,6 +6,9 @@
  * @generate-class-entries
  */
 
+/**
+ * @template TMULTI of int|null
+ */
 class Redis {
     /**
      * Returned by `\Redis::type()` when the key does not exist or has a type
@@ -602,7 +605,7 @@ class Redis {
      * @see https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
      * @param array|null $options
      *
-     * @return Redis
+     * @psalm-this-out self<null>
      *
      * @example
      * $redis = new Redis(['host' => '127.0.0.1', 'port' => 6380]);
@@ -1322,7 +1325,9 @@ class Redis {
     /**
      * Discard a transaction currently in progress.
      *
-     * @return Redis|bool  True if we could discard the transaction.
+     * @return (TMULTI is int ? bool : false)  True if we could discard the transaction.
+     * 
+     * @psalm-this-out self<null>
      *
      * @see https://redis.io/docs/latest/commands/discard/
      *
@@ -1332,7 +1337,7 @@ class Redis {
      * $redis->discard();
      * $redis->getMode();
      */
-    public function discard(): Redis|bool;
+    public function discard(): bool;
 
     /**
      * Dump Redis' internal binary representation of a key.
@@ -1436,7 +1441,9 @@ class Redis {
     /**
      * Execute either a MULTI or PIPELINE block and return the array of replies.
      *
-     * @return Redis|array|false The array of pipeline'd or multi replies or false on failure.
+     * @return (TMULTI is int ? array|false : self<null>|false) The array of pipeline'd or multi replies or false on failure.
+     * 
+     * @psalm-this-out self<null>
      *
      * @see https://redis.io/docs/latest/commands/exec/
      * @see https://redis.io/docs/latest/commands/multi/
@@ -1451,7 +1458,7 @@ class Redis {
      *              ->rpush('list', 'one', 'two', 'three')
      *              ->exec();
      */
-    public function exec(): Redis|array|false;
+    public function exec(): self|array|false;
 
     /**
      * Test if one or more keys exist.
@@ -3116,11 +3123,15 @@ class Redis {
 
     /**
      * Begin a transaction.
+     * 
+     * @template V of int
      *
-     * @param int $value  The type of transaction to start.  This can either be `Redis::MULTI` or
+     * @param V $value  The type of transaction to start.  This can either be `Redis::MULTI` or
      *                    `Redis::PIPELINE'.
      *
-     * @return Redis|bool True if the transaction could be started.
+     * @return self<V>|false
+     * 
+     * @psalm-this-out self<V>
      *
      * @see https://redis.io/docs/latest/commands/multi/
      *
@@ -3130,7 +3141,7 @@ class Redis {
      * $redis->get('foo');
      * $redis->exec();
      */
-    public function multi(int $value = Redis::MULTI): bool|Redis;
+    public function multi(int $value = Redis::MULTI): self|false;
 
     /**
      * Get encoding and other information about a key.
