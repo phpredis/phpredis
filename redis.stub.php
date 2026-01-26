@@ -1126,7 +1126,7 @@ class Redis {
      * $redis->config('SET', 'timeout', 30);
      * $redis->config('SET', ['timeout' => 30, 'loglevel' => 'warning']);
      */
-    public function config(string $operation, array|string|null $key_or_settings = null, ?string $value = null): mixed;
+    public function config(string $operation, array|string|null $key_or_settings = null, ?string $value = null): array|bool;
 
     /**
      * Connect to a Redis server
@@ -1392,7 +1392,7 @@ class Redis {
      * $redis->eval('return redis.call("set", KEYS[1], ARGV[1])', ['counter', 1], 1);
      *
      */
-    public function eval(string $script, array $args = [], int $num_keys = 0): mixed;
+    public function eval(string $script, array $args = [], int $num_keys = 0): int|array|string|bool|null;
 
     /**
      * This is simply the read-only variant of eval, meaning the underlying script
@@ -1405,7 +1405,7 @@ class Redis {
      * $redis->eval_ro('return redis.call("get", KEYS[1])', ['counter'], 1);
      *
      */
-    public function eval_ro(string $script_sha, array $args = [], int $num_keys = 0): mixed;
+    public function eval_ro(string $script_sha, array $args = [], int $num_keys = 0): int|array|string|bool|null;
 
     /**
      * Execute a LUA script on the server but instead of sending the script, send
@@ -1428,7 +1428,7 @@ class Redis {
      * $redis->evalsha($sha, ['counter'], 1);
      *
      */
-    public function evalsha(string $sha1, array $args = [], int $num_keys = 0): mixed;
+    public function evalsha(string $sha1, array $args = [], int $num_keys = 0): int|array|string|bool|null;
 
     /**
      * This is simply the read-only variant of evalsha, meaning the underlying script
@@ -1442,7 +1442,7 @@ class Redis {
      * $redis->evalsha_ro($sha, ['counter'], 1);
      *
      */
-    public function evalsha_ro(string $sha1, array $args = [], int $num_keys = 0): mixed;
+    public function evalsha_ro(string $sha1, array $args = [], int $num_keys = 0): int|array|string|bool|null;
 
     /**
      * Execute either a MULTI or PIPELINE block and return the array of replies.
@@ -1588,7 +1588,7 @@ class Redis {
      * $redis->fcall('mylib.increment', ['counter'], [1]);
      *
      */
-    public function fcall(string $fn, array $keys = [], array $args = []): mixed;
+    public function fcall(string $fn, array $keys = [], array $args = []): int|array|string|bool|null;
 
     /**
      * This is a read-only variant of the FCALL command that cannot execute commands that modify data.
@@ -1606,7 +1606,7 @@ class Redis {
      * $redis->fcall_ro('mylib.peek', ['counter']);
      *
      */
-    public function fcall_ro(string $fn, array $keys = [], array $args = []): mixed;
+    public function fcall_ro(string $fn, array $keys = [], array $args = []): int|array|string|bool|null;
 
     /**
      * Deletes every key in all Redis databases
@@ -1768,7 +1768,7 @@ class Redis {
      *
      * @example $redis->georadius('cities', 47.608013, -122.335167, 1000, 'km');
      */
-    public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): mixed;
+    public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): int|array|string|bool|null;
 
     /**
      * A readonly variant of `GEORADIUS` that may be executed on replicas.
@@ -1780,7 +1780,7 @@ class Redis {
      * $redis->georadius_ro('cities', -122.335167, 47.608013, 100, 'km');
      *
      */
-    public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): mixed;
+    public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): int|array|string|bool|null;
 
     /**
      * Similar to `GEORADIUS` except it uses a member as the center of the query.
@@ -1799,7 +1799,7 @@ class Redis {
      *
      * @example $redis->georadiusbymember('cities', 'Seattle', 200, 'mi');
      */
-    public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): mixed;
+    public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): int|array|string|bool|null;
 
     /**
      * This is the read-only variant of `GEORADIUSBYMEMBER` that can be run on replicas.
@@ -1810,7 +1810,7 @@ class Redis {
      * $redis->georadiusbymember_ro('cities', 'Seattle', 200, 'mi');
      *
      */
-    public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): mixed;
+    public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): int|array|string|bool|null;
 
     /**
      * Search a geospacial sorted set for members in various ways.
@@ -1898,7 +1898,7 @@ class Redis {
      * $redis->getAuth();
      *
      */
-    public function getAuth(): mixed;
+    public function getAuth(): array|string|null|false;
 
     /**
      * Get the bit at a given index in a string key.
@@ -2001,13 +2001,13 @@ class Redis {
      *
      * @see Redis::setOption() for a detailed list of options and their values.
      *
-     * @return mixed The setting itself or false on failure
+     * @return int|bool|float|string|null|false The option value or false on failure.
      *
      * @example
      * $redis->getOption(Redis::OPT_PREFIX);
      *
      */
-    public function getOption(int $option): mixed;
+    public function getOption(int $option): int|bool|float|string|null|false;
 
     /**
      * Get the persistent connection ID, if there is one.
@@ -2221,11 +2221,11 @@ class Redis {
      *
      * @param  string  $key The key to query
      * @param  string  $member The key to query
-     * @return mixed
+     * @return array|int|bool
      *
      * @example $redis->hgetWithMeta('foo', 'field');
      */
-    public function hGetWithMeta(string $key, string $member): mixed;
+    public function hGetWithMeta(string $key, string $member): self|array|int|bool;
 
     /**
      * Increment a hash field's value by an integer
@@ -3439,7 +3439,7 @@ class Redis {
      * @example
      * $redis->pubsub('channels');
      */
-    public function pubsub(string $command, mixed $arg = null): mixed;
+    public function pubsub(string $command, mixed $arg = null): int|array|string|bool|null;
 
     /**
      * Unsubscribe from one or more channels by pattern
@@ -3499,7 +3499,7 @@ class Redis {
      * @example $redis->rawCommand('set', 'mystring', 'myvalue');
      * @example $redis->rawCommand('rpush', 'mylist', 'one', 'two', 'three');
      */
-    public function rawcommand(string $command, mixed ...$args): mixed;
+    public function rawcommand(string $command, mixed ...$args): int|array|string|bool|null;
 
     /**
      * Unconditionally rename a key from $old_name to $new_name
@@ -3599,7 +3599,7 @@ class Redis {
      * $redis->role();
      *
      */
-    public function role(): mixed;
+    public function role(): array|false;
 
     /**
      * Atomically pop an element off the end of a Redis LIST and push it to the beginning of
@@ -3859,7 +3859,7 @@ class Redis {
      * @example $redis->sRandMember('myset', 10);
      * @example $redis->sRandMember('myset', -10);
      */
-    public function sRandMember(string $key, int $count = 0): mixed;
+    public function sRandMember(string $key, int $count = 0): self|array|string|false;
 
     /**
      * Returns the union of one or more Redis SET keys.
@@ -3995,7 +3995,7 @@ class Redis {
      * @example $redis->script('load', 'return 1');
      * @example $redis->script('exists', sha1('return 1'));
      */
-    public function script(string $command, mixed ...$args): mixed;
+    public function script(string $command, mixed ...$args): int|array|string|bool|null;
 
     /**
      * Select a specific Redis database.
@@ -4243,7 +4243,7 @@ class Redis {
      * @example $redis->slowlog('len');       // Retrieve slowlog length.
      * @example $redis->slowlog('reset');     // Reset the slowlog.
      */
-    public function slowlog(string $operation, int $length = 0): mixed;
+    public function slowlog(string $operation, int $length = 0): array|int|bool;
 
     /**
      * Sort the contents of a Redis key in various ways.
@@ -4255,7 +4255,7 @@ class Redis {
      *                            data sorted.  See blow for a detailed description
      *                            of this options array.
      *
-     * @return mixed This command can either return an array with the sorted data
+     * @return array|int This command can either return an array with the sorted data
      *               or the number of elements placed in a destination set when
      *               using the STORE option.
      *
@@ -4272,7 +4272,7 @@ class Redis {
      *                                  be used in combination with 'BY'
      * ];
      */
-    public function sort(string $key, ?array $options = null): mixed;
+    public function sort(string $key, ?array $options = null): array|int;
 
     /**
      * This is simply a read-only variant of the sort command
@@ -4284,7 +4284,7 @@ class Redis {
      * $redis->sort_ro('numbers', ['LIMIT' => [0, 5]]);
      *
      */
-    public function sort_ro(string $key, ?array $options = null): mixed;
+    public function sort_ro(string $key, ?array $options = null): array|int;
 
     /**
      * @deprecated
@@ -4944,7 +4944,7 @@ class Redis {
      * @example $redis->xInfo('GROUPS', 'stream');
      * @example $redis->xInfo('STREAM', 'stream');
      */
-    public function xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1): mixed;
+    public function xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1): array|false;
 
 
     /**
