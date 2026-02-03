@@ -249,7 +249,8 @@ static zend_never_inline ZEND_COLD void redis_sock_throw_exception(RedisSock *re
         } else {
             spprintf(&errmsg, 0, "Could not select database %ld", redis_sock->dbNumber);
         }
-    } else if (redis_sock->status == REDIS_SOCK_STATUS_CONNECTED) {
+    } else if (redis_sock->status == REDIS_SOCK_STATUS_CONNECTED || 
+               redis_sock->status == REDIS_SOCK_STATUS_REUSED) {
         if (redis_sock->err != NULL) {
             spprintf(&errmsg, 0, "Could not authenticate '%s'", ZSTR_VAL(redis_sock->err));
         } else {
@@ -615,6 +616,14 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         /* AUTH */
         if ((ele = REDIS_HASH_STR_FIND_STATIC(Z_ARRVAL_P(context), "auth"))) {
             redis_sock_set_auth_zval(redis->sock, ele);
+        }
+
+        /* CLIENT NAME */
+        if ((ele = REDIS_HASH_STR_FIND_STATIC(Z_ARRVAL_P(context), "client_name"))) {
+            redis_sock_set_client_name_zval(redis->sock, ele);
+            if (redis->sock->err) {
+                REDIS_THROW_EXCEPTION(ZSTR_VAL(redis->sock->err), 0);
+            }
         }
     }
 

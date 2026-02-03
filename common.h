@@ -74,6 +74,7 @@ typedef enum {
     REDIS_SOCK_STATUS_FAILED = -1,
     REDIS_SOCK_STATUS_DISCONNECTED,
     REDIS_SOCK_STATUS_CONNECTED,
+    REDIS_SOCK_STATUS_REUSED,
     REDIS_SOCK_STATUS_AUTHENTICATED,
     REDIS_SOCK_STATUS_READY
 } redis_sock_status;
@@ -256,7 +257,22 @@ static inline int redis_strncmp(const char *s1, const char *s2, size_t n) {
 typedef struct RedisHello {
     zend_string *server;
     zend_string *version;
+    int version_major;
+    int version_minor;
 } RedisHello;
+
+/* Helper to verify server version information */
+static inline int redis_version_less_than(const struct RedisHello *hello, int major, int minor) {
+    if (hello == NULL || hello->version == NULL || ZSTR_LEN(hello->version) == 0) {
+        return 1;
+    }
+
+    if (hello->version_major < major)
+        return 1;
+    if (hello->version_major == major && hello->version_minor < minor)
+        return 1;
+    return 0;
+}
 
 /* {{{ struct RedisSock */
 typedef struct {
@@ -266,6 +282,7 @@ typedef struct {
     int                 port;
     zend_string         *user;
     zend_string         *pass;
+    zend_string         *client_name;
     double              timeout;
     double              read_timeout;
     long                retry_interval;
