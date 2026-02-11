@@ -3522,6 +3522,7 @@ redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
     if (is_reset_mode) {
         redis_sock->mode = ATOMIC;
     }
+    redis_free_stream_ctx(redis_sock);
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
 
@@ -3860,6 +3861,13 @@ redis_free_reply_callbacks(RedisSock *redis_sock)
     }
 }
 
+static void redis_free_stream_ctx(RedisSock *redis_sock) {
+    if (redis_sock->stream_ctx != NULL) {
+        zend_list_delete(redis_sock->stream_ctx->res);
+        redis_sock->stream_ctx = NULL;
+    }
+}
+
 static void
 redis_sock_release_hello(struct RedisHello *hello) {
     if (hello->server) {
@@ -3900,6 +3908,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
             redis_sock->subs[i] = NULL;
         }
     }
+    redis_free_stream_ctx(redis_sock);
     redis_sock_free_auth(redis_sock);
     redis_free_reply_callbacks(redis_sock);
     redis_sock_release_hello(&redis_sock->hello);
