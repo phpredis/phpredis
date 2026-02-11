@@ -3518,13 +3518,13 @@ redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
             }
         } else {
             php_stream_close(redis_sock->stream);
+            redis_free_stream_ctx(redis_sock);
         }
         redis_sock->stream = NULL;
     }
     if (is_reset_mode) {
         redis_sock->mode = ATOMIC;
     }
-    redis_free_stream_ctx(redis_sock);
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
 
