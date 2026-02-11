@@ -126,6 +126,8 @@ static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zre
 static int redis_bulk_resp_to_zval(RedisSock *redis_sock, zval *zdst,
     int *dstlen) ;
 
+static void redis_free_stream_ctx(RedisSock *redis_sock);
+
 /* Register a persistent resource in a a way that works for every PHP 7 version. */
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
     zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
