@@ -8624,15 +8624,45 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    /* Regression test for GitHub PR #2802). Make sure we don't leak the
+     * context array when explicitly reconnecting in a loop */
+    public function testTlsReconnect() {
+        $tls_port = $this->getTlsPort();
+        if (($fp = @fsockopen($this->getHost(), $tls_port)) == NULL)
+            $this->markTestSkipped();
+
+        fclose($fp);
+
+        $redis = new Redis;
+
+        $context = ['stream' => [
+            'verify_peer_name' => false,
+            'verify_peer' => false,
+        ]];
+
+        $base = memory_get_usage(true);
+
+        for ($i = 0; $i < 20; $i++) {
+            $redis->connect('tls://' . $this->getHost(), $tls_port, 0, null, 0,
+                            0, $context);
+        }
+
+        $final = memory_get_usage(true);
+
+        $this->assertLTE(10000, $final - $base);
+    }
+
     public function testTlsConnect() {
-        if (($fp = @fsockopen($this->getHost(), 6378)) == NULL)
+        $tls_port = $this->getTlsPort();
+
+        if (($fp = @fsockopen($this->getHost(), $tls_port)) == NULL)
             $this->markTestSkipped();
 
         fclose($fp);
 
         foreach (['localhost' => true, '127.0.0.1' => false] as $host => $verify) {
             $redis = new Redis();
-            $this->assertTrue($redis->connect('tls://' . $host, 6378, 0, null, 0, 0, [
+            $this->assertTrue($redis->connect('tls://' . $host, $tls_port, 0, null, 0, 0, [
                 'stream' => ['verify_peer_name' => $verify, 'verify_peer' => false]
             ]));
         }

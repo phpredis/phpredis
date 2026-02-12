@@ -656,8 +656,7 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
                                    c->flags->timeout, c->flags->read_timeout,
                                    c->flags->persistent, NULL, 0);
 
-    /* Stream context */
-    node->sock->stream_ctx = c->flags->stream_ctx;
+    redis_sock_set_context(node->sock, c->flags->context);
 
     redis_sock_set_auth(node->sock, c->flags->user, c->flags->pass);
 
@@ -872,6 +871,8 @@ cluster_free(redisCluster *c, int free_ctx)
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
 
     redis_sock_free_auth(c->flags);
+    redis_sock_free_context(c->flags);
+
     efree(c->flags);
 
     /* Call hash table destructors */
@@ -1019,7 +1020,7 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
                                  NULL, 0);
 
         /* Stream context */
-        sock->stream_ctx = c->flags->stream_ctx;
+        redis_sock_set_context(sock, c->flags->context);
 
         /* Add to seed nodes */
         zend_hash_str_update_ptr(c->seeds, key, keylen, sock);
@@ -1074,11 +1075,9 @@ cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds)
                                  c->flags->timeout, c->flags->read_timeout,
                                  c->flags->persistent, NULL, 0);
 
-        /* Stream context */
-        sock->stream_ctx = c->flags->stream_ctx;
-
-        /* Credentials */
+        /* Credentials and context */
         redis_sock_set_auth(sock, c->flags->user, c->flags->pass);
+        redis_sock_set_context(sock, c->flags->context);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(sock->host),

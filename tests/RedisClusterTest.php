@@ -45,6 +45,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSwapDB() { $this->markTestSkipped(); }
     public function testConnectException() { $this->markTestSkipped(); }
     public function testTlsConnect() { $this->markTestSkipped(); }
+    public function testTlsReconnect() { $this->markTestSkipped(); }
     public function testReset() { $this->markTestSkipped(); }
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
@@ -124,8 +125,8 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     /* Load our seeds on construction */
-    public function __construct($host, $port, $auth) {
-        parent::__construct($host, $port, $auth);
+    public function __construct($host, $port, $auth, $tls_port = 6378) {
+        parent::__construct($host, $port, $auth, $tls_port);
 
         self::$seeds = $this->loadSeeds($host, $port);
     }

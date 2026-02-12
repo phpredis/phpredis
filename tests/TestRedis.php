@@ -53,7 +53,7 @@ error_reporting(E_ALL);
 ini_set( 'display_errors','1');
 
 /* Grab options */
-$opt = getopt('', ['host:', 'port:', 'class:', 'test:', 'nocolors', 'user:', 'auth:']);
+$opt = getopt('', ['host:', 'port:', 'tls-port:', 'class:', 'test:', 'nocolors', 'user:', 'auth:']);
 
 /* The test class(es) we want to run */
 $classes = getClassArray($opt['class'] ?? 'redis');
@@ -66,6 +66,7 @@ $filter = $opt['test'] ?? NULL;
 /* Grab override host/port if it was passed */
 $host = $opt['host'] ?? '127.0.0.1';
 $port = $opt['port'] ?? 6379;
+$tls_port = $opt['tls-port'] ?? 6378;
 
 /* Get optional username and auth (password) */
 $user = $opt['user'] ?? NULL;
@@ -116,7 +117,7 @@ foreach ($classes as $class) {
         }
     } else {
         echo TestSuite::make_bold($class) . "\n";
-        if (TestSuite::run("$class", $filter, $host, $port, $auth))
+        if (TestSuite::run("$class", $filter, $host, $port, $auth, $tls_port))
             exit(1);
     }
 }

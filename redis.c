@@ -603,13 +603,13 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         redis_free_socket(redis->sock);
     }
 
-    redis->sock = redis_sock_create(host, host_len, port, timeout, read_timeout, persistent,
-        persistent_id, retry_interval);
+    redis->sock = redis_sock_create(host, host_len, port, timeout, read_timeout,
+                                    persistent, persistent_id, retry_interval);
 
     if (context) {
         /* Stream context (e.g. TLS) */
         if ((ele = REDIS_HASH_STR_FIND_STATIC(Z_ARRVAL_P(context), "stream"))) {
-            redis_sock_set_stream_context(redis->sock, ele);
+            redis_sock_set_context_zval(redis->sock, ele);
         }
 
         /* AUTH */
