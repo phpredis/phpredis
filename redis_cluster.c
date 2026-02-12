@@ -246,9 +246,8 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
         c->flags->user = zend_string_copy(user);
     if (pass && ZSTR_LEN(pass))
         c->flags->pass = zend_string_copy(pass);
-    if (context) {
-        redis_sock_set_stream_context(c->flags, context);
-    }
+    if (context)
+        redis_sock_set_context_zval(c->flags, context);
 
     c->flags->timeout = timeout;
     c->flags->read_timeout = read_timeout;

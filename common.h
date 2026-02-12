@@ -261,11 +261,11 @@ typedef struct RedisHello {
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream          *stream;
-    php_stream_context  *stream_ctx;
     zend_string         *host;
     int                 port;
     zend_string         *user;
     zend_string         *pass;
+    HashTable           *context;
     double              timeout;
     double              read_timeout;
     long                retry_interval;
