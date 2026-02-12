@@ -223,7 +223,6 @@ redis_sock_set_auth(RedisSock *redis_sock, zend_string *user, zend_string *pass)
     redis_sock->pass = pass ? zend_string_copy(pass) : NULL;
 }
 
-
 PHP_REDIS_API void
 redis_sock_set_auth_zval(RedisSock *redis_sock, zval *zv) {
     zend_string *user, *pass;
@@ -248,6 +247,31 @@ redis_sock_free_auth(RedisSock *redis_sock) {
         zend_string_release(redis_sock->pass);
         redis_sock->pass = NULL;
     }
+}
+
+#if PHP_VERSION_ID < 80000
+static void relay_array_release(HashTable *ht) {
+    if (!ht || (GC_FLAGS(ht) & GC_IMMUTABLE)) {
+        return;
+    }
+
+    if (GC_DELREF(ht) == 0) {
+        zend_array_destroy(ht);
+    }
+}
+#else
+static inline void relay_array_release(HashTable *ht) {
+    zend_array_release(ht);
+}
+#endif
+
+
+void redis_sock_free_context(RedisSock *redis_sock) {
+    if (redis_sock->context == NULL)
+        return;
+
+    relay_array_release(redis_sock->context);
+    redis_sock->context = NULL;
 }
 
 PHP_REDIS_API char *
@@ -3075,7 +3099,7 @@ redis_sock_configure(RedisSock *redis_sock, HashTable *opts)
             }
             redis_sock->retry_interval = zval_get_long(val);
         } else if (zend_string_equals_literal_ci(zkey, "ssl")) {
-            if (redis_sock_set_stream_context(redis_sock, val) != SUCCESS) {
+            if (redis_sock_set_context_zval(redis_sock, val) != SUCCESS) {
                 REDIS_VALUE_EXCEPTION("Invalid SSL context options");
                 return FAILURE;
             }
@@ -3332,6 +3356,26 @@ failure:
     return FAILURE;
 }
 
+static php_stream_context *
+alloc_stream_context(RedisSock *redis_sock) {
+    php_stream_context *ctx;
+    zend_string *zkey;
+    zval *z_ele;
+
+    if (redis_sock->context == NULL)
+        return NULL;
+
+    ctx = php_stream_context_alloc();
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(redis_sock->context, zkey, z_ele) {
+        if (zkey != NULL) {
+            php_stream_context_set_option(ctx, "ssl", ZSTR_VAL(zkey), z_ele);
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    return ctx;
+}
+
 /**
  * redis_sock_connect
  */
@@ -3343,6 +3387,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     const char *fmtstr = "%s://%s:%d";
     int host_len, usocket = 0, err = 0, tcp_flag = 1;
     ConnectionPool *p = NULL;
+    php_stream_context *ctx;
 
     // Monotonically incrementing persistent id counter
     static unsigned long long counter = 0;
@@ -3353,7 +3398,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
 
     address = ZSTR_VAL(redis_sock->host);
     if ((pos = strstr(address, "://")) == NULL) {
-        strcpy(scheme, redis_sock->stream_ctx ? "ssl" : "tcp");
+        strcpy(scheme, redis_sock->context ? "ssl" : "tcp");
     } else {
         snprintf(scheme, sizeof(scheme), "%.*s", (int)(pos - address), address);
         address = pos + sizeof("://") - 1;
@@ -3413,10 +3458,22 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
         tv_ptr = &tv;
     }
 
+    ctx = alloc_stream_context(redis_sock);
+
     redis_sock->stream = php_stream_xport_create(host, host_len,
         0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
         persistent_id ? ZSTR_VAL(persistent_id) : NULL,
-        tv_ptr, redis_sock->stream_ctx, &estr, &err);
+        tv_ptr, ctx, &estr, &err);
+
+    /* On successful connection, the context is moved into the stream so we
+     * can disown it. If the connection failed, clean it up ourselves. */
+    if (ctx && redis_sock->stream) {
+        ZEND_ASSERT(GC_REFCOUNT(ctx->res) == 2);
+        GC_DELREF(ctx->res);
+    } else if (ctx) {
+        ZEND_ASSERT(GC_REFCOUNT(ctx->res) == 1);
+        zend_list_delete(ctx->res);
+    }
 
     if (persistent_id) {
         zend_string_release(persistent_id);
@@ -3546,25 +3603,33 @@ redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len)
     }
 }
 
-PHP_REDIS_API int
-redis_sock_set_stream_context(RedisSock *redis_sock, zval *options)
-{
-    zend_string *zkey;
-    zval *z_ele;
+#if PHP_VERSION_ID < 80000
+#define GC_TRY_ADDREF(ht) do { \
+    if (ht && !(GC_FLAGS(ht) & GC_IMMUTABLE)) { \
+        GC_ADDREF(ht); \
+    } \
+} while(0)
+#endif
 
-    if (!redis_sock || Z_TYPE_P(options) != IS_ARRAY)
-        return FAILURE;
 
-    if (!redis_sock->stream_ctx)
-        redis_sock->stream_ctx = php_stream_context_alloc();
+void redis_sock_set_context(RedisSock *redis_sock, HashTable *ht) {
+    redis_sock_free_context(redis_sock);
 
-    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(options), zkey, z_ele) {
-        if (zkey != NULL) {
-            php_stream_context_set_option(redis_sock->stream_ctx, "ssl", ZSTR_VAL(zkey), z_ele);
-        }
-    } ZEND_HASH_FOREACH_END();
+    if (ht == NULL)
+        return;
 
-    return SUCCESS;
+    GC_TRY_ADDREF(ht);
+    redis_sock->context = ht;
+}
+
+int redis_sock_set_context_zval(RedisSock *redis_sock, zval *zv) {
+    HashTable *ht;
+
+    ht = zv && Z_TYPE_P(zv) == IS_ARRAY ? Z_ARRVAL_P(zv) : NULL;
+
+    redis_sock_set_context(redis_sock, ht);
+
+    return ht ? SUCCESS : FAILURE;
 }
 
 PHP_REDIS_API int
@@ -3903,6 +3968,8 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
     redis_sock_free_auth(redis_sock);
     redis_free_reply_callbacks(redis_sock);
     redis_sock_release_hello(&redis_sock->hello);
+    redis_sock_free_context(redis_sock);
+
     efree(redis_sock);
 }
 

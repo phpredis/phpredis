@@ -568,9 +568,7 @@ PS_OPEN_FUNC(redis)
             redis_sock->compression = session_compression_type();
             redis_sock->compression_level = INI_INT("redis.session.compression_level");
 
-            if (Z_TYPE(context) == IS_ARRAY) {
-                redis_sock_set_stream_context(redis_sock, &context);
-            }
+            redis_sock_set_context_zval(redis_sock, &context);
 
             redis_pool_add(pool, redis_sock, weight);
             redis_sock->prefix = prefix;
@@ -1061,7 +1059,7 @@ PS_OPEN_FUNC(rediscluster) {
     redis_sock_set_auth(c->flags, user, pass);
 
     if ((context = REDIS_HASH_STR_FIND_TYPE_STATIC(ht_conf, "stream", IS_ARRAY)) != NULL) {
-        redis_sock_set_stream_context(c->flags, context);
+        redis_sock_set_context_zval(c->flags, context);
     }
 
     /* First attempt to load from cache */

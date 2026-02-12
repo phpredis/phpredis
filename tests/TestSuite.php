@@ -9,6 +9,7 @@ class TestSuite
     /* Host and port the unit tests will use */
     private string $host;
     private ?int $port = 6379;
+    private ?int $tls_port = 6378;
 
     /* Redis authentication we'll use */
     private $auth;
@@ -35,14 +36,16 @@ class TestSuite
     public static array $errors = [];
     public static array $warnings = [];
 
-    public function __construct(string $host, ?int $port, $auth) {
+    public function __construct(string $host, ?int $port, $auth, ?int $tls_port = 6378) {
         $this->host = $host;
         $this->port = $port;
         $this->auth = $auth;
+        $this->tls_port = $tls_port;
     }
 
     public function getHost() { return $this->host; }
     public function getPort() { return $this->port; }
+    public function getTlsPort() { return $this->tls_port; }
     public function getAuth() { return $this->auth; }
 
     public static function errorMessage(string $fmt, ...$args) {
@@ -574,7 +577,7 @@ class TestSuite
 
     public static function run($class_name, ?string $limit = NULL,
                                ?string $host = NULL, ?int $port = NULL,
-                               $auth = NULL)
+                               $auth = NULL, ?int $tls_port = 6378)
     {
         if ($limit)
             $limit = strtolower($limit);
@@ -599,7 +602,7 @@ class TestSuite
             echo self::make_bold($padded_name);
 
             $count = count($class_name::$errors);
-            $rt = new $class_name($host, $port, $auth);
+            $rt = new $class_name($host, $port, $auth, $tls_port);
 
             try {
                 $rt->setUp();
