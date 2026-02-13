@@ -930,7 +930,7 @@ class Redis {
      * @param string|int   $timeout_or_key If the previous argument was an array, this argument
      *                                     must be a timeout value.  Otherwise it could also be
      *                                     another key.
-     * @param mixed        $extra_args     Can consist of additional keys, until the last argument
+     * @param mixed     ...$extra_args     Can consist of additional keys, until the last argument
      *                                     which needs to be a timeout.
      *
      * @return Redis|array|false The popped elements.
@@ -1058,8 +1058,8 @@ class Redis {
     /**
      * Execute Redis CLIENT subcommands.
      *
-     * @param string $opt  The CLIENT subcommand to execute.
-     * @param mixed  $args Additional arguments depending on the subcommand.
+     * @param string $opt     The CLIENT subcommand to execute.
+     * @param mixed  ...$args Additional arguments depending on the subcommand.
      *
      * @see https://redis.io/docs/latest/commands/client/
      *
@@ -1262,9 +1262,9 @@ class Redis {
      * of keys to delete, and the second is to pass N arguments, all names of keys.  See
      * below for an example of both strategies.
      *
-     * @param array|string $key        Either an array with one or more key names or a string with
-     *                                 the name of a key.
-     * @param string       $other_keys One or more additional keys passed in a variadic fashion.
+     * @param array|string $key           Either an array with one or more key names or a string with
+     *                                    the name of a key.
+     * @param string       ...$other_keys One or more additional keys passed in a variadic fashion.
      *
      * @return Redis|int|false The number of keys that were deleted
      *
@@ -1456,9 +1456,9 @@ class Redis {
     /**
      * Test if one or more keys exist.
      *
-     * @param mixed $key         Either an array of keys or a string key
-     * @param mixed $other_keys  If the previous argument was a string, you may send any number of
-     *                           additional keys to test.
+     * @param mixed $key            Either an array of keys or a string key
+     * @param mixed ...$other_keys  If the previous argument was a string, you may send any number of
+     *                              additional keys to test.
      *
      * @return Redis|int|bool    The number of keys that do exist and false on failure
      *
@@ -1633,7 +1633,7 @@ class Redis {
      *                          'FLUSH'     - Delete all the libraries
      *                          'DUMP'      - Return a serialized payload representing the current libraries
      *                          'RESTORE'   - Restore the libraries represented by the given payload
-     * @param mixed  $args      Additional arguments
+     * @param mixed  ...$args   Additional arguments
      *
      * @return Redis|bool|string|array  Depends on subcommand.
      *
@@ -1648,12 +1648,12 @@ class Redis {
     /**
      * Add one or more members to a geospacial sorted set
      *
-     * @param string $key                      The sorted set to add data to.
-     * @param float  $lng                      The longitude of the first member
-     * @param float  $lat                      The latitude of the first member.
-     * @param mixed $other_triples_and_options You can continue to pass longitude, latitude, and member
-     *                                         arguments to add as many members as you wish.  Optionally, the final argument may be
-     *                                         a string with options for the command @see Redis documentation for the options.
+     * @param string $key                         The sorted set to add data to.
+     * @param float  $lng                         The longitude of the first member
+     * @param float  $lat                         The latitude of the first member.
+     * @param mixed ...$other_triples_and_options You can continue to pass longitude, latitude, and member
+     *                                            arguments to add as many members as you wish.  Optionally, the final argument may be
+     *                                            a string with options for the command @see Redis documentation for the options.
      *
      * @return Redis|int|false The number of added elements is returned.  If the 'CH' option is specified,
      *                         the return value is the number of members *changed*.
@@ -1692,9 +1692,9 @@ class Redis {
     /**
      * Retrieve one or more GeoHash encoded strings for members of the set.
      *
-     * @param string $key           The key to query
-     * @param string $member        The first member to request
-     * @param string $other_members One or more additional members to request.
+     * @param string $key              The key to query
+     * @param string $member           The first member to request
+     * @param string ...$other_members One or more additional members to request.
      *
      * @return Redis|array|false    An array of GeoHash encoded values.
      *
@@ -1708,9 +1708,9 @@ class Redis {
     /**
      * Return the longitude and latitude for one or more members of a geospacially encoded sorted set.
      *
-     * @param string $key           The set to query.
-     * @param string $member        The first member to query.
-     * @param string $other_members One or more members to query.
+     * @param string $key              The set to query.
+     * @param string $member           The first member to query.
+     * @param string ...$other_members One or more members to query.
      *
      * @return Redis|array|false An array of longitude and latitude pairs.
      *
@@ -2153,9 +2153,9 @@ class Redis {
     /**
      * Remove one or more fields from a hash.
      *
-     * @param string $key          The hash key in question.
-     * @param string $field        The first field to remove
-     * @param string $other_fields One or more additional fields to remove.
+     * @param string $key             The hash key in question.
+     * @param string $field           The first field to remove
+     * @param string ...$other_fields One or more additional fields to remove.
      *
      * @return Redis|int|false     The number of fields actually removed.
      *
@@ -2368,9 +2368,9 @@ class Redis {
     /**
      * Add or update one or more hash fields and values.
      *
-     * @param string $key             The hash to create/update.
-     * @param mixed  $fields_and_vals Argument pairs of fields and values. Alternatively, an associative array with the
-     *                                fields and their values.
+     * @param string $key                The hash to create/update.
+     * @param mixed  ...$fields_and_vals Argument pairs of fields and values. Alternatively, an associative array with the
+     *                                   fields and their values.
      *
      * @return Redis|int|false The number of fields that were added, or false on failure.
      *
@@ -2714,7 +2714,7 @@ class Redis {
      *
      * @see https://redis.io/docs/latest/commands/info/
      *
-     * @param string $sections Optional section(s) you wish Redis server to return.
+     * @param string ...$sections Optional section(s) you wish Redis server to return.
      *
      * @return Redis|array|false
      *
@@ -2868,8 +2868,8 @@ class Redis {
     /**
      * Prepend one or more elements to a list.
      *
-     * @param string $key      The list to prepend.
-     * @param mixed  $elements One or more elements to prepend.
+     * @param string $key         The list to prepend.
+     * @param mixed  ...$elements One or more elements to prepend.
      *
      * @return Redis|int|false The new length of the list after prepending.
      *
@@ -2882,8 +2882,8 @@ class Redis {
     /**
      * Append one or more elements to a list.
      *
-     * @param string $key      The list to append to.
-     * @param mixed  $elements one or more elements to append.
+     * @param string $key         The list to append to.
+     * @param mixed  ...$elements one or more elements to append.
      *
      * @return Redis|int|false The new length of the list
      *
@@ -3465,7 +3465,7 @@ class Redis {
      * Execute any arbitrary Redis command by name.
      *
      * @param string $command The command to execute
-     * @param mixed  $args    One or more arguments to pass to the command.
+     * @param mixed  ...$args One or more arguments to pass to the command.
      *
      * @return mixed Can return any number of things depending on command executed.
      *
@@ -3600,9 +3600,9 @@ class Redis {
     /**
      * Add one or more values to a Redis SET key.
      *
-     * @param string $key         The key name
-     * @param mixed  $value       A value to add to the set.
-     * @param mixed $other_values One or more additional values to add
+     * @param string $key            The key name
+     * @param mixed  $value          A value to add to the set.
+     * @param mixed ...$other_values One or more additional values to add
      *
      * @return Redis|int|false The number of values added to the set.
      *
@@ -3640,8 +3640,8 @@ class Redis {
      * Given one or more Redis SETS, this command returns all of the members from the first
      * set that are not in any subsequent set.
      *
-     * @param string $key        The first set
-     * @param string $other_keys One or more additional sets
+     * @param string $key           The first set
+     * @param string ...$other_keys One or more additional sets
      *
      * @return Redis|array|false Returns the elements from keys 2..N that don't exist in the
      *                           first sorted set, or false on failure.
@@ -3667,9 +3667,9 @@ class Redis {
      * @see https://redis.io/docs/latest/commands/sdiffstore/
      * @see Redis::sdiff()
      *
-     * @param string $dst        The key where to store the result
-     * @param string $key        The first key to perform the DIFF on
-     * @param string $other_keys One or more additional keys.
+     * @param string $dst           The key where to store the result
+     * @param string $key           The first key to perform the DIFF on
+     * @param string ...$other_keys One or more additional keys.
      *
      * @return Redis|int|false The number of values stored in the destination set or false on failure.
      *
@@ -3685,8 +3685,8 @@ class Redis {
      *
      * @see https://redis.io/docs/latest/commands/sinter/
      *
-     * @param array|string $key  The first SET key to intersect.
-     * @param string $other_keys One or more Redis SET keys.
+     * @param array|string $key     The first SET key to intersect.
+     * @param string ...$other_keys One or more Redis SET keys.
      *
      * @example
      * $redis->pipeline()
@@ -3724,11 +3724,11 @@ class Redis {
      * Perform the intersection of one or more Redis SETs, storing the result in a destination
      * key, rather than returning them.
      *
-     * @param array|string $key  Either a string key, or an array of keys (with at least two
-     *                           elements, consisting of the destination key name and one
-     *                           or more source keys names.
-     * @param string $other_keys If the first argument was a string, subsequent arguments should
-     *                           be source key names.
+     * @param array|string $key     Either a string key, or an array of keys (with at least two
+     *                              elements, consisting of the destination key name and one
+     *                              or more source keys names.
+     * @param string ...$other_keys If the first argument was a string, subsequent arguments should
+     *                              be source key names.
      *
      * @return Redis|int|false The number of values stored in the destination key or false on failure.
      *
@@ -3763,9 +3763,9 @@ class Redis {
      * @see https://redis.io/docs/latest/commands/smember/
      * @see Redis::smember()
      *
-     * @param string $key           The set to query.
-     * @param string $member        The first value to test if exists in the set.
-     * @param string $other_members Any number of additional values to check.
+     * @param string $key              The set to query.
+     * @param string $member           The first value to test if exists in the set.
+     * @param string ...$other_members Any number of additional values to check.
      *
      * @return Redis|array|false An array of integers representing whether each passed value
      *                           was a member of the set.
@@ -3840,8 +3840,8 @@ class Redis {
      *
      * @see https://redis.io/docs/latest/commands/sunion/
      *
-     * @param string $key        The first SET to do a union with
-     * @param string $other_keys One or more subsequent keys
+     * @param string $key           The first SET to do a union with
+     * @param string ...$other_keys One or more subsequent keys
      *
      * @return Redis|array|false  The union of the one or more input sets or false on failure.
      *
@@ -3855,9 +3855,9 @@ class Redis {
      * @see https://redis.io/docs/latest/commands/sunionstore/
      * @see Redis::sunion()
      *
-     * @param string $dst        The destination key
-     * @param string $key        The first source key
-     * @param string $other_keys One or more additional source keys
+     * @param string $dst           The destination key
+     * @param string $key           The first source key
+     * @param string ...$other_keys One or more additional source keys
      *
      * @return Redis|int|false   The number of elements stored in the destination SET or
      *                           false on failure.
@@ -3962,7 +3962,7 @@ class Redis {
      * @see https://redis.io/docs/latest/commands/script/
      *
      * @param string $command The script suboperation to execute.
-     * @param mixed  $args    One or more additional argument
+     * @param mixed  ...$args One or more additional argument
      *
      * @return mixed This command returns various things depending on the specific operation executed.
      *
@@ -4180,7 +4180,7 @@ class Redis {
      *
      * @param array|string $key_or_array Either the first key or if passed as the only argument
      *                                   an array of keys.
-     * @param string $more_keys          One or more keys to send to the command.
+     * @param string ...$more_keys       One or more keys to send to the command.
      *
      * @return Redis|int|false     This command returns the number of keys that exist and
      *                             had their last modified time reset
@@ -4309,9 +4309,9 @@ class Redis {
      *
      * @see https://redis.io/docs/latest/commands/srem/
      *
-     * @param string $key         The Redis SET key in question.
-     * @param mixed  $value       The first value to remove.
-     * @param mixed $other_values One or more additional values to remove.
+     * @param string $key            The Redis SET key in question.
+     * @param mixed  $value          The first value to remove.
+     * @param mixed ...$other_values One or more additional values to remove.
      *
      * @return Redis|int|false    The number of values removed from the set or false on failure.
      *
@@ -4556,10 +4556,10 @@ class Redis {
      * deletion is asynchronous, meaning it is safe to delete large keys without fear of
      * Redis blocking for a long period of time.
      *
-     * @param array|string $key  Either an array with one or more keys or a string with
-     *                           the first key to delete.
-     * @param string $other_keys If the first argument passed to this method was a string
-     *                           you may pass any number of additional key names.
+     * @param array|string $key     Either an array with one or more keys or a string with
+     *                              the first key to delete.
+     * @param string ...$other_keys If the first argument passed to this method was a string
+     *                              you may pass any number of additional key names.
      *
      * @return Redis|int|false The number of keys deleted or false on failure.
      *
@@ -4613,9 +4613,9 @@ class Redis {
     /**
      * Watch one or more keys for conditional execution of a transaction.
      *
-     * @param array|string $key  Either an array with one or more key names, or a string key name
-     * @param string $other_keys If the first argument was passed as a string, any number of additional
-     *                           string key names may be passed variadically.
+     * @param array|string $key     Either an array with one or more key names, or a string key name
+     * @param string ...$other_keys If the first argument was passed as a string, any number of additional
+     *                              string key names may be passed variadically.
      *
      * @return Redis|bool
      *
@@ -5294,31 +5294,31 @@ class Redis {
     /**
      * Add one or more elements and scores to a Redis sorted set.
      *
-     * @param string      $key                  The sorted set in question.
-     * @param array|float $score_or_options     Either the score for the first element, or an array of options.
-     *                                           ```php
-     *                                           $options = [
-     *                                               'NX',       # Only update elements that already exist
-     *                                               'NX',       # Only add new elements but don't update existing ones.
+     * @param string      $key                     The sorted set in question.
+     * @param array|float $score_or_options        Either the score for the first element, or an array of options.
+     *                                              ```php
+     *                                              $options = [
+     *                                                  'NX',       # Only update elements that already exist
+     *                                                  'NX',       # Only add new elements but don't update existing ones.
      *
-     *                                               'LT'        # Only update existing elements if the new score is
-     *                                                           # less than the existing one.
-     *                                               'GT'        # Only update existing elements if the new score is
-     *                                                           # greater than the existing one.
+     *                                                  'LT'        # Only update existing elements if the new score is
+     *                                                              # less than the existing one.
+     *                                                  'GT'        # Only update existing elements if the new score is
+     *                                                              # greater than the existing one.
      *
-     *                                               'CH'        # Instead of returning the number of elements added,
-     *                                                           # Redis will return the number Of elements that were
-     *                                                           # changed in the operation.
+     *                                                  'CH'        # Instead of returning the number of elements added,
+     *                                                              # Redis will return the number Of elements that were
+     *                                                              # changed in the operation.
      *
-     *                                               'INCR'      # Instead of setting each element to the provide score,
-     *                                                           # increment the element by the
-     *                                                           # provided score, much like ZINCRBY.  When this option
-     *                                                           # is passed, you may only send a single score and member.
-     *                                           ];
-     *                                          ```
-     *                                           Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis
-     *                                                  will send whichever one is last in the options array.
-     * @param mixed       $more_scores_and_mems A variadic number of additional scores and members.
+     *                                                  'INCR'      # Instead of setting each element to the provide score,
+     *                                                              # increment the element by the
+     *                                                              # provided score, much like ZINCRBY.  When this option
+     *                                                              # is passed, you may only send a single score and member.
+     *                                              ];
+     *                                             ```
+     *                                              Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis
+     *                                                     will send whichever one is last in the options array.
+     * @param mixed       ...$more_scores_and_mems A variadic number of additional scores and members.
      *
      * @return Redis|int|float|false The return value varies depending on the options passed.
      *
@@ -5403,9 +5403,9 @@ class Redis {
      *
      * @see https://redis.io/docs/latest/commands/zmscore/
      *
-     * @param string $key           The sorted set
-     * @param mixed  $member        The first member to return the score from
-     * @param mixed  $other_members One or more additional members to return the scores of.
+     * @param string $key              The sorted set
+     * @param mixed  $member           The first member to return the score from
+     * @param mixed  ...$other_members One or more additional members to return the scores of.
      *
      * @return Redis|array|false An array of the scores of the requested elements.
      *
@@ -5594,9 +5594,9 @@ class Redis {
     /**
      * Remove one or more members from a Redis sorted set.
      *
-     * @param mixed $key           The sorted set in question.
-     * @param mixed $member        The first member to remove.
-     * @param mixed $other_members One or more members to remove passed in a variadic fashion.
+     * @param mixed $key              The sorted set in question.
+     * @param mixed $member           The first member to remove.
+     * @param mixed ...$other_members One or more members to remove passed in a variadic fashion.
      *
      * @return Redis|int|false The number of members that were actually removed or false on failure.
      *
