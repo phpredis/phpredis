@@ -1588,6 +1588,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
          * node until we find one that is available. */
         if (cluster_sock_write(c, cmd, cmd_len, 0) == -1) {
             /* We have to abort, as no nodes are reachable */
+            cluster_cache_clear(c);
             CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
             return -1;
         }
