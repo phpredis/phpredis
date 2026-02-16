@@ -4858,7 +4858,7 @@ class Redis {
      * $redis->xadd('s', '*', ['field' => 'value1']);
      * $redis->xdelex('s', ['1-0'], 'KEEPREF');
      */
-    public function xdelex(string $key, array $ids, ?string $mode = null): Relay|array|false;
+    public function xdelex(string $key, array $ids, ?string $mode = null): Redis|array|false;
 
     /**
      * XGROUP
