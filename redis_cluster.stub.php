@@ -1204,7 +1204,7 @@ class RedisCluster {
     /**
      * @see \Redis::xdelex()
      */
-    public function xdelex(string $key, array $ids, ?string $mode = null): Relay|array|false;
+    public function xdelex(string $key, array $ids, ?string $mode = null): RedisCluster|array|false;
 
     /**
      * @see \Redis::xgroup()
