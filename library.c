@@ -250,7 +250,7 @@ redis_sock_free_auth(RedisSock *redis_sock) {
 }
 
 #if PHP_VERSION_ID < 80000
-static void relay_array_release(HashTable *ht) {
+static void redis_array_release(HashTable *ht) {
     if (!ht || (GC_FLAGS(ht) & GC_IMMUTABLE)) {
         return;
     }
@@ -260,7 +260,7 @@ static void relay_array_release(HashTable *ht) {
     }
 }
 #else
-static inline void relay_array_release(HashTable *ht) {
+static inline void redis_array_release(HashTable *ht) {
     zend_array_release(ht);
 }
 #endif
@@ -270,7 +270,7 @@ void redis_sock_free_context(RedisSock *redis_sock) {
     if (redis_sock->context == NULL)
         return;
 
-    relay_array_release(redis_sock->context);
+    redis_array_release(redis_sock->context);
     redis_sock->context = NULL;
 }
 
