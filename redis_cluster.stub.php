@@ -54,7 +54,7 @@ class RedisCluster {
      */
     public const FAILOVER_DISTRIBUTE_SLAVES = UNKNOWN;
 
-    public function __construct(string|null $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = null, ?array $context = null);
+    public function __construct(string|null $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = null, ?array $context = null, bool $lazy_connect = false);
 
     /**
      * {@see \Redis::_compress()}

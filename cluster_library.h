@@ -246,6 +246,9 @@ typedef struct redisCluster {
 
     /* Zend object handler */
     zend_object std;
+
+    /* If true, defer initial keyspace mapping until first command */
+    short lazy_connect;
 } redisCluster;
 
 /* RedisCluster response processing callback */

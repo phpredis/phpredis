@@ -228,7 +228,7 @@ void free_cluster_context(zend_object *object) {
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
 static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
                                double read_timeout, int persistent, zend_string *user,
-                               zend_string *pass, zval *context)
+                               zend_string *pass, zval *context, int lazy_connect)
 {
     zend_string *hash = NULL, **seeds;
     redisCachedCluster *cc;
@@ -253,20 +253,24 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     c->flags->read_timeout = read_timeout;
     c->flags->persistent = persistent;
     c->waitms = (long)(1000 * (timeout + read_timeout));
+    c->lazy_connect = lazy_connect ? 1 : 0;
 
     /* Attempt to load slots from cache if caching is enabled */
     if (CLUSTER_CACHING_ENABLED()) {
-        /* Exit early if we can load from cache */
         hash = cluster_hash_seeds(seeds, nseeds);
-        if ((cc = cluster_cache_load(hash))) {
+
+        if (c->lazy_connect) {
+            c->cache_key = zend_string_copy(hash);
+        } else if ((cc = cluster_cache_load(hash))) {
+            /* Exit early if we can load from cache */
             cluster_init_cache(c, cc);
             goto cleanup;
         }
     }
 
-    /* Initialize seeds and attempt to map keyspace */
+    /* Initialize seeds and attempt to map keyspace unless lazy */
     cluster_init_seeds(c, seeds, nseeds);
-    if (cluster_map_keyspace(c) == SUCCESS && hash)
+    if (!c->lazy_connect && cluster_map_keyspace(c) == SUCCESS && hash)
         cluster_cache_store(hash, c->nodes);
 
 cleanup:
@@ -281,6 +285,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0, read_timeout = 0;
     int persistent = 0;
+    int lazy_connect = 0;
     char *iptr;
     HashTable *ht_seeds = NULL;
 
@@ -328,8 +333,16 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
         zval_ptr_dtor_nogc(&z_tmp);
     }
 
+    /* Lazy connect */
+    if ((iptr = INI_STR("redis.clusters.lazyconnect")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_bool(Z_ARRVAL(z_tmp), name, name_len, &lazy_connect);
+        zval_dtor(&z_tmp);
+    }
+
     /* Attempt to create/connect to the cluster */
-    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass, NULL);
+    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass, NULL, lazy_connect);
 
     /* Clean up */
     zval_ptr_dtor_nogc(&z_seeds);
@@ -347,15 +360,15 @@ PHP_METHOD(RedisCluster, __construct) {
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0.0, read_timeout = 0.0;
     size_t name_len;
-    zend_bool persistent = 0;
+    zend_bool persistent = 0, lazy_connect = 0;
     redisCluster *c = GET_CONTEXT();
     char *name;
 
     // Parse arguments
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os!|addbza!", &object, redis_cluster_ce, &name,
+                                    "Os!|addbza!b", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout, &read_timeout,
-                                    &persistent, &z_auth, &context) == FAILURE)
+                                    &persistent, &z_auth, &context, &lazy_connect) == FAILURE)
     {
         RETURN_FALSE;
     }
@@ -372,7 +385,7 @@ PHP_METHOD(RedisCluster, __construct) {
     /* The normal case, loading from arguments */
     redis_extract_auth_info(z_auth, &user, &pass);
     redis_cluster_init(c, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
-                       persistent, user, pass, context);
+                       persistent, user, pass, context, lazy_connect);
 
     if (user) zend_string_release(user);
     if (pass) zend_string_release(pass);
