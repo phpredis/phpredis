@@ -353,7 +353,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
     // Parse arguments
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os!|addbza!", &object, redis_cluster_ce, &name,
+                                    "Os!|a!ddbza!", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout, &read_timeout,
                                     &persistent, &z_auth, &context) == FAILURE)
     {
@@ -361,7 +361,7 @@ PHP_METHOD(RedisCluster, __construct) {
     }
 
     /* If we've got a string try to load from INI */
-    if (ZEND_NUM_ARGS() < 2) {
+    if (ZEND_NUM_ARGS() < 2 || z_seeds == NULL) {
         if (name_len == 0) { // Require a name
             CLUSTER_THROW_EXCEPTION("You must specify a name or pass seeds!", 0);
         }

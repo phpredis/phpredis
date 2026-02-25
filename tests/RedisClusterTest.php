@@ -70,6 +70,40 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession_noUnlockOfOtherProcess() { $this->markTestSkipped(); }
     public function testSession_lockWaitTime() { $this->markTestSkipped(); }
 
+    /* Regression test for GH #2810 */
+    public function testConstructNullSeeds() {
+        /* new RedisCluster(null, null) must not throw TypeError.
+         * $seeds is declared ?array so null is a valid argument. */
+        $thrown = false;
+        try {
+            new RedisCluster(null, null);
+        } catch (\Throwable $e) {
+            $thrown = true;
+            $this->assertFalse($e instanceof \TypeError);
+        }
+        $this->assertTrue($thrown);
+
+        /* Passing an empty array must also not throw TypeError (control). */
+        $thrown = false;
+        try {
+            new RedisCluster(null, []);
+        } catch (\Throwable $e) {
+            $thrown = true;
+            $this->assertFalse($e instanceof \TypeError);
+        }
+        $this->assertTrue($thrown);
+
+        /* Both (null) and (null, null) mean "no name, no seeds" and must
+         * produce the same exception type. */
+        $ex1 = $ex2 = null;
+        try { new RedisCluster(null); }
+        catch (\Throwable $e) { $ex1 = get_class($e); }
+        try { new RedisCluster(null, null); }
+        catch (\Throwable $e) { $ex2 = get_class($e); }
+        $this->assertTrue($ex1 !== null);
+        $this->assertEquals($ex1, $ex2);
+    }
+
     private function loadSeedsFromHostPort($host, $port) {
         try {
             $rc = new RedisCluster(NULL, ["$host:$port"], 1, 1, true, $this->getAuth());
