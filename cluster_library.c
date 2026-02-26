@@ -3259,7 +3259,7 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
 PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes) {
     redisCachedCluster *cc = cluster_cache_create(hash, nodes);
 
-    redis_register_persistent_resource(cc->hash, cc, le_cluster_slot_cache);
+    zend_register_persistent_resource_ex(cc->hash, cc, le_cluster_slot_cache);
 }
 
 void cluster_cache_clear(redisCluster *c)
