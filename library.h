@@ -1,6 +1,8 @@
 #ifndef REDIS_LIBRARY_H
 #define REDIS_LIBRARY_H
 
+#include "php_redis.h"
+
 /* Non cluster command helper */
 #define REDIS_SPPRINTF(ret, kw, fmt, ...) \
     redis_spprintf(redis_sock, NULL, ret, kw, fmt, ##__VA_ARGS__)
@@ -38,8 +40,32 @@
     #define REDIS_VALUE_EXCEPTION(m) zend_value_error(m)
 #endif
 
+#if PHP_VERSION_ID < 80200
+static zend_always_inline
+zend_bool zend_string_starts_with_cstr(const zend_string *str, const char *prefix,
+                                       size_t prefix_length)
+{
+	return ZSTR_LEN(str) >= prefix_length &&
+        !memcmp(ZSTR_VAL(str), prefix, prefix_length);
+}
+#endif
 
-void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id);
+#if PHP_VERSION_ID < 80000
+static zend_string *zend_string_concat2(const char *str1, size_t len1,
+                                        const char *str2, size_t len2)
+{
+	size_t len = len1 + len2;
+	zend_string *res = zend_string_alloc(len, 0);
+
+	memcpy(ZSTR_VAL(res), str1, len1);
+	memcpy(ZSTR_VAL(res) + len1, str2, len2);
+	ZSTR_VAL(res)[len] = '\0';
+
+	return res;
+}
+#endif
+
+
 fold_item* redis_add_reply_callback(RedisSock *redis_sock);
 void redis_free_reply_callbacks(RedisSock *redis_sock);
 
@@ -158,6 +184,7 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zen
 PHP_REDIS_API RedisSock *redis_sock_get(zval *id, int nothrow);
 PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock);
 PHP_REDIS_API void redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
+PHP_REDIS_API void redis_sock_clear_err(RedisSock *redis_sock);
 
 void redis_sock_set_context(RedisSock *redis_sock, HashTable *ht);
 void redis_sock_free_context(RedisSock *redis_sock);

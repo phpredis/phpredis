@@ -126,11 +126,6 @@ static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zre
 static int redis_bulk_resp_to_zval(RedisSock *redis_sock, zval *zdst,
     int *dstlen) ;
 
-/* Register a persistent resource in a a way that works for every PHP 7 version. */
-void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
-    zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
-}
-
 static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
@@ -150,9 +145,10 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
     /* Create the pool and store it in our persistent list */
     pool = pecalloc(1, sizeof(*pool), 1);
     zend_llist_init(&pool->list, sizeof(php_stream *), NULL, 1);
-    redis_register_persistent_resource(persistent_id, pool, le_redis_pconnect);
+    zend_register_persistent_resource(ZSTR_VAL(persistent_id),
+                                      ZSTR_LEN(persistent_id),
+                                      pool, le_redis_pconnect);
 
-    zend_string_release(persistent_id);
     return pool;
 }
 
@@ -3591,16 +3587,20 @@ redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
 PHP_REDIS_API void
 redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len)
 {
-    // Free our last error
-    if (redis_sock->err != NULL) {
-        zend_string_release(redis_sock->err);
-        redis_sock->err = NULL;
-    }
+    redis_sock_clear_err(redis_sock);
 
     if (msg != NULL && msg_len > 0) {
         // Copy in our new error message
         redis_sock->err = zend_string_init(msg, msg_len, 0);
     }
+}
+
+PHP_REDIS_API void redis_sock_clear_err(RedisSock *redis_sock) {
+    if (redis_sock->err == NULL)
+        return;
+
+    zend_string_release(redis_sock->err);
+    redis_sock->err = NULL;
 }
 
 #if PHP_VERSION_ID < 80000

@@ -111,6 +111,7 @@ PHP_INI_BEGIN()
 
     /* redis session */
     PHP_INI_ENTRY("redis.session.locking_enabled", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_release_cmd", "eval", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.session.lock_expire", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.session.lock_retries", "100", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.session.lock_wait_time", "20000", PHP_INI_ALL, NULL)
@@ -2691,11 +2692,7 @@ PHP_METHOD(Redis, clearLastError) {
         RETURN_FALSE;
     }
 
-    // Clear error message
-    if (redis_sock->err) {
-        zend_string_release(redis_sock->err);
-        redis_sock->err = NULL;
-    }
+    redis_sock_clear_err(redis_sock);
 
     RETURN_TRUE;
 }

@@ -223,10 +223,14 @@ typedef enum {
 #define REDIS_STRICMP_STATIC(s, len, sstr) \
     (len == sizeof(sstr) - 1 && !strncasecmp(s, sstr, len))
 
-/* On some versions of glibc strncmp is a macro. This wrapper allows us to
-   use it in combination with ZEND_STRL in those cases. */
+/* On some versions of glibc strncmp and strncasecmp can be a macro a macro.
+ * This wrapper allows us to use it in combination with ZEND_STRL in those
+ * cases. */
 static inline int redis_strncmp(const char *s1, const char *s2, size_t n) {
     return strncmp(s1, s2, n);
+}
+static inline int redis_strncasecmp(const char *s1, const char *s2, size_t n) {
+    return strncasecmp(s1, s2, n);
 }
 
 /* Test if a zval is a string and (case insensitive) matches a static string */
