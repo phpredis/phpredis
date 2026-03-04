@@ -8,6 +8,9 @@
 #include "php_network.h"
 #include <sys/types.h>
 
+#define FFC_IMPL
+#include "ffc.h"
+
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
@@ -1241,7 +1244,7 @@ redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
         return FAILURE;
     }
 
-    ret = atof(response);
+    ret = ffc_parse_double_simple(response_len, response, NULL);
     efree(response);
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_DOUBLE(ret);
@@ -1729,6 +1732,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
     HashTable *keytable = Z_ARRVAL_P(z_tab);
     zend_string *hkey, *tmp;
     zval z_ret, z_sub;
+    double dval;
 
     array_init_size(&z_ret, zend_hash_num_elements(keytable) / 2);
 
@@ -1755,16 +1759,20 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         }
 
         /* get current value, a hash value now. */
-        char *hval = Z_STRVAL_P(z_value_p);
+        //char *hval = Z_STRVAL_P(z_value_p);
+        zend_string *hval = zval_get_tmp_string(z_value_p, &tmp);
 
         /* Decode the score depending on flag */
-        if (decode == SCORE_DECODE_INT && Z_STRLEN_P(z_value_p) > 0) {
-            ZVAL_LONG(&z_sub, atoi(hval+1));
+        if (decode == SCORE_DECODE_INT && ZSTR_LEN(hval) > 0) {
+            ZVAL_LONG(&z_sub, atoi(ZSTR_VAL(hval)+1));
         } else if (decode == SCORE_DECODE_DOUBLE) {
-            ZVAL_DOUBLE(&z_sub, atof(hval));
+            dval = ffc_parse_double_simple(ZSTR_LEN(hval), ZSTR_VAL(hval), NULL);
+            ZVAL_DOUBLE(&z_sub, dval);
         } else {
             ZVAL_ZVAL(&z_sub, z_value_p, 1, 0);
         }
+
+        zend_tmp_string_release(tmp);
 
         zend_symtable_update(Z_ARRVAL_P(&z_ret), hkey, &z_sub);
 
@@ -3729,6 +3737,7 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
     char *line;
     int i, numElems, len;
     zval z_multi_result;
+    double dval;
 
     if (read_mbulk_header(redis_sock, &numElems) < 0) {
         REDIS_RESPONSE_ERROR(redis_sock, z_tab);
@@ -3744,7 +3753,8 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
                 add_next_index_bool(&z_multi_result, 0);
                 continue;
             }
-            add_next_index_double(&z_multi_result, atof(line));
+            dval = ffc_parse_double_simple(len, line, NULL);
+            add_next_index_double(&z_multi_result, dval);
             efree(line);
         }
     }

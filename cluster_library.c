@@ -6,6 +6,8 @@
 #include "crc16.h"
 #include <zend_exceptions.h>
 
+#include "ffc.h"
+
 extern zend_class_entry *redis_cluster_exception_ce;
 int le_cluster_slot_cache;
 
@@ -1773,7 +1775,7 @@ PHP_REDIS_API void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     }
 
     // Convert to double, free response
-    dbl = atof(resp);
+    dbl = ffc_parse_double_simple(c->reply_len, resp, NULL);
     efree(resp);
 
     CLUSTER_RETURN_DOUBLE(c, dbl);
@@ -2935,13 +2937,15 @@ cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 static int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
                                long long count, void *ctx)
 {
-    char *line;
     int line_len;
+    double dval;
+    char *line;
 
     while (count--) {
         line = redis_sock_read(redis_sock, &line_len);
         if (line != NULL) {
-            add_next_index_double(z_result, atof(line));
+            dval = ffc_parse_double_simple(line_len, line, NULL);
+            add_next_index_double(z_result, dval);
             efree(line);
         } else {
             add_next_index_bool(z_result, 0);
@@ -3041,6 +3045,7 @@ static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
     char *line, *key = NULL;
     int line_len, key_len = 0;
     long long idx = 0;
+    double dval;
 
     // Our context will need to be divisible by 2
     if (count %2 != 0) {
@@ -3058,7 +3063,11 @@ static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 zval zv, *z = &zv;
                 redis_unpack(redis_sock,key,key_len, z);
                 zend_string *tmp, *zstr = zval_get_tmp_string(z, &tmp);
-                add_assoc_double_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), atof(line));
+                dval = ffc_parse_double_simple(ZSTR_LEN(zstr), ZSTR_VAL(zstr),
+                                               NULL);
+                add_assoc_double_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr),
+                                    dval);
+
                 zend_tmp_string_release(tmp);
                 zval_ptr_dtor_nogc(z);
 
