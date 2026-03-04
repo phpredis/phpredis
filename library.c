@@ -149,6 +149,8 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
                                       ZSTR_LEN(persistent_id),
                                       pool, le_redis_pconnect);
 
+    zend_string_release(persistent_id);
+
     return pool;
 }
 
