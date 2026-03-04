@@ -3,6 +3,12 @@
 
 #include "php_redis.h"
 
+#include "ffc.h"
+
+static inline double redis_strtod(const char *str, size_t len) {
+    return ffc_parse_double_simple(len, str, NULL);
+}
+
 /* Non cluster command helper */
 #define REDIS_SPPRINTF(ret, kw, fmt, ...) \
     redis_spprintf(redis_sock, NULL, ret, kw, fmt, ##__VA_ARGS__)
