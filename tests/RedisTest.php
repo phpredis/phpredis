@@ -34,6 +34,8 @@ class Redis_Test extends TestSuite {
             $result[] = Redis::SERIALIZER_IGBINARY;
         if (defined('Redis::SERIALIZER_JSON'))
             $result[] = Redis::SERIALIZER_JSON;
+        if (defined('Redis::SERIALIZER_SIMDJSON'))
+            $result[] = Redis::SERIALIZER_SIMDJSON;
         if (defined('Redis::SERIALIZER_MSGPACK'))
             $result[] = Redis::SERIALIZER_MSGPACK;
 
@@ -5332,11 +5334,30 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
+    public function testSerializerSimdJSON() {
+        if ( ! defined('Redis::SERIALIZER_SIMDJSON'))
+            $this->markTestSkipped();
+
+        $this->checkSerializer(Redis::SERIALIZER_SIMDJSON);
+
+        $this->redis->setOption(Redis::OPT_PREFIX, 'test:');
+        $this->checkSerializer(Redis::SERIALIZER_SIMDJSON);
+        $this->redis->setOption(Redis::OPT_PREFIX, '');
+    }
+
+    private function isJsonSerializer($mode) {
+        return $mode == Redis::SERIALIZER_JSON ||
+            (defined('Redis::SERIALIZER_SIMDJSON') &&
+             $mode == Redis::SERIALIZER_SIMDJSON);
+    }
+
     private function checkSerializer($mode) {
         $this->redis->del('key');
+
         $this->assertEquals(Redis::SERIALIZER_NONE, $this->redis->getOption(Redis::OPT_SERIALIZER));   // default
 
         $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, $mode));  // set ok
+
         $this->assertEquals($mode, $this->redis->getOption(Redis::OPT_SERIALIZER));    // get ok
 
         // lPush, rPush
@@ -5537,7 +5558,7 @@ class Redis_Test extends TestSuite {
         $this->redis->set('x', [new stdClass, new stdClass]);
         $x = $this->redis->get('x');
         $this->assertIsArray($x);
-        if ($mode === Redis::SERIALIZER_JSON) {
+        if ($this->isJsonSerializer($mode)) {
             $this->assertIsArray($x[0]);
             $this->assertIsArray($x[1]);
         } else {

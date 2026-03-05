@@ -7575,6 +7575,9 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             if (val_long == REDIS_SERIALIZER_NONE
                 || val_long == REDIS_SERIALIZER_PHP
                 || val_long == REDIS_SERIALIZER_JSON
+#ifdef HAVE_REDIS_SIMDJSON
+                || val_long == REDIS_SERIALIZER_SIMDJSON
+#endif
 #ifdef HAVE_REDIS_IGBINARY
                 || val_long == REDIS_SERIALIZER_IGBINARY
 #endif

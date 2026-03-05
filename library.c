@@ -8,6 +8,10 @@
 #include "php_network.h"
 #include <sys/types.h>
 
+#ifdef HAVE_REDIS_SIMDJSON
+#include "redis_simdjson.h"
+#endif
+
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
@@ -4356,7 +4360,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
             }
 #endif
             break;
-        case REDIS_SERIALIZER_JSON:
+        case REDIS_SERIALIZER_JSON:     /* fallthrough */
+        case REDIS_SERIALIZER_SIMDJSON:
 #ifdef HAVE_REDIS_JSON
             php_json_encode(&sstr, z, PHP_JSON_OBJECT_AS_ARRAY);
             *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
@@ -4429,7 +4434,14 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             break;
         case REDIS_SERIALIZER_JSON:
 #ifdef HAVE_REDIS_JSON
-            ret = !php_json_decode(z_ret, (char *)val, val_len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH);
+            ret = !php_json_decode(z_ret, (char *)val, val_len, 1,
+                                   PHP_JSON_PARSER_DEFAULT_DEPTH);
+#endif
+            break;
+#ifdef HAVE_REDIS_SIMDJSON
+        case REDIS_SERIALIZER_SIMDJSON:
+            ret = !redis_json_to_zval_ex((void*)z_ret, val, val_len, 0,
+                                         PHP_JSON_PARSER_DEFAULT_DEPTH);
 #endif
             break;
         EMPTY_SWITCH_DEFAULT_CASE()

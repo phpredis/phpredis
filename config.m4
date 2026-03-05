@@ -11,6 +11,12 @@ PHP_ARG_ENABLE(redis-session, whether to enable sessions,
 PHP_ARG_ENABLE(redis-json, whether to enable json serializer support,
 [  --disable-redis-json         Disable json serializer support], yes, no)
 
+PHP_ARG_ENABLE(redis-simdjson, whether to enable simdjson json decode support,
+[  --enable-redis-simdjson     Enable simdjson-based JSON decoding], no, no)
+
+PHP_ARG_WITH(simdjson, path to system simdjson,
+[  --with-simdjson[=DIR]       Use system simdjson (optional DIR prefix)], no, no)
+
 PHP_ARG_ENABLE(redis-igbinary, whether to enable igbinary serializer support,
 [  --enable-redis-igbinary Enable igbinary serializer support], no, no)
 
@@ -100,6 +106,63 @@ if test "$PHP_REDIS" != "no"; then
     PHP_ADD_INCLUDE($JSON_EXT_DIR)
   else
     JSON_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
+  AC_MSG_CHECKING([for redis simdjson support])
+  if test "$PHP_REDIS_SIMDJSON" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_REDIS_SIMDJSON,1,
+      [Whether simdjson support is enabled])
+
+    PHP_REQUIRE_CXX()
+    PHP_CXX_COMPILE_STDCXX([17], [mandatory],
+      [PHP_REDIS_SIMDJSON_STDCXX])
+
+    AC_PATH_PROG([PKG_CONFIG], [pkg-config], [no])
+
+    SIMDJ_CFLAGS=""
+    SIMDJ_LIBS=""
+
+    if test -x "$PKG_CONFIG" && $PKG_CONFIG --exists simdjson; then
+      AC_MSG_CHECKING([for simdjson using pkg-config])
+      SIMDJ_CFLAGS=`$PKG_CONFIG simdjson --cflags`
+      SIMDJ_LIBS=`$PKG_CONFIG simdjson --libs`
+      AC_MSG_RESULT([yes])
+      PHP_EVAL_LIBLINE([$SIMDJ_LIBS], [REDIS_SHARED_LIBADD])
+      PHP_EVAL_INCLINE([$SIMDJ_CFLAGS])
+    else
+      AS_VAR_IF([PHP_SIMDJSON], [no], [
+        AC_MSG_CHECKING([for libsimdjson in default paths])
+        PHP_CHECK_LIBRARY([simdjson], [simdjson_version],
+          [
+            AC_MSG_RESULT([yes])
+            PHP_ADD_LIBRARY([simdjson], [1], [REDIS_SHARED_LIBADD])
+          ],
+          [
+            AC_MSG_RESULT([no])
+            AC_MSG_ERROR([simdjson not found. Install it, or use \
+pkg-config, or pass --with-simdjson=DIR])
+          ])
+      ], [
+        AC_MSG_CHECKING([for simdjson in $PHP_SIMDJSON])
+        PHP_ADD_INCLUDE([$PHP_SIMDJSON/include])
+
+        PHP_CHECK_LIBRARY([simdjson], [simdjson_version],
+          [
+            AC_MSG_RESULT([yes])
+            PHP_ADD_LIBRARY_WITH_PATH([simdjson],
+              [$PHP_SIMDJSON/$PHP_LIBDIR],
+              [REDIS_SHARED_LIBADD])
+          ],
+          [
+            AC_MSG_RESULT([no])
+            AC_MSG_ERROR([could not find libsimdjson in $PHP_SIMDJSON])
+          ],
+          [-L$PHP_SIMDJSON/$PHP_LIBDIR])
+      ])
+    fi
+  else
     AC_MSG_RESULT([disabled])
   fi
 
@@ -325,5 +388,31 @@ if test "$PHP_REDIS" != "no"; then
   fi
 
   PHP_SUBST(REDIS_SHARED_LIBADD)
-  PHP_NEW_EXTENSION(redis, redis.c redis_commands.c library.c redis_session.c redis_array.c redis_array_impl.c redis_cluster.c cluster_library.c redis_sentinel.c sentinel_library.c backoff.c $lzf_sources, $ext_shared)
+
+  REDIS_SOURCES="redis.c redis_commands.c library.c redis_session.c \
+redis_array.c redis_array_impl.c redis_cluster.c cluster_library.c \
+redis_sentinel.c sentinel_library.c backoff.c $lzf_sources"
+
+  if test "$PHP_REDIS_SIMDJSON" != "no"; then
+    PHP_NEW_EXTENSION(redis, [$REDIS_SOURCES], [$ext_shared],,, [cxx])
+
+    REDIS_SIMDJSON_CXX_SOURCES="redis_simdjson.cc"
+    AS_VAR_IF([ZEND_DEBUG], [yes], [
+      REDIS_SIMDJSON_CXX_FLAGS="$PHP_REDIS_SIMDJSON_STDCXX -O2 -g"
+    ], [
+      REDIS_SIMDJSON_CXX_FLAGS="$PHP_REDIS_SIMDJSON_STDCXX -O2"
+    ])
+
+    AS_VAR_IF([ext_shared], [no],
+      [PHP_ADD_SOURCES([$ext_dir],
+        [$REDIS_SIMDJSON_CXX_SOURCES],
+        [$REDIS_SIMDJSON_CXX_FLAGS])],
+      [PHP_ADD_SOURCES_X([$ext_dir],
+        [$REDIS_SIMDJSON_CXX_SOURCES],
+        [$REDIS_SIMDJSON_CXX_FLAGS],
+        [shared_objects_redis],
+        [yes])])
+  else
+    PHP_NEW_EXTENSION(redis, [$REDIS_SOURCES], [$ext_shared])
+  fi
 fi
