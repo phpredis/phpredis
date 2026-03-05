@@ -1775,7 +1775,7 @@ PHP_REDIS_API void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     }
 
     // Convert to double, free response
-    dbl = ffc_parse_double_simple(c->reply_len, resp, NULL);
+    dbl = redis_strtod(resp, c->reply_len);
     efree(resp);
 
     CLUSTER_RETURN_DOUBLE(c, dbl);
@@ -2944,7 +2944,7 @@ static int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
     while (count--) {
         line = redis_sock_read(redis_sock, &line_len);
         if (line != NULL) {
-            dval = ffc_parse_double_simple(line_len, line, NULL);
+            dval = redis_strtod(line, line_len);
             add_next_index_double(z_result, dval);
             efree(line);
         } else {

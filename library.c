@@ -1244,7 +1244,7 @@ redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
         return FAILURE;
     }
 
-    ret = ffc_parse_double_simple(response_len, response, NULL);
+    ret = redis_strtod(response, response_len);
     efree(response);
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_DOUBLE(ret);
@@ -1766,7 +1766,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         if (decode == SCORE_DECODE_INT && ZSTR_LEN(hval) > 0) {
             ZVAL_LONG(&z_sub, atoi(ZSTR_VAL(hval)+1));
         } else if (decode == SCORE_DECODE_DOUBLE) {
-            dval = ffc_parse_double_simple(ZSTR_LEN(hval), ZSTR_VAL(hval), NULL);
+            dval = redis_strtod(ZSTR_VAL(hval), ZSTR_LEN(hval));
             ZVAL_DOUBLE(&z_sub, dval);
         } else {
             ZVAL_ZVAL(&z_sub, z_value_p, 1, 0);
@@ -3753,7 +3753,7 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
                 add_next_index_bool(&z_multi_result, 0);
                 continue;
             }
-            dval = ffc_parse_double_simple(len, line, NULL);
+            dval = redis_strtod(line, len);
             add_next_index_double(&z_multi_result, dval);
             efree(line);
         }

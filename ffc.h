@@ -236,9 +236,6 @@ ffc_result ffc_parse_i64(size_t len, const char *input, int base, int64_t  *out)
 ffc_result ffc_parse_u64(size_t len, const char *input, int base, uint64_t *out);
 ffc_result ffc_parse_i32(size_t len, const char *input, int base, int32_t  *out);
 ffc_result ffc_parse_u32(size_t len, const char *input, int base, uint32_t *out);
-// TODO implement more integer overloads
-// ffc_result ffc_from_chars_long(const char *start, const char *end, long* out);
-// ffc_result ffc_from_chars_int(const char *start,  const char *end, int* out);
 
 #endif // FFC_API
 
@@ -380,7 +377,7 @@ ffc_internal ffc_inline size_t ffc_get_value_size(ffc_value_kind vk) {
        (defined(__riscv) && __riscv_xlen == 32))
 #define FFC_32BIT 1
 #else
-  // Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
+// Need to check incrementally, since SIZE_MAX is a size_t, avoid overflow.
 // We can never tell the register width, but the SIZE_MAX is a good
 // approximation. UINTPTR_MAX and INTPTR_MAX are optional, so avoid them for max
 // portability.
@@ -553,7 +550,7 @@ ffc_u128 ffc_full_multiplication(uint64_t a, uint64_t b) {
   // But MinGW on ARM64 doesn't have native support for 64-bit multiplications
   answer.high = __umulh(a, b);
   answer.low = a * b;
-#elif defined(FFC_32BIT) || (defined(_WIN64) && !defined(__clang__) &&   \
+#elif (defined(_WIN64) && !defined(__clang__) &&   \
                                    !defined(_M_ARM64) && !defined(__GNUC__))
   answer.low = _umul128(a, b, &answer.high); // _umul128 not available on ARM64
 #elif defined(FFC_64BIT) && defined(__SIZEOF_INT128__)
@@ -854,7 +851,7 @@ static const float FFC_FLOAT_POWERS_OF_TEN[] = {
 
 // Largest integer value v so that (5**index * v) <= 1<<53.
 // 0x20000000000000 == 1 << 53
-#define FFC_55555 (5L * 5L * 5L * 5L * 5L)
+#define FFC_55555 (5LL * 5LL * 5LL * 5LL * 5LL)
 static const uint64_t FFC_DOUBLE_MAX_MANTISSA[] = {
     (uint64_t)0x20000000000000L,
     (uint64_t)0x20000000000000L / 5,
@@ -1556,9 +1553,9 @@ void ffc_dump_parsed(ffc_parsed const p) {
 
 // rust style `try!()` macro, or `?` operator
 #define FFC_TRY(x)                                                       \
-  {                                                                            \
-    if (!(x))                                                                  \
-      return false;                                                            \
+  {                                                                      \
+    if (!(x))                                                            \
+      return false;                                                      \
   }
 
 // the limb width: we want efficient multiplication of double the bits in
@@ -2420,7 +2417,7 @@ bool ffc_char_eq_zero(char const *p, size_t char_width) {
 ffc_internal ffc_inline
 void ffc_skip_zeros(char **first, char *last, size_t char_width) {
   size_t cmp_len;
-  size_t cmp_mask;
+  uint64_t cmp_mask;
   switch (char_width) {
     case 1:
       cmp_len = FFC_INT_CMP_LEN_1;
@@ -2460,7 +2457,7 @@ void ffc_skip_zeros(char **first, char *last, size_t char_width) {
 ffc_internal ffc_inline
 bool ffc_is_truncated(char const *first, char const *last, size_t char_width) {
   size_t cmp_len;
-  size_t cmp_mask;
+  uint64_t cmp_mask;
   switch (char_width) {
     case 1:
       cmp_len = FFC_INT_CMP_LEN_1;
@@ -3101,28 +3098,28 @@ float ffc_parse_float_simple(size_t len, const char *s, ffc_outcome *outcome) {
   return out;
 }
 
-ffc_result ffc_parse_i64(size_t len, const char input[len], int base, int64_t  *out) {
+ffc_result ffc_parse_i64(size_t len, const char *input, int base, int64_t  *out) {
   char *pend = (char*)(input + len);
   ffc_int_value value_out;
   ffc_result result = ffc_parse_int_string(input, pend, &value_out, FFC_INT_KIND_S64, ffc_parse_options_default(), base);
   *out = value_out.s64;
   return result;
 }
-ffc_result ffc_parse_u64(size_t len, const char input[len], int base, uint64_t *out) {
+ffc_result ffc_parse_u64(size_t len, const char *input, int base, uint64_t *out) {
   char *pend = (char*)(input + len);
   ffc_int_value value_out;
   ffc_result result = ffc_parse_int_string(input, pend, &value_out, FFC_INT_KIND_U64, ffc_parse_options_default(), base);
   *out = value_out.u64;
   return result;
 }
-ffc_result ffc_parse_i32(size_t len, const char input[len], int base, int32_t  *out) {
+ffc_result ffc_parse_i32(size_t len, const char *input, int base, int32_t  *out) {
   char *pend = (char*)(input + len);
   ffc_int_value value_out;
   ffc_result result = ffc_parse_int_string(input, pend, &value_out, FFC_INT_KIND_S32, ffc_parse_options_default(), base);
   *out = value_out.s32;
   return result;
 }
-ffc_result ffc_parse_u32(size_t len, const char input[len], int base, uint32_t *out) {
+ffc_result ffc_parse_u32(size_t len, const char *input, int base, uint32_t *out) {
   char *pend = (char*)(input + len);
   ffc_int_value value_out;
   ffc_result result = ffc_parse_int_string(input, pend, &value_out, FFC_INT_KIND_U32, ffc_parse_options_default(), base);
