@@ -595,16 +595,22 @@ PS_OPEN_FUNC(redis)
     zval params, context, *zv;
     int i, j, path_len;
 
+#if PHP_VERSION_ID >= 80600
+    const char *save_path_str = ZSTR_VAL(save_path);
+#else
+    const char *save_path_str = save_path;
+#endif
+
     redis_pool *pool = ecalloc(1, sizeof(*pool));
 
-    for (i = 0, j = 0, path_len = strlen(save_path); i < path_len; i = j + 1) {
+    for (i = 0, j = 0, path_len = strlen(save_path_str); i < path_len; i = j + 1) {
         /* find beginning of url */
-        while ( i< path_len && (isspace(save_path[i]) || save_path[i] == ','))
+        while ( i< path_len && (isspace(save_path_str[i]) || save_path_str[i] == ','))
             i++;
 
         /* find end of url */
         j = i;
-        while (j<path_len && !isspace(save_path[j]) && save_path[j] != ',')
+        while (j<path_len && !isspace(save_path_str[j]) && save_path_str[j] != ',')
             j++;
 
         if (i < j) {
@@ -616,18 +622,18 @@ PS_OPEN_FUNC(redis)
             zend_string *user = NULL, *pass = NULL;
 
             /* translate unix: into file: */
-            if (!redis_strncmp(save_path+i, ZEND_STRL("unix:"))) {
+            if (!redis_strncmp(save_path_str+i, ZEND_STRL("unix:"))) {
                 int len = j-i;
-                char *path = estrndup(save_path+i, len);
+                char *path = estrndup(save_path_str+i, len);
                 memcpy(path, "file:", sizeof("file:")-1);
                 url = php_url_parse_ex(path, len);
                 efree(path);
             } else {
-                url = php_url_parse_ex(save_path+i, j-i);
+                url = php_url_parse_ex(save_path_str+i, j-i);
             }
 
             if (!url) {
-                char *path = estrndup(save_path+i, j-i);
+                char *path = estrndup(save_path_str+i, j-i);
                 php_error_docref(NULL, E_WARNING,
                     "Failed to parse session.save_path (error at offset %d, url was '%s')", i, path);
                 efree(path);
@@ -669,7 +675,7 @@ PS_OPEN_FUNC(redis)
             }
 
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
-                char *path = estrndup(save_path+i, j-i);
+                char *path = estrndup(save_path_str+i, j-i);
                 php_error_docref(NULL, E_WARNING,
                     "Failed to parse session.save_path (error at offset %d, url was '%s')", i, path);
                 efree(path);
@@ -1117,9 +1123,15 @@ PS_OPEN_FUNC(rediscluster) {
     int persistent = 0, failover = REDIS_FAILOVER_NONE;
     zend_string *prefix = NULL, *user = NULL, *pass = NULL, *failstr = NULL;
 
+#if PHP_VERSION_ID >= 80600
+    const char *save_path_str = ZSTR_VAL(save_path);
+#else
+    const char *save_path_str = save_path;
+#endif
+
     /* Parse configuration for session handler */
     array_init(&z_conf);
-    sapi_module.treat_data(PARSE_STRING, estrdup(save_path), &z_conf);
+    sapi_module.treat_data(PARSE_STRING, estrdup(save_path_str), &z_conf);
 
     /* We need seeds */
     zv = REDIS_HASH_STR_FIND_TYPE_STATIC(Z_ARRVAL(z_conf), "seed", IS_ARRAY);
