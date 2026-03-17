@@ -2063,6 +2063,39 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testSUnionCard() {
+        if ( ! $this->haveCommand('SUNIONCARD'))
+            $this->markTestSkipped();
+
+        $data = [
+            '{s}sisko'  => ['captain', 'defiant', 'q', 'emmessary'],
+            '{s}picard' => ['captain', 'enterprise', 'q', 'borg'],
+        ];
+
+        $ucard = count(array_unique(
+            array_merge($data['{s}sisko'], $data['{s}picard'])
+        ));
+
+        $keys = array_keys($data);
+
+        $this->redis->del(...$keys);
+        foreach ($data as $key => $members)
+            $this->redis->sAdd($key, ...$members);
+
+        $this->assertEquals(
+            $ucard, $this->redis->sUnionCard($keys)
+        );
+
+        $this->assertLT(
+            $ucard, $this->redis->sUnionCard($keys, ['limit' => 1])
+        );
+
+        /* APPROX is probabilistic, so just make sure the command works */
+        $this->assertIsInt(
+            $this->redis->sUnionCard($keys, ['limit' => 1, 'approx' => true])
+        );
+    }
+
     public function testsUnionStore() {
         $this->redis->del('{set}x', '{set}y', '{set}z', '{set}t');
 

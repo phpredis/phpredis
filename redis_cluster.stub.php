@@ -1064,6 +1064,12 @@ class RedisCluster {
     public function sunion(string $key, string ...$other_keys): RedisCluster|bool|array;
 
     /**
+     * @see \Redis::sUnionCard()
+     */
+    public function sunioncard(array $keys, ?array $options = null): RedisCluster|int|false;
+
+
+    /**
      * @see \Redis::sUnionStore()
      */
     public function sunionstore(string $dst, string $key, string ...$other_keys): RedisCluster|int|false;

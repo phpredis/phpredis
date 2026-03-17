@@ -3850,6 +3850,18 @@ class Redis {
     public function sUnion(string $key, string ...$other_keys): Redis|array|false;
 
     /**
+     * Returns the cardinality of the union of one or more Redis SET keys.
+     *
+     * @see https://redis.io/docs/latest/commands/sunioncard/
+     *
+     * @param array $keys  One or more set key names.
+     * @param array|null $options An array of options that modifies how the command operates.
+     * @return Redis|int|false The cardinality of the union of the sets or false on failure.
+     *
+     */
+    public function sUnionCard(array $keys, ?array $options = null): Redis|int|false;
+
+    /**
      * Perform a union of one or more Redis SET keys and store the result in a new set
      *
      * @see https://redis.io/docs/latest/commands/sunionstore/

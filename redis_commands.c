@@ -3788,6 +3788,96 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+typedef struct sunioncardOptions {
+    zend_bool approx;
+    zend_long limit;
+} sunioncardOptions;
+
+static void redis_get_sunioncard_options(sunioncardOptions *dst, HashTable *ht) {
+    zend_string *key;
+    zval *zv;
+
+    ZEND_ASSERT(dst != NULL);
+
+    *dst = (sunioncardOptions){
+        .limit = -1
+    };
+
+    if (ht == NULL)
+        return;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        if (key) {
+            if (zend_string_equals_literal_ci(key, "APPROX")) {
+                dst->approx = zend_is_true(zv);
+            } else if (zend_string_equals_literal_ci(key, "LIMIT")) {
+                dst->limit = zval_get_long(zv);
+            } else {
+                php_error_docref(NULL, E_WARNING, "Unknown SUNIONCARD option '%s'", ZSTR_VAL(key));
+            }
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            if (zend_string_equals_literal_ci(Z_STR_P(zv), "APPROX")) {
+                dst->approx = 1;
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
+// SUNIONCARD nkeys key1..keyN [APPROX] [LIMIT limit]
+int redis_sunioncard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    HashTable *keys, *opts = NULL;
+    smart_string cmdstr = {0};
+    sunioncardOptions opt;
+    short oldslot = -1;
+    zval *key;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_ARRAY_HT(keys)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT(opts)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(keys) == 0) {
+        php_error_docref(0, E_WARNING, "At least one key must be provided");
+        return FAILURE;
+    }
+
+    redis_get_sunioncard_options(&opt, opts);
+
+    argc = 1 + zend_hash_num_elements(keys) + !!opt.approx +
+           (opt.limit >= 0 ? 2 : 0);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "SUNIONCARD");
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(keys));
+
+    ZEND_HASH_FOREACH_VAL(keys, key) {
+        redis_cmd_append_sstr_key_zval(&cmdstr, key, redis_sock, slot);
+        if (slot) {
+            if (oldslot != -1 && oldslot != *slot) {
+                php_error_docref(0, E_WARNING,
+                    "Not all keys hash to the same slot!");
+                efree(cmdstr.c);
+                return FAILURE;
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.approx, "APPROX");
+    if (opt.limit >= 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "LIMIT");
+        redis_cmd_append_sstr_long(&cmdstr, opt.limit);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+
 /* HSET */
 int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)

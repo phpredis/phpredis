@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: adcbf21ebb463f2911a1565705262bbe88390ac3 */
+ * Stub hash: 405dcde68915984da81b6aa2a72a1ae3186a74e7 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -743,6 +743,11 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_sUnion arginfo_class_Redis_del
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sUnionCard, 0, 0, 1)
+	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_Redis_sUnionStore arginfo_class_Redis_sDiffStore
 
 #define arginfo_class_Redis_save arginfo_class_Redis___destruct
@@ -1115,10 +1120,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zScore arginfo_class_Redis_hGet
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zdiff, 0, 0, 1)
-	ZEND_ARG_INFO(0, keys)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_zdiff arginfo_class_Redis_sUnionCard
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zdiffstore, 0, 0, 2)
 	ZEND_ARG_INFO(0, dst)
@@ -1339,6 +1341,7 @@ ZEND_METHOD(Redis, sMove);
 ZEND_METHOD(Redis, sPop);
 ZEND_METHOD(Redis, sRandMember);
 ZEND_METHOD(Redis, sUnion);
+ZEND_METHOD(Redis, sUnionCard);
 ZEND_METHOD(Redis, sUnionStore);
 ZEND_METHOD(Redis, save);
 ZEND_METHOD(Redis, scan);
@@ -1645,6 +1648,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, sPop, arginfo_class_Redis_sPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sRandMember, arginfo_class_Redis_sRandMember, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sUnion, arginfo_class_Redis_sUnion, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, sUnionCard, arginfo_class_Redis_sUnionCard, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sUnionStore, arginfo_class_Redis_sUnionStore, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, save, arginfo_class_Redis_save, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, scan, arginfo_class_Redis_scan, ZEND_ACC_PUBLIC)

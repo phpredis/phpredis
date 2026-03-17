@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 8ea17f601a897158cf5c4d866f91462d215fd0b7 */
+ * Stub hash: db549159e2d7a3d34be4ae87f15cc2a36210f191 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -876,6 +876,11 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sunion, 0
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sunioncard, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_RedisCluster_sunionstore arginfo_class_RedisCluster_sdiffstore
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_time, 0, 1, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
@@ -1400,6 +1405,7 @@ ZEND_METHOD(RedisCluster, sscan);
 ZEND_METHOD(RedisCluster, strlen);
 ZEND_METHOD(RedisCluster, subscribe);
 ZEND_METHOD(RedisCluster, sunion);
+ZEND_METHOD(RedisCluster, sunioncard);
 ZEND_METHOD(RedisCluster, sunionstore);
 ZEND_METHOD(RedisCluster, time);
 ZEND_METHOD(RedisCluster, ttl);
@@ -1663,6 +1669,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, strlen, arginfo_class_RedisCluster_strlen, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, subscribe, arginfo_class_RedisCluster_subscribe, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sunion, arginfo_class_RedisCluster_sunion, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, sunioncard, arginfo_class_RedisCluster_sunioncard, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sunionstore, arginfo_class_RedisCluster_sunionstore, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, time, arginfo_class_RedisCluster_time, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, ttl, arginfo_class_RedisCluster_ttl, ZEND_ACC_PUBLIC)

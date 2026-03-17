@@ -1332,6 +1332,10 @@ PHP_METHOD(Redis, sUnion) {
 }
 /* }}} */
 
+PHP_METHOD(Redis, sUnionCard) {
+    REDIS_PROCESS_CMD(sunioncard, redis_long_response);
+}
+
 /* {{{ proto array Redis::sUnionStore(array|string $key, string ...$srckeys) */
 PHP_METHOD(Redis, sUnionStore) {
     REDIS_PROCESS_KW_CMD("SUNIONSTORE", redis_varkey_cmd, redis_long_response);
