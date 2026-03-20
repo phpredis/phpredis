@@ -3274,6 +3274,10 @@ PHP_METHOD(RedisCluster, vsetattr) {
     CLUSTER_PROCESS_CMD(vsetattr, cluster_long_resp, 0);
 }
 
+PHP_METHOD(RedisCluster, gcra) {
+    CLUSTER_PROCESS_CMD(gcra, cluster_variant_resp, 0);
+}
+
 /* {{{ proto long RedisCluster::xack(string key, string group, array ids) }}} */
 PHP_METHOD(RedisCluster, xack) {
     CLUSTER_PROCESS_CMD(xack, cluster_long_resp, 0);
