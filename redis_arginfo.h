@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: adcbf21ebb463f2911a1565705262bbe88390ac3 */
+ * Stub hash: 190c8ed87be2064ed4cb1c7305576576af10afc6 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1148,6 +1148,14 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_vlinks, 0, 2, Re
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, withscores, _IS_BOOL, 0, "false")
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_gcra, 0, 4, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, maxBurst, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, requestsPerPeriod, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, period, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, numRequests, IS_LONG, 0, "0")
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_xtrim, 0, 2, Redis, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, threshold, IS_STRING, 0)
@@ -1575,6 +1583,7 @@ ZEND_METHOD(Redis, vrem);
 ZEND_METHOD(Redis, vsetattr);
 ZEND_METHOD(Redis, vgetattr);
 ZEND_METHOD(Redis, vlinks);
+ZEND_METHOD(Redis, gcra);
 ZEND_METHOD(Redis, xtrim);
 ZEND_METHOD(Redis, zAdd);
 ZEND_METHOD(Redis, zCard);
@@ -1881,6 +1890,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, vsetattr, arginfo_class_Redis_vsetattr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vgetattr, arginfo_class_Redis_vgetattr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, vlinks, arginfo_class_Redis_vlinks, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, gcra, arginfo_class_Redis_gcra, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xtrim, arginfo_class_Redis_xtrim, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zAdd, arginfo_class_Redis_zAdd, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zCard, arginfo_class_Redis_zCard, ZEND_ACC_PUBLIC)

@@ -5270,6 +5270,25 @@ class Redis {
     public function vlinks(string $key, mixed $member, bool $withscores = false): Redis|array|false;
 
     /**
+     * Get rate limiting information
+     *
+     * @param string $key
+     * @param int $maxBurst
+     * @param int $requestsPerPeriod
+     * @param int $period
+     * @param int $numRequests = 0
+     * @return Redis|array|false
+     *
+     * @see https://redis.io/docs/latest/commands/gcra/
+     *
+     * @example
+     * $redis->gcra('user:123', 10, 100, 3600);
+     */
+    public function gcra(string $key, int $maxBurst, int $requestsPerPeriod,
+                         int $period, int $numRequests = 0): Redis|array|false;
+
+
+    /**
      * Truncate a STREAM key in various ways.
      *
      * @param string $key       The STREAM key to trim.

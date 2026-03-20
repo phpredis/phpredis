@@ -7496,6 +7496,40 @@ redis_vsetattr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+// GCRA key max-burst requests-per-period period [NUM_REQUESTS count]
+int redis_gcra_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                 char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_long max_burst, req_per_period, period, count = 0;
+    smart_string cmdstr = {0};
+    zend_string *key;
+
+    ZEND_PARSE_PARAMETERS_START(4, 5)
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(max_burst)
+        Z_PARAM_LONG(req_per_period)
+        Z_PARAM_LONG(period)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 4 + (count > 0 ? 2 : 0), "GCRA");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_long(&cmdstr, max_burst);
+    redis_cmd_append_sstr_long(&cmdstr, req_per_period);
+    redis_cmd_append_sstr_long(&cmdstr, period);
+
+    if (count > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NUM_REQUESTS");
+        redis_cmd_append_sstr_long(&cmdstr, count);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /*
  * Redis commands that don't deal with the server at all.  The RedisSock*
  * pointer is the only thing retrieved differently, so we just take that
