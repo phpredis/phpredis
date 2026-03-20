@@ -397,38 +397,40 @@ PHP_MINIT_FUNCTION(redis)
     return SUCCESS;
 }
 
-static const char *
-get_available_serializers(void)
-{
+static const char *get_available_serializers(void) {
+    smart_string aux = {0};
+    static char buf[256];
+
+    #define append_serializer(name) \
+        smart_string_appendl(&aux, ", " name, sizeof(", " name) - 1)
+
+    if (EXPECTED(*buf))
+        goto exit;
+
+    smart_string_appendl(&aux, "php", sizeof("php") - 1);
+
 #ifdef HAVE_REDIS_JSON
-    #ifdef HAVE_REDIS_IGBINARY
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, json, igbinary, msgpack";
-        #else
-            return "php, json, igbinary";
-        #endif
-    #else
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, json, msgpack";
-        #else
-            return "php, json";
-        #endif
-    #endif
-#else
-    #ifdef HAVE_REDIS_IGBINARY
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, igbinary, msgpack";
-        #else
-            return "php, igbinary";
-        #endif
-    #else
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, msgpack";
-        #else
-            return "php";
-        #endif
-    #endif
+    append_serializer("json");
 #endif
+#ifdef HAVE_REDIS_SIMDJSON
+    append_serializer("simdjson");
+#endif
+#ifdef HAVE_REDIS_IGBINARY
+    append_serializer("igbinary");
+#endif
+#ifdef HAVE_REDIS_MSGPACK
+    append_serializer("msgpack");
+#endif
+
+    /* Will probably never happen but check anyway */
+    ZEND_ASSERT(aux.len < sizeof(buf) - 1);
+
+    memcpy(buf, aux.c, aux.len);
+    buf[aux.len] = '\0';
+    smart_string_free(&aux);
+
+exit:
+    return buf;
 }
 
 /**

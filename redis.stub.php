@@ -260,6 +260,17 @@ class Redis {
      */
     public const SERIALIZER_JSON = UNKNOWN;
 
+#ifdef HAVE_REDIS_SIMDJSON
+    /**
+     * Sets the serializer to JSON and deserializes with the SIMDJSON library.
+     *
+     * @var int
+     * @cvalue REDIS_SERIALIZER_SIMDJSON
+     *
+     */
+    public const SERIALIZER_SIMDJSON = UNKNOWN;
+#endif
+
     /**
      * Disables compression.
      *
