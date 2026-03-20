@@ -3428,7 +3428,7 @@ command that does much the same thing but does not require passing specific IDs 
             </div>
                     <div class="row">
                 <div class="col-md-2 type">
-                    Relay|array|false
+                    Redis|array|false
                 </div>
                 <div class="col-md-8">
                     <a href="#method_xdelex">xdelex</a>(string $key, array $ids, string|null $mode = null)
@@ -3645,6 +3645,16 @@ acknowledged with XACK.</p></p>                </div>
                     <a href="#method_vlinks">vlinks</a>(string $key, mixed $member, bool $withscores = false)
         
                                             <p><p>Get any adajcent values for a member of a vector set.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    Redis|array|false
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_gcra">gcra</a>(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $numRequests = 0)
+        
+                                            <p><p>Get rate limiting information</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -20985,7 +20995,7 @@ var_dump($pending);</pre></td>
                                                                                         
     <h3 id="method_xdelex">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4861">at line 4861</a></div>
-        <code class="method-signature language-php">Relay|array|false xdelex(string $key, array $ids, string|null $mode = null)</code>
+        <code class="method-signature language-php">Redis|array|false xdelex(string $key, array $ids, string|null $mode = null)</code>
     </h3>
     <div class="details">    
     
@@ -21022,7 +21032,7 @@ are as follows: KEEPREF | DELREF | ACKED</p></td>
                 <div class="return-value-content">
                         <table class="table table-condensed">
         <tr>
-            <td>Relay|array|false</td>
+            <td>Redis|array|false</td>
             <td><p>An array corresponding to IDs. 1 if the id was
 deleted and 0 if not.</p></td>
         </tr>
@@ -22656,8 +22666,90 @@ will be json encoded.</p></td>
             </div>
                     <div class="method-item">
                                                                                         
+    <h3 id="method_gcra">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5287">at line 5287</a></div>
+        <code class="method-signature language-php">Redis|array|false gcra(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $numRequests = 0)</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p><p>Get rate limiting information</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>string</td>
+                <td>$key</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int</td>
+                <td>$maxBurst</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int</td>
+                <td>$requestsPerPeriod</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int</td>
+                <td>$period</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int</td>
+                <td>$numRequests</td>
+                <td><p>= 0</p></td>
+            </tr>
+            </table>
+
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>Redis|array|false</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/docs/latest/commands/gcra/">https://redis.io/docs/latest/commands/gcra/</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;gcra(&#039;user:123&#039;, 10, 100, 3600);</pre></td>
+            </tr>
+            </table>
+
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
     <h3 id="method_xtrim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5292">at line 5292</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5311">at line 5311</a></div>
         <code class="method-signature language-php">Redis|int|false xtrim(string $key, string $threshold, bool $approx = false, bool $minid = false, int $limit = -1)</code>
     </h3>
     <div class="details">    
@@ -22746,7 +22838,7 @@ more efficient for Redis given how streams are stored internally.</p></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zAdd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5333">at line 5333</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5352">at line 5352</a></div>
         <code class="method-signature language-php">Redis|int|float|false zAdd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems)</code>
     </h3>
     <div class="details">    
@@ -22840,7 +22932,7 @@ $redis-&gt;zAdd(&#039;zs&#039;, [&#039;XX&#039;], 8, &#039;second&#039;, 99, &#0
                     <div class="method-item">
                                                                                         
     <h3 id="method_zCard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5346">at line 5346</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5365">at line 5365</a></div>
         <code class="method-signature language-php">Redis|int|false zCard(string $key)</code>
     </h3>
     <div class="details">    
@@ -22902,7 +22994,7 @@ $redis-&gt;zAdd(&#039;zs&#039;, [&#039;XX&#039;], 8, &#039;second&#039;, 99, &#0
                     <div class="method-item">
                                                                                         
     <h3 id="method_zCount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5365">at line 5365</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5384">at line 5384</a></div>
         <code class="method-signature language-php">Redis|int|false zCount(string $key, int|string $start, int|string $end)</code>
     </h3>
     <div class="details">    
@@ -22978,7 +23070,7 @@ $redis-&gt;zCount(&#039;fruit-rankings&#039;, &#039;-inf&#039;, 0);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zIncrBy">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5381">at line 5381</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5400">at line 5400</a></div>
         <code class="method-signature language-php">Redis|float|false zIncrBy(string $key, float $value, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -23051,7 +23143,7 @@ $redis-&gt;zIncrBy(&#039;zs&#039;, 2.0, &#039;eggplants&#039;);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zLexCount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5399">at line 5399</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5418">at line 5418</a></div>
         <code class="method-signature language-php">Redis|int|false zLexCount(string $key, string $min, string $max)</code>
     </h3>
     <div class="details">    
@@ -23125,7 +23217,7 @@ $redis-&gt;zLexCount(&#039;captains&#039;, &#039;[A&#039;, &#039;[S&#039;);</pre
                     <div class="method-item">
                                                                                         
     <h3 id="method_zMscore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5418">at line 5418</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5437">at line 5437</a></div>
         <code class="method-signature language-php">Redis|array|false zMscore(string $key, mixed $member, mixed ...$other_members)</code>
     </h3>
     <div class="details">    
@@ -23200,7 +23292,7 @@ $redis-&gt;zMScore(&#039;zs&#039;, &#039;one&#039;, &#039;not-a-member&#039;);</
                     <div class="method-item">
                                                                                         
     <h3 id="method_zPopMax">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5436">at line 5436</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5455">at line 5455</a></div>
         <code class="method-signature language-php">Redis|array|false zPopMax(string $key, int|null $count = null)</code>
     </h3>
     <div class="details">    
@@ -23270,7 +23362,7 @@ $redis-&gt;zPopMax(&#039;zs&#039;, 2);.</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zPopMin">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5454">at line 5454</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5473">at line 5473</a></div>
         <code class="method-signature language-php">Redis|array|false zPopMin(string $key, int|null $count = null)</code>
     </h3>
     <div class="details">    
@@ -23340,7 +23432,7 @@ $redis-&gt;zPopMin(&#039;zs&#039;, 2);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5490">at line 5490</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5509">at line 5509</a></div>
         <code class="method-signature language-php">Redis|array|false zRange(string $key, string|int $start, string|int $end, array|bool|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -23429,7 +23521,7 @@ $redis-&gt;zRange(&#039;zset&#039;, &#039;-inf&#039;, &#039;inf&#039;, [&#039;by
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5512">at line 5512</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5531">at line 5531</a></div>
         <code class="method-signature language-php">Redis|array|false zRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1)</code>
     </h3>
     <div class="details">    
@@ -23515,7 +23607,7 @@ $redis-&gt;zRangeByLex(&#039;captains&#039;, &#039;[A&#039;, &#039;[S&#039;, 2, 
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5534">at line 5534</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5553">at line 5553</a></div>
         <code class="method-signature language-php">Redis|array|false zRangeByScore(string $key, string $start, string $end, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -23596,7 +23688,7 @@ $redis-&gt;zRangeByScore(&#039;zs&#039;, 20, 30, [&#039;WITHSCORES&#039; =&gt; t
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrangestore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5558">at line 5558</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5577">at line 5577</a></div>
         <code class="method-signature language-php">Redis|int|false zrangestore(string $dstkey, string $srckey, string $start, string $end, array|bool|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -23685,7 +23777,7 @@ it will store them in a destination key provided by the user</p></p>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRandMember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5577">at line 5577</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5596">at line 5596</a></div>
         <code class="method-signature language-php">Redis|string|array zRandMember(string $key, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -23755,7 +23847,7 @@ OPTION       TYPE    MEANING
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5592">at line 5592</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5611">at line 5611</a></div>
         <code class="method-signature language-php">Redis|int|false zRank(string $key, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -23823,7 +23915,7 @@ $redis-&gt;zRank(&#039;zs&#039;, &#039;three&#039;);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5608">at line 5608</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5627">at line 5627</a></div>
         <code class="method-signature language-php">Redis|int|false zRem(mixed $key, mixed $member, mixed ...$other_members)</code>
     </h3>
     <div class="details">    
@@ -23895,7 +23987,7 @@ $redis-&gt;zRank(&#039;zs&#039;, &#039;three&#039;);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRemRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5626">at line 5626</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5645">at line 5645</a></div>
         <code class="method-signature language-php">Redis|int|false zRemRangeByLex(string $key, string $min, string $max)</code>
     </h3>
     <div class="details">    
@@ -23974,7 +24066,7 @@ $redis-&gt;zRemRangeByLex(&#039;zs&#039;, &#039;(banana&#039;, &#039;(eggplant&#
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRemRangeByRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5642">at line 5642</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5661">at line 5661</a></div>
         <code class="method-signature language-php">Redis|int|false zRemRangeByRank(string $key, int $start, int $end)</code>
     </h3>
     <div class="details">    
@@ -24046,7 +24138,7 @@ $redis-&gt;zRemRangeByLex(&#039;zs&#039;, &#039;(banana&#039;, &#039;(eggplant&#
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRemRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5659">at line 5659</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5678">at line 5678</a></div>
         <code class="method-signature language-php">Redis|int|false zRemRangeByScore(string $key, string $start, string $end)</code>
     </h3>
     <div class="details">    
@@ -24119,7 +24211,7 @@ $redis-&gt;zRemRangeByScore(&#039;zs&#039;, 2, 4);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRevRange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5681">at line 5681</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5700">at line 5700</a></div>
         <code class="method-signature language-php">Redis|array|false zRevRange(string $key, int $start, int $end, mixed $scores = null)</code>
     </h3>
     <div class="details">    
@@ -24201,7 +24293,7 @@ $redis-&gt;zRevRange(&#039;zs&#039;, 0, -1, [&#039;withscores&#039; =&gt; true])
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRevRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5701">at line 5701</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5720">at line 5720</a></div>
         <code class="method-signature language-php">Redis|array|false zRevRangeByLex(string $key, string $max, string $min, int $offset = -1, int $count = -1)</code>
     </h3>
     <div class="details">    
@@ -24290,7 +24382,7 @@ $redis-&gt;zRevRangeByLex(&#039;captains&#039;, &#039;[Q&#039;, &#039;[J&#039;, 
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRevRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5736">at line 5736</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5755">at line 5755</a></div>
         <code class="method-signature language-php">Redis|array|false zRevRangeByScore(string $key, string $max, string $min, array|bool $options = [])</code>
     </h3>
     <div class="details">    
@@ -24381,7 +24473,7 @@ $redis-&gt;zRevRangeByScore(&#039;oldest-people&#039;, &#039;117.5&#039;, &#039;
                     <div class="method-item">
                                                                                         
     <h3 id="method_zRevRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5754">at line 5754</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5773">at line 5773</a></div>
         <code class="method-signature language-php">Redis|int|false zRevRank(string $key, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -24452,7 +24544,7 @@ $redis-&gt;zrevrank(&#039;ds9-characters&#039;, &#039;Garak&#039;);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5770">at line 5770</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5789">at line 5789</a></div>
         <code class="method-signature language-php">Redis|float|false zScore(string $key, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -24520,7 +24612,7 @@ $redis-&gt;zScore(&#039;telescopes&#039;, &#039;LBT&#039;);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zdiff">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5791">at line 5791</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5810">at line 5810</a></div>
         <code class="method-signature language-php">Redis|array|false zdiff(array $keys, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -24593,7 +24685,7 @@ $redis-&gt;zDiff([&#039;primes&#039;, &#039;evens&#039;, &#039;mod3&#039;]);</pr
                     <div class="method-item">
                                                                                         
     <h3 id="method_zdiffstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5811">at line 5811</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5830">at line 5830</a></div>
         <code class="method-signature language-php">Redis|int|false zdiffstore(string $dst, array $keys)</code>
     </h3>
     <div class="details">    
@@ -24668,7 +24760,7 @@ Redis::zdiff</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zinter">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5834">at line 5834</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5853">at line 5853</a></div>
         <code class="method-signature language-php">Redis|array|false zinter(array $keys, array|null $weights = null, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -24747,7 +24839,7 @@ $redis-&gt;zInter([&#039;TNG&#039;, &#039;DS9&#039;], NULL, [&#039;withscores&#0
                     <div class="method-item">
                                                                                         
     <h3 id="method_zintercard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5857">at line 5857</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5876">at line 5876</a></div>
         <code class="method-signature language-php">Redis|int|false zintercard(array $keys, int $limit = -1)</code>
     </h3>
     <div class="details">    
@@ -24833,7 +24925,7 @@ $redis-&gt;zInterCard([&#039;zs1&#039;, &#039;zs2&#039;]);</pre></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zinterstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5883">at line 5883</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5902">at line 5902</a></div>
         <code class="method-signature language-php">Redis|int|false zinterstore(string $dst, array $keys, array|null $weights = null, string|null $aggregate = null)</code>
     </h3>
     <div class="details">    
@@ -24924,7 +25016,7 @@ $redis-&gt;zInterStore(&#039;fruit-max&#039;, [&#039;zs1&#039;, &#039;zs2&#039;,
                     <div class="method-item">
                                                                                         
     <h3 id="method_zscan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5915">at line 5915</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5934">at line 5934</a></div>
         <code class="method-signature language-php">Redis|array|false zscan(string $key, null|int|string $iterator, string|null $pattern = null, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -25024,7 +25116,7 @@ while ($members = $redis-&gt;zscan(&#039;leaders&#039;, $it)) {
                     <div class="method-item">
                                                                                         
     <h3 id="method_zunion">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5952">at line 5952</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5971">at line 5971</a></div>
         <code class="method-signature language-php">Redis|array|false zunion(array $keys, array|null $weights = null, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -25114,7 +25206,7 @@ $redis-&gt;zUnion([&#039;store1&#039;, &#039;store3&#039;], [2, .5], [&#039;with
                     <div class="method-item">
                                                                                         
     <h3 id="method_zunionstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5975">at line 5975</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5994">at line 5994</a></div>
         <code class="method-signature language-php">Redis|int|false zunionstore(string $dst, array $keys, array|null $weights = null, string|null $aggregate = null)</code>
     </h3>
     <div class="details">    
@@ -25203,7 +25295,7 @@ $redis-&gt;zUnionStore(&#039;dst&#039;, [&#039;zs1&#039;, &#039;zs2&#039;, &#039
                     <div class="method-item">
                                                                                         
     <h3 id="method_digest">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5989">at line 5989</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L6008">at line 6008</a></div>
         <code class="method-signature language-php">Redis|string|false digest(string $key)</code>
     </h3>
     <div class="details">    
