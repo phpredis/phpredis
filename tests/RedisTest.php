@@ -8121,6 +8121,23 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(3, count($res));
     }
 
+    public function testGcra() {
+        if ( ! $this->haveCommand('GCRA'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('gcra'));
+
+        $res = $this->redis->gcra('gcra', 5, 1, 1000);
+        $this->assertIsArray($res);
+        $this->assertEquals(5, count($res));
+        $this->assertEquals(5, count(array_filter($res, 'is_int')));
+
+        $res = $this->redis->gcra('gcra', 5, 1, 1000, 5);
+        $this->assertIsArray($res);
+        $this->assertEquals(5, count($res));
+        $this->assertEquals(5, count(array_filter($res, 'is_int')));
+    }
+
     public function testInvalidAuthArgs() {
         $client = $this->newInstance();
 

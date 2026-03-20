@@ -3258,6 +3258,10 @@ PHP_METHOD(Redis, vlinks) {
     REDIS_PROCESS_CMD(vlinks, redis_vlinks_reply);
 }
 
+PHP_METHOD(Redis, gcra) {
+    REDIS_PROCESS_CMD(gcra, redis_read_variant_reply);
+}
+
 /*
  * Streams
  */

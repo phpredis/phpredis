@@ -1182,6 +1182,13 @@ class RedisCluster {
     public function vsetattr(string $key, mixed $member, array|string $attributes): RedisCluster|int|false;
 
     /**
+     * @see \Redis::gcra()
+     */
+    public function gcra(string $key, int $maxBurst, int $requestsPerPeriod,
+                         int $period, int $numRequests = 0): RedisCluster|array|false;
+
+
+    /**
      * @see \Redis::xack()
      */
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;
