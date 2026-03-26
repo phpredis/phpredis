@@ -597,13 +597,15 @@ PS_OPEN_FUNC(redis)
 
 #if PHP_VERSION_ID >= 80600
     const char *save_path_str = ZSTR_VAL(save_path);
+    size_t save_path_len = ZSTR_LEN(save_path);
 #else
     const char *save_path_str = save_path;
+    size_t save_path_len = strlen(save_path);
 #endif
 
     redis_pool *pool = ecalloc(1, sizeof(*pool));
 
-    for (i = 0, j = 0, path_len = strlen(save_path_str); i < path_len; i = j + 1) {
+    for (i = 0, j = 0, path_len = save_path_len; i < path_len; i = j + 1) {
         /* find beginning of url */
         while ( i< path_len && (isspace(save_path_str[i]) || save_path_str[i] == ','))
             i++;
