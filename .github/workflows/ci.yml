@@ -186,13 +186,25 @@ jobs:
 
       - name: Wait for ${{ matrix.server }} instances
         run: |
+          WAIT_TIMEOUT_SECONDS=30
+
           for PORT in {6379..6382} {7000..7005} {32767..32768} {26379..26380}; do
+            START_TIME=$SECONDS
             until echo PING | ${{ matrix.server }}-cli -p "$PORT" 2>&1 | grep -qE 'PONG|NOAUTH'; do
+              if (( SECONDS - START_TIME >= WAIT_TIMEOUT_SECONDS )); then
+                echo "Timed out waiting for ${{ matrix.server }} on port $PORT after ${WAIT_TIMEOUT_SECONDS}s"
+                exit 1
+              fi
               echo "Still waiting for ${{ matrix.server }} on port $PORT"
               sleep .5
             done
           done
+          START_TIME=$SECONDS
           until echo PING | ${{ matrix.server }}-cli -s /tmp/redis.sock 2>&1 | grep -qE 'PONG|NOAUTH'; do
+            if (( SECONDS - START_TIME >= WAIT_TIMEOUT_SECONDS )); then
+              echo "Timed out waiting for ${{ matrix.server }} at /tmp/redis.sock after ${WAIT_TIMEOUT_SECONDS}s"
+              exit 1
+            fi
             echo "Still waiting for ${{ matrix.server }} at /tmp/redis.sock"
             sleep .5
           done
