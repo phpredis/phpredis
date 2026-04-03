@@ -234,6 +234,7 @@ redis_str_ieq(const char *s, size_t len, const char *cmp, size_t cmp_len)
 #define RESP_MULTI_CMD         "*1\r\n$5\r\nMULTI\r\n"
 #define RESP_EXEC_CMD          "*1\r\n$4\r\nEXEC\r\n"
 #define RESP_DISCARD_CMD       "*1\r\n$7\r\nDISCARD\r\n"
+#define RESP_RESET_CMD         "*1\r\n$5\r\nRESET\r\n"
 
 typedef struct RedisHello {
     zend_string *server;
@@ -331,6 +332,7 @@ typedef struct fold_item {
 typedef struct {
     zend_llist list;
     int nb_active;
+    zend_bool reset_unsupported;
 } ConnectionPool;
 
 typedef struct {

@@ -9178,5 +9178,101 @@ class Redis_Test extends TestSuite {
         $this->assertTrue($this->redis->set('after_failure', 'ok'));
         $this->assertEquals('ok', $this->redis->get('after_failure'));
     }
+
+    public function testPconnectResetSelectLeak() {
+        if (version_compare($this->version, '6.2.0') < 0)
+            $this->markTestSkipped();
+
+        $host = $this->getHost();
+        $port = $this->getPort();
+        $auth = $this->getAuth();
+
+        // Step 1: pconnect, SELECT 5, write a key
+        $r1 = new Redis();
+        $r1->pconnect($host, $port, 0.0, 'test_select_leak');
+        if ($auth) $r1->auth($auth);
+        $r1->select(5);
+        $r1->set('pconnect_test_key', 'in_db5');
+
+        // Return socket to pool (ATOMIC mode -> pool return)
+        unset($r1);
+
+        // Step 2: pconnect again -> pool retrieval -> RESET should clear SELECT
+        $r2 = new Redis();
+        $r2->pconnect($host, $port, 0.0, 'test_select_leak');
+        if ($auth) $r2->auth($auth);
+        // New RedisSock has dbNumber=0, server should also be on DB 0 after RESET
+        $val = $r2->get('pconnect_test_key');
+        $this->assertFalse($val); // Key is in DB 5, not visible from DB 0
+
+        // Cleanup
+        $r2->select(5);
+        $r2->del('pconnect_test_key');
+        unset($r2);
+    }
+
+    public function testPconnectResetWatchLeak() {
+        if (version_compare($this->version, '6.2.0') < 0)
+            $this->markTestSkipped();
+
+        $host = $this->getHost();
+        $port = $this->getPort();
+        $auth = $this->getAuth();
+
+        // Step 1: pconnect, WATCH a key, leave without UNWATCH
+        $r1 = new Redis();
+        $r1->pconnect($host, $port, 0.0, 'test_watch_leak');
+        if ($auth) $r1->auth($auth);
+        $r1->set('pconnect_watched', 'original');
+        $r1->watch('pconnect_watched');
+
+        // Return socket to pool
+        unset($r1);
+
+        // Modify the watched key via a separate connection
+        $this->redis->set('pconnect_watched', 'modified');
+
+        // Step 2: pconnect again -> RESET should clear WATCH
+        $r2 = new Redis();
+        $r2->pconnect($host, $port, 0.0, 'test_watch_leak');
+        if ($auth) $r2->auth($auth);
+
+        // If WATCH leaked, this EXEC would fail (return false)
+        $result = $r2->multi()
+            ->set('pconnect_watched', 'from_txn')
+            ->exec();
+        $this->assertIsArray($result);
+        $this->assertTrue($result[0]);
+
+        // Cleanup
+        $r2->del('pconnect_watched');
+        unset($r2);
+    }
+
+    public function testPconnectResetClientName() {
+        if (version_compare($this->version, '6.2.0') < 0)
+            $this->markTestSkipped();
+
+        $host = $this->getHost();
+        $port = $this->getPort();
+        $auth = $this->getAuth();
+
+        // Step 1: pconnect, CLIENT SETNAME
+        $r1 = new Redis();
+        $r1->pconnect($host, $port, 0.0, 'test_clientname_leak');
+        if ($auth) $r1->auth($auth);
+        $r1->client('SETNAME', 'old-worker');
+
+        // Return socket to pool
+        unset($r1);
+
+        // Step 2: pconnect again -> RESET should clear CLIENT SETNAME
+        $r2 = new Redis();
+        $r2->pconnect($host, $port, 0.0, 'test_clientname_leak');
+        if ($auth) $r2->auth($auth);
+        $name = $r2->client('GETNAME');
+        $this->assertFalse($name); // Should be empty after RESET
+        unset($r2);
+    }
 }
 ?>
