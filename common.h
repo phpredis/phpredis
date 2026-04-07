@@ -332,7 +332,6 @@ typedef struct fold_item {
 typedef struct {
     zend_llist list;
     int nb_active;
-    zend_bool reset_unsupported;
 } ConnectionPool;
 
 typedef struct {

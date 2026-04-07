@@ -3135,7 +3135,7 @@ redis_check_echo_response(RedisSock *redis_sock, char *hdr, const char *id,
 }
 
 static int
-redis_sock_check_liveness(RedisSock *redis_sock, ConnectionPool *p)
+redis_sock_check_liveness(RedisSock *redis_sock)
 {
     char id[64], inbuf[256] = {0};
     smart_str cmd = {0};
@@ -3156,8 +3156,8 @@ redis_sock_check_liveness(RedisSock *redis_sock, ConnectionPool *p)
         return SUCCESS;
     }
 
-    /* RESET server-side state (Redis 6.2+, skipped once known unsupported) */
-    zend_bool send_reset = (p && !p->reset_unsupported);
+    /* RESET server-side state (Redis 6.2+) */
+    zend_bool send_reset = INI_INT("redis.pconnect.reset_on_reuse");
     if (send_reset) {
         smart_str_appendl(&cmd, RESP_RESET_CMD, sizeof(RESP_RESET_CMD) - 1);
     }
@@ -3184,12 +3184,9 @@ redis_sock_check_liveness(RedisSock *redis_sock, ConnectionPool *p)
         if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
             goto failure;
         }
-        if (redis_strncmp(inbuf, ZEND_STRL("+RESET")) != 0) {
-            if (redis_strncmp(inbuf, ZEND_STRL("-ERR")) == 0) {
-                p->reset_unsupported = 1;
-            } else {
-                goto failure;
-            }
+        if (redis_strncmp(inbuf, ZEND_STRL("+RESET")) != 0 &&
+            redis_strncmp(inbuf, ZEND_STRL("-ERR")) != 0) {
+            goto failure;
         }
     }
 
@@ -3309,7 +3306,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                 redis_sock->stream = *(php_stream **)zend_llist_get_last(&p->list);
                 zend_llist_remove_tail(&p->list);
 
-                if (redis_sock_check_liveness(redis_sock, p) == SUCCESS) {
+                if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
                     return SUCCESS;
                 }
 
