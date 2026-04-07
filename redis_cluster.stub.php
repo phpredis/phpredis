@@ -1185,7 +1185,7 @@ class RedisCluster {
      * @see \Redis::gcra()
      */
     public function gcra(string $key, int $maxBurst, int $requestsPerPeriod,
-                         int $period, int $numRequests = 0): RedisCluster|array|false;
+                         int $period, int $tokens = 0): RedisCluster|array|false;
 
 
     /**
