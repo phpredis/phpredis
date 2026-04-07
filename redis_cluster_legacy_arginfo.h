@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d0720357eca4c563bbd5211bbfbfc6f5a00c4b72 */
+ * Stub hash: 6c7a87611b3bc9039650a3cf2e3c4d4f916611b0 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -820,7 +820,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_gcra, 0, 0, 4)
 	ZEND_ARG_INFO(0, maxBurst)
 	ZEND_ARG_INFO(0, requestsPerPeriod)
 	ZEND_ARG_INFO(0, period)
-	ZEND_ARG_INFO(0, numRequests)
+	ZEND_ARG_INFO(0, tokens)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_xack, 0, 0, 3)

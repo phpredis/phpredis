@@ -5276,7 +5276,7 @@ class Redis {
      * @param int $maxBurst
      * @param int $requestsPerPeriod
      * @param int $period
-     * @param int $numRequests = 0
+     * @param int $tokens = 0
      * @return Redis|array|false
      *
      * @see https://redis.io/docs/latest/commands/gcra/
@@ -5285,7 +5285,7 @@ class Redis {
      * $redis->gcra('user:123', 10, 100, 3600);
      */
     public function gcra(string $key, int $maxBurst, int $requestsPerPeriod,
-                         int $period, int $numRequests = 0): Redis|array|false;
+                         int $period, int $tokens = 0): Redis|array|false;
 
 
     /**

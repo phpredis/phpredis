@@ -7500,7 +7500,7 @@ redis_vsetattr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_gcra_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                  char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    zend_long max_burst, req_per_period, period, count = 0;
+    zend_long max_burst, req_per_period, period, tokens = 0;
     smart_string cmdstr = {0};
     zend_string *key;
 
@@ -7510,18 +7510,18 @@ int redis_gcra_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_LONG(req_per_period)
         Z_PARAM_LONG(period)
         Z_PARAM_OPTIONAL
-        Z_PARAM_LONG(count)
+        Z_PARAM_LONG(tokens)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 4 + (count > 0 ? 2 : 0), "GCRA");
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 4 + (tokens > 0 ? 2 : 0), "GCRA");
     redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
     redis_cmd_append_sstr_long(&cmdstr, max_burst);
     redis_cmd_append_sstr_long(&cmdstr, req_per_period);
     redis_cmd_append_sstr_long(&cmdstr, period);
 
-    if (count > 0) {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NUM_REQUESTS");
-        redis_cmd_append_sstr_long(&cmdstr, count);
+    if (tokens > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "TOKENS");
+        redis_cmd_append_sstr_long(&cmdstr, tokens);
     }
 
     *cmd = cmdstr.c;

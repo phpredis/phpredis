@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d0720357eca4c563bbd5211bbfbfc6f5a00c4b72 */
+ * Stub hash: 6c7a87611b3bc9039650a3cf2e3c4d4f916611b0 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -969,7 +969,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_gcra, 0, 
 	ZEND_ARG_TYPE_INFO(0, maxBurst, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, requestsPerPeriod, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, period, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, numRequests, IS_LONG, 0, "0")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, tokens, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xack, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
