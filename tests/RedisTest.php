@@ -1015,17 +1015,14 @@ class Redis_Test extends TestSuite {
         /* Add multiple keys */
         $mkeys = [];
         for ($i = 0; $i < 10; $i++) {
-            if (rand(1, 2) == 1) {
-                $mkey = "{exists}key:$i";
-                $this->redis->set($mkey, $i);
-                $mkeys[] = $mkey;
-            }
+            $mkey = "{exists}key:$i";
+            $this->redis->set($mkey, $i);
+            $mkeys[] = $mkey;
         }
 
         /* Test passing an array as well as the keys variadic */
         $this->assertEquals(count($mkeys), $this->redis->exists($mkeys));
-        if (count($mkeys))
-            $this->assertEquals(count($mkeys), $this->redis->exists(...$mkeys));
+        $this->assertEquals(count($mkeys), $this->redis->exists(...$mkeys));
     }
 
     public function testTouch() {
