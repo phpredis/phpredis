@@ -9183,6 +9183,9 @@ class Redis_Test extends TestSuite {
         if (version_compare($this->version, '6.2.0') < 0)
             $this->markTestSkipped();
 
+        $prev = ini_get('redis.pconnect.reset_on_reuse');
+        ini_set('redis.pconnect.reset_on_reuse', 1);
+
         $host = $this->getHost();
         $port = $this->getPort();
         $auth = $this->getAuth();
@@ -9209,11 +9212,16 @@ class Redis_Test extends TestSuite {
         $r2->select(5);
         $r2->del('pconnect_test_key');
         unset($r2);
+
+        ini_set('redis.pconnect.reset_on_reuse', $prev);
     }
 
     public function testPconnectResetWatchLeak() {
         if (version_compare($this->version, '6.2.0') < 0)
             $this->markTestSkipped();
+
+        $prev = ini_get('redis.pconnect.reset_on_reuse');
+        ini_set('redis.pconnect.reset_on_reuse', 1);
 
         $host = $this->getHost();
         $port = $this->getPort();
@@ -9247,11 +9255,16 @@ class Redis_Test extends TestSuite {
         // Cleanup
         $r2->del('pconnect_watched');
         unset($r2);
+
+        ini_set('redis.pconnect.reset_on_reuse', $prev);
     }
 
     public function testPconnectResetClientName() {
         if (version_compare($this->version, '6.2.0') < 0)
             $this->markTestSkipped();
+
+        $prev = ini_get('redis.pconnect.reset_on_reuse');
+        ini_set('redis.pconnect.reset_on_reuse', 1);
 
         $host = $this->getHost();
         $port = $this->getPort();
@@ -9273,6 +9286,8 @@ class Redis_Test extends TestSuite {
         $name = $r2->client('GETNAME');
         $this->assertFalse($name); // Should be empty after RESET
         unset($r2);
+
+        ini_set('redis.pconnect.reset_on_reuse', $prev);
     }
 }
 ?>
