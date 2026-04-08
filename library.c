@@ -3179,13 +3179,12 @@ redis_sock_check_liveness(RedisSock *redis_sock)
 
     smart_str_free(&cmd);
 
-    /* Consume RESET response: +RESET on 6.2+, -ERR on older Redis */
+    /* Consume RESET response */
     if (send_reset) {
         if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
             goto failure;
         }
-        if (redis_strncmp(inbuf, ZEND_STRL("+RESET")) != 0 &&
-            redis_strncmp(inbuf, ZEND_STRL("-ERR")) != 0) {
+        if (redis_strncmp(inbuf, ZEND_STRL("+RESET")) != 0) {
             goto failure;
         }
     }
