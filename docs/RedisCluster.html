@@ -2889,7 +2889,7 @@ to that section.</p></p>                </div>
                     RedisCluster|array|false
                 </div>
                 <div class="col-md-8">
-                    <a href="#method_gcra">gcra</a>(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $numRequests = 0)
+                    <a href="#method_gcra">gcra</a>(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $tokens = 0)
         
                                             <p class="no-description">No description</p>
                                     </div>
@@ -16595,7 +16595,7 @@ Redis::vsetattr</a>
                                                                                         
     <h3 id="method_gcra">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1187">at line 1187</a></div>
-        <code class="method-signature language-php">RedisCluster|array|false gcra(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $numRequests = 0)</code>
+        <code class="method-signature language-php">RedisCluster|array|false gcra(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $tokens = 0)</code>
     </h3>
     <div class="details">    
     
@@ -16631,7 +16631,7 @@ Redis::vsetattr</a>
             </tr>
                     <tr>
                 <td>int</td>
-                <td>$numRequests</td>
+                <td>$tokens</td>
                 <td></td>
             </tr>
             </table>

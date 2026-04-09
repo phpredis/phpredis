@@ -3652,7 +3652,7 @@ acknowledged with XACK.</p></p>                </div>
                     Redis|array|false
                 </div>
                 <div class="col-md-8">
-                    <a href="#method_gcra">gcra</a>(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $numRequests = 0)
+                    <a href="#method_gcra">gcra</a>(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $tokens = 0)
         
                                             <p><p>Get rate limiting information</p></p>                </div>
                 <div class="col-md-2"></div>
@@ -22668,7 +22668,7 @@ will be json encoded.</p></td>
                                                                                         
     <h3 id="method_gcra">
         <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5287">at line 5287</a></div>
-        <code class="method-signature language-php">Redis|array|false gcra(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $numRequests = 0)</code>
+        <code class="method-signature language-php">Redis|array|false gcra(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $tokens = 0)</code>
     </h3>
     <div class="details">    
     
@@ -22703,7 +22703,7 @@ will be json encoded.</p></td>
             </tr>
                     <tr>
                 <td>int</td>
-                <td>$numRequests</td>
+                <td>$tokens</td>
                 <td><p>= 0</p></td>
             </tr>
             </table>
