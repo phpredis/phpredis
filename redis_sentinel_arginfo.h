@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: ca40579af888c5bb0661cd0201d840297474479a */
+ * Stub hash: 65a689d40abaa87e77542700a99742b597051699 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -33,6 +33,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisSentinel_slaves arginfo_class_RedisSentinel_ckquorum
 
+
 ZEND_METHOD(RedisSentinel, __construct);
 ZEND_METHOD(RedisSentinel, ckquorum);
 ZEND_METHOD(RedisSentinel, failover);
@@ -45,6 +46,7 @@ ZEND_METHOD(RedisSentinel, ping);
 ZEND_METHOD(RedisSentinel, reset);
 ZEND_METHOD(RedisSentinel, sentinels);
 ZEND_METHOD(RedisSentinel, slaves);
+
 
 static const zend_function_entry class_RedisSentinel_methods[] = {
 	ZEND_ME(RedisSentinel, __construct, arginfo_class_RedisSentinel___construct, ZEND_ACC_PUBLIC)
@@ -67,11 +69,7 @@ static zend_class_entry *register_class_RedisSentinel(void)
 	zend_class_entry ce, *class_entry;
 
 	INIT_CLASS_ENTRY(ce, "RedisSentinel", class_RedisSentinel_methods);
-#if (PHP_VERSION_ID >= 80400)
-	class_entry = zend_register_internal_class_with_flags(&ce, NULL, 0);
-#else
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
-#endif
 
 	return class_entry;
 }
