@@ -262,6 +262,10 @@ typedef struct RedisHello {
     zend_string *version;
 } RedisHello;
 
+/* Forward decl; full definition in sentinel_library.h. RedisSock only holds
+ * a pointer, so incomplete type suffices here (issue #2819). */
+typedef struct sentinel_host_entry sentinel_host_entry;
+
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream          *stream;
@@ -301,6 +305,11 @@ typedef struct {
     zend_bool           null_mbulk_as_null;
     zend_bool           tcp_keepalive;
     zend_bool           sentinel;
+    /* Multi-host fallback list for RedisSentinel (issue #2819). NULL on
+     * non-Sentinel sockets and on single-host Sentinel usage. */
+    sentinel_host_entry *sentinel_hosts;
+    size_t              sentinel_hosts_count;
+    size_t              sentinel_current_host_idx;
     size_t              txBytes;
     size_t              rxBytes;
     uint8_t             flags;
