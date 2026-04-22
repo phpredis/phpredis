@@ -1,0 +1,60 @@
+services:
+  redis-master:
+    image: redis:7-alpine
+    container_name: sm-redis-master
+    ports: ["16379:6379"]
+    networks: [sm-net]
+
+  redis-replica-1:
+    image: redis:7-alpine
+    container_name: sm-redis-replica-1
+    command: redis-server --replicaof redis-master 6379
+    depends_on: [redis-master]
+    networks: [sm-net]
+
+  redis-replica-2:
+    image: redis:7-alpine
+    container_name: sm-redis-replica-2
+    command: redis-server --replicaof redis-master 6379
+    depends_on: [redis-master]
+    networks: [sm-net]
+
+  sentinel-1:
+    image: redis:7-alpine
+    container_name: sm-sentinel-1
+    command: >
+      sh -c "cp /conf/sentinel.conf /tmp/s1.conf &&
+             redis-sentinel /tmp/s1.conf --port 26379"
+    ports: ["26379:26379"]
+    volumes:
+      - ./sentinel.conf:/conf/sentinel.conf:ro
+    depends_on: [redis-master, redis-replica-1, redis-replica-2]
+    networks: [sm-net]
+
+  sentinel-2:
+    image: redis:7-alpine
+    container_name: sm-sentinel-2
+    command: >
+      sh -c "cp /conf/sentinel.conf /tmp/s2.conf &&
+             redis-sentinel /tmp/s2.conf --port 26379"
+    ports: ["26380:26379"]
+    volumes:
+      - ./sentinel.conf:/conf/sentinel.conf:ro
+    depends_on: [redis-master, redis-replica-1, redis-replica-2]
+    networks: [sm-net]
+
+  sentinel-3:
+    image: redis:7-alpine
+    container_name: sm-sentinel-3
+    command: >
+      sh -c "cp /conf/sentinel.conf /tmp/s3.conf &&
+             redis-sentinel /tmp/s3.conf --port 26379"
+    ports: ["26381:26379"]
+    volumes:
+      - ./sentinel.conf:/conf/sentinel.conf:ro
+    depends_on: [redis-master, redis-replica-1, redis-replica-2]
+    networks: [sm-net]
+
+networks:
+  sm-net:
+    driver: bridge
