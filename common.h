@@ -205,12 +205,16 @@ typedef enum {
 #if PHP_VERSION_ID < 80600
     #define REDIS_INI_STR(name) INI_STR(name)
     #define REDIS_INI_INT(name) INI_INT(name)
-    #ifndef ZEND_UNREACHABLE
-        #define ZEND_UNREACHABLE EMPTY_SWITCH_DEFAULT_CASE
-    #endif
 #else
     #define REDIS_INI_STR(name) (char *)zend_ini_string_literal(name)
     #define REDIS_INI_INT(name) zend_ini_long_literal(name)
+#endif
+
+#ifndef ZEND_UNREACHABLE
+    #define ZEND_UNREACHABLE EMPTY_SWITCH_DEFAULT_CASE
+#endif
+#ifndef offsetof
+    #define offsetof(STRUCTURE,FIELD) ((int)((char*)&((STRUCTURE*)0)->FIELD))
 #endif
 
 #if PHPREDIS_DEBUG_LOGGING == 1
