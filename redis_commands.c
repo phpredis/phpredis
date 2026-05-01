@@ -2921,7 +2921,7 @@ static inline zval *coerce_hash_field(zval *zv, zval *aux) {
                    is_numeric_string(Z_STRVAL_P(zv),
                                      Z_STRLEN_P(zv), &lv, NULL, 0) == IS_LONG))
     {
-        len = snprintf(buf, sizeof(buf), "%lld", lv);
+        len = snprintf(buf, sizeof(buf), ZEND_LONG_FMT, lv);
         if (len == Z_STRLEN_P(zv) && redis_strncmp(Z_STRVAL_P(zv), buf, len) == 0) {
             ZVAL_LONG(aux, lv);
             return aux;
