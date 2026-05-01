@@ -119,7 +119,7 @@ create_redis_array_object(zend_class_entry *ce)
     object_properties_init(&obj->std, ce);
 
     memcpy(&redis_array_object_handlers, zend_get_std_object_handlers(), sizeof(redis_array_object_handlers));
-    redis_array_object_handlers.offset = XtOffsetOf(redis_array_object, std);
+    redis_array_object_handlers.offset = offsetof(redis_array_object, std);
     redis_array_object_handlers.free_obj = free_redis_array_object;
     redis_array_object_handlers.clone_obj = NULL;
     obj->std.handlers = &redis_array_object_handlers;

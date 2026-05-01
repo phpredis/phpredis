@@ -135,7 +135,7 @@ ra_find_name(const char *name) {
     const char *ini_names, *p, *next;
     /* php_printf("Loading redis array with name=[%s]\n", name); */
 
-    ini_names = INI_STR("redis.arrays.names");
+    ini_names = REDIS_INI_STR("redis.arrays.names");
     for(p = ini_names; p;) {
         next = strchr(p, ',');
         if(next) {
@@ -179,7 +179,7 @@ RedisArray *ra_load_array(const char *name) {
 
     /* find hosts */
     array_init(&z_params_hosts);
-    if ((iptr = INI_STR("redis.arrays.hosts")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.hosts")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_hosts);
         if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_hosts), name, name_len)) != NULL) {
             hHosts = Z_ARRVAL_P(z_data);
@@ -188,7 +188,7 @@ RedisArray *ra_load_array(const char *name) {
 
     /* find previous hosts */
     array_init(&z_params_prev);
-    if ((iptr = INI_STR("redis.arrays.previous")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.previous")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_prev);
         if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_prev), name, name_len)) != NULL) {
             if (Z_TYPE_P(z_data) == IS_ARRAY) {
@@ -198,7 +198,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find function */
-    if ((iptr = INI_STR("redis.arrays.functions")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.functions")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_zval(Z_ARRVAL(z_tmp), name, name_len, &z_fun, 1, 0);
@@ -206,7 +206,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find distributor */
-    if ((iptr = INI_STR("redis.arrays.distributor")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.distributor")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_zval(Z_ARRVAL(z_tmp), name, name_len, &z_dist, 1, 0);
@@ -214,7 +214,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find hash algorithm */
-    if ((iptr = INI_STR("redis.arrays.algorithm")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.algorithm")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_string(Z_ARRVAL(z_tmp), name, name_len, &algorithm);
@@ -222,7 +222,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find index option */
-    if ((iptr = INI_STR("redis.arrays.index")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.index")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_zend_bool(Z_ARRVAL(z_tmp), name, name_len, &b_index);
@@ -230,7 +230,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find autorehash option */
-    if ((iptr = INI_STR("redis.arrays.autorehash")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.autorehash")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_zend_bool(Z_ARRVAL(z_tmp), name, name_len, &b_autorehash);
@@ -238,7 +238,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find retry interval option */
-    if ((iptr = INI_STR("redis.arrays.retryinterval")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.retryinterval")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_long(Z_ARRVAL(z_tmp), name, name_len, &l_retry_interval);
@@ -246,7 +246,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find pconnect option */
-    if ((iptr = INI_STR("redis.arrays.pconnect")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.pconnect")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_zend_bool(Z_ARRVAL(z_tmp), name, name_len, &b_pconnect);
@@ -254,7 +254,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find lazy connect option */
-    if ((iptr = INI_STR("redis.arrays.lazyconnect")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.lazyconnect")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_zend_bool(Z_ARRVAL(z_tmp), name, name_len, &b_lazy_connect);
@@ -262,7 +262,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find connect timeout option */
-    if ((iptr = INI_STR("redis.arrays.connecttimeout")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.connecttimeout")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &d_connect_timeout);
@@ -270,7 +270,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find read timeout option */
-    if ((iptr = INI_STR("redis.arrays.readtimeout")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.readtimeout")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &read_timeout);
@@ -278,7 +278,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find consistent option */
-    if ((iptr = INI_STR("redis.arrays.consistent")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.consistent")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         if ((z_data = zend_hash_str_find(Z_ARRVAL(z_tmp), name, name_len)) != NULL) {
@@ -289,7 +289,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* find auth option */
-    if ((iptr = INI_STR("redis.arrays.auth")) != NULL) {
+    if ((iptr = REDIS_INI_STR("redis.arrays.auth")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_auth(Z_ARRVAL(z_tmp), name, name_len, &user, &pass);

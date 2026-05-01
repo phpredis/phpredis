@@ -23,7 +23,7 @@ create_sentinel_object(zend_class_entry *ce)
     object_properties_init(&obj->std, ce);
 
     memcpy(&redis_sentinel_object_handlers, zend_get_std_object_handlers(), sizeof(redis_sentinel_object_handlers));
-    redis_sentinel_object_handlers.offset = XtOffsetOf(redis_sentinel_object, std);
+    redis_sentinel_object_handlers.offset = offsetof(redis_sentinel_object, std);
     redis_sentinel_object_handlers.free_obj = free_redis_sentinel_object;
     obj->std.handlers = &redis_sentinel_object_handlers;
 
