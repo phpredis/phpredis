@@ -608,7 +608,7 @@ class Redis {
      * $redis = new Redis(['host' => '127.0.0.1', 'port' => 6380]);
      *
      */
-    public function __construct(?array $options = null): array|null;
+    public function __construct(?array $options = null);
 
     /**
      * Destructor to clean up the Redis object.
