@@ -608,7 +608,7 @@ class Redis {
      * $redis = new Redis(['host' => '127.0.0.1', 'port' => 6380]);
      *
      */
-    public function __construct(?array $options = null);
+    public function __construct(?array $options = null): array|null;
 
     /**
      * Destructor to clean up the Redis object.
@@ -617,7 +617,7 @@ class Redis {
      * it will be stashed for future reuse.
      *
      */
-    public function __destruct();
+    public function __destruct(): void;
 
     /**
      * Compress a value with the currently configured compressor (Redis::OPT_COMPRESSION)
@@ -2745,7 +2745,7 @@ class Redis {
      * $redis->keys('session:*');
      *
      */
-    public function keys(string $pattern);
+    public function keys(string $pattern): Redis|array|false;
 
     /**
      * @return Redis|int|false
@@ -2756,7 +2756,7 @@ class Redis {
      * $redis->lInsert('letters', Redis::AFTER, 'b', 'beta');
      *
      */
-    public function lInsert(string $key, string $pos, mixed $pivot, mixed $value);
+    public function lInsert(string $key, string $pos, mixed $pivot, mixed $value): Redis|int|false;
 
     /**
      * Retrieve the length of a list.
@@ -4096,7 +4096,7 @@ class Redis {
      *
      * @example $redis->setex('60s-ttl', 60, 'some-value');
      */
-    public function setex(string $key, int $expire, mixed $value);
+    public function setex(string $key, int $expire, mixed $value): Redis|bool;
 
     /**
      * Set a key to a value, but only if that key does not already exist.
