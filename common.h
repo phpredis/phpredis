@@ -192,6 +192,7 @@ typedef enum {
 #define PHPREDIS_DEBUG_LOGGING 0
 
 #if PHP_VERSION_ID < 80000
+#define ZEND_UNREACHABLE EMPTY_SWITCH_DEFAULT_CASE
 #define Z_PARAM_ARRAY_HT_OR_NULL(dest) \
         Z_PARAM_ARRAY_HT_EX(dest, 1, 0)
 #define Z_PARAM_STR_OR_NULL(dest) \
@@ -210,12 +211,6 @@ typedef enum {
     #define REDIS_INI_INT(name) zend_ini_long_literal(name)
 #endif
 
-#ifndef ZEND_UNREACHABLE
-    #define ZEND_UNREACHABLE EMPTY_SWITCH_DEFAULT_CASE
-#endif
-#ifndef offsetof
-    #define offsetof(STRUCTURE,FIELD) ((int)((char*)&((STRUCTURE*)0)->FIELD))
-#endif
 
 #if PHPREDIS_DEBUG_LOGGING == 1
 #define redisDbgFmt(fmt, ...) \
