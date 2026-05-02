@@ -192,7 +192,6 @@ typedef enum {
 #define PHPREDIS_DEBUG_LOGGING 0
 
 #if PHP_VERSION_ID < 80000
-#define ZEND_UNREACHABLE EMPTY_SWITCH_DEFAULT_CASE
 #define Z_PARAM_ARRAY_HT_OR_NULL(dest) \
         Z_PARAM_ARRAY_HT_EX(dest, 1, 0)
 #define Z_PARAM_STR_OR_NULL(dest) \
@@ -201,6 +200,13 @@ typedef enum {
 	Z_PARAM_ZVAL_EX(dest, 1, 0)
 #define Z_PARAM_BOOL_OR_NULL(dest, is_null) \
 	Z_PARAM_BOOL_EX(dest, is_null, 1, 0)
+
+# if ZEND_DEBUG
+#  define ZEND_UNREACHABLE() do {ZEND_ASSERT(0); ZEND_ASSUME(0);} while (0)
+# else
+#  define ZEND_UNREACHABLE() ZEND_ASSUME(0)
+# endif
+
 #endif
 
 #if PHP_VERSION_ID < 80600
