@@ -617,7 +617,7 @@ class Redis {
      * it will be stashed for future reuse.
      *
      */
-    public function __destruct(): void;
+    public function __destruct();
 
     /**
      * Compress a value with the currently configured compressor (Redis::OPT_COMPRESSION)
