@@ -74,7 +74,9 @@ class Runner {
         'lock-wait-time' => null,
         'lock-retries' => -1,
         'lock-expires' => 0,
+        'lock-release-cmd' => null,
         'data' => '',
+        'data-key' => null,
         'lifetime' => 1440,
         'compression' => 'none',
         'strict-mode' => false,
@@ -82,6 +84,7 @@ class Runner {
     ];
 
     private $prefix = NULL;
+    private $cluster_lock_key = false;
     private $output_file = NULL;
     private $exit_code = -1;
     private $cmd = NULL;
@@ -115,12 +118,37 @@ class Runner {
         return $this;
     }
 
+    /**
+     * Tell the runner to compute the lock key in cluster format
+     * ("{<session_key>}_LOCK") instead of the standalone format
+     * ("<session_key>_LOCK"). RedisClusterTest sets this so inherited
+     * lock-key assertions look at the right key.
+     */
+    public function clusterLockKey(bool $on): self {
+        $this->cluster_lock_key = $on;
+        return $this;
+    }
+
     public function getSessionKey(): string {
         return $this->prefix . $this->getId();
     }
 
     public function getSessionLockKey(): string {
-        return $this->getSessionKey() . '_LOCK';
+        $sk = $this->getSessionKey();
+        if ( ! $this->cluster_lock_key) {
+            return $sk . '_LOCK';
+        }
+
+        /* Mirror generate_cluster_lock_key(): if there's a non-empty
+         * leading {tag} append "_LOCK", otherwise wrap in braces. Other
+         * shapes are rejected C-side; return '' so assertions fail loud. */
+        if (preg_match('/^[^{]*\{([^}]+)\}/', $sk)) {
+            return $sk . '_LOCK';
+        }
+        if (strpos($sk, '{') === false && strpos($sk, '}') === false) {
+            return '{' . $sk . '}_LOCK';
+        }
+        return '';   // unsupported shape; C side returns FAILURE with warning
     }
 
     protected function set($setting, $v): self {
@@ -160,12 +188,21 @@ class Runner {
         return $this->set('lock-retries', $retries);
     }
 
+    public function lockReleaseCmd(?string $cmd): self {
+        return $this->set('lock-release-cmd', $cmd);
+    }
+
     public function lockExpires(int $expires): self {
         return $this->set('lock-expires', $expires);
     }
 
     public function data(string $data): self {
         return $this->set('data', $data);
+    }
+
+    /* Override which $_SESSION key the spawned process writes data() into. */
+    public function dataKey(string $key): self {
+        return $this->set('data-key', $key);
     }
 
     public function lifetime(int $lifetime): self {

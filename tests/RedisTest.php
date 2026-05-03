@@ -8494,10 +8494,20 @@ class Redis_Test extends TestSuite {
     protected function sessionRunner() {
         $this->getAuthParts($user, $pass);
 
-        return (new SessionHelpers\Runner())
+        $runner = (new SessionHelpers\Runner())
             ->prefix($this->sessionPrefix())
             ->handler($this->sessionSaveHandler())
             ->savePath($this->sessionSavePath());
+
+        /* REDIS_SESSION_LOCK_RELEASE_CMD lets a test driver opt the spawned
+         * child PHP processes into a specific release primitive (DELIFEQ /
+         * DELEX / Lua default). Parent INI flags don't reach the children. */
+        $release = getenv('REDIS_SESSION_LOCK_RELEASE_CMD');
+        if (is_string($release) && $release !== '') {
+            $runner->lockReleaseCmd($release);
+        }
+
+        return $runner;
     }
 
     protected function assertSessionRunnerResult($runner, bool $expect_success = true): bool {
