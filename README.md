@@ -107,8 +107,15 @@ session.save_path = "tcp://127.0.0.1:6379?auth[]=user&auth[]=password&prefix=use
 
 #### Session locking
 
-**Support**: Locking feature is currently only supported for Redis setup with single master instance (e.g. classic master/slave Sentinel environment).
-So locking may not work properly in RedisArray or RedisCluster environments.
+**Support**: Session locking works for both the standalone `redis` and the
+`rediscluster` save handlers (Redis Cluster and Valkey Cluster). It may not
+work properly in RedisArray environments.
+
+For the cluster handler the lock key always co-locates with the session
+data on a single slot via the Redis Cluster hash-tag rule, so the
+acquire-and-read step is a single atomic Lua script against the slot owner.
+
+It is highly discouraged to use any Redis Cluster hash-tag within the prefix.
 
 The following INI variables can be used to configure session locking:
 ~~~
@@ -120,6 +127,28 @@ redis.session.lock_expire = 60
 redis.session.lock_wait_time = 50000
 ; Maximum number of times to retry (-1 means infinite). Defaults to: 100
 redis.session.lock_retries = 2000
+; Optional: native conditional-delete primitive for releasing the lock.
+;   - DELIFEQ : Valkey 9.0+ (single round-trip, no Lua)
+;   - DELEX   : Redis Open Source 8.4+ (single round-trip, no Lua)
+;   - unset   : Lua compare-and-delete (where neither native primitive is available)
+; redis.session.lock_release_cmd = DELIFEQ
+~~~
+
+Recommended config per backend:
+~~~
+; Valkey Cluster 9+
+session.save_handler = rediscluster
+redis.session.locking_enabled = 1
+redis.session.lock_release_cmd = DELIFEQ
+
+; Redis Cluster (Open Source) 8.4+
+session.save_handler = rediscluster
+redis.session.locking_enabled = 1
+redis.session.lock_release_cmd = DELEX
+
+; Anything else - leave lock_release_cmd unset
+session.save_handler = rediscluster
+redis.session.locking_enabled = 1
 ~~~
 
 #### Session compression

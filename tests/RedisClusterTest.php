@@ -56,19 +56,9 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testFlushDB() { $this->markTestSkipped(); }
     public function testFunction() { $this->markTestSkipped(); }
 
-    /* Session locking is currently not supported in RedisCluster.
-       The biggest issue is the distributed nature of Redis Cluster. */
-    public function testSession_lockKeyCorrect() { $this->markTestSkipped(); }
-    public function testSession_lockingDisabledByDefault() { $this->markTestSkipped(); }
-    public function testSession_lockReleasedOnClose() { $this->markTestSkipped(); }
-    public function testSession_lock_ttlMaxExecutionTime() { $this->markTestSkipped(); }
-    public function testSession_lock_ttlLockExpire() { $this->markTestSkipped(); }
-    public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock() { $this->markTestSkipped(); }
-    public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock() { $this->markTestSkipped(); }
-    public function testSession_correctLockRetryCount() { $this->markTestSkipped(); }
-    public function testSession_defaultLockRetryCount() { $this->markTestSkipped(); }
-    public function testSession_noUnlockOfOtherProcess() { $this->markTestSkipped(); }
-    public function testSession_lockWaitTime() { $this->markTestSkipped(); }
+    /* Session locking is supported in cluster mode via the lock-only hash tag
+       (lock key is "{<session_key>}_LOCK", co-located with the session data
+       on a single slot). Tests inherited from RedisTest.php exercise it. */
 
     /* Regression test for GH #2810 */
     public function testConstructNullSeeds() {
@@ -1156,13 +1146,149 @@ class Redis_Cluster_Test extends Redis_Test {
         return 'rediscluster';
     }
 
+    /* Tell inherited lock-key assertions the lock is co-located via the
+     * {…}_LOCK hash-tag trick (see generate_cluster_lock_key). */
+    protected function sessionRunner() {
+        return parent::sessionRunner()->clusterLockKey(true);
+    }
+
+    /* When the atomic acquire-and-read fails on a held lock and the retry
+     * loop later acquires, the second read must re-fetch under the lock
+     * or the writer commits its stale pre-lock view and silently drops
+     * the previous holder's update. */
+    public function testSession_clusterRetryReadsFreshDataAfterContention()
+    {
+        $this->testRequiresMode('cli');
+
+        $a = $this->sessionRunner()
+            ->lockExpires(30)
+            ->lockRetries(0)        /* A never waits — lock is fresh */
+            ->sleep(2)
+            ->dataKey('from_A')
+            ->data('A-wrote-this');
+
+        $b = $this->sessionRunner()
+            ->id($a->getId())
+            ->lockExpires(30)
+            ->lockRetries(50)       /* enough to outlast A's 2s sleep */
+            ->lockWaitTime(100000)  /* 100ms × 50 = 5s budget */
+            ->dataKey('from_B')
+            ->data('B-wrote-this');
+
+        $this->startSessionRunner($a);
+        $this->assertTrue($a->waitForLockKey($this->redis, 2));
+        $this->assertSessionRunnerResult($b);
+        $this->assertEquals('SUCCESS', trim($a->output(10)));
+
+        /* Both writers' fields must survive — without the fix from_A is dropped. */
+        $val = $this->redis->get($a->getSessionKey());
+        $this->assertStringContains('from_A', (string)$val);
+        $this->assertStringContains('from_B', (string)$val);
+    }
+
+    /* With locking enabled, the prefix must have no braces or a non-empty
+     * {tag} as its first brace pair — anything else cannot produce a co-
+     * located lock key, must warn, and must fail PS_READ rather than
+     * silently fall back to a non-atomic path. */
+    public function testSession_clusterMalformedPrefixFailsWhenLockingEnabled()
+    {
+        $this->testRequiresMode('cli');
+
+        foreach ([
+            'mal:ab{}c:',
+            'mal:}xy:',
+            'mal:{tenant:',
+            'mal:{}:x:{tenant}:',
+        ] as $custom_prefix) {
+            $runner = $this->sessionRunner()
+                ->prefix($custom_prefix)
+                ->savePath($this->sessionSavePath() . '&prefix=' . $custom_prefix)
+                ->lockExpires(30)
+                ->data('should-not-persist');
+
+            $output = (string)$runner->execFg();
+
+            /* Substring match: warnings precede the SUCCESS/FAILURE token. */
+            $this->assertStringContains('FAILURE', $output);
+            $this->assertStringContains('Cluster session prefix must contain', $output);
+
+            /* No data should be persisted at the configured session key. */
+            $this->assertKeyMissing($runner->getSessionKey());
+        }
+    }
+
+    /* Locking disabled: prefix is just a string — no brace validation,
+     * shapes the locking-enabled path rejects must still round-trip. */
+    public function testSession_clusterMalformedPrefixOkWhenLockingDisabled()
+    {
+        $this->testRequiresMode('cli');
+
+        $custom_prefix = 'mal-nolock:ab{}c:';
+
+        $runner = $this->sessionRunner()
+            ->prefix($custom_prefix)
+            ->savePath($this->sessionSavePath() . '&prefix=' . $custom_prefix)
+            ->lockingEnabled(false)
+            ->data('still-persists');
+
+        $this->assertSessionRunnerResult($runner);
+        $this->assertKeyExists($runner->getSessionKey());
+        $this->assertStringContains('still-persists',
+            (string)$this->redis->get($runner->getSessionKey()));
+    }
+
+    /* When the prefix already has a {tag}, the lock-key generator must
+     * append "_LOCK" rather than wrapping — wrapping shifts the first
+     * {…} pair onto a different slot and CROSSSLOTs inside the acquire-
+     * and-read Lua. */
+    public function testSession_clusterPreservesExistingHashTagInLockKey()
+    {
+        $this->testRequiresMode('cli');
+
+        $custom_prefix = 'tagged-prefix:{phpredis-tag}:';
+
+        $runner = $this->sessionRunner()
+            ->prefix($custom_prefix)
+            ->savePath($this->sessionSavePath() . '&prefix=' . $custom_prefix)
+            ->lockExpires(30)
+            ->sleep(3)
+            ->data('hashtag-test=ok');
+
+        $expected_lock = $runner->getSessionKey() . '_LOCK';   /* NOT wrapped */
+
+        $this->startSessionRunner($runner);
+
+        if ( ! $runner->waitForLockKey($this->redis, $this->sessionWaitSec())) {
+            $this->externalCmdFailure($runner->getCmd(), $runner->output(),
+                "Failed waiting for lock key '$expected_lock' "
+                . "(hash-tag-preserving lock key likely regressed — would CROSSSLOT)",
+                $runner->getExitCode());
+        }
+
+        /* Confirm the runner expects the unwrapped lock key. */
+        $this->assertEquals($expected_lock, $runner->getSessionLockKey());
+
+        $this->assertEquals('SUCCESS', trim($runner->output(10)));
+
+        /* And session data persisted at the un-mangled key. */
+        $this->assertStringContains('hashtag-test',
+            (string)$this->redis->get($runner->getSessionKey()));
+    }
+
     /**
      * @inheritdoc
      */
     protected function sessionSavePath(): string {
-        return implode('&', array_map(function ($host) {
+        $path = implode('&', array_map(function ($host) {
             return 'seed[]=' . $host;
         }, self::$seeds)) . '&' . $this->getAuthFragment();
+
+        /* Optional driver-supplied extras (e.g. "&failover=distribute" for the replica-routing tests). */
+        $extra = getenv('REDIS_CLUSTER_EXTRA_SAVE_PATH');
+        if (is_string($extra) && $extra !== '') {
+            $path .= $extra;
+        }
+        return $path;
     }
 
     /* Test correct handling of null multibulk replies */
