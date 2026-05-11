@@ -1155,7 +1155,7 @@ int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock
     int valfree, retval;
     zend_string *zstr, *tmp;
     size_t vallen;
-    char *val = NULL;
+    char *val;
 
     if (redis_sock != NULL) {
         valfree = redis_pack(redis_sock, z, &val, &vallen);
