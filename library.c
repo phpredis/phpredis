@@ -4233,10 +4233,6 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
     /* First serialize */
     tmpfree = redis_serialize(redis_sock, z, &tmp, &tmplen);
 
-    if (EG(exception)) {
-		return FAILURE;
-	}
-
     /* Now attempt compression */
     if (redis_compress(redis_sock, val, val_len, tmp, tmplen)) {
         if (tmpfree) efree(tmp);
@@ -4333,8 +4329,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
             PHP_VAR_SERIALIZE_INIT(ht);
             php_var_serialize(&sstr, z, &ht);
 
-            if (EG(exception)) {
-                return FAILURE;
+            if (!sstr.s) {
+                break;
             }
             *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
             *val_len = ZSTR_LEN(sstr.s);
