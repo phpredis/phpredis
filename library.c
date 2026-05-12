@@ -4337,7 +4337,6 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
             *val_len = ZSTR_LEN(sstr.s);
 
             smart_str_free(&sstr);
-            PHP_VAR_SERIALIZE_DESTROY(ht);
 
             return 1;
 
