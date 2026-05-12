@@ -4328,6 +4328,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
         case REDIS_SERIALIZER_PHP:
             PHP_VAR_SERIALIZE_INIT(ht);
             php_var_serialize(&sstr, z, &ht);
+            PHP_VAR_SERIALIZE_DESTROY(ht);
 
             if (!sstr.s) {
                 break;
