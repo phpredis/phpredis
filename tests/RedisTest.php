@@ -8911,5 +8911,19 @@ class Redis_Test extends TestSuite {
             $this->assertEquals(1, $this->redis->delex('captain', $arg));
         }
     }
+
+    public function testAnonymousClassSerializationFailure() {
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+        $obj = new class() {};
+
+        $this->assertThrowsMatch(null, function () use ($obj) {
+            $this->redis->set('payload', $obj);
+        }, "/Serialization of 'class@anonymous' is not allowed/");
+
+        /* Ensure extension remains stable after failure */
+        $this->assertTrue($this->redis->set('after_failure', 'ok'));
+        $this->assertEquals('ok', $this->redis->get('after_failure'));
+    }
 }
 ?>
