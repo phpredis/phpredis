@@ -5,6 +5,7 @@
 #include "cluster_library.h"
 #include "crc16.h"
 #include <zend_exceptions.h>
+#include <errno.h>
 
 extern zend_class_entry *redis_cluster_exception_ce;
 int le_cluster_slot_cache;
@@ -687,7 +688,8 @@ cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
      r->element[1]->type == TYPE_INT)
 #define VALIDATE_SLOTS_INNER(r) \
     (r->type == TYPE_MULTIBULK && r->elements >= 2 && \
-     r->element[0]->type == TYPE_BULK && r->element[1]->type == TYPE_INT)
+     r->element[0]->type == TYPE_BULK && r->element[0]->str != NULL && \
+     r->element[0]->len > 0 && r->element[1]->type == TYPE_INT)
 
 /* Use the output of CLUSTER SLOTS to map our nodes */
 static int cluster_map_slots(redisCluster *c, clusterReply *r) {
@@ -727,12 +729,11 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
             // Attach slaves first time we encounter a given master in order to avoid registering the slaves multiple times
             for (j = 3; j< r2->elements; j++) {
                 r3 = r2->element[j];
-                if (!VALIDATE_SLOTS_INNER(r3)) {
-                    return -1;
-                }
 
-                // Skip slaves where the host is ""
-                if (r3->element[0]->len == 0) continue;
+                // Skip slaves whose host bulk is missing or empty
+                if (!VALIDATE_SLOTS_INNER(r3)) {
+                    continue;
+                }
 
                 // Attach this node to our slave
                 slave = cluster_node_create(c, r3->element[0]->str,
@@ -788,9 +789,10 @@ static redisClusterNode *cluster_get_asking_node(redisCluster *c) {
     /* This host:port is unknown to us, so add it */
     pNode = cluster_node_create(c, c->redir_host, c->redir_host_len,
         c->redir_port, c->redir_slot, 0);
+    zend_hash_str_update_ptr(c->nodes, key, key_len, pNode);
 
     /* Return the node */
-   return pNode;
+    return pNode;
 }
 
 /* Get or create a node at the host:port we were asked to check, and return the
@@ -1150,12 +1152,27 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
     if ((port = strrchr(host, ':')) == NULL) return -1;
     *port++ = '\0';
 
+    char *endptr;
+    long slot_val, port_val;
+
+    errno = 0;
+    slot_val = strtol(msg, &endptr, 10);
+    if (endptr == msg || errno == ERANGE || slot_val < 0 || slot_val >= REDIS_CLUSTER_SLOTS) {
+        return -1;
+    }
+
+    errno = 0;
+    port_val = strtol(port, &endptr, 10);
+    if (endptr == port || errno == ERANGE || port_val <= 0 || port_val > 65535) {
+        return -1;
+    }
+
     // Success, apply it
     c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
     strncpy(c->redir_host, host, sizeof(c->redir_host) - 1);
     c->redir_host_len = port - host - 1;
-    c->redir_slot = (unsigned short)atoi(msg);
-    c->redir_port = (unsigned short)atoi(port);
+    c->redir_slot = (unsigned short)slot_val;
+    c->redir_port = (unsigned short)port_val;
 
     return 0;
 }
