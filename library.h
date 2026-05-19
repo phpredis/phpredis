@@ -312,8 +312,8 @@ static inline char *redis_sock_get_line(RedisSock *redis_sock, char *buf, size_t
     return res;
 }
 
-static inline char redis_sock_getc(RedisSock *redis_sock) {
-    char res;
+static inline int redis_sock_getc(RedisSock *redis_sock) {
+    int res;
 
     res = php_stream_getc(redis_sock->stream);
     if (res != EOF)
