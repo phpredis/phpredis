@@ -7,6 +7,8 @@
 #include "common.h"
 #include "php_network.h"
 #include <sys/types.h>
+#include <errno.h>
+#include <limits.h>
 
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
@@ -364,7 +366,17 @@ read_mbulk_header(RedisSock *redis_sock, int *nelem)
         return FAILURE;
     }
 
-    *nelem = atoi(line + 1);
+    {
+        char *endptr;
+        long long n;
+
+        errno = 0;
+        n = strtoll(line + 1, &endptr, 10);
+        if (endptr == line + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+            return FAILURE;
+        }
+        *nelem = (int)n;
+    }
 
     return SUCCESS;
 }
@@ -822,7 +834,17 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
 
             return NULL;
         case '$':
-            *buf_len = atoi(inbuf + 1);
+            {
+                char *endptr;
+                long long n;
+
+                errno = 0;
+                n = strtoll(inbuf + 1, &endptr, 10);
+                if (endptr == inbuf + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+                    return NULL;
+                }
+                *buf_len = (int)n;
+            }
             return redis_sock_read_bulk_reply(redis_sock, *buf_len);
 
         case '*':
@@ -4567,7 +4589,15 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         }
 
         /* Set our size response */
-        *reply_info = atol(inbuf);
+        {
+            char *endptr;
+
+            errno = 0;
+            *reply_info = strtol(inbuf, &endptr, 10);
+            if (endptr == inbuf || errno == ERANGE) {
+                return -1;
+            }
+        }
     } else {
         /* Always initialize to prevent UB */
         *reply_info = 0;
