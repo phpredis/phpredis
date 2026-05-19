@@ -20,6 +20,13 @@
 
 #include "common.h"
 
+#if PHP_VERSION_ID < 80400
+#include <ext/standard/php_random.h>
+#else
+#include <ext/random/php_random.h>
+#endif
+#include <ext/hash/php_hash.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -331,12 +338,21 @@ static void generate_lock_key(redis_session_lock_status *status) {
 }
 
 static void generate_lock_secret(redis_session_lock_status *status) {
+    unsigned char buf[16];
     char hostname[HOST_NAME_MAX] = {0};
 
-    gethostname(hostname, HOST_NAME_MAX);
     if (status->lock_secret)
         zend_string_release(status->lock_secret);
 
+    if (php_random_bytes_silent(buf, sizeof(buf)) == SUCCESS) {
+        zend_string *s = zend_string_alloc(sizeof(buf) * 2, 0);
+        php_hash_bin2hex(ZSTR_VAL(s), buf, sizeof(buf));
+        ZSTR_VAL(s)[sizeof(buf) * 2] = '\0';
+        status->lock_secret = s;
+        return;
+    }
+
+    gethostname(hostname, HOST_NAME_MAX);
     status->lock_secret = strpprintf(0, "%s|%ld", hostname, (long)getpid());
 }
 
