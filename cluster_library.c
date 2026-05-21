@@ -1152,6 +1152,9 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
     if ((port = strrchr(host, ':')) == NULL) return -1;
     *port++ = '\0';
 
+    /* If the host len does not fit in our buffer we must fail */
+    if (port - host - 1 >= sizeof(c->redir_host)) return -1;
+
     char *endptr;
     long slot_val, port_val;
 
@@ -1169,8 +1172,11 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
 
     // Success, apply it
     c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
-    strncpy(c->redir_host, host, sizeof(c->redir_host) - 1);
+
     c->redir_host_len = port - host - 1;
+    memcpy(c->redir_host, host, c->redir_host_len);
+    c->redir_host[c->redir_host_len] = '\0';
+
     c->redir_slot = (unsigned short)slot_val;
     c->redir_port = (unsigned short)port_val;
 
