@@ -684,28 +684,45 @@ cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
 
 /* Sanity check/validation for CLUSTER SLOTS command */
 #define VALIDATE_SLOTS_OUTER(r) \
-    (r->elements >= 3 && r2->element[0]->type == TYPE_INT && \
-     r->element[1]->type == TYPE_INT)
+    ((r)->type == TYPE_MULTIBULK && (r)->elements >= 3 && \
+     (r)->element[0]->type == TYPE_INT && (r)->element[1]->type == TYPE_INT)
 #define VALIDATE_SLOTS_INNER(r) \
-    (r->type == TYPE_MULTIBULK && r->elements >= 2 && \
-     r->element[0]->type == TYPE_BULK && r->element[0]->str != NULL && \
-     r->element[0]->len > 0 && r->element[1]->type == TYPE_INT)
+    ((r)->type == TYPE_MULTIBULK && (r)->elements >= 2 && \
+     (r)->element[0]->type == TYPE_BULK && (r)->element[0]->str != NULL && \
+     (r)->element[0]->len > 0 && (r)->element[1]->type == TYPE_INT)
+
+static zend_always_inline int
+cluster_validate_slot_range(size_t low, size_t high) {
+    return low <= high && low < REDIS_CLUSTER_SLOTS && high < REDIS_CLUSTER_SLOTS;
+}
+
+static zend_always_inline int
+cluster_validate_port(size_t port) {
+    return port <= 65535;
+}
+
+static zend_always_inline int
+cluster_validate_host(char *host, size_t len) {
+    return len > 0 && len < sizeof(((redisCluster *)0)->redir_host) &&
+           memchr(host, '\0', len) == NULL;
+}
 
 /* Use the output of CLUSTER SLOTS to map our nodes */
 static int cluster_map_slots(redisCluster *c, clusterReply *r) {
     redisClusterNode *pnode, *master, *slave;
     redisSlotRange range;
-    int i,j, hlen, klen;
-    short low, high;
+    int i,j, klen;
+    size_t low, high, hlen, port;
     clusterReply *r2, *r3;
-    unsigned short port;
     char *host, key[1024];
+
     zend_hash_clean(c->nodes);
+
     for (i = 0; i < r->elements; i++) {
         // Inner response
         r2 = r->element[i];
 
-        // Validate outer and master slot
+        // Validate outer and master slot structure
         if (!VALIDATE_SLOTS_OUTER(r2) || !VALIDATE_SLOTS_INNER(r2->element[2])) {
             return -1;
         }
@@ -714,19 +731,32 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
         r3 = r2->element[2];
 
         // Grab our slot range, as well as master host/port
-        low  = (unsigned short)r2->element[0]->integer;
-        high = (unsigned short)r2->element[1]->integer;
+        low  = r2->element[0]->integer;
+        high = r2->element[1]->integer;
         host = r3->element[0]->str;
         hlen = r3->element[0]->len;
-        port = (unsigned short)r3->element[1]->integer;
+        port = r3->element[1]->integer;
+
+        /* Ensure slot range and port are sane and within bounds */
+        if (!cluster_validate_slot_range(low, high) ||
+            !cluster_validate_port(port) ||
+            !cluster_validate_host(host, hlen)
+        ) {
+            return -1;
+        }
 
         // If the node is new, create and add to nodes.  Otherwise use it.
-        klen = snprintf(key, sizeof(key), "%s:%d", host, port);
+        klen = snprintf(key, sizeof(key), "%s:%zu", host, port);
+        if (klen < 0 || klen >= sizeof(key)) {
+            return -1;
+        }
+
         if ((pnode = zend_hash_str_find_ptr(c->nodes, key, klen)) == NULL) {
             master = cluster_node_create(c, host, hlen, port, low, 0);
             zend_hash_str_update_ptr(c->nodes, key, klen, master);
 
-            // Attach slaves first time we encounter a given master in order to avoid registering the slaves multiple times
+            // Attach slaves first time we encounter a given master in order to
+            // avoid registering the slaves multiple times
             for (j = 3; j< r2->elements; j++) {
                 r3 = r2->element[j];
 
@@ -735,10 +765,15 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
                     continue;
                 }
 
+                if (!cluster_validate_port(r3->element[1]->integer) ||
+                    !cluster_validate_host(r3->element[0]->str, r3->element[0]->len)
+                ) {
+                    continue;
+                }
+
                 // Attach this node to our slave
                 slave = cluster_node_create(c, r3->element[0]->str,
-                    (int)r3->element[0]->len,
-                    (unsigned short)r3->element[1]->integer, low, 1);
+                    r3->element[0]->len, r3->element[1]->integer, low, 1);
                 cluster_node_add_slave(master, slave);
             }
         } else {
@@ -751,7 +786,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
         }
 
         /* Append to our list of slot ranges */
-        range.low = low; range.high = high;
+        range = (redisSlotRange){.low = low, .high = high};
         zend_llist_add_element(&master->slots, &range);
     }
 
