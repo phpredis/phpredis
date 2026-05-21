@@ -5576,13 +5576,49 @@ class Redis_Test extends TestSuite {
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 9);
     }
 
-
     public function testCompressionLZ4() {
         if ( ! defined('Redis::COMPRESSION_LZ4'))
             $this->markTestSkipped();
 
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_LZ4);
+        $payload = $this->lz4PayloadWithDeclaredLength('LEAK_ME!', 4096);
+        $this->assertThrowsMatch($payload, function ($payload) {
+            $this->redis->_uncompress($payload);
+        }, '/Invalid compressed data or uncompression error/');
+
         $this->checkCompression(Redis::COMPRESSION_LZ4, 0);
         $this->checkCompression(Redis::COMPRESSION_LZ4, 9);
+    }
+
+    private function lz4PayloadWithDeclaredLength($value, $declared_len) {
+        $len = strlen($value);
+        $lz4 = chr(min($len, 15) << 4);
+
+        if ($len >= 15) {
+            $extra = $len - 15;
+            while ($extra >= 255) {
+                $lz4 .= "\xff";
+                $extra -= 255;
+            }
+            $lz4 .= chr($extra);
+        }
+
+        $declared = pack('V', $declared_len);
+
+        return chr($this->crc8($declared)) . $declared . $lz4 . $value;
+    }
+
+    private function crc8($value) {
+        $crc = 0xff;
+
+        for ($i = 0; $i < strlen($value); $i++) {
+            $crc ^= ord($value[$i]);
+            for ($j = 0; $j < 8; $j++) {
+                $crc = $crc & 0x80 ? (($crc << 1) ^ 0x31) & 0xff : ($crc << 1) & 0xff;
+            }
+        }
+
+        return $crc;
     }
 
     private function checkCompression($mode, $level) {
