@@ -2065,12 +2065,12 @@ PHP_METHOD(RedisCluster, _masters) {
 
 PHP_METHOD(RedisCluster, _redir) {
     redisCluster *c = GET_CONTEXT();
-    char buf[255];
-    size_t len;
+    smart_str s = {0};
 
-    len = snprintf(buf, sizeof(buf), "%s:%d", c->redir_host, c->redir_port);
     if (*c->redir_host && c->redir_host_len) {
-        RETURN_STRINGL(buf, len);
+        smart_str_append_printf(&s, "%s:%d", c->redir_host, c->redir_port);
+        smart_str_0(&s);
+        RETURN_STR(s.s);
     } else {
         RETURN_NULL();
     }
