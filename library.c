@@ -4179,7 +4179,7 @@ redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *
 #ifdef HAVE_REDIS_LZ4
             {
                 char *data;
-                int datalen;
+                int datalen, res;
                 uint8_t lz4crc;
 
                 /* We must have at least enough bytes for our header, and can't have more than
@@ -4197,15 +4197,19 @@ redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *
                 memcpy(&datalen, copy, sizeof(int));
                 copy += sizeof(int); copylen -= sizeof(int);
 
+                if (datalen <= 0)
+                    break;
+
                 /* Make sure our CRC matches (TODO:  Maybe issue a docref error?) */
                 if (crc8((unsigned char*)&datalen, sizeof(datalen)) != lz4crc)
                     break;
 
                 /* Finally attempt decompression */
                 data = emalloc(datalen);
-                if (LZ4_decompress_safe(copy, data, copylen, datalen) > 0) {
+                res = LZ4_decompress_safe(copy, data, copylen, datalen);
+                if (res == datalen) {
                     *dst = data;
-                    *dstlen = datalen;
+                    *dstlen = res;
                     return 1;
                 }
 
