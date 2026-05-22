@@ -64,9 +64,9 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_string *user,
         redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, &ra->redis[i]);
 
         /* create socket */
-        redis->sock = redis_sock_create(host, host_len, port, ra->connect_timeout,
-                                        ra->read_timeout, ra->pconnect, NULL,
-                                        retry_interval);
+        redis->sock = redis_sock_create(REDIS_SOCK_ARRAY, host, host_len, port,
+                                        ra->connect_timeout, ra->read_timeout,
+                                        ra->pconnect, NULL, retry_interval);
 
         redis_sock_set_auth(redis->sock, user, pass);
 

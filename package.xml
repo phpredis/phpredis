@@ -178,6 +178,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
       <file role="src" name="redis_cluster.stub.php"/>
       <file role="src" name="redis_cluster_arginfo.h"/>
       <file role="src" name="redis_cluster_legacy_arginfo.h"/>
+      <file role="src" name="redis_cmd.c"/>
+      <file role="src" name="redis_cmd.h"/>
       <file role="src" name="redis_commands.c"/>
       <file role="src" name="redis_commands.h"/>
       <file role="src" name="redis_session.c"/>

@@ -31,11 +31,11 @@ class Redis_Test extends TestSuite {
         $result = [Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP];
 
         if (defined('Redis::SERIALIZER_IGBINARY'))
-            $result[] = Redis::SERIALIZER_IGBINARY;
+            $result['igbinary'] = Redis::SERIALIZER_IGBINARY;
         if (defined('Redis::SERIALIZER_JSON'))
-            $result[] = Redis::SERIALIZER_JSON;
+            $result['json'] = Redis::SERIALIZER_JSON;
         if (defined('Redis::SERIALIZER_MSGPACK'))
-            $result[] = Redis::SERIALIZER_MSGPACK;
+            $result['msgpack'] = Redis::SERIALIZER_MSGPACK;
 
         return $result;
     }
@@ -6032,9 +6032,9 @@ class Redis_Test extends TestSuite {
             $this->redis->getOption(Redis::OPT_COMPRESSION)
         ];
 
-        foreach ($this->getSerializers() as $ser) {
+        foreach ($this->getSerializers() as $ser_name => $ser) {
             $compressors = $this->getCompressors();
-            foreach ($compressors as $cmp) {
+            foreach ($compressors as $cmp_name => $cmp) {
                 $this->redis->setOption(Redis::OPT_SERIALIZER, $ser);
                 $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
 
@@ -6052,10 +6052,12 @@ class Redis_Test extends TestSuite {
                     $this->redis->setOption(Redis::OPT_SERIALIZER, $ser);
                     $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
 
-                    $this->assertEquals($raw, $this->redis->_pack($v));
+                    $this->assertEquals($raw, $this->redis->_pack($v),
+                                        "$ser_name + $cmp_name");
 
                     $unpacked = $this->redis->get('packkey');
-		    $this->assertEquals($unpacked, $this->redis->_unpack($raw));
+                    $this->assertEquals($unpacked, $this->redis->_unpack($raw),
+                                        "$ser_name + $cmp_name");
 		}
 	    }
         }
@@ -8763,6 +8765,13 @@ class Redis_Test extends TestSuite {
             $list = $this->redis->command('list', 'filterby', 'pattern', 'lol*');
             $this->assertIsArray($list);
             $this->assertEquals(['lolwut'], $list);
+
+            $keys_and_flags = $this->redis->command(
+                'getkeysandflags', 'MSET', 'key1', 'value1',
+            );
+            $this->assertEquals(
+                [['key1', ['OW', 'update']]], $keys_and_flags,
+            );
         }
     }
 

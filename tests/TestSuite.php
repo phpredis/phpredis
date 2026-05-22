@@ -464,12 +464,14 @@ class TestSuite
         return false;
     }
 
-    protected function assertEquals($expected, $actual): bool {
+    protected function assertEquals($expected, $actual, ?string $context = NULL): bool {
         if ($expected === $actual)
             return true;
 
-        self::$errors[] = $this->assertionTrace("%s !== %s", $this->printArg($actual),
-                                                $this->printArg($expected));
+        $context = $context === NULL ? '' : " ($context)";
+
+        self::$errors[] = $this->assertionTrace("%s !== %s%s", $this->printArg($actual),
+                                                $this->printArg($expected), $context);
 
         return false;
     }

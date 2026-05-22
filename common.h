@@ -200,6 +200,8 @@ typedef enum {
 	Z_PARAM_ZVAL_EX(dest, 1, 0)
 #define Z_PARAM_BOOL_OR_NULL(dest, is_null) \
 	Z_PARAM_BOOL_EX(dest, is_null, 1, 0)
+#define Z_PARAM_LONG_OR_NULL(dest, is_null) \
+	Z_PARAM_LONG_EX(dest, is_null, 1, 0)
 #endif
 
 #if PHPREDIS_DEBUG_LOGGING == 1
@@ -262,8 +264,17 @@ typedef struct RedisHello {
     zend_string *version;
 } RedisHello;
 
+typedef enum RedisSockType {
+    REDIS_SOCK_STANDALONE,
+    REDIS_SOCK_ARRAY,
+    REDIS_SOCK_CLUSTER,
+    REDIS_SOCK_SENTINEL,
+    REDIS_SOCK_SESSION
+} RedisSockType;
+
 /* {{{ struct RedisSock */
 typedef struct {
+    RedisSockType       type;
     php_stream          *stream;
     zend_string         *host;
     int                 port;
@@ -307,16 +318,27 @@ typedef struct {
 } RedisSock;
 /* }}} */
 
+typedef void (RedisCmdCtxDtor)(void *ptr);
+typedef struct RedisCmdCtx {
+    void *ptr;
+    RedisCmdCtxDtor *dtor;
+} RedisCmdCtx;
+
 /* Redis response handler function callback prototype */
 typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, zval *z_tab, void *ctx);
+    RedisSock*, zval*, RedisCmdCtx);
 typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock*, zval*, void*);
+    RedisSock*, zval*, RedisCmdCtx);
+
+static zend_always_inline void redis_cmd_ctx_free(RedisCmdCtx ctx) {
+    if (ctx.dtor)
+        ctx.dtor(ctx.ptr);
+}
 
 typedef struct fold_item {
     FailableResultCallback fun;
+    RedisCmdCtx ctx;
     uint8_t flags;
-    void *ctx;
 } fold_item;
 
 typedef struct {

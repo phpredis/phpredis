@@ -26,3 +26,4 @@ doctum.phar
 run-tests.php
 vendor/
 .agents.md
+.codex
