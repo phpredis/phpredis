@@ -31,7 +31,8 @@ create_sentinel_object(zend_class_entry *ce)
 }
 
 PHP_REDIS_API int
-sentinel_mbulk_reply_zipped_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+sentinel_mbulk_reply_zipped_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                                  zval *z_tab, RedisCmdCtx ctx)
 {
     char inbuf[4096];
     int i, nelem;
