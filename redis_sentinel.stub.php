@@ -8,6 +8,21 @@
 
 class RedisSentinel {
 
+    /**
+     * @param array|null $options Connection options. Accepts:
+     *   - 'host'            (string, default '127.0.0.1') - single Sentinel host
+     *   - 'port'            (int, default 26379)          - single Sentinel port
+     *   - 'hosts'           (list<array{host:string,port?:int}>) - multiple Sentinel
+     *                       hosts. When provided, 'host' and 'port' are ignored and
+     *                       the client automatically falls back to the next host
+     *                       on network failure. See issue #2819.
+     *   - 'connectTimeout'  (float)
+     *   - 'persistent'      (?string)
+     *   - 'retryInterval'   (int)
+     *   - 'readTimeout'     (float)
+     *   - 'auth'            (string|array)
+     *   - 'ssl'             (array)
+     */
     public function __construct(?array $options = null);
 
 	/** @return bool|RedisSentinel */

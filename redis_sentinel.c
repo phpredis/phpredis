@@ -43,6 +43,7 @@ PHP_METHOD(RedisSentinel, __construct)
 {
     HashTable *opts = NULL;
     redis_sentinel_object *sentinel;
+    zval *hosts_zv;
 
     ZEND_PARSE_PARAMETERS_START(0, 1)
         Z_PARAM_OPTIONAL
@@ -51,63 +52,84 @@ PHP_METHOD(RedisSentinel, __construct)
 
     sentinel = PHPREDIS_ZVAL_GET_OBJECT(redis_sentinel_object, getThis());
     sentinel->sock = redis_sock_create(ZEND_STRL("127.0.0.1"), 26379, 0, 0, 0, NULL, 0);
-    if (opts != NULL && redis_sock_configure(sentinel->sock, opts) != SUCCESS) {
-        RETURN_THROWS();
+
+    if (opts != NULL) {
+        /* 'hosts' is parsed here (not in redis_sock_configure) so we can strip
+         * it along with the now-irrelevant 'host'/'port' before configure sees
+         * the table. Without the strip, configure would overwrite hosts[0]. */
+        hosts_zv = zend_hash_str_find(opts, ZEND_STRL("hosts"));
+        if (hosts_zv != NULL) {
+            if (sentinel_parse_hosts_option(sentinel->sock, hosts_zv) != SUCCESS) {
+                RETURN_THROWS();
+            }
+            if (sentinel->sock->host) zend_string_release(sentinel->sock->host);
+            sentinel->sock->host = zend_string_copy(sentinel->sock->sentinel_hosts[0].host);
+            sentinel->sock->port = sentinel->sock->sentinel_hosts[0].port;
+
+            zend_hash_str_del(opts, ZEND_STRL("hosts"));
+            zend_hash_str_del(opts, ZEND_STRL("host"));
+            zend_hash_str_del(opts, ZEND_STRL("port"));
+        }
+
+        if (redis_sock_configure(sentinel->sock, opts) != SUCCESS) {
+            RETURN_THROWS();
+        }
     }
+
     sentinel->sock->sentinel = 1;
 }
 
 PHP_METHOD(RedisSentinel, ckquorum)
 {
-    REDIS_PROCESS_KW_CMD("ckquorum", redis_sentinel_str_cmd, redis_boolean_response);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("ckquorum", redis_sentinel_str_cmd, redis_boolean_response));
 }
 
 PHP_METHOD(RedisSentinel, failover)
 {
-    REDIS_PROCESS_KW_CMD("failover", redis_sentinel_str_cmd, redis_boolean_response);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("failover", redis_sentinel_str_cmd, redis_boolean_response));
 }
 
 PHP_METHOD(RedisSentinel, flushconfig)
 {
-    REDIS_PROCESS_KW_CMD("flushconfig", redis_sentinel_cmd, redis_boolean_response);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("flushconfig", redis_sentinel_cmd, redis_boolean_response));
 }
 
 PHP_METHOD(RedisSentinel, getMasterAddrByName)
 {
-    REDIS_PROCESS_KW_CMD("get-master-addr-by-name", redis_sentinel_str_cmd, redis_mbulk_reply_raw);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("get-master-addr-by-name", redis_sentinel_str_cmd, redis_mbulk_reply_raw));
 }
 
 PHP_METHOD(RedisSentinel, master)
 {
-    REDIS_PROCESS_KW_CMD("master", redis_sentinel_str_cmd, redis_mbulk_reply_zipped_raw);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("master", redis_sentinel_str_cmd, redis_mbulk_reply_zipped_raw));
 }
 
 PHP_METHOD(RedisSentinel, masters)
 {
-    REDIS_PROCESS_KW_CMD("masters", redis_sentinel_cmd, sentinel_mbulk_reply_zipped_assoc);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("masters", redis_sentinel_cmd, sentinel_mbulk_reply_zipped_assoc));
 }
 
 PHP_METHOD(RedisSentinel, myid)
 {
-    REDIS_PROCESS_KW_CMD("myid", redis_sentinel_cmd, redis_string_response);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("myid", redis_sentinel_cmd, redis_string_response));
 }
 
 PHP_METHOD(RedisSentinel, ping)
 {
-    REDIS_PROCESS_KW_CMD("ping", redis_empty_cmd, redis_boolean_response);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("ping", redis_empty_cmd, redis_boolean_response));
 }
 
 PHP_METHOD(RedisSentinel, reset)
 {
-    REDIS_PROCESS_KW_CMD("reset", redis_sentinel_str_cmd, redis_long_response);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("reset", redis_sentinel_str_cmd, redis_long_response));
 }
 
 PHP_METHOD(RedisSentinel, sentinels)
 {
-    REDIS_PROCESS_KW_CMD("sentinels", redis_sentinel_str_cmd, sentinel_mbulk_reply_zipped_assoc);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("sentinels", redis_sentinel_str_cmd, sentinel_mbulk_reply_zipped_assoc));
 }
 
 PHP_METHOD(RedisSentinel, slaves)
 {
-    REDIS_PROCESS_KW_CMD("slaves", redis_sentinel_str_cmd, sentinel_mbulk_reply_zipped_assoc);
+    SENTINEL_METHOD(REDIS_PROCESS_KW_CMD("slaves", redis_sentinel_str_cmd, sentinel_mbulk_reply_zipped_assoc));
 }

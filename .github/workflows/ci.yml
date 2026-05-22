@@ -321,3 +321,55 @@ jobs:
           echo "PHP didn't raise any warnings at startup."
       - name: Inspect extension
         run: php --ri redis
+
+  sentinel-multihost:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: :redis
+          coverage: none
+          tools: none
+
+      - name: Start Sentinel cluster
+        working-directory: tests/sentinel-multihost
+        run: |
+          docker compose up -d
+          for p in 26379 26380 26381; do
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if nc -z 127.0.0.1 $p 2>/dev/null; then
+                echo "sentinel $p up"; break
+              fi
+              echo "waiting for sentinel $p..."; sleep 0.5
+            done
+          done
+
+      - name: Build extension
+        run: |
+          phpize
+          ./configure --enable-redis
+          make -j"$(nproc)"
+
+      - name: Run multi-host tests
+        run: |
+          php -d extension=modules/redis.so tests/TestRedis.php --class redissentinelmultihost
+
+      - name: Dump docker logs on failure
+        if: failure()
+        working-directory: tests/sentinel-multihost
+        run: docker compose logs
+
+      - name: Stop Sentinel cluster
+        if: always()
+        working-directory: tests/sentinel-multihost
+        run: docker compose down

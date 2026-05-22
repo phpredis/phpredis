@@ -12,6 +12,7 @@ Redis Sentinel also provides other collateral tasks such as monitoring, notifica
 
 *host*: String, IP address or hostname  
 *port*: Int (optional, default is 26379)  
+*hosts*: Array of `['host' => string, 'port' => int]` entries (optional). When provided, `host` and `port` are ignored and the client automatically falls back to the next host on network failure. See [Multi-host support](#multi-host-support) below.  
 *timeout*: Float, value in seconds (optional, default is 0 meaning unlimited)  
 *persistent*: String, persistent connection id (optional, default is NULL meaning not persistent)  
 *retry_interval*: Int, value in milliseconds (optional, default is 0)  
@@ -58,6 +59,36 @@ $sentinel = new RedisSentinel([
   'auth' => 'secret',
 ]); // connect sentinel with password authentication
 ~~~
+
+### Multi-host support
+-----
+
+For high-availability deployments (Kubernetes, multi-AZ), `RedisSentinel` accepts a `hosts` array of Sentinel endpoints. On network failure the client transparently falls back to the next entry in the list, so a single dead Sentinel no longer takes down the client.
+
+~~~php
+$sentinel = new RedisSentinel([
+  'hosts' => [
+    ['host' => '10.0.0.1', 'port' => 26379],
+    ['host' => '10.0.0.2', 'port' => 26379],
+    ['host' => '10.0.0.3', 'port' => 26379],
+  ],
+  'connectTimeout' => 0.1,
+  'auth' => 'secret',
+]);
+
+// Auto-falls-back to a reachable host if 10.0.0.1 is down.
+$master = $sentinel->getMasterAddrByName('mymaster');
+~~~
+
+##### *Semantics*
+
+* When `hosts` is provided, `host` and `port` are ignored.
+* The client tries hosts in order. The first reachable host is used for all subsequent calls ("sticky" connection).
+* If the current host becomes unreachable during a method call, the client transparently advances to the next host in the list and retries the call once.
+* Skipped hosts are NOT revisited for the lifetime of the `RedisSentinel` instance.
+* When all hosts are exhausted, a `RedisException` is thrown with a message mentioning the host count.
+* Retry is triggered only on network errors (connection refused, socket EOF, stream broken). Redis protocol errors (NOAUTH, WRONGPASS, unknown command) are propagated without retry.
+* Validation errors at construct time (empty `hosts`, missing `host` key, wrong types, `hosts` too large) throw `RedisException`, consistent with the rest of phpredis.
 
 ##### *Examples for versions older than 6.0*
 
