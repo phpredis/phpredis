@@ -354,7 +354,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
 
 /* Create a RedisCluster Object */
 PHP_METHOD(RedisCluster, __construct) {
-    zval *object, *z_seeds = NULL, *z_auth = NULL, *context = NULL;
+    zval *z_seeds = NULL, *z_auth = NULL, *context = NULL;
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0.0, read_timeout = 0.0;
     size_t name_len;
@@ -362,14 +362,16 @@ PHP_METHOD(RedisCluster, __construct) {
     redisCluster *c = GET_CONTEXT();
     char *name;
 
-    // Parse arguments
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os!|a!ddbza!", &object, redis_cluster_ce, &name,
-                                    &name_len, &z_seeds, &timeout, &read_timeout,
-                                    &persistent, &z_auth, &context) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 7)
+        Z_PARAM_STRING_OR_NULL(name, name_len)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_OR_NULL(z_seeds)
+        Z_PARAM_DOUBLE(timeout)
+        Z_PARAM_DOUBLE(read_timeout)
+        Z_PARAM_BOOL(persistent)
+        Z_PARAM_ZVAL(z_auth)
+        Z_PARAM_ARRAY_OR_NULL(context)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* If we've got a string try to load from INI */
     if (ZEND_NUM_ARGS() < 2 || z_seeds == NULL) {
@@ -722,10 +724,9 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     int i = 1, argc;
     short slot;
 
-    // Parse our arguments
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &z_arr) == FAILURE) {
-        return -1;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ARRAY(z_arr)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
     // No reason to send zero args
     ht_arr = Z_ARRVAL_P(z_arr);
@@ -957,9 +958,9 @@ PHP_METHOD(RedisCluster, keys) {
     RedisCmd *cmd;
     int i;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &pat) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STR(pat)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Prefix and then build our command */
     cmd = redis_cmd_create_literal(c->flags, "KEYS");
@@ -2364,9 +2365,9 @@ static void cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     zval *z_arg;
     short slot;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &z_arg) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(z_arg)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     // One argument means find the node (treated like a key), and two means
     // send the command to a specific host and port
@@ -2402,9 +2403,11 @@ cluster_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     zend_bool async = 0;
     short slot;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z|b", &z_arg, &async) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_ZVAL(z_arg)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_BOOL(async)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     // One argument means find the node (treated like a key), and two means
     // send the command to a specific host and port
@@ -2508,12 +2511,13 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         RETURN_FALSE;
     }
 
-    /* Parse arguments */
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz/|s!l", &key,
-                             &key_len, &z_it, &pat, &pat_len, &count) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 4)
+        Z_PARAM_STRING(key, key_len)
+        Z_PARAM_ZVAL_EX(z_it, 0, 1)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STRING_OR_NULL(pat, pat_len)
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Treat as readonly */
     c->readonly = 1;
@@ -2673,12 +2677,13 @@ PHP_METHOD(RedisCluster, scan) {
         RETURN_FALSE;
     }
 
-    /* Parse arguments */
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z/z|s!l", &zcursor,
-                             &z_node, &pat, &pat_len, &count) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 4)
+        Z_PARAM_ZVAL_EX(zcursor, 0, 1)
+        Z_PARAM_ZVAL(z_node)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STRING_OR_NULL(pat, pat_len)
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Get the scan cursor and return early if we're done */
     cursor = redisGetScanCursor(zcursor, &completed);
@@ -2868,12 +2873,12 @@ PHP_METHOD(RedisCluster, client) {
     zval *z_node;
     short slot;
 
-    /* Parse args */
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "zS|S", &z_node, &op, &arg)
-                              == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_ZVAL(z_node)
+        Z_PARAM_STR(op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(arg)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Make sure we can properly resolve the slot */
     slot = cluster_cmd_get_slot(c, z_node);
@@ -3151,10 +3156,11 @@ PHP_METHOD(RedisCluster, ping) {
     RedisCmd *cmd;
     short slot;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z|S!", &z_node, &arg) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_ZVAL(z_node)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR_OR_NULL(arg)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Treat this as a readonly command */
     c->readonly = CLUSTER_IS_ATOMIC(c);
@@ -3341,9 +3347,10 @@ PHP_METHOD(RedisCluster, echo) {
     zval *z_arg;
     short slot;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "zS", &z_arg, &msg) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ZVAL(z_arg)
+        Z_PARAM_STR(msg)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Treat this as a readonly command */
     c->readonly = CLUSTER_IS_ATOMIC(c);
