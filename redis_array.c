@@ -156,9 +156,11 @@ PHP_METHOD(RedisArray, __construct)
     zend_string *algorithm = NULL, *user = NULL, *pass = NULL;
     redis_array_object *obj;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z|a", &z0, &z_opts) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_ZVAL(z0)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY(z_opts)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Bail if z0 isn't a string or an array.
      * Note:  WRONG_PARAM_COUNT seems wrong but this is what we have been doing

@@ -418,9 +418,10 @@ RedisCmd *redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zend_string *key;
     zval *zv;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sz", &key, &zv) == FAILURE) {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_ZVAL(zv)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     return redis_cmd_fmt(redis_sock, kw, "Kv", key, zv);
 }
@@ -431,10 +432,10 @@ RedisCmd *redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zend_string *key, *val;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &key, &val) == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(val)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     return redis_cmd_fmt(redis_sock, kw, "KS", key, val);
 }
@@ -517,11 +518,11 @@ RedisCmd *redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS,
     zend_long val1, val2;
     zend_string *key;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sll", &key, &val1, &val2)
-                              == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(val1)
+        Z_PARAM_LONG(val2)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     return redis_cmd_fmt(redis_sock, kw, "Kll", key, val1, val2);
 }
@@ -548,11 +549,12 @@ redis_failover_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zval *z_to = NULL, *z_ele;
     RedisCmd *cmd;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|a!bl",
-                              &z_to, &abort, &timeout) == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(0, 3)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_OR_NULL(z_to)
+        Z_PARAM_BOOL(abort)
+        Z_PARAM_LONG(timeout)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     if (z_to != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_to), zkey, z_ele) {
@@ -629,8 +631,10 @@ RedisCmd *redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zend_string *key;
     double val;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "Sd", &key, &val) == FAILURE)
-        return NULL;
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_DOUBLE(val)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     return redis_cmd_fmt(redis_sock, kw, "Kf", key, val);
 }
@@ -1189,11 +1193,11 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     RedisCmd *cmd;
     int numkeys, flags;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|a",
-                              &z_keys, &z_opts) == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_ARRAY(z_keys)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY(z_opts)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     if ((numkeys = zend_hash_num_elements(Z_ARRVAL_P(z_keys))) == 0) {
         return NULL;
@@ -1331,11 +1335,12 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     RedisCmd *cmd;
     int numkeys, flags;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|a!a",
-                             &z_keys, &z_weights, &z_opts) == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 3)
+        Z_PARAM_ARRAY(z_keys)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_OR_NULL(z_weights)
+        Z_PARAM_ARRAY(z_opts)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     if ((numkeys = zend_hash_num_elements(Z_ARRVAL_P(z_keys))) == 0) {
         return NULL;
@@ -1545,25 +1550,26 @@ redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zval *z_arr, *z_chan;
     HashTable *ht_chan;
-    subscribeContext *sctx = ecalloc(1, sizeof(*sctx));
+    subscribeContext *sctx;
     unsigned short shardslot = REDIS_CLUSTER_SLOTS;
+    zend_fcall_info_cache fcc;
+    zend_fcall_info fci;
     RedisCmd *cmd;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "af", &z_arr,
-                             &sctx->cb.fci, &sctx->cb.fci_cache) == FAILURE)
-    {
-        efree(sctx);
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ARRAY(z_arr)
+        Z_PARAM_FUNC(fci, fcc)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
-    ht_chan    = Z_ARRVAL_P(z_arr);
-    sctx->kw   = kw;
+    ht_chan = Z_ARRVAL_P(z_arr);
+    if (zend_hash_num_elements(ht_chan) == 0)
+        return NULL;
+
+    sctx = ecalloc(1, sizeof(*sctx));
+    sctx->kw = kw;
+    sctx->cb.fci = fci;
+    sctx->cb.fci_cache = fcc;
     sctx->argc = zend_hash_num_elements(ht_chan);
-
-    if (sctx->argc == 0) {
-        efree(sctx);
-        return NULL;
-    }
 
     if (strcasecmp(kw, "ssubscribe") == 0) {
         zend_hash_internal_pointer_reset(ht_chan);
@@ -1648,11 +1654,14 @@ RedisCmd *redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS,
         return NULL;
     }
 
-    if (zend_parse_parameters(argc, "SSS|ll", &key, &min, &max, &offset,
-                              &count) == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(3, 5)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(min)
+        Z_PARAM_STR(max)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(offset)
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* min and max must start with '(' or '[', or be either '-' or '+' */
     if (!validate_zlex_arg_zstr(min) || !validate_zlex_arg_zstr(max)) {
@@ -1678,12 +1687,11 @@ RedisCmd *redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS,
 {
     zend_string *key, *min, *max;
 
-    /* Parse args */
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSS", &key, &min, &max)
-                              == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(min)
+        Z_PARAM_STR(max)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* Quick sanity check on min/max */
     if (!validate_zlex_arg_zstr(min) || !validate_zlex_arg_zstr(max)) {
@@ -2044,12 +2052,11 @@ redis_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw)
     zend_long count = 0;
     RedisCmd *cmd;
 
-    // Make sure the function is being called correctly
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|l",
-                              &key, &count) == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     cmd = redis_cmd_create(redis_sock, kw, strlen(kw));
     redis_cmd_cat_key_zstr(cmd, key);
@@ -2457,11 +2464,11 @@ redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_bool persist = 0;
     RedisCmd *cmd;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|a", &key, &z_opts)
-                              == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY(z_opts)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     if (z_opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
@@ -2557,9 +2564,11 @@ redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
     zend_long val = 1;
     zend_string *key;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|l", &key, &val) == FAILURE) {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(val)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* If our value is 1 we use INCR/DECR.  For other values, treat the call as
      * an INCRBY or DECRBY call */
@@ -2641,11 +2650,11 @@ RedisCmd *redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_string *key, *mem;
     zend_long byval;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSl", &key, &mem, &byval)
-                              == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(mem)
+        Z_PARAM_LONG(byval)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     return redis_cmd_fmt(redis_sock, "HINCRBY", "KSl", key, mem, byval);
 }
@@ -2657,11 +2666,11 @@ RedisCmd *redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS,
     zend_string *key, *mem;
     double dval;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSd", &key, &mem, &dval)
-                              == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(mem)
+        Z_PARAM_DOUBLE(dval)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     return redis_cmd_fmt(redis_sock, "HINCRBYFLOAT", "KSf", key, mem, dval);
 }
@@ -2823,9 +2832,10 @@ redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 {
     zend_string *key, *field;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &key, &field) == FAILURE) {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(field)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     return redis_cmd_fmt(redis_sock, "HSTRLEN", "KS", key, field);
 }
@@ -3200,9 +3210,11 @@ RedisCmd *redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     RedisCmd *cmd;
     zval *ztest;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z!", &ztest) == FAILURE ||
-        redis_extract_auth_info(ztest, &user, &pass) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL_OR_NULL(ztest)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    if (redis_extract_auth_info(ztest, &user, &pass) == FAILURE) {
         return NULL;
     }
 
@@ -5572,11 +5584,13 @@ redis_xrange_generic_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zend_long count = -1;
     RedisCmd *cmd;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSS|l", &key, &start, &end,
-                              &count) == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(3, 4)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(start)
+        Z_PARAM_STR(end)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     cmd = redis_cmd_create(redis_sock, kw, strlen(kw));
 
@@ -5743,11 +5757,11 @@ RedisCmd *redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     RedisCmd *cmd;
     int idcount;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "SSa", &key, &group, &z_ids)
-                              == FAILURE)
-    {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(group)
+        Z_PARAM_ARRAY(z_ids)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     ht_ids = Z_ARRVAL_P(z_ids);
     if ((idcount = zend_hash_num_elements(ht_ids)) < 1) {
@@ -6205,9 +6219,10 @@ redis_sentinel_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zend_string *name;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &name) == FAILURE) {
-        return NULL;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STR(name)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
     return redis_cmd_fmt(redis_sock, "SENTINEL", "sS", kw, strlen(kw), name);
 }
 
@@ -6705,11 +6720,9 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 {
     zend_long option;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &option)
-                              == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(option)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     // Return the requested option
     switch(option) {
@@ -6761,11 +6774,10 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     int tcp_keepalive = 0;
     php_netstream_data_t *sock;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "lz", &option,
-                              &val) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(option)
+        Z_PARAM_ZVAL(val)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     switch(option) {
         case REDIS_OPT_SERIALIZER:
@@ -6923,10 +6935,9 @@ void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     size_t key_len;
     char *key;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &key, &key_len) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STRING(key, key_len)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     if (redis_sock->prefix) {
         int keyfree = redis_key_prefix(redis_sock, &key, &key_len);
@@ -6944,9 +6955,9 @@ void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     char *val;
     size_t val_len;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &z_val) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(z_val)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     int val_free = redis_serialize(redis_sock, z_val, &val, &val_len);
 
@@ -6960,12 +6971,9 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     char *value;
     size_t value_len;
 
-    // Parse our arguments
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &value, &value_len)
-                                    == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STRING(value, value_len)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     // We only need to attempt unserialization if we have a serializer running
     if (redis_sock->serializer == REDIS_SERIALIZER_NONE) {
@@ -6988,9 +6996,9 @@ void redis_compress_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     char *buf;
     int cmp_free;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &zstr) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STR(zstr)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     cmp_free = redis_compress(redis_sock, &buf, &len, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
     RETVAL_STRINGL(buf, len);
@@ -7004,9 +7012,11 @@ void redis_uncompress_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_soc
     size_t len;
     char *buf;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &zstr) == FAILURE) {
-        RETURN_FALSE;
-    } else if (ZSTR_LEN(zstr) == 0 || redis_sock->compression == REDIS_COMPRESSION_NONE) {
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STR(zstr)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
+
+    if (ZSTR_LEN(zstr) == 0 || redis_sock->compression == REDIS_COMPRESSION_NONE) {
         RETURN_STR_COPY(zstr);
     }
 
@@ -7025,9 +7035,9 @@ void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     char *val;
     zval *zv;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &zv) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(zv)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     valfree = redis_pack(redis_sock, zv, &val, &len);
     RETVAL_STRINGL(val, len);
@@ -7101,9 +7111,9 @@ void redis_digest_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     zend_string *str;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &str) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STR(str)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     redis_unpack(redis_sock, ZSTR_VAL(str), ZSTR_LEN(str), return_value);
 }
