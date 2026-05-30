@@ -2511,7 +2511,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
     ZEND_PARSE_PARAMETERS_START(2, 4)
         Z_PARAM_STRING(key, key_len)
-        Z_PARAM_ZVAL(z_it)
+        Z_PARAM_ZVAL_EX2(z_it, 0, 1, 0)
         Z_PARAM_OPTIONAL
         Z_PARAM_STRING_OR_NULL(pat, pat_len)
         Z_PARAM_LONG(count)
@@ -2676,7 +2676,7 @@ PHP_METHOD(RedisCluster, scan) {
     }
 
     ZEND_PARSE_PARAMETERS_START(2, 4)
-        Z_PARAM_ZVAL(zcursor)
+        Z_PARAM_ZVAL_EX2(zcursor, 0, 1, 0)
         Z_PARAM_ZVAL(z_node)
         Z_PARAM_OPTIONAL
         Z_PARAM_STRING_OR_NULL(pat, pat_len)
