@@ -881,7 +881,7 @@ class Redis {
      *
      * @example
      * $redis->blPop('list1', 'list2', 'list3', 1.5);
-     * $relay->blPop(['list1', 'list2', 'list3'], 1.5);
+     * $redis->blPop(['list1', 'list2', 'list3'], 1.5);
      */
     public function blPop(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args): Redis|array|null|false;
 
