@@ -778,6 +778,12 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
     char *reply;
     ssize_t got;
 
+    if (bytes < -1 || bytes > INT_MAX - 2) {
+        zend_throw_exception_ex(redis_exception_ce, 0,
+            "protocol error, invalid bulk length: %d", bytes);
+        return NULL;
+    }
+
     if (-1 == bytes || -1 == redis_check_eof(redis_sock, 1, 0)) {
         return NULL;
     }
@@ -4642,18 +4648,29 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
 }
 
 PHP_REDIS_API int
-redis_read_variant_bulk(RedisSock *redis_sock, int size, zval *z_ret
+redis_read_variant_bulk(RedisSock *redis_sock, long size, zval *z_ret
                        )
 {
+    int bytes;
+
+    if (size < -1 || size > INT_MAX - 2) {
+        zend_throw_exception_ex(redis_exception_ce, 0,
+            "protocol error, invalid bulk length: %ld", size);
+        ZVAL_FALSE(z_ret);
+        return -1;
+    }
+
+    bytes = size;
+
     // Attempt to read the bulk reply
-    char *bulk_resp = redis_sock_read_bulk_reply(redis_sock, size);
+    char *bulk_resp = redis_sock_read_bulk_reply(redis_sock, bytes);
 
     /* Set our reply to FALSE on failure, and the string on success */
     if(bulk_resp == NULL) {
         ZVAL_FALSE(z_ret);
         return -1;
     }
-    ZVAL_STRINGL(z_ret, bulk_resp, size);
+    ZVAL_STRINGL(z_ret, bulk_resp, bytes);
     efree(bulk_resp);
     return 0;
 }
