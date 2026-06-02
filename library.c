@@ -4483,9 +4483,10 @@ redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len) {
     }
 
     ret_len = ZSTR_LEN(redis_sock->prefix) + *key_len;
-    ret = ecalloc(1 + ret_len, 1);
+    ret = emalloc(1 + ret_len);
     memcpy(ret, ZSTR_VAL(redis_sock->prefix), ZSTR_LEN(redis_sock->prefix));
     memcpy(ret + ZSTR_LEN(redis_sock->prefix), *key, *key_len);
+    ret[ret_len] = '\0';
 
     *key = ret;
     *key_len = ret_len;
