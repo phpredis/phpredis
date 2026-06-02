@@ -762,7 +762,7 @@ redis_sock_read_multibulk_reply_zval(RedisSock *redis_sock, zval *z_tab)
         ZVAL_NULL(z_tab);
         return NULL;
     }
-    array_init(z_tab);
+    array_init_size(z_tab, numElems > 0 ? numElems : 0);
     redis_mbulk_reply_loop(redis_sock, z_tab, numElems, UNSERIALIZE_ALL);
 
     return z_tab;
@@ -1630,7 +1630,7 @@ redis_read_lpos_response(zval *zdst, RedisSock *redis_sock, char reply_type,
         if (reply_type != TYPE_MULTIBULK)
             return FAILURE;
 
-        array_init(zdst);
+        array_init_size(zdst, elements > 0 ? elements : 0);
 
         for (i = 0;  i < elements; ++i) {
             if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &len) < 0) {
@@ -2060,7 +2060,7 @@ redis_client_trackinginfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
         return FAILURE;
     }
 
-    array_init(&z_ret);
+    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
     redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
     array_zip_values_and_scores(redis_sock, &z_ret, 0);
 
@@ -2100,7 +2100,7 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS,
     if (read_mbulk_header(redis_sock, &numElems) < 0)
         goto fail;
 
-    array_init(&z_ret);
+    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
 
     if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS ||
         array_zip_values_recursive(&z_ret) != SUCCESS)
@@ -4715,7 +4715,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
                 if (reply_info < 0 && redis_sock->null_mbulk_as_null) {
                     add_next_index_null(z_ret);
                 } else {
-                    array_init(&z_subelem);
+                    array_init_size(&z_subelem, reply_info > 0 ? reply_info : 0);
                     if (reply_info > 0) {
                         redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_subelem);
                     }
