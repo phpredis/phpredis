@@ -3784,16 +3784,126 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
     return SUCCESS;
 }
 
+/* Bulk-string reader that materializes the body directly into a zend_string,
+ * avoiding the extra emalloc+memcpy a caller would otherwise pay to turn a
+ * raw char* reply into a PHP string. The caller must have already handled the
+ * null-bulk ($-1) case; bytes is the non-negative payload length. */
+static zend_string *
+redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
+{
+    size_t offset = 0, nbytes;
+    zend_string *zstr;
+    ssize_t got;
+
+    if (bytes < 0 || bytes > INT_MAX - 2) {
+        zend_throw_exception_ex(redis_exception_ce, 0,
+            "protocol error, invalid bulk length: %d", bytes);
+        return NULL;
+    }
+
+    if (-1 == redis_check_eof(redis_sock, 1, 0)) {
+        return NULL;
+    }
+
+    /* Over-allocate by two so the trailing \r\n lands in the same buffer as
+     * the body; the reported length is trimmed back to the payload below. */
+    nbytes = (size_t)bytes + 2;
+    zstr = zend_string_alloc(nbytes, 0);
+
+    while (offset < nbytes) {
+        got = redis_sock_read_raw(redis_sock, ZSTR_VAL(zstr) + offset, nbytes - offset);
+        if (got < 0 || (got == 0 && php_stream_eof(redis_sock->stream)))
+            break;
+
+        offset += got;
+    }
+
+    if (offset < nbytes) {
+        REDIS_THROW_EXCEPTION("socket error on read socket", 0);
+        zend_string_release(zstr);
+        return NULL;
+    }
+
+    ZSTR_LEN(zstr) = bytes;
+    ZSTR_VAL(zstr)[bytes] = '\0';
+
+    return zstr;
+}
+
+/* A zend_string-returning counterpart to redis_sock_read, used by the
+ * multibulk loop so element strings can be moved into the result array with
+ * no intermediate copy. Returns NULL for null/error replies, mirroring
+ * redis_sock_read's NULL semantics. */
+static zend_string *
+redis_sock_read_zstr(RedisSock *redis_sock)
+{
+    char inbuf[4096];
+    size_t len;
+
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || len < 1) {
+        return NULL;
+    }
+
+    switch (inbuf[0]) {
+        case '-':
+            redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
+            redis_error_throw(redis_sock);
+            return NULL;
+        case '$':
+            {
+                char *endptr;
+                long long n;
+
+                errno = 0;
+                n = strtoll(inbuf + 1, &endptr, 10);
+                if (endptr == inbuf + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+                    return NULL;
+                }
+                if (n == -1) {
+                    return NULL;
+                }
+                return redis_sock_read_bulk_zstr(redis_sock, (int)n);
+            }
+        case '*':
+            /* For null multi-bulk replies (like timeouts from brpoplpush): */
+            if (len > 2 && memcmp(inbuf + 1, "-1", 2) == 0) {
+                return NULL;
+            }
+            REDIS_FALLTHROUGH;
+        case '+':
+        case ':':
+            /* Single line reply (+OK or :123), kept verbatim like
+             * redis_sock_read does, including the leading type byte. */
+            if (len > 1) {
+                return zend_string_init(inbuf, len, 0);
+            }
+            REDIS_FALLTHROUGH;
+        default:
+            zend_throw_exception_ex(redis_exception_ce, 0,
+                "protocol error, got '%c' as reply type byte\n",
+                inbuf[0]
+            );
+    }
+
+    return NULL;
+}
+
 PHP_REDIS_API void
 redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
                        int unserialize)
 {
     zval z_value;
-    char *line;
-    int i, len;
+    zend_string *zstr;
+    int i;
+
+    /* When neither a serializer nor compression is active, redis_unpack just
+     * copies the bytes into a new string, so we can move our zend_string into
+     * the array directly and skip the unpack entirely. */
+    int repack = redis_sock->serializer != REDIS_SERIALIZER_NONE ||
+                 redis_sock->compression != REDIS_COMPRESSION_NONE;
 
     for (i = 0; i < count; ++i) {
-        if ((line = redis_sock_read(redis_sock, &len)) == NULL) {
+        if ((zstr = redis_sock_read_zstr(redis_sock)) == NULL) {
             add_next_index_bool(z_tab, 0);
             continue;
         }
@@ -3807,14 +3917,13 @@ redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
             (unserialize == UNSERIALIZE_VALS && i % 2 != 0)
         );
 
-        if (unwrap) {
-            redis_unpack(redis_sock, line, len, &z_value);
+        if (unwrap && repack) {
+            redis_unpack(redis_sock, ZSTR_VAL(zstr), ZSTR_LEN(zstr), &z_value);
+            zend_string_release(zstr);
         } else {
-            ZVAL_STRINGL_FAST(&z_value, line, len);
+            ZVAL_STR(&z_value, zstr);
         }
         zend_hash_next_index_insert_new(Z_ARRVAL_P(z_tab), &z_value);
-
-        efree(line);
     }
 }
 
