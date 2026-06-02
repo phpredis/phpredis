@@ -6057,7 +6057,7 @@ class Redis_Test extends TestSuite {
 
                     $unpacked = $this->redis->get('packkey');
                     $this->assertEquals($unpacked, $this->redis->_unpack($raw),
-                                        "$ser_name + $cmp_name");
+                                        "{$ser_name} + {$cmp_name}");
 		}
 	    }
         }
