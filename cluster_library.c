@@ -1308,7 +1308,7 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force) {
 static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
                               int nomaster)
 {
-    int i, count = 1, *nodes;
+    int i, count = 1, stack_nodes[16], *nodes;
     RedisSock *redis_sock;
 
     /* Determine our overall node count */
@@ -1316,8 +1316,10 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
         count += zend_hash_num_elements(c->master[c->cmd_slot]->slaves);
     }
 
-    /* Allocate memory for master + slaves or just slaves */
-    nodes = emalloc(sizeof(int)*count);
+    /* A shard's replica count is tiny in practice, so serve the common case
+     * from the stack and only fall back to the heap for huge fan-outs. */
+    nodes = count <= (int)(sizeof(stack_nodes) / sizeof(stack_nodes[0]))
+          ? stack_nodes : emalloc(sizeof(int) * count);
 
     /* Populate our array with the master and each of it's slaves, then
      * randomize them, so we will pick from the master or some slave.  */
@@ -1340,14 +1342,14 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
             /* Attempt to send the command */
             if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz)) {
                 c->cmd_sock = redis_sock;
-                efree(nodes);
+                if (nodes != stack_nodes) efree(nodes);
                 return 0;
             }
         }
     }
 
     /* Clean up our shuffled array */
-    efree(nodes);
+    if (nodes != stack_nodes) efree(nodes);
 
     /* Couldn't send to the master or any slave */
     return -1;
