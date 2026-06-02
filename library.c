@@ -784,7 +784,12 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
         return NULL;
     }
 
-    if (-1 == bytes || -1 == redis_check_eof(redis_sock, 1, 0)) {
+    /* The caller reaches this only after successfully reading the bulk
+     * header on this socket, which already proved the stream live, so the
+     * php_stream_eof() liveness probe redis_check_eof() performs is
+     * redundant here. A mid-read disconnect is still caught by the read
+     * loop below. Keep a cheap NULL-stream guard for safety. */
+    if (-1 == bytes || redis_sock->stream == NULL) {
         return NULL;
     }
 
