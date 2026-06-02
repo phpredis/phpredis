@@ -468,7 +468,7 @@ class TestSuite
         if ($expected === $actual)
             return true;
 
-        $context = $context === NULL ? '' : " ($context)";
+        $context = $context === NULL ? '' : " ({$context})";
 
         self::$errors[] = $this->assertionTrace("%s !== %s%s", $this->printArg($actual),
                                                 $this->printArg($expected), $context);
