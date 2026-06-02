@@ -497,8 +497,15 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos)
 
         /* hash */
         if (ra->algorithm && (ops = redis_hash_fetch_ops(ra->algorithm))) {
-            void *ctx = emalloc(ops->context_size);
-            unsigned char *digest = emalloc(ops->digest_size);
+            /* The union forces alignment suitable for any hash context
+             * struct (they hold uint64_t state); fall back to the heap for
+             * the rare algorithm whose context/digest exceeds the buffer. */
+            union { double align; unsigned char buf[256]; } ctx_stack;
+            unsigned char digest_stack[64];
+            void *ctx = ops->context_size <= sizeof(ctx_stack) ? (void *)&ctx_stack
+                                                               : emalloc(ops->context_size);
+            unsigned char *digest = ops->digest_size <= sizeof(digest_stack) ? digest_stack
+                                                                             : emalloc(ops->digest_size);
 
 #if PHP_VERSION_ID >= 80100
             ops->hash_init(ctx,NULL);
@@ -511,8 +518,8 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos)
             memcpy(&ret, digest, MIN(sizeof(ret), ops->digest_size));
             ret %= 0xffffffff;
 
-            efree(digest);
-            efree(ctx);
+            if (digest != digest_stack) efree(digest);
+            if (ctx != (void *)&ctx_stack) efree(ctx);
         } else {
             for (i = 0; i < ZSTR_LEN(out); ++i) {
                 CRC32(ret, ZSTR_VAL(out)[i]);
