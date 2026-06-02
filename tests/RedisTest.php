@@ -6053,7 +6053,7 @@ class Redis_Test extends TestSuite {
                     $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
 
                     $this->assertEquals($raw, $this->redis->_pack($v),
-                                        "$ser_name + $cmp_name");
+                                        "{$ser_name} + {$cmp_name}");
 
                     $unpacked = $this->redis->get('packkey');
                     $this->assertEquals($unpacked, $this->redis->_unpack($raw),
