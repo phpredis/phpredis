@@ -1627,7 +1627,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     c->cmd_sock = SLOT_SOCK(c, slot);
 
     /* Get the current time in milliseconds to handle any timeout */
-    msstart = mstime();
+    msstart = c->waitms ? mstime() : 0;
 
     /* Our main cluster request/reply loop.  This loop runs until we're able to
      * get a valid reply from a node, hit our "request" timeout, or encounter a
