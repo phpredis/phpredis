@@ -121,7 +121,7 @@
     mc.kw     = keyword; \
     mc.kw_len = keyword_len; \
 
-#define CLUSTER_CACHING_ENABLED() (INI_INT("redis.clusters.cache_slots") == 1)
+#define CLUSTER_CACHING_ENABLED() (REDIS_INI_INT("redis.clusters.cache_slots") == 1)
 
 /* Cluster redirection enum */
 typedef enum CLUSTER_REDIR_TYPE {

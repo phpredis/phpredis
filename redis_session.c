@@ -159,7 +159,7 @@ redis_pool_free(redis_pool *pool) {
 
 /* Retrieve session.gc_maxlifetime from php.ini protecting against an integer overflow */
 static int session_gc_maxlifetime(void) {
-    zend_long value = INI_INT("session.gc_maxlifetime");
+    zend_long value = REDIS_INI_INT("session.gc_maxlifetime");
     if (value > INT_MAX) {
         php_error_docref(NULL, E_NOTICE, "session.gc_maxlifetime overflows INT_MAX, truncating.");
         return INT_MAX;
@@ -173,7 +173,7 @@ static int session_gc_maxlifetime(void) {
 
 /* Retrieve redis.session.compression from php.ini */
 static int session_compression_type(void) {
-    const char *compression = INI_STR("redis.session.compression");
+    const char *compression = REDIS_INI_STR("redis.session.compression");
 
     if(compression == NULL || *compression == '\0' ||
        redis_strncasecmp(compression, ZEND_STRL("none")) == 0)
@@ -363,25 +363,25 @@ lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status) {
     char *cmd;
 
     /* Short circuit if we are already locked or not using session locks */
-    if (lock_status->is_locked || !INI_INT("redis.session.locking_enabled"))
+    if (lock_status->is_locked || !REDIS_INI_INT("redis.session.locking_enabled"))
         return SUCCESS;
 
     /* How long to wait between attempts to acquire lock */
-    wait_time = INI_INT("redis.session.lock_wait_time");
+    wait_time = REDIS_INI_INT("redis.session.lock_wait_time");
     if (wait_time == 0) {
         wait_time = 20000;
     }
 
     /* Maximum number of times to retry (-1 means infinite) */
-    retries = INI_INT("redis.session.lock_retries");
+    retries = REDIS_INI_INT("redis.session.lock_retries");
     if (retries == 0) {
         retries = 100;
     }
 
     /* How long should the lock live (in seconds) */
-    expiry = INI_INT("redis.session.lock_expire");
+    expiry = REDIS_INI_INT("redis.session.lock_expire");
     if (expiry == 0) {
-        expiry = INI_INT("max_execution_time");
+        expiry = REDIS_INI_INT("max_execution_time");
     }
 
     generate_lock_key(lock_status);
@@ -427,13 +427,13 @@ lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status) {
 #define IS_LOCK_SECRET(reply, len, secret) (len == ZSTR_LEN(secret) && !redis_strncmp(reply, ZSTR_VAL(secret), len))
 static int write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_status)
 {
-    if (!INI_INT("redis.session.locking_enabled")) {
+    if (!REDIS_INI_INT("redis.session.locking_enabled")) {
         return 1;
     }
     /* If locked and redis.session.lock_expire is not set => TTL=max_execution_time
        Therefore it is guaranteed that the current process is still holding the lock */
 
-    if (lock_status->is_locked && INI_INT("redis.session.lock_expire") != 0) {
+    if (lock_status->is_locked && REDIS_INI_INT("redis.session.lock_expire") != 0) {
         char *cmd, *reply = NULL;
         int replylen, cmdlen;
         /* Command to get our lock key value and compare secrets */
@@ -568,7 +568,7 @@ lock_release_lua(RedisSock *redis_sock, redis_session_lock_status *status) {
 static lockDelCmd lock_release_cmd(void) {
     char *cmd;
 
-    cmd = INI_STR("redis.session.lock_release_cmd");
+    cmd = REDIS_INI_STR("redis.session.lock_release_cmd");
 
     if (cmd == NULL) {
         return LOCK_DEL_EVAL;
@@ -732,7 +732,7 @@ PS_OPEN_FUNC(redis)
             }
 
             redis_sock->compression = session_compression_type();
-            redis_sock->compression_level = INI_INT("redis.session.compression_level");
+            redis_sock->compression_level = REDIS_INI_INT("redis.session.compression_level");
 
             redis_sock_set_context_zval(redis_sock, &context);
 
@@ -898,7 +898,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     if (!skeylen) return FAILURE;
 
     /* No need to update the session timestamp if we've already done so */
-    if (INI_INT("redis.session.early_refresh")) {
+    if (REDIS_INI_INT("redis.session.early_refresh")) {
         return SUCCESS;
     }
 
@@ -957,7 +957,7 @@ PS_READ_FUNC(redis)
     pool->lock_status.session_key = redis_session_key(redis_sock, skey, skeylen);
 
     /* Update the session ttl if early refresh is enabled */
-    if (INI_INT("redis.session.early_refresh")) {
+    if (REDIS_INI_INT("redis.session.early_refresh")) {
         cmd_len = REDIS_SPPRINTF(&cmd, "GETEX", "Ssd", pool->lock_status.session_key,
                                  "EX", 2, session_gc_maxlifetime());
     } else {
@@ -965,7 +965,7 @@ PS_READ_FUNC(redis)
     }
 
     if (lock_acquire(redis_sock, &pool->lock_status) != SUCCESS) {
-        if (INI_INT("redis.session.lock_failure_readonly")) {
+        if (REDIS_INI_INT("redis.session.lock_failure_readonly")) {
             // opt-in legacy behavior: readonly session
             php_error_docref(NULL, E_WARNING, "Failed to acquire session lock, session will be read only");
         } else {
@@ -1218,7 +1218,7 @@ PS_OPEN_FUNC(rediscluster) {
     }
 
     c->flags->compression = session_compression_type();
-    c->flags->compression_level = INI_INT("redis.session.compression_level");
+    c->flags->compression_level = REDIS_INI_INT("redis.session.compression_level");
 
     redis_sock_set_auth(c->flags, user, pass);
 
@@ -1271,7 +1271,7 @@ PS_CREATE_SID_FUNC(rediscluster)
         return php_session_create_id(NULL);
     }
 
-    if (INI_INT("session.use_strict_mode") == 0) {
+    if (REDIS_INI_INT("session.use_strict_mode") == 0) {
         return php_session_create_id((void **) &c);
     }
 
@@ -1380,7 +1380,7 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
     short slot;
 
     /* No need to update the session timestamp if we've already done so */
-    if (INI_INT("redis.session.early_refresh")) {
+    if (REDIS_INI_INT("redis.session.early_refresh")) {
         return SUCCESS;
     }
 
@@ -1429,7 +1429,7 @@ PS_READ_FUNC(rediscluster) {
     skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
 
     /* Update the session ttl if early refresh is enabled */
-    if (INI_INT("redis.session.early_refresh")) {
+    if (REDIS_INI_INT("redis.session.early_refresh")) {
         cmdlen = redis_spprintf(NULL, NULL, &cmd, "GETEX", "ssd", skey,
                                 skeylen, "EX", 2, session_gc_maxlifetime());
         c->readonly = 0;

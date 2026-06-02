@@ -13,7 +13,7 @@
 #include <zend_smart_str.h>
 #include <zend_smart_string.h>
 
-#define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - XtOffsetOf(class_entry, std))
+#define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - offsetof(class_entry, std))
 #define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, Z_OBJ_P(z))
 
 /* We'll fallthrough if we want to */
@@ -200,7 +200,23 @@ typedef enum {
 	Z_PARAM_ZVAL_EX(dest, 1, 0)
 #define Z_PARAM_BOOL_OR_NULL(dest, is_null) \
 	Z_PARAM_BOOL_EX(dest, is_null, 1, 0)
+
+#if ZEND_DEBUG
+    #define ZEND_UNREACHABLE() do {ZEND_ASSERT(0); ZEND_ASSUME(0);} while (0)
+#else
+    #define ZEND_UNREACHABLE() ZEND_ASSUME(0)
 #endif
+
+#endif
+
+#if PHP_VERSION_ID < 80600
+    #define REDIS_INI_STR(name) INI_STR(name)
+    #define REDIS_INI_INT(name) INI_INT(name)
+#else
+    #define REDIS_INI_STR(name) (char *)zend_ini_string_literal(name)
+    #define REDIS_INI_INT(name) zend_ini_long_literal(name)
+#endif
+
 
 #if PHPREDIS_DEBUG_LOGGING == 1
 #define redisDbgFmt(fmt, ...) \
