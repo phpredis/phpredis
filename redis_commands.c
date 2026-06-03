@@ -1742,6 +1742,20 @@ RedisCmd *redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
     return cmd;
 }
 
+/* Upper-bound RESP frame size of one argument: the framing bytes
+ * ($<len>\r\n...\r\n, generously 16) plus the payload length when the value is
+ * already a string. Non-strings format to short text (ints/doubles) and get a
+ * fixed allowance. Used to reserve a command buffer before a variadic builder's
+ * append loop so a high-arity (or large-payload) call doesn't regrow the
+ * smart_string a page at a time. The estimate need not be exact: it only reads
+ * types and lengths, never converts, so it cannot change the emitted bytes, and
+ * under-estimating just falls back to the normal growth path. */
+static zend_always_inline size_t redis_zval_frame_est(zval *zv)
+{
+    ZVAL_DEREF(zv);
+    return 16 + (Z_TYPE_P(zv) == IS_STRING ? Z_STRLEN_P(zv) : 24);
+}
+
 /* Commands that take a key followed by a variable list of serializable
  * values (RPUSH, LPUSH, SADD, SREM, etc...) */
 RedisCmd *redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS,
@@ -1760,6 +1774,14 @@ RedisCmd *redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
     /* Initialize our command */
     cmd = redis_cmd_create(redis_sock, kw, kw_len);
+
+    /* Reserve the buffer up front so a high-arity call doesn't regrow it */
+    {
+        size_t est = ZSTR_LEN(key) + 16 +
+                     (redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0);
+        for (i = 0; i < argc; i++) est += redis_zval_frame_est(&args[i]);
+        smart_string_alloc(&cmd->s, est, 0);
+    }
 
     /* Append key */
     redis_cmd_cat_key_zstr(cmd, key);
@@ -1791,6 +1813,17 @@ static RedisCmd *gen_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS,
         return NULL;
 
     cmd = redis_cmd_create(redis_sock, kw, kw_len);
+
+    {
+        size_t est = ZSTR_LEN(key) + 16 +
+                     (redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0);
+        zval *zest;
+        ZEND_HASH_FOREACH_VAL(values, zest) {
+            est += redis_zval_frame_est(zest);
+        } ZEND_HASH_FOREACH_END();
+        smart_string_alloc(&cmd->s, est, 0);
+    }
+
     redis_cmd_cat_key_zstr(cmd, key);
 
     ZEND_HASH_FOREACH_VAL(values, zv) {
@@ -1831,6 +1864,12 @@ gen_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     cmd = redis_cmd_create(redis_sock, kw, kw_len);
+
+    {
+        size_t est = 0;
+        for (i = 0; i < argc; i++) est += redis_zval_frame_est(&argv[i]);
+        smart_string_alloc(&cmd->s, est, 0);
+    }
 
     for (i = 0; i < argc; i++) {
         redis_cmd_cat_zval_zstr(cmd, &argv[i]);
@@ -2444,6 +2483,16 @@ RedisCmd *redis_mget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 
     cmd = redis_cmd_create_literal(redis_sock, "MGET");
 
+    {
+        size_t est = 0;
+        size_t prefix_len = redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0;
+        zval *zest;
+        ZEND_HASH_FOREACH_VAL(keys, zest) {
+            est += redis_zval_frame_est(zest) + prefix_len;
+        } ZEND_HASH_FOREACH_END();
+        smart_string_alloc(&cmd->s, est, 0);
+    }
+
     ZEND_HASH_FOREACH_VAL(keys, zkey) {
         ZVAL_DEREF(zkey);
         redis_cmd_try_cat_key_zval(cmd, zkey);
@@ -2810,6 +2859,18 @@ RedisCmd *redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         return NULL;
 
     cmd = redis_cmd_create_literal(redis_sock, "HMSET");
+
+    {
+        size_t est = ZSTR_LEN(key) + 16 +
+                     (redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0);
+        zend_string *fkey;
+        zval *zest;
+        ZEND_HASH_FOREACH_STR_KEY_VAL(ht, fkey, zest) {
+            est += 16 + (fkey ? ZSTR_LEN(fkey) : 20) + redis_zval_frame_est(zest);
+        } ZEND_HASH_FOREACH_END();
+        smart_string_alloc(&cmd->s, est, 0);
+    }
+
     redis_cmd_cat_key_zstr(cmd, key);
 
     ZEND_HASH_FOREACH_KEY_VAL(ht, idx, key, zv) {
