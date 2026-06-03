@@ -1046,10 +1046,7 @@ redis_spprintf(RedisSock *redis_sock, short *slot, char **ret, char *kw, char *f
             case 'k':
                 arg.str = va_arg(ap, char*);
                 arglen = va_arg(ap, size_t);
-                argfree = redis_key_prefix(redis_sock, &arg.str, &arglen);
-                redis_cmd_append_sstr(&cmd, arg.str, arglen);
-                if (slot) *slot = cluster_hash_key(arg.str, arglen);
-                if (argfree) efree(arg.str);
+                redis_cmd_append_sstr_key(&cmd, arg.str, arglen, redis_sock, slot);
                 break;
             case 'K':
                 arg.zstr = va_arg(ap, zend_string*);
@@ -1115,6 +1112,22 @@ int redis_cmd_append_sstr(smart_string *str, char *append, int append_len) {
     smart_string_append_long(str, append_len);
     smart_string_appendl(str, _NL, sizeof(_NL) - 1);
     smart_string_appendl(str, append, append_len);
+    smart_string_appendl(str, _NL, sizeof(_NL) - 1);
+
+    /* Return our new length */
+    return str->len;
+}
+
+/* Append a single RESP bulk argument formed by concatenating two segments,
+ * without materializing the concatenation. Used to frame a prefixed key
+ * (prefix + key) straight into the command buffer. */
+static int redis_cmd_append_sstr2(smart_string *str, const char *a, size_t alen,
+                                  const char *b, size_t blen) {
+    smart_string_appendc(str, '$');
+    smart_string_append_long(str, (zend_long)(alen + blen));
+    smart_string_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_string_appendl(str, a, alen);
+    smart_string_appendl(str, b, blen);
     smart_string_appendl(str, _NL, sizeof(_NL) - 1);
 
     /* Return our new length */
@@ -1211,6 +1224,14 @@ int redis_cmd_append_sstr_zstr(smart_string *str, zend_string *zstr) {
  * for the caller and setting the slot argument if it is passed non null */
 int redis_cmd_append_sstr_key(smart_string *str, char *key, size_t len, RedisSock *redis_sock, short *slot) {
     int valfree, retval;
+
+    /* Outside cluster mode we don't need a contiguous prefixed key for slot
+     * hashing, so frame the prefix and key directly into the command buffer
+     * rather than allocating a temporary copy just to append it and free it. */
+    if (slot == NULL && redis_sock->prefix != NULL) {
+        return redis_cmd_append_sstr2(str, ZSTR_VAL(redis_sock->prefix),
+                                      ZSTR_LEN(redis_sock->prefix), key, len);
+    }
 
     valfree = redis_key_prefix(redis_sock, &key, &len);
     if (slot) *slot = cluster_hash_key(key, len);
