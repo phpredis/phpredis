@@ -822,17 +822,20 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
     return reply;
 }
 
-/**
- * redis_sock_read
- */
-PHP_REDIS_API char *
-redis_sock_read(RedisSock *redis_sock, int *buf_len)
+/* Shared reply reader. `inbuf` is caller-provided scratch. For single-line
+ * (+/:) replies the result points into `inbuf` (borrowed, *heapbuf == 0); for
+ * bulk ($) replies it returns a heap buffer the caller must efree
+ * (*heapbuf == 1). This lets status/integer handlers avoid a heap copy of a
+ * line that lives only long enough to read its first byte. */
+static char *
+redis_sock_read_into(RedisSock *redis_sock, char *inbuf, size_t inbuf_sz,
+                     int *buf_len, zend_bool *heapbuf)
 {
-    char inbuf[4096];
     size_t len;
 
     *buf_len = 0;
-    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || len < 1) {
+    *heapbuf = 0;
+    if (redis_sock_gets(redis_sock, inbuf, inbuf_sz - 1, &len) < 0 || len < 1) {
         return NULL;
     }
 
@@ -856,6 +859,7 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
                 }
                 *buf_len = (int)n;
             }
+            *heapbuf = 1;
             return redis_sock_read_bulk_reply(redis_sock, *buf_len);
 
         case '*':
@@ -870,7 +874,7 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
             /* +OK or :123 */
             if (len > 1) {
                 *buf_len = len;
-                return estrndup(inbuf, *buf_len);
+                return inbuf;
             }
             REDIS_FALLTHROUGH;
         default:
@@ -881,6 +885,27 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
     }
 
     return NULL;
+}
+
+/**
+ * redis_sock_read
+ */
+PHP_REDIS_API char *
+redis_sock_read(RedisSock *redis_sock, int *buf_len)
+{
+    char inbuf[4096];
+    zend_bool heapbuf;
+    char *resp;
+
+    resp = redis_sock_read_into(redis_sock, inbuf, sizeof(inbuf), buf_len, &heapbuf);
+
+    /* A borrowed single-line reply lives in our stack buffer; existing callers
+     * own what they get back, so copy it onto the heap as before. */
+    if (resp != NULL && !heapbuf) {
+        return estrndup(resp, *buf_len);
+    }
+
+    return resp;
 }
 
 /* A simple union to store the various arg types we might handle in our
@@ -1691,13 +1716,14 @@ redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             SuccessCallback success_callback)
 {
 
-    char *response;
+    char inbuf[4096], *response;
     int response_len;
-    zend_bool ret = 0;
+    zend_bool ret = 0, heapbuf;
 
-    if ((response = redis_sock_read(redis_sock, &response_len)) != NULL) {
+    if ((response = redis_sock_read_into(redis_sock, inbuf, sizeof(inbuf),
+                                         &response_len, &heapbuf)) != NULL) {
         ret = (*response == '+');
-        efree(response);
+        if (heapbuf) efree(response);
     }
 
     if (ret && success_callback != NULL) {
@@ -1725,12 +1751,14 @@ PHP_REDIS_API int redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
                                       void *ctx)
 {
 
-    char *response;
+    char inbuf[4096], *response;
     int response_len;
+    zend_bool heapbuf;
 
-    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL || *response != TYPE_INT) {
+    if ((response = redis_sock_read_into(redis_sock, inbuf, sizeof(inbuf),
+                                         &response_len, &heapbuf)) == NULL || *response != TYPE_INT) {
         REDIS_RESPONSE_ERROR(redis_sock, z_tab);
-        if (response) efree(response);
+        if (response && heapbuf) efree(response);
         return FAILURE;
     }
 
@@ -1750,7 +1778,7 @@ PHP_REDIS_API int redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
         }
     }
 
-    efree(response);
+    if (heapbuf) efree(response);
     return SUCCESS;
 }
 
