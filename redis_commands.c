@@ -1851,6 +1851,20 @@ int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
 
 /* Commands that take a key followed by a variable list of serializable
  * values (RPUSH, LPUSH, SADD, SREM, etc...) */
+/* Upper-bound RESP frame size of one argument: the framing bytes
+ * ($<len>\r\n...\r\n, generously 16) plus the payload length when the value is
+ * already a string. Non-strings format to short text (ints/doubles) and get a
+ * fixed allowance. Used to reserve a command buffer before a variadic builder's
+ * append loop so a high-arity (or large-payload) call doesn't regrow the
+ * smart_string a page at a time. The estimate need not be exact: it only reads
+ * types and lengths, never converts, so it cannot change the emitted bytes, and
+ * under-estimating just falls back to the normal growth path. */
+static zend_always_inline size_t redis_zval_frame_est(zval *zv)
+{
+    ZVAL_DEREF(zv);
+    return 16 + (Z_TYPE_P(zv) == IS_STRING ? Z_STRLEN_P(zv) : 24);
+}
+
 int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          char *kw, char **cmd, int *cmd_len, short *slot,
                          void **ctx)
@@ -1868,6 +1882,14 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Initialize our command */
     redis_cmd_init_sstr(&cmdstr, argc + 1, kw, strlen(kw));
+
+    /* Reserve the buffer up front so a high-arity call doesn't regrow it */
+    {
+        size_t est = ZSTR_LEN(key) + 16 +
+                     (redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0);
+        for (i = 0; i < argc; i++) est += redis_zval_frame_est(&args[i]);
+        smart_string_alloc(&cmdstr, est, 0);
+    }
 
     /* Append key */
     redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
@@ -1904,6 +1926,17 @@ static int gen_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
 
     redis_cmd_init_sstr(&cmdstr, 1 + zend_hash_num_elements(values), kw, strlen(kw));
+
+    {
+        size_t est = ZSTR_LEN(key) + 16 +
+                     (redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0);
+        zval *zest;
+        ZEND_HASH_FOREACH_VAL(values, zest) {
+            est += redis_zval_frame_est(zest);
+        } ZEND_HASH_FOREACH_END();
+        smart_string_alloc(&cmdstr, est, 0);
+    }
+
     redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
     ZEND_HASH_FOREACH_VAL(values, zv) {
@@ -1948,6 +1981,12 @@ gen_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
     redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+
+    {
+        size_t est = 0;
+        for (i = 0; i < argc; i++) est += redis_zval_frame_est(&argv[i]);
+        smart_string_alloc(&cmdstr, est, 0);
+    }
 
     for (i = 0; i < argc; i++) {
         redis_cmd_append_sstr_zval(&cmdstr, &argv[i], NULL);
@@ -2651,6 +2690,16 @@ int redis_mget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, zend_hash_num_elements(keys), "MGET");
 
+    {
+        size_t est = 0;
+        size_t prefix_len = redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0;
+        zval *zest;
+        ZEND_HASH_FOREACH_VAL(keys, zest) {
+            est += redis_zval_frame_est(zest) + prefix_len;
+        } ZEND_HASH_FOREACH_END();
+        smart_string_alloc(&cmdstr, est, 0);
+    }
+
     ZEND_HASH_FOREACH_VAL(keys, zkey) {
         ZVAL_DEREF(zkey);
         redis_cmd_append_sstr_key_zval(&cmdstr, zkey, redis_sock, slot);
@@ -3049,6 +3098,19 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + (2 * fields), "HMSET");
+
+    {
+        size_t est = ZSTR_LEN(key) + 16 +
+                     (redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0);
+        zend_string *fkey;
+        zend_ulong fidx;
+        zval *zest;
+        ZEND_HASH_FOREACH_KEY_VAL(ht, fidx, fkey, zest) {
+            est += 16 + (fkey ? ZSTR_LEN(fkey) : 20) + redis_zval_frame_est(zest);
+        } ZEND_HASH_FOREACH_END();
+        smart_string_alloc(&cmdstr, est, 0);
+    }
+
     redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
     ZEND_HASH_FOREACH_KEY_VAL(ht, idx, key, zv) {
