@@ -1111,11 +1111,37 @@ int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyw
  * Append a command sequence to a smart_string
  */
 int redis_cmd_append_sstr(smart_string *str, char *append, int append_len) {
-    smart_string_appendc(str, '$');
-    smart_string_append_long(str, append_len);
-    smart_string_appendl(str, _NL, sizeof(_NL) - 1);
-    smart_string_appendl(str, append, append_len);
-    smart_string_appendl(str, _NL, sizeof(_NL) - 1);
+    /* Frame one RESP bulk argument ($<len>\r\n<data>\r\n). We format the
+     * length prefix first so the whole frame size is known, reserve it with a
+     * single capacity check, then write it directly. This is the per-argument
+     * hot path for every command, so it avoids the five separate
+     * bounds-checked smart_string appends the naive form would perform. */
+    char nbuf[32];
+    char *digits;
+    size_t dlen, need;
+    char *p;
+
+    /* A negative length means a caller truncated a >INT_MAX size_t into our
+     * int parameter; the int-length contract is pervasive in the packing
+     * layer, so assert it rather than emit a malformed frame. */
+    ZEND_ASSERT(append_len >= 0);
+
+    digits = zend_print_long_to_buf(nbuf + sizeof(nbuf) - 1, append_len);
+    dlen = (nbuf + sizeof(nbuf) - 1) - digits;
+    need = 1 + dlen + 2 + (size_t)append_len + 2;
+
+    smart_string_alloc(str, need, 0);
+    p = str->c + str->len;
+    *p++ = '$';
+    memcpy(p, digits, dlen);
+    p += dlen;
+    *p++ = '\r';
+    *p++ = '\n';
+    memcpy(p, append, append_len);
+    p += append_len;
+    *p++ = '\r';
+    *p++ = '\n';
+    str->len += need;
 
     /* Return our new length */
     return str->len;
