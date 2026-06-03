@@ -1994,6 +1994,31 @@ int redis_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(kvals) * 2, kw,
                         strlen(kw));
+
+    /* Reserve the buffer up front so a high-arity MSET doesn't realloc the
+     * smart_string once per 4KB grown. The estimate need not be exact:
+     * under-estimating just falls back to normal growth, and the pre-pass only
+     * reads types/lengths, so it can't affect the bytes we emit. Per field we
+     * count the RESP frame ($<len>\r\n<data>\r\n, ~16 bytes of framing), any
+     * configured key prefix, and the value's length when it is already a
+     * string (non-strings get a small fixed allowance). */
+    {
+        size_t reserve = 0;
+        size_t prefix_len = redis_sock->prefix ? ZSTR_LEN(redis_sock->prefix) : 0;
+        zend_string *key;
+        zend_ulong idx;
+        zval *zv;
+
+        ZEND_HASH_FOREACH_KEY_VAL(kvals, idx, key, zv) {
+            (void)idx;
+            ZVAL_DEREF(zv);
+            reserve += (key ? ZSTR_LEN(key) : 20) + prefix_len + 16;
+            reserve += (Z_TYPE_P(zv) == IS_STRING ? Z_STRLEN_P(zv) : 24) + 16;
+        } ZEND_HASH_FOREACH_END();
+
+        smart_string_alloc(&cmdstr, reserve, 0);
+    }
+
     redis_cmd_append_sstr_mset_kvals(&cmdstr, redis_sock, kvals, slot);
 
     *cmd = cmdstr.c;
