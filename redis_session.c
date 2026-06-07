@@ -1153,6 +1153,9 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
                                  int *skeylen, short *slot) {
     char *skey;
 
+    if (ZSTR_LEN(c->flags->prefix) > INT_MAX - keylen) {
+        return NULL;
+    }
     *skeylen = keylen + ZSTR_LEN(c->flags->prefix);
     skey = emalloc(*skeylen);
     memcpy(skey, ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
