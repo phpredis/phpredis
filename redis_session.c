@@ -1148,19 +1148,24 @@ PS_GC_FUNC(redis)
  * Redis Cluster session handler functions
  */
 
-/* Prefix a session key */
-static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
-                                 int *skeylen, short *slot) {
-    char *skey;
+static zend_string *
+cluster_session_key(redisCluster *c, zend_string *key, short *slot) {
+    if (ZSTR_LEN(c->flags->prefix) > ZSTR_MAX_LEN - ZSTR_LEN(key)) {
+        zend_error_noreturn(E_ERROR,
+            "Prefixing overflows the maximum allowed key length");
+    }
 
-    *skeylen = keylen + ZSTR_LEN(c->flags->prefix);
-    skey = emalloc(*skeylen);
-    memcpy(skey, ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
-    memcpy(skey + ZSTR_LEN(c->flags->prefix), key, keylen);
+    if (ZSTR_LEN(c->flags->prefix) > 0) {
+        key = zend_string_concat2(ZSTR_VAL(c->flags->prefix),
+                                  ZSTR_LEN(c->flags->prefix),
+                                  ZSTR_VAL(key), ZSTR_LEN(key));
+    } else {
+        key = zend_string_copy(key);
+    }
 
-    *slot = cluster_hash_key(skey, *skeylen);
+    *slot = cluster_hash_key(ZSTR_VAL(key), ZSTR_LEN(key));
 
-    return skey;
+    return key;
 }
 
 PS_OPEN_FUNC(rediscluster) {
@@ -1291,10 +1296,8 @@ PS_CREATE_SID_FUNC(rediscluster)
 {
     redisCluster *c = PS_GET_MOD_DATA();
     clusterReply *reply;
-    char *skey;
+    zend_string *sid, *key;
     RedisCmd *cmd;
-    zend_string *sid;
-    int skeylen;
     int retries = 3;
     short slot;
 
@@ -1310,11 +1313,11 @@ PS_CREATE_SID_FUNC(rediscluster)
         sid = php_session_create_id((void **) &c);
 
         /* Create session key if it doesn't already exist */
-        skey = cluster_session_key(c, ZSTR_VAL(sid), ZSTR_LEN(sid), &skeylen, &slot);
-        cmd = redis_cmd_fmt(NULL, "SET", "ssssd", skey,
-                        skeylen, "", 0, "NX", 2, "EX", 2, session_gc_maxlifetime());
+        key = cluster_session_key(c, sid, &slot);
+        cmd = redis_cmd_fmt(NULL, "SET", "ssssd", ZSTR_VAL(key), ZSTR_LEN(key),
+                            "", 0, "NX", 2, "EX", 2, session_gc_maxlifetime());
 
-        efree(skey);
+        zend_string_release(key);
 
         /* Attempt to kick off our command */
         c->readonly = 0;
@@ -1357,10 +1360,8 @@ PS_VALIDATE_SID_FUNC(rediscluster)
 {
     redisCluster *c = PS_GET_MOD_DATA();
     clusterReply *reply;
-    char *skey;
-    RedisCmd *cmd;
-    int skeylen;
     int res = FAILURE;
+    RedisCmd *cmd;
     short slot;
 
     /* Check key is valid and whether it already exists */
@@ -1369,9 +1370,10 @@ PS_VALIDATE_SID_FUNC(rediscluster)
         return FAILURE;
     }
 
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-    cmd = redis_cmd_fmt(NULL, "EXISTS", "s", skey, skeylen);
-    efree(skey);
+    key = cluster_session_key(c, key, &slot);
+    cmd = redis_cmd_fmt(NULL, "EXISTS", "s", ZSTR_VAL(key), ZSTR_LEN(key));
+
+    zend_string_release(key);
 
     /* We send to master, to ensure consistency */
     c->readonly = 0;
@@ -1407,9 +1409,7 @@ PS_VALIDATE_SID_FUNC(rediscluster)
 PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
     redisCluster *c = PS_GET_MOD_DATA();
     clusterReply *reply;
-    char *skey;
     RedisCmd *cmd;
-    int skeylen;
     short slot;
 
     /* No need to update the session timestamp if we've already done so */
@@ -1418,10 +1418,11 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
     }
 
     /* Set up command and slot info */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-    cmd = redis_cmd_fmt(NULL, "EXPIRE", "sd", skey,
-                            skeylen, session_gc_maxlifetime());
-    efree(skey);
+    key = cluster_session_key(c, key, &slot);
+    cmd = redis_cmd_fmt(NULL, "EXPIRE", "sd", ZSTR_VAL(key), ZSTR_LEN(key),
+                        session_gc_maxlifetime());
+
+    zend_string_release(key);
 
     /* Attempt to send EXPIRE command */
     c->readonly = 0;
@@ -1453,26 +1454,26 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
 PS_READ_FUNC(rediscluster) {
     redisCluster *c = PS_GET_MOD_DATA();
     clusterReply *reply;
-    char *skey, *compressed_buf;
+    char *compressed_buf;
     RedisCmd *cmd;
-    int skeylen, free_flag, compressed_free;
+    int free_flag, compressed_free;
     size_t compressed_len;
     short slot;
 
     /* Set up our command and slot information */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
+    key = cluster_session_key(c, key, &slot);
 
     /* Update the session ttl if early refresh is enabled */
     if (INI_INT("redis.session.early_refresh")) {
-        cmd = redis_cmd_fmt(NULL, "GETEX", "ssd", skey,
-                                skeylen, "EX", 2, session_gc_maxlifetime());
+        cmd = redis_cmd_fmt(NULL, "GETEX", "ssd", ZSTR_VAL(key), ZSTR_LEN(key),
+                            "EX", 2, session_gc_maxlifetime());
         c->readonly = 0;
     } else {
-        cmd = redis_cmd_fmt(NULL, "GET", "s", skey, skeylen);
+        cmd = redis_cmd_fmt(NULL, "GET", "s", ZSTR_VAL(key), ZSTR_LEN(key));
         c->readonly = 1;
     }
 
-    efree(skey);
+    zend_string_release(key);
 
     /* Attempt to kick off our command */
     if (cluster_send_command(c,slot,redis_cmd_str(cmd),redis_cmd_len(cmd)) < 0 || c->err) {
@@ -1515,9 +1516,9 @@ PS_READ_FUNC(rediscluster) {
 PS_WRITE_FUNC(rediscluster) {
     redisCluster *c = PS_GET_MOD_DATA();
     clusterReply *reply;
-    char *skey, *sval;
+    char *sval;
     RedisCmd *cmd;
-    int skeylen, compressed_free;
+    int compressed_free;
     size_t svallen;
     short slot;
 
@@ -1525,11 +1526,10 @@ PS_WRITE_FUNC(rediscluster) {
                                             &sval, &svallen);
 
     /* Set up command and slot info */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-    cmd = redis_cmd_fmt(NULL, "SETEX", "sds", skey,
-                            skeylen, session_gc_maxlifetime(),
-                            sval, svallen);
-    efree(skey);
+    key = cluster_session_key(c, key, &slot);
+    cmd = redis_cmd_fmt(NULL, "SETEX", "sds", ZSTR_VAL(key), ZSTR_LEN(key),
+                        session_gc_maxlifetime(), sval, svallen);
+    zend_string_release(key);
     if (compressed_free) {
         efree(sval);
     }
@@ -1562,16 +1562,14 @@ PS_WRITE_FUNC(rediscluster) {
 PS_DESTROY_FUNC(rediscluster) {
     redisCluster *c = PS_GET_MOD_DATA();
     clusterReply *reply;
-    char *skey;
     RedisCmd *cmd;
-    int skeylen;
     short slot;
 
     /* Set up command and slot info */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
+    key = cluster_session_key(c, key, &slot);
 
-    cmd = redis_cmd_fmt(NULL, "DEL", "s", skey, skeylen);
-    efree(skey);
+    cmd = redis_cmd_fmt(NULL, "DEL", "s", ZSTR_VAL(key), ZSTR_LEN(key));
+    zend_string_release(key);
 
     /* Attempt to send command */
     if (cluster_send_command(c,slot,redis_cmd_str(cmd),redis_cmd_len(cmd)) < 0 || c->err) {
