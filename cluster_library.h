@@ -359,8 +359,8 @@ zend_string *cluster_hash_seeds(zend_string **seeds, uint32_t nseeds);
 /* Get the current time in milliseconds */
 long long mstime(void);
 
-PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
-    int cmd_len);
+PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot,
+    const char *cmd, int cmd_len);
 
 PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force);
 
