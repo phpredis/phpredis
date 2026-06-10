@@ -10,6 +10,10 @@
 #include <errno.h>
 #include <limits.h>
 
+#define FFC_IMPL
+#define FFC_DEBUG 0
+#include "ffc.h"
+
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
@@ -992,17 +996,17 @@ redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            zval *z_tab, RedisCmdCtx ctx)
 {
 
-    char *response;
-    int response_len;
+    char *rstr;
     double ret;
+    int rlen;
 
-    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL) {
+    if ((rstr = redis_sock_read(redis_sock, &rlen)) == NULL) {
         REDIS_RESPONSE_ERROR(redis_sock, z_tab);
         return FAILURE;
     }
 
-    ret = atof(response);
-    efree(response);
+    ret = ffc_parse_double_simple(rlen, rstr, NULL);
+    efree(rstr);
     if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_DOUBLE(ret);
     } else {
@@ -1559,7 +1563,8 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
             if (decode == SCORE_DECODE_INT && ZSTR_LEN(val) > 0) {
                 ZVAL_LONG(&zele, atoi(ZSTR_VAL(val)+1));
             } else if (decode == SCORE_DECODE_DOUBLE) {
-                ZVAL_DOUBLE(&zele, atof(ZSTR_VAL(val)));
+                ZVAL_DOUBLE(&zele, ffc_parse_double_simple(
+                    ZSTR_LEN(val), ZSTR_VAL(val), NULL));
             } else {
                 ZVAL_ZVAL(&zele, zv, 1, 0);
             }
@@ -3603,6 +3608,7 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *line;
     int i, numElems, len;
     zval z_multi_result;
+    double d;
 
     if (read_mbulk_header(redis_sock, &numElems) < 0) {
         REDIS_RESPONSE_ERROR(redis_sock, z_tab);
@@ -3618,7 +3624,8 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 add_next_index_bool(&z_multi_result, 0);
                 continue;
             }
-            add_next_index_double(&z_multi_result, atof(line));
+            d = ffc_parse_double_simple(len, line, NULL);
+            add_next_index_double(&z_multi_result, d);
             efree(line);
         }
     }

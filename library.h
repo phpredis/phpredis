@@ -4,6 +4,8 @@
 #include "php_redis.h"
 #include "redis_cmd.h"
 
+#include "ffc.h"
+
 #define REDIS_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_exception_ce, (msg), code)
 
@@ -295,5 +297,7 @@ static inline char *redis_sock_gets_raw(RedisSock *redis_sock, char *buf, size_t
 
     return redis_sock_get_line(redis_sock, buf, buf_size, &nread);
 }
+
+double redis_ffc_strtod(const char *str, size_t len);
 
 #endif

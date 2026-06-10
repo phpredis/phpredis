@@ -1837,7 +1837,7 @@ PHP_REDIS_API void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     }
 
     // Convert to double, free response
-    dbl = atof(resp);
+    dbl = ffc_parse_double_simple(c->reply_len, resp, NULL);
     efree(resp);
 
     CLUSTER_RETURN_DOUBLE(c, dbl);
@@ -3025,13 +3025,15 @@ cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 static int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
                                long long count, RedisCmdCtx ctx)
 {
-    char *line;
     int line_len;
+    char *line;
+    double d;
 
     while (count--) {
         line = redis_sock_read(redis_sock, &line_len);
         if (line != NULL) {
-            add_next_index_double(z_result, atof(line));
+            d = ffc_parse_double_simple(line_len, line, NULL);
+            add_next_index_double(z_result, d);
             efree(line);
         } else if (EG(exception)) {
             return FAILURE;
@@ -3153,9 +3155,16 @@ static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 key_len = line_len;
             } else {
                 zval zv, *z = &zv;
+                double d;
+
                 redis_unpack(redis_sock,key,key_len, z);
                 zend_string *tmp, *zstr = zval_get_tmp_string(z, &tmp);
-                add_assoc_double_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), atof(line));
+
+                d = ffc_parse_double_simple(line_len, line, NULL);
+
+                add_assoc_double_ex(z_result, ZSTR_VAL(zstr),
+                                    ZSTR_LEN(zstr), d);
+
                 zend_tmp_string_release(tmp);
                 zval_ptr_dtor_nogc(z);
 
