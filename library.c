@@ -1573,14 +1573,21 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
             continue;   /* this should never happen, according to the PHP people. */
         }
 
-        /* get current value, a hash value now. */
-        char *hval = Z_STRVAL_P(z_value_p);
-
         /* Decode the score depending on flag */
-        if (decode == SCORE_DECODE_INT && Z_STRLEN_P(z_value_p) > 0) {
-            ZVAL_LONG(&z_sub, atoi(hval+1));
-        } else if (decode == SCORE_DECODE_DOUBLE) {
-            ZVAL_DOUBLE(&z_sub, atof(hval));
+        if (decode == SCORE_DECODE_INT || decode == SCORE_DECODE_DOUBLE) {
+            zend_string *aux, *val;
+
+            val = zval_get_tmp_string(z_value_p, &aux);
+
+            if (decode == SCORE_DECODE_INT && ZSTR_LEN(val) > 0) {
+                ZVAL_LONG(&z_sub, atoi(ZSTR_VAL(val)+1));
+            } else if (decode == SCORE_DECODE_DOUBLE) {
+                ZVAL_DOUBLE(&z_sub, atof(ZSTR_VAL(val)));
+            } else {
+                ZVAL_ZVAL(&z_sub, z_value_p, 1, 0);
+            }
+
+            zend_tmp_string_release(aux);
         } else {
             ZVAL_ZVAL(&z_sub, z_value_p, 1, 0);
         }
@@ -1695,8 +1702,10 @@ redis_read_mpop_response(RedisSock *redis_sock, zval *zdst, int elements,
         return SUCCESS;
     }
 
-    /* Invariant:  We should have two elements */
-    ZEND_ASSERT(elements == 2);
+    if (UNEXPECTED(elements != 2)) {
+        php_error_docref(NULL, E_WARNING, "Expected 2 elements in response, got %d", elements);
+        return FAILURE;
+    }
 
     array_init_size(zdst, 2);
 
@@ -2066,6 +2075,8 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret) {
 
     /* Iterate over each message */
     for (i = 0; i < count; i++) {
+        id = NULL;
+
         /* Consume inner multi-bulk header, message ID itself and finally
          * the multi-bulk header for field and values */
         if ((read_mbulk_header(redis_sock, &mhdr) < 0 || mhdr != 2) ||
@@ -2081,7 +2092,11 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret) {
             add_assoc_null_ex(z_ret, id, idlen);
         } else {
             array_init_size(&z_message, fields > 0 ? fields : 0);
-            redis_mbulk_reply_loop(redis_sock, &z_message, fields, UNSERIALIZE_VALS);
+            if (redis_mbulk_reply_loop(redis_sock, &z_message, fields, UNSERIALIZE_VALS) < 0) {
+                zval_ptr_dtor_nogc(&z_message);
+                efree(id);
+                return -1;
+            }
             array_zip_values_and_scores(redis_sock, &z_message, SCORE_DECODE_NONE);
             add_assoc_zval_ex(z_ret, id, idlen, &z_message);
         }
@@ -2213,7 +2228,11 @@ redis_read_xclaim_ids(RedisSock *redis_sock, int count, zval *rv) {
 
             array_init_size(&z_msg, fields > 0 ? fields : 0);
 
-            redis_mbulk_reply_loop(redis_sock, &z_msg, fields, UNSERIALIZE_VALS);
+            if (redis_mbulk_reply_loop(redis_sock, &z_msg, fields, UNSERIALIZE_VALS) < 0) {
+                zval_ptr_dtor_nogc(&z_msg);
+                efree(id);
+                return -1;
+            }
             array_zip_values_and_scores(redis_sock, &z_msg, SCORE_DECODE_NONE);
             add_assoc_zval_ex(rv, id, idlen, &z_msg);
             efree(id);
@@ -2234,7 +2253,9 @@ redis_read_xclaim_reply(RedisSock *redis_sock, int count, int is_xautoclaim,
     long id_len = 0;
     int messages = 0;
 
-    ZEND_ASSERT(!is_xautoclaim || (count == 2 || count == 3));
+    if (is_xautoclaim && (count != 2 && count != 3)) {
+        return -1;
+    }
 
     ZVAL_UNDEF(rv);
 
@@ -3740,7 +3761,7 @@ redis_sock_read_zstr(RedisSock *redis_sock)
     return NULL;
 }
 
-PHP_REDIS_API void
+PHP_REDIS_API int
 redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
                        int unserialize)
 {
@@ -3757,6 +3778,11 @@ redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
     for (i = 0; i < count; ++i) {
         if ((zstr = redis_sock_read_zstr(redis_sock)) == NULL) {
             add_next_index_bool(z_tab, 0);
+            if (EG(exception) || redis_sock->stream == NULL ||
+                redis_sock->status == REDIS_SOCK_STATUS_FAILED
+            ) {
+                return FAILURE;
+            }
             continue;
         }
 
@@ -3777,6 +3803,8 @@ redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
         }
         zend_hash_next_index_insert_new(Z_ARRVAL_P(z_tab), &z_value);
     }
+
+    return SUCCESS;
 }
 
 static int
