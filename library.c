@@ -804,7 +804,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
     /* Consume bulk string */
     while (offset < nbytes) {
         got = redis_sock_read_raw(redis_sock, reply + offset, nbytes - offset);
-        if (got < 0 || (got == 0 && php_stream_eof(redis_sock->stream)))
+        if (got <= 0)
             break;
 
         offset += got;
@@ -2142,6 +2142,8 @@ redis_read_stream_messages_multi(RedisSock *redis_sock, int count,
     int idlen;
 
     for (i = 0; i < count; i++) {
+        id = NULL;
+
         if ((read_mbulk_header(redis_sock, &shdr) < 0 || shdr != 2) ||
             (id = redis_sock_read(redis_sock, &idlen)) == NULL ||
             read_mbulk_header(redis_sock, &messages) < 0)
@@ -3685,7 +3687,7 @@ redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
 
     while (offset < nbytes) {
         got = redis_sock_read_raw(redis_sock, ZSTR_VAL(zstr) + offset, nbytes - offset);
-        if (got < 0 || (got == 0 && php_stream_eof(redis_sock->stream)))
+        if (got <= 0)
             break;
 
         offset += got;
