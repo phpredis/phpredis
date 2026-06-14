@@ -104,6 +104,37 @@ static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
 static int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
     long long count, RedisCmdCtx ctx);
 
+static int
+cluster_parse_reply_len(redisCluster *c, REDIS_REPLY_TYPE reply_type, size_t line_len)
+{
+    char *endptr;
+    long long n;
+
+    if (reply_type == TYPE_LINE) {
+        c->reply_len = line_len;
+        return SUCCESS;
+    }
+
+    errno = 0;
+    n = strtoll(c->line_reply, &endptr, 10);
+    if (endptr == c->line_reply || *endptr != '\0' || errno == ERANGE) {
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+            "protocol error, invalid reply length");
+        return FAILURE;
+    }
+
+    if ((reply_type == TYPE_BULK && (n < -1 || n > INT_MAX - 2)) ||
+        (reply_type == TYPE_MULTIBULK && (n < -1 || n > INT_MAX)))
+    {
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+            "protocol error, invalid reply length");
+        return FAILURE;
+    }
+
+    c->reply_len = n;
+    return SUCCESS;
+}
+
 
 
 
@@ -1277,11 +1308,8 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
         return -1;
     }
 
-    // For replies that will give us a numeric length, convert it
-    if (*reply_type != TYPE_LINE) {
-        c->reply_len = strtol(c->line_reply, NULL, 10);
-    } else {
-        c->reply_len = (long long)sz;
+    if (cluster_parse_reply_len(c, *reply_type, sz) == FAILURE) {
+        return -1;
     }
 
     // Clear out any previous error, and return that the data is here
@@ -3051,6 +3079,8 @@ static int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
         if (line != NULL) {
             add_next_index_double(z_result, atof(line));
             efree(line);
+        } else if (EG(exception)) {
+            return FAILURE;
         } else {
             add_next_index_bool(z_result, 0);
         }
@@ -3098,6 +3128,8 @@ static int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
             redis_unpack(redis_sock, line, line_len, &z_unpacked);
             add_next_index_zval(z_result, &z_unpacked);
             efree(line);
+        } else if (EG(exception)) {
+            return FAILURE;
         } else {
             add_next_index_bool(z_result, 0);
         }
@@ -3123,7 +3155,10 @@ static int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
     while (count--) {
         // Grab our line, bomb out on failure
         line = redis_sock_read(redis_sock, &line_len);
-        if (!line) return -1;
+        if (!line) {
+            if (key) efree(key);
+            return FAILURE;
+        }
 
         if (idx++ % 2 == 0) {
             // Save our key and length
@@ -3174,6 +3209,9 @@ static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 efree(key);
                 efree(line);
             }
+        } else if (EG(exception)) {
+            if (key) efree(key);
+            return FAILURE;
         }
     }
 
@@ -3194,6 +3232,8 @@ static int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
         if (line != NULL) {
             redis_unpack(redis_sock, line, line_len, &z_unpacked);
             efree(line);
+        } else if (EG(exception)) {
+            return FAILURE;
         } else {
             ZVAL_FALSE(&z_unpacked);
         }
