@@ -288,6 +288,11 @@ jobs:
           php-version: ${{ matrix.php }}
           ts: ${{ matrix.ts }}
           run-tests: false
+          # The builder embeds the ref in the build-log/artifact filename without
+          # sanitizing it. A branch like "fix/foo" turns the "/" into a path
+          # separator on Windows and the build fails. Pass the commit SHA so the
+          # name is always slash-free.
+          extension-ref: ${{ github.sha }}
 
   pecl:
     runs-on: ubuntu-latest
