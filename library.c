@@ -4047,7 +4047,7 @@ redis_compress(RedisSock *redis_sock, char **dst, size_t *dstlen, char *buf, siz
                 size_t size;
                 int level;
 
-                if (redis_sock->compression_level < 1) {
+                if (redis_sock->compression_level == 0) {
 #ifdef ZSTD_CLEVEL_DEFAULT
                     level = ZSTD_CLEVEL_DEFAULT;
 #else
