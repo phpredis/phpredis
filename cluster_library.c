@@ -118,9 +118,7 @@ cluster_parse_reply_len(redisCluster *c, REDIS_REPLY_TYPE reply_type, size_t lin
     errno = 0;
     n = strtoll(c->line_reply, &endptr, 10);
     if (endptr == c->line_reply || *endptr != '\0' || errno == ERANGE) {
-        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
-            "protocol error, invalid reply length");
-        return FAILURE;
+    goto failure;
     }
 
     if ((reply_type == TYPE_BULK && (n < -1 || n > INT_MAX - 2)) ||
