@@ -111,7 +111,7 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     ctx = redis_cmd_pop_ctx(cmd);
     slot = cmd->slot;
 
-    if (cluster_send_command(c, slot, redis_cmd_str(cmd), redis_cmd_len(cmd)) < 0 || c->err != NULL) {
+    if (cluster_send_cmd_rcmd(c, cmd) < 0 || c->err != NULL) {
         redis_cmd_ctx_free(ctx);
         redis_cmd_free(cmd);
         RETURN_FALSE;
@@ -147,8 +147,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     ctx = redis_cmd_pop_ctx(cmd);
     slot = cmd->slot;
 
-    if (cluster_send_command(c, slot, redis_cmd_str(cmd), redis_cmd_len(cmd)) < 0 ||
-        c->err != NULL)
+    if (cluster_send_cmd_rcmd(c, cmd) < 0 || c->err != NULL)
     {
         redis_cmd_ctx_free(ctx);
         redis_cmd_free(cmd);
@@ -454,8 +453,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
     mctx->last    = last;
 
     // Attempt to send the command
-    if (cluster_send_command(c,slot,redis_cmd_str(mc->cmd),
-                             redis_cmd_len(mc->cmd)) < 0 || c->err != NULL)
+    if (cluster_send_command_rcmd_ex(c, slot, mc->cmd) < 0 || c->err != NULL)
     {
         efree(mctx);
         return -1;
@@ -2208,8 +2206,7 @@ PHP_METHOD(RedisCluster, watch) {
         }
 
         // If we get a failure from this, we have to abort
-        if (cluster_send_command(c, slot, redis_cmd_str(cmd),
-                                 redis_cmd_len(cmd)) < 0)
+        if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0)
         {
             redis_cmd_free(cmd);
             RETURN_FALSE;
@@ -2495,9 +2492,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c = GET_CONTEXT();
     char *pat = NULL, *key = NULL;
     size_t key_len = 0, pat_len = 0, pat_free = 0;
-    int key_free = 0;
     RedisCmd *cmd;
-    short slot;
     zval *z_it;
     HashTable *hash;
     long num_ele;
@@ -2527,10 +2522,6 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     if (completed)
         RETURN_FALSE;
 
-    // Apply any key prefix we have, get the slot
-    key_free = redis_key_prefix(c->flags, &key, &key_len);
-    slot = cluster_hash_key(key, key_len);
-
     if (c->flags->scan & REDIS_SCAN_PREFIX) {
         pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
     }
@@ -2545,13 +2536,19 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         }
 
         // Create command
-        cmd = redis_fmt_scan_cmd(type, key, key_len, cursor, pat, pat_len, count);
+        cmd = redis_fmt_scan_cmd(c->flags, type, key, key_len, cursor, pat,
+                                 pat_len, count);
+        if (cmd == NULL) {
+            CLUSTER_THROW_EXCEPTION("Couldn't construct SCAN command", 0);
+            if (pat_free) efree(pat);
+            RETURN_FALSE;
+        }
 
         // Send it off
-        if (cluster_send_command(c, slot, redis_cmd_str(cmd), redis_cmd_len(cmd)) == FAILURE)
+        if (cluster_send_cmd_rcmd(c, cmd) == FAILURE)
         {
             CLUSTER_THROW_EXCEPTION("Couldn't send SCAN command", 0);
-            if (key_free) efree(key);
+            if (pat_free) efree(pat);
             redis_cmd_free(cmd);
             RETURN_FALSE;
         }
@@ -2561,7 +2558,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
                               &cursor) == FAILURE)
         {
             CLUSTER_THROW_EXCEPTION("Couldn't read SCAN response", 0);
-            if (key_free) efree(key);
+            if (pat_free) efree(pat);
             redis_cmd_free(cmd);
             RETURN_FALSE;
         }
@@ -2576,9 +2573,6 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
     // Free our pattern
     if (pat_free) efree(pat);
-
-    // Free our key
-    if (key_free) efree(key);
 
     // Update iterator reference
     redisSetScanCursor(z_it, cursor);
@@ -2704,7 +2698,8 @@ PHP_METHOD(RedisCluster, scan) {
         }
 
         /* Construct our command */
-        cmd = redis_fmt_scan_cmd(TYPE_SCAN, NULL, 0, cursor, pat, pat_len, count);
+        cmd = redis_fmt_scan_cmd(NULL, TYPE_SCAN, NULL, 0, cursor, pat,
+                                 pat_len, count);
 
         if ((slot = cluster_cmd_get_slot(c, z_node)) < 0) {
            redis_cmd_free(cmd);
@@ -2712,7 +2707,7 @@ PHP_METHOD(RedisCluster, scan) {
         }
 
         // Send it to the node in question
-        if (cluster_send_command(c, slot, redis_cmd_str(cmd), redis_cmd_len(cmd)) < 0)
+        if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0)
         {
             CLUSTER_THROW_EXCEPTION("Couldn't send SCAN to node", 0);
             redis_cmd_free(cmd);
