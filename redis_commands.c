@@ -641,17 +641,21 @@ RedisCmd *redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic to construct SCAN and variant commands */
 RedisCmd *
-redis_fmt_scan_cmd(REDIS_SCAN_TYPE type, char *key, int key_len,
-                   uint64_t it, char *pat, int pat_len, long count)
+redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, char *key,
+                   int key_len, uint64_t it, char *pat, int pat_len,
+                   long count)
 {
     static char *kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
     RedisCmd *cmd;
 
-    cmd = redis_cmd_create(NULL, kw[type], strlen(kw[type]));
+    cmd = redis_cmd_create(redis_sock, kw[type], strlen(kw[type]));
 
     // Append our key if it's not a regular SCAN command
     if (type != TYPE_SCAN) {
-        redis_cmd_cat_str(cmd, key, key_len);
+        if (!redis_cmd_cat_key_str(cmd, key, key_len)) {
+            redis_cmd_free(cmd);
+            return NULL;
+        }
     }
 
     // Append cursor

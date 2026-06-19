@@ -138,8 +138,8 @@ RedisCmd *redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
-RedisCmd *redis_fmt_scan_cmd(REDIS_SCAN_TYPE type, char *key, int key_len,
-    uint64_t it, char *pat, int pat_len, long count);
+RedisCmd *redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type,
+    char *key, int key_len, uint64_t it, char *pat, int pat_len, long count);
 RedisCmd *redis_geoadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);

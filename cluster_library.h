@@ -362,6 +362,20 @@ long long mstime(void);
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot,
     const char *cmd, int cmd_len);
 
+static zend_always_inline short
+cluster_send_cmd_rcmd(redisCluster *c, RedisCmd *cmd)
+{
+    return cluster_send_command(c, cmd->slot, redis_cmd_str(cmd),
+                                redis_cmd_len(cmd));
+}
+
+static zend_always_inline short
+cluster_send_command_rcmd_ex(redisCluster *c, short slot, RedisCmd *cmd)
+{
+    cmd->slot = slot;
+    return cluster_send_cmd_rcmd(c, cmd);
+}
+
 PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force);
 
 PHP_REDIS_API int cluster_send_exec(redisCluster *c, short slot);
