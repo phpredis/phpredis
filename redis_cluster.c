@@ -111,7 +111,7 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     ctx = redis_cmd_pop_ctx(cmd);
     slot = cmd->slot;
 
-    if (cluster_send_cmd_rcmd(c, cmd) < 0 || c->err != NULL) {
+    if (cluster_send_rcmd(c, cmd) < 0 || c->err != NULL) {
         redis_cmd_ctx_free(ctx);
         redis_cmd_free(cmd);
         RETURN_FALSE;
@@ -147,7 +147,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     ctx = redis_cmd_pop_ctx(cmd);
     slot = cmd->slot;
 
-    if (cluster_send_cmd_rcmd(c, cmd) < 0 || c->err != NULL)
+    if (cluster_send_rcmd(c, cmd) < 0 || c->err != NULL)
     {
         redis_cmd_ctx_free(ctx);
         redis_cmd_free(cmd);
@@ -453,7 +453,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
     mctx->last    = last;
 
     // Attempt to send the command
-    if (cluster_send_command_rcmd_ex(c, slot, mc->cmd) < 0 || c->err != NULL)
+    if (cluster_send_rcmd_ex(c, slot, mc->cmd) < 0 || c->err != NULL)
     {
         efree(mctx);
         return -1;
@@ -2206,7 +2206,7 @@ PHP_METHOD(RedisCluster, watch) {
         }
 
         // If we get a failure from this, we have to abort
-        if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0)
+        if (cluster_send_rcmd_ex(c, slot, cmd) < 0)
         {
             redis_cmd_free(cmd);
             RETURN_FALSE;
@@ -2545,7 +2545,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         }
 
         // Send it off
-        if (cluster_send_cmd_rcmd(c, cmd) == FAILURE)
+        if (cluster_send_rcmd(c, cmd) == FAILURE)
         {
             CLUSTER_THROW_EXCEPTION("Couldn't send SCAN command", 0);
             if (pat_free) efree(pat);
@@ -2707,7 +2707,7 @@ PHP_METHOD(RedisCluster, scan) {
         }
 
         // Send it to the node in question
-        if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0)
+        if (cluster_send_rcmd_ex(c, slot, cmd) < 0)
         {
             CLUSTER_THROW_EXCEPTION("Couldn't send SCAN to node", 0);
             redis_cmd_free(cmd);
