@@ -1313,7 +1313,7 @@ PS_CREATE_SID_FUNC(rediscluster)
 
         /* Attempt to kick off our command */
         c->readonly = 0;
-        if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0 || c->err) {
+        if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err) {
             php_error_docref(NULL, E_NOTICE, "Redis connection not available");
             redis_cmd_free(cmd);
             zend_string_release(sid);
@@ -1370,8 +1370,7 @@ PS_VALIDATE_SID_FUNC(rediscluster)
 
     /* We send to master, to ensure consistency */
     c->readonly = 0;
-    if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0 || c->err)
-    {
+    if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err) {
         php_error_docref(NULL, E_NOTICE, "Redis connection not available");
         redis_cmd_free(cmd);
         return FAILURE;
@@ -1419,7 +1418,7 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
 
     /* Attempt to send EXPIRE command */
     c->readonly = 0;
-    if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0 || c->err) {
+    if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err) {
         php_error_docref(NULL, E_NOTICE, "Redis unable to update session expiry");
         redis_cmd_free(cmd);
         return FAILURE;
@@ -1469,7 +1468,7 @@ PS_READ_FUNC(rediscluster) {
     zend_string_release(key);
 
     /* Attempt to kick off our command */
-    if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0 || c->err) {
+    if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err) {
         redis_cmd_free(cmd);
         return FAILURE;
     }
@@ -1528,7 +1527,7 @@ PS_WRITE_FUNC(rediscluster) {
 
     /* Attempt to send command */
     c->readonly = 0;
-    if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0 || c->err) {
+    if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err) {
         redis_cmd_free(cmd);
         return FAILURE;
     }
@@ -1564,7 +1563,7 @@ PS_DESTROY_FUNC(rediscluster) {
     zend_string_release(key);
 
     /* Attempt to send command */
-    if (cluster_send_command_rcmd_ex(c, slot, cmd) < 0 || c->err) {
+    if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err) {
         redis_cmd_free(cmd);
         return FAILURE;
     }
