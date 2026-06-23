@@ -27,8 +27,12 @@ zend_string_concat2(const char *str1, size_t len1, const char *str2,
     return res;
 }
 
-#define redis_hash_fetch_ops(zstr) \
-    php_hash_fetch_ops(ZSTR_VAL((zstr)), ZSTR_LEN((zstr)))
+
+static zend_always_inliine const php_hash_ops *
+redis_hash_fetch_ops(zend_string *zstr)
+{
+    return php_hash_fetch_ops(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+}
 
 #ifndef RETURN_THROWS
 #define RETURN_THROWS() RETURN_FALSE
@@ -77,7 +81,11 @@ zend_string_concat2(const char *str1, size_t len1, const char *str2,
         Z_PARAM_BOOL_EX(dest, is_null, 1, 0)
 #endif
 #else
-#define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(zstr)
+static zend_always_inline const php_hash_ops *
+redis_hash_fetch_ops(zend_string *zstr)
+{
+    return php_hash_fetch_ops(zstr);
+}
 #endif
 
 #if PHP_VERSION_ID < 80200
