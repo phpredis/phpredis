@@ -211,7 +211,7 @@ typedef enum {
 #if PHPREDIS_DEBUG_LOGGING == 1
 #define redisDbgFmt(fmt, ...) \
     php_printf("%s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, __VA_ARGS__)
-#define redisDbgStr(str) phpredisDebugFmt("%s", str)
+#define redisDbgStr(str) redisDbgFmt("%s", str)
 #else
 #define redisDbgFmt(fmt, ...) ((void)0)
 #define redisDbgStr(str) ((void)0)

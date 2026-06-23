@@ -37,6 +37,13 @@
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
 
+zend_object_handlers redis_array_object_handlers;
+
+typedef struct {
+    RedisArray *ra;
+    zend_object std;
+} redis_array_object;
+
 #if PHP_VERSION_ID < 80000
 #include "redis_array_legacy_arginfo.h"
 #else
@@ -44,18 +51,7 @@ zend_class_entry *redis_array_ce;
 #include "redis_array_arginfo.h"
 #endif
 
-PHP_MINIT_FUNCTION(redis_array)
-{
-    /* RedisSentinel class */
-    redis_array_ce = register_class_RedisArray();
-    redis_array_ce->create_object = create_redis_array_object;
-
-    return SUCCESS;
-}
-
-static void
-redis_array_free(RedisArray *ra)
-{
+static void redis_array_free(RedisArray *ra) {
     int i;
 
     /* continuum */
@@ -89,12 +85,6 @@ redis_array_free(RedisArray *ra)
     efree(ra);
 }
 
-typedef struct {
-    RedisArray *ra;
-    zend_object std;
-} redis_array_object;
-
-zend_object_handlers redis_array_object_handlers;
 
 void
 free_redis_array_object(zend_object *object)
@@ -108,6 +98,16 @@ free_redis_array_object(zend_object *object)
     zend_object_std_dtor(&obj->std);
 }
 
+static void
+redis_array_init_object_handlers(void)
+{
+    memcpy(&redis_array_object_handlers, zend_get_std_object_handlers(),
+           sizeof(redis_array_object_handlers));
+    redis_array_object_handlers.offset = XtOffsetOf(redis_array_object, std);
+    redis_array_object_handlers.free_obj = free_redis_array_object;
+    redis_array_object_handlers.clone_obj = NULL;
+}
+
 zend_object *
 create_redis_array_object(zend_class_entry *ce)
 {
@@ -118,13 +118,22 @@ create_redis_array_object(zend_class_entry *ce)
     zend_object_std_init(&obj->std, ce);
     object_properties_init(&obj->std, ce);
 
-    memcpy(&redis_array_object_handlers, zend_get_std_object_handlers(), sizeof(redis_array_object_handlers));
-    redis_array_object_handlers.offset = XtOffsetOf(redis_array_object, std);
-    redis_array_object_handlers.free_obj = free_redis_array_object;
-    redis_array_object_handlers.clone_obj = NULL;
     obj->std.handlers = &redis_array_object_handlers;
 
     return &obj->std;
+}
+
+
+PHP_MINIT_FUNCTION(redis_array)
+{
+    /* RedisArray class */
+    redis_array_ce = register_class_RedisArray();
+    redis_array_ce->create_object = create_redis_array_object;
+
+    /* RedisArray object handler initialization */
+    redis_array_init_object_handlers();
+
+    return SUCCESS;
 }
 
 /**

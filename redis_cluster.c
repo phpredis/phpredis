@@ -36,6 +36,9 @@ zend_class_entry *redis_cluster_ce;
 /* Exception handler */
 zend_class_entry *redis_cluster_exception_ce;
 
+/* Handlers for RedisCluster */
+zend_object_handlers RedisCluster_handlers;
+
 extern RedisCmdCtx redis_empty_ctx;
 
 #if PHP_VERSION_ID < 80000
@@ -165,6 +168,16 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     redis_cmd_ctx_free(ctx);
 }
 
+static void
+redis_cluster_init_object_handlers(void)
+{
+    memcpy(&RedisCluster_handlers, zend_get_std_object_handlers(),
+           sizeof(RedisCluster_handlers));
+    RedisCluster_handlers.offset = XtOffsetOf(redisCluster, std);
+    RedisCluster_handlers.free_obj = free_cluster_context;
+    RedisCluster_handlers.clone_obj = NULL;
+}
+
 PHP_MINIT_FUNCTION(redis_cluster)
 {
     redis_cluster_ce = register_class_RedisCluster();
@@ -172,11 +185,11 @@ PHP_MINIT_FUNCTION(redis_cluster)
 
     redis_cluster_exception_ce = register_class_RedisClusterException(spl_ce_RuntimeException);
 
+    /* RedisCluster handlers */
+    redis_cluster_init_object_handlers();
+
     return SUCCESS;
 }
-
-/* Handlers for RedisCluster */
-zend_object_handlers RedisCluster_handlers;
 
 /* Our context seeds will be a hash table with RedisSock* pointers */
 static void ht_free_seed(zval *data) {
@@ -215,10 +228,6 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
     zend_object_std_init(&cluster->std, class_type);
 
     object_properties_init(&cluster->std, class_type);
-    memcpy(&RedisCluster_handlers, zend_get_std_object_handlers(), sizeof(RedisCluster_handlers));
-    RedisCluster_handlers.offset = XtOffsetOf(redisCluster, std);
-    RedisCluster_handlers.free_obj = free_cluster_context;
-    RedisCluster_handlers.clone_obj = NULL;
 
     cluster->std.handlers = &RedisCluster_handlers;
 

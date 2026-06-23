@@ -217,10 +217,6 @@ create_redis_object(zend_class_entry *ce)
     zend_object_std_init(&redis->std, ce);
     object_properties_init(&redis->std, ce);
 
-    memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(redis_object_handlers));
-    redis_object_handlers.offset = XtOffsetOf(redis_object, std);
-    redis_object_handlers.free_obj = free_redis_object;
-    redis_object_handlers.clone_obj = NULL;
     redis->std.handlers = &redis_object_handlers;
 
     return &redis->std;
@@ -346,6 +342,16 @@ static void redis_random_hex_bytes(char *dst, size_t dstsize) {
     zend_string_release(s);
 }
 
+static void
+redis_init_object_handlers(void)
+{
+    memcpy(&redis_object_handlers, zend_get_std_object_handlers(),
+           sizeof(redis_object_handlers));
+    redis_object_handlers.offset = XtOffsetOf(redis_object, std);
+    redis_object_handlers.free_obj = free_redis_object;
+    redis_object_handlers.clone_obj = NULL;
+}
+
 /**
  * PHP_MINIT_FUNCTION
  */
@@ -366,6 +372,9 @@ PHP_MINIT_FUNCTION(redis)
     /* Redis class */
     redis_ce = register_class_Redis();
     redis_ce->create_object = create_redis_object;
+
+    /* Redis object handler initialization */
+    redis_init_object_handlers();
 
     /* RedisArray class */
     ZEND_MINIT(redis_array)(INIT_FUNC_ARGS_PASSTHRU);
