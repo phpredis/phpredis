@@ -342,9 +342,7 @@ static void redis_random_hex_bytes(char *dst, size_t dstsize) {
     zend_string_release(s);
 }
 
-static void
-redis_init_object_handlers(void)
-{
+static void redis_init_object_handlers(void) {
     memcpy(&redis_object_handlers, zend_get_std_object_handlers(),
            sizeof(redis_object_handlers));
     redis_object_handlers.offset = XtOffsetOf(redis_object, std);

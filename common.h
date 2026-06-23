@@ -26,11 +26,6 @@
 #define REDIS_FALLTHROUGH do { } while (0)
 #endif
 
-/* NULL check so Eclipse doesn't go crazy */
-#ifndef NULL
-#define NULL   ((void *) 0)
-#endif
-
 #if defined(_WIN32) || defined(_WIN64)
 # define PHPREDIS_LITTLE_ENDIAN
 #elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
