@@ -2478,15 +2478,15 @@ redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
             if (zkey != NULL) {
                 ZVAL_DEREF(z_ele);
-                if (zstr_str_ieq(zkey, ZEND_STRL("EX")) ||
-                    zstr_str_ieq(zkey, ZEND_STRL("PX")) ||
-                    zstr_str_ieq(zkey, ZEND_STRL("EXAT")) ||
-                    zstr_str_ieq(zkey, ZEND_STRL("PXAT"))
+                if (zend_string_equals_literal_ci(zkey, "EX") ||
+                    zend_string_equals_literal_ci(zkey, "PX") ||
+                    zend_string_equals_literal_ci(zkey, "EXAT") ||
+                    zend_string_equals_literal_ci(zkey, "PXAT")
                 ) {
                     exp_type = ZSTR_VAL(zkey);
                     expire = zval_get_long(z_ele);
                     persist = 0;
-                } else if (zstr_str_ieq(zkey, ZEND_STRL("PERSIST"))) {
+                } else if (zend_string_equals_literal_ci(zkey, "PERSIST")) {
                     persist = zend_is_true(z_ele);
                     exp_type = NULL;
                 }

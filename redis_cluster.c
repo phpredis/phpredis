@@ -2589,13 +2589,13 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
 static int redis_acl_op_readonly(zend_string *op) {
     /* Only return read-only for operations we know to be */
-    if (zstr_str_ieq(op, ZEND_STRL("LIST")) ||
-        zstr_str_ieq(op, ZEND_STRL("USERS")) ||
-        zstr_str_ieq(op, ZEND_STRL("GETUSER")) ||
-        zstr_str_ieq(op, ZEND_STRL("CAT")) ||
-        zstr_str_ieq(op, ZEND_STRL("GENPASS")) ||
-        zstr_str_ieq(op, ZEND_STRL("WHOAMI")) ||
-        zstr_str_ieq(op, ZEND_STRL("LOG"))) return 1;
+    if (zend_string_equals_literal_ci(op, "LIST") ||
+        zend_string_equals_literal_ci(op, "USERS") ||
+        zend_string_equals_literal_ci(op, "GETUSER") ||
+        zend_string_equals_literal_ci(op, "CAT") ||
+        zend_string_equals_literal_ci(op, "GENPASS") ||
+        zend_string_equals_literal_ci(op, "WHOAMI") ||
+        zend_string_equals_literal_ci(op, "LOG")) return 1;
 
     return 0;
 }

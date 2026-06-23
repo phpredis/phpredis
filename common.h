@@ -225,12 +225,6 @@ zval_str_ieq(zval *zv, const char *cmp, size_t cmp_len)
     return redis_str_ieq(Z_STRVAL_P(zv), Z_STRLEN_P(zv), cmp, cmp_len);
 }
 
-static zend_always_inline zend_bool
-zstr_str_ieq(const zend_string *zs, const char *cmp, size_t cmp_len)
-{
-    return redis_str_ieq(ZSTR_VAL(zs), ZSTR_LEN(zs), cmp, cmp_len);
-}
-
 /* HOST_NAME_MAX doesn't exist everywhere */
 #ifndef HOST_NAME_MAX
     #if defined(_POSIX_HOST_NAME_MAX)
