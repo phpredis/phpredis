@@ -2124,7 +2124,9 @@ redis_acl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
         }
         ctx = PHPREDIS_CTX_PTR;
     } else if (zend_string_equals_literal_ci(op, "LOG")) {
-        if (argc > 0 && Z_TYPE(z_args[0]) == IS_STRING && zval_str_ieq(&z_args[0], ZEND_STRL("RESET"))) {
+        if (argc > 0 && Z_TYPE(z_args[0]) == IS_STRING &&
+            zend_string_equals_literal_ci(Z_STR(z_args[0]), "RESET"))
+        {
             ctx = PHPREDIS_CTX_PTR;
         } else {
             ctx = PHPREDIS_CTX_PTR + 4;
@@ -4907,10 +4909,10 @@ redis_build_client_list_command(RedisSock *redis_sock, int argc, zval *z_args)
                 ZVAL_DEREF(z_ele);
                 if (zend_string_equals_literal_ci(zkey, "type")) {
                     if (Z_TYPE_P(z_ele) != IS_STRING || (
-                        !zval_str_ieq(z_ele, ZEND_STRL("normal")) &&
-                        !zval_str_ieq(z_ele, ZEND_STRL("master")) &&
-                        !zval_str_ieq(z_ele, ZEND_STRL("replica")) &&
-                        !zval_str_ieq(z_ele, ZEND_STRL("pubsub"))
+                        !zend_string_equals_literal_ci(Z_STR_P(z_ele), "normal") &&
+                        !zend_string_equals_literal_ci(Z_STR_P(z_ele), "master") &&
+                        !zend_string_equals_literal_ci(Z_STR_P(z_ele), "replica") &&
+                        !zend_string_equals_literal_ci(Z_STR_P(z_ele), "pubsub")
                     )) {
                         return NULL;
                     }
@@ -4984,11 +4986,11 @@ redis_build_client_kill_command(RedisSock *redis_sock, int argc, zval *z_args)
                     if (zend_string_equals_literal_ci(zkey, "id")) {
                         id = z_ele;
                     } else if (zend_string_equals_literal_ci(zkey, "type")) {
-                        if (!zval_str_ieq(z_ele, ZEND_STRL("normal")) &&
-                            !zval_str_ieq(z_ele, ZEND_STRL("master")) &&
-                            !zval_str_ieq(z_ele, ZEND_STRL("slave")) &&
-                            !zval_str_ieq(z_ele, ZEND_STRL("replica")) &&
-                            !zval_str_ieq(z_ele, ZEND_STRL("pubsub"))
+                        if (!zend_string_equals_literal_ci(Z_STR_P(z_ele), "normal") &&
+                            !zend_string_equals_literal_ci(Z_STR_P(z_ele), "master") &&
+                            !zend_string_equals_literal_ci(Z_STR_P(z_ele), "slave") &&
+                            !zend_string_equals_literal_ci(Z_STR_P(z_ele), "replica") &&
+                            !zend_string_equals_literal_ci(Z_STR_P(z_ele), "pubsub")
                         ) {
                             return NULL;
                         }
@@ -5000,8 +5002,8 @@ redis_build_client_kill_command(RedisSock *redis_sock, int argc, zval *z_args)
                     } else if (zend_string_equals_literal_ci(zkey, "laddr")) {
                         laddr = z_ele;
                     } else if (zend_string_equals_literal_ci(zkey, "skipme")) {
-                        if (!zval_str_ieq(z_ele, ZEND_STRL("yes")) &&
-                            !zval_str_ieq(z_ele, ZEND_STRL("no"))
+                        if (!zend_string_equals_literal_ci(Z_STR_P(z_ele), "yes") &&
+                            !zend_string_equals_literal_ci(Z_STR_P(z_ele), "no")
                         ) {
                             return NULL;
                         }
@@ -5086,8 +5088,8 @@ redis_build_client_tracking_command(RedisSock *redis_sock, int argc, zval *z_arg
     cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
     redis_cmd_cat_literal(cmd, "TRACKING");
     if (Z_TYPE(z_args[0]) == IS_STRING && (
-        zval_str_ieq(&z_args[0], ZEND_STRL("on")) ||
-        zval_str_ieq(&z_args[0], ZEND_STRL("off"))
+        zend_string_equals_literal_ci(Z_STR(z_args[0]), "on") ||
+        zend_string_equals_literal_ci(Z_STR(z_args[0]), "off")
     )) {
         redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
     } else if (zend_is_true(&z_args[0])) {
@@ -5152,8 +5154,8 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "CACHING");
         if (Z_TYPE(z_args[0]) == IS_STRING && (
-            zval_str_ieq(&z_args[0], ZEND_STRL("yes")) ||
-            zval_str_ieq(&z_args[0], ZEND_STRL("no"))
+            zend_string_equals_literal_ci(Z_STR(z_args[0]), "yes") ||
+            zend_string_equals_literal_ci(Z_STR(z_args[0]), "no")
         )) {
             redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
         } else if (zend_is_true(&z_args[0])) {
@@ -5180,8 +5182,8 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "NO-EVICT");
         if (Z_TYPE(z_args[0]) == IS_STRING && (
-            zval_str_ieq(&z_args[0], ZEND_STRL("on")) ||
-            zval_str_ieq(&z_args[0], ZEND_STRL("off"))
+            zend_string_equals_literal_ci(Z_STR(z_args[0]), "on") ||
+            zend_string_equals_literal_ci(Z_STR(z_args[0]), "off")
         )) {
             redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
         } else if (zend_is_true(&z_args[0])) {
@@ -5194,8 +5196,8 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         if (argc < 1 || Z_TYPE(z_args[0]) != IS_LONG || (
             argc > 1 && (
                 Z_TYPE(z_args[1]) != IS_STRING || (
-                    !zval_str_ieq(&z_args[1], ZEND_STRL("write")) &&
-                    !zval_str_ieq(&z_args[1], ZEND_STRL("all"))
+                    !zend_string_equals_literal_ci(Z_STR(z_args[1]), "write") &&
+                    !zend_string_equals_literal_ci(Z_STR(z_args[1]), "all")
                 )
             )
         )) {
@@ -5211,9 +5213,9 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     } else if (zend_string_equals_literal_ci(op, "REPLY")) {
         if (argc > 0 && (
             Z_TYPE(z_args[0]) != IS_STRING || (
-                !zval_str_ieq(&z_args[0], ZEND_STRL("on")) &&
-                !zval_str_ieq(&z_args[0], ZEND_STRL("off")) &&
-                !zval_str_ieq(&z_args[0], ZEND_STRL("skip"))
+                !zend_string_equals_literal_ci(Z_STR(z_args[0]), "on") &&
+                !zend_string_equals_literal_ci(Z_STR(z_args[0]), "off") &&
+                !zend_string_equals_literal_ci(Z_STR(z_args[0]), "skip")
             )
         )) {
             return NULL;
@@ -5243,8 +5245,8 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         if (argc < 1 || Z_TYPE(z_args[0]) != IS_STRING || (
             argc > 1 && (
                 Z_TYPE(z_args[1]) != IS_STRING || (
-                    !zval_str_ieq(&z_args[1], ZEND_STRL("timeout")) &&
-                    !zval_str_ieq(&z_args[1], ZEND_STRL("error"))
+                    !zend_string_equals_literal_ci(Z_STR(z_args[1]), "timeout") &&
+                    !zend_string_equals_literal_ci(Z_STR(z_args[1]), "error")
                 )
             )
         )) {
