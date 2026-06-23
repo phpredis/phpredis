@@ -6936,20 +6936,15 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
-    size_t key_len;
-    char *key;
+    zend_string *key, *prefixed;
 
     ZEND_PARSE_PARAMETERS_START(1, 1)
-        Z_PARAM_STRING(key, key_len)
+        Z_PARAM_STR(key)
     ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if (redis_sock->prefix) {
-        int keyfree = redis_key_prefix(redis_sock, &key, &key_len);
-        RETVAL_STRINGL(key, key_len);
-        if (keyfree) efree(key);
-    } else {
-        RETURN_STRINGL(key, key_len);
-    }
+    prefixed = redis_key_prefix_zstr(redis_sock, key);
+
+    RETURN_STR(prefixed);
 }
 
 void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
