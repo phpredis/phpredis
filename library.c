@@ -86,7 +86,7 @@
 /** Set return value to false in case of we are in atomic mode or add FALSE to output array in pipeline mode */
 #define REDIS_RESPONSE_ERROR(redis_sock, z_tab) \
     do { \
-        if (IS_ATOMIC(redis_sock)) { \
+        if (redis_sock_is_atomic(redis_sock)) { \
             RETVAL_FALSE; \
         } else { \
             add_next_index_bool(z_tab, 0); \
@@ -96,7 +96,7 @@
 /** Set return value to `zval` in case of we are in atomic mode or add `zval` to output array in pipeline mode */
 #define REDIS_RETURN_ZVAL(redis_sock, z_tab, zval) \
     do { \
-        if (IS_ATOMIC(redis_sock)) { \
+        if (redis_sock_is_atomic(redis_sock)) { \
             /* Move value of `zval` to `return_value` */ \
             ZVAL_COPY_VALUE(return_value, &zval); \
         } else { \
@@ -307,9 +307,10 @@ PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock) {
     return SUCCESS;
 }
 
-/* Helper function and macro to test a RedisSock error prefix. */
-#define REDIS_SOCK_ERRCMP_STATIC(rs, s) redis_sock_errcmp(rs, s, sizeof(s)-1)
-static int redis_sock_errcmp(RedisSock *redis_sock, const char *err, size_t errlen) {
+/* Helper function to test a RedisSock error prefix. */
+static zend_always_inline zend_bool
+redis_sock_errcmp(RedisSock *redis_sock, const char *err, size_t errlen)
+{
     return ZSTR_LEN(redis_sock->err) >= errlen &&
            memcmp(ZSTR_VAL(redis_sock->err), err, errlen) == 0;
 }
@@ -332,18 +333,18 @@ redis_error_throw(RedisSock *redis_sock)
      * but is actually an authentication error that we will want to throw
      * an exception for, so just short circuit if this is any other 'ERR'
      * prefixed error. */
-    if (REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
-        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR AUTH")) return;
+    if (redis_sock_errcmp(redis_sock, ZEND_STRL("ERR")) &&
+        !redis_sock_errcmp(redis_sock, ZEND_STRL("ERR AUTH"))) return;
 
     /* We may want to flip this logic and check for MASTERDOWN, AUTH,
      * and LOADING but that may have side effects (esp for things like
      * Disque) */
-    if (!REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOSCRIPT") &&
-        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOQUORUM") &&
-        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGOODSLAVE") &&
-        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "WRONGTYPE") &&
-        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "BUSYGROUP") &&
-        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGROUP"))
+    if (!redis_sock_errcmp(redis_sock, ZEND_STRL("NOSCRIPT")) &&
+        !redis_sock_errcmp(redis_sock, ZEND_STRL("NOQUORUM")) &&
+        !redis_sock_errcmp(redis_sock, ZEND_STRL("NOGOODSLAVE")) &&
+        !redis_sock_errcmp(redis_sock, ZEND_STRL("WRONGTYPE")) &&
+        !redis_sock_errcmp(redis_sock, ZEND_STRL("BUSYGROUP")) &&
+        !redis_sock_errcmp(redis_sock, ZEND_STRL("NOGROUP")))
     {
         REDIS_THROW_EXCEPTION(ZSTR_VAL(redis_sock->err), 0);
     }
@@ -1002,7 +1003,7 @@ redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     ret = atof(response);
     efree(response);
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_DOUBLE(ret);
     } else {
         add_next_index_double(z_tab, ret);
@@ -1043,7 +1044,7 @@ redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     efree(response);
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_LONG(l);
     } else {
         add_next_index_long(z_tab, l);
@@ -1478,7 +1479,7 @@ redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (ret && success_callback != NULL) {
         success_callback(redis_sock);
     }
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_BOOL(ret);
     } else {
         add_next_index_bool(z_tab, ret);
@@ -1513,7 +1514,7 @@ PHP_REDIS_API int redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
 
     int64_t ret = phpredis_atoi64(response + 1);
 
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         if (ret > LONG_MAX) { /* overflow */
             RETVAL_STRINGL(response + 1, response_len - 1);
         } else {
@@ -1922,7 +1923,7 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_ZVAL(&z_ret, 0, 1);
     } else {
         add_next_index_zval(z_tab, &z_ret);
@@ -1931,7 +1932,7 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 
 fail:
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_FALSE;
     } else {
         add_next_index_bool(z_tab, 0);
@@ -2829,7 +2830,7 @@ redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         efree(response);
     }
 
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_BOOL(ret);
     } else {
         add_next_index_bool(z_tab, ret);
@@ -2882,7 +2883,7 @@ redis_bulk_withmeta_response(INTERNAL_FUNCTION_PARAMETERS,
 
     redis_with_metadata(&zret, &zbulk, len);
 
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_ZVAL(&zret, 0, 1);
     } else {
         add_next_index_zval(z_tab, &zret);
@@ -2906,7 +2907,7 @@ redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         REDIS_RESPONSE_ERROR(redis_sock, z_tab);
         return FAILURE;
     }
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         RETVAL_STRINGL(response, response_len);
     } else {
         add_next_index_stringl(z_tab, response, response_len);
@@ -3084,8 +3085,13 @@ static int redis_pool_poll_timeout(void) {
     return 0;
 }
 
-#define REDIS_POLL_FD_SET(_pfd, _fd, _events) \
-    (_pfd).fd = _fd; (_pfd).events = _events; (_pfd).revents = 0
+static zend_always_inline void
+redis_poll_fd_set(php_pollfd *pfd, php_socket_t fd, int events)
+{
+    pfd->fd = fd;
+    pfd->events = events;
+    pfd->revents = 0;
+}
 
 /* Try to determine if the socket is out of sync (has unconsumed replies) */
 static int redis_stream_detect_dirty(php_stream *stream) {
@@ -3118,7 +3124,7 @@ static int redis_stream_detect_dirty(php_stream *stream) {
         return FAILURE;
 
     /* We want to detect a readable socket (it shouldn't be) */
-    REDIS_POLL_FD_SET(pfd, fd, PHP_POLLREADABLE);
+    redis_poll_fd_set(&pfd, fd, PHP_POLLREADABLE);
     rv = php_poll2(&pfd, 1, redis_pool_poll_timeout());
 
     /* If we detect the socket is readable, it's dirty which is
@@ -3440,7 +3446,7 @@ redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
             if (INI_INT("redis.pconnect.pooling_enabled")) {
                 p = redis_sock_get_connection_pool(redis_sock);
             }
-            if (force || !IS_ATOMIC(redis_sock)) {
+            if (force || !redis_sock_is_atomic(redis_sock)) {
                 php_stream_pclose(redis_sock->stream);
                 redis_free_reply_callbacks(redis_sock);
                 if (p) p->nb_active--;
@@ -3483,13 +3489,17 @@ PHP_REDIS_API void redis_sock_clear_err(RedisSock *redis_sock) {
     redis_sock->err = NULL;
 }
 
+static zend_always_inline void
+redis_gc_try_addref(HashTable *ht)
+{
 #if PHP_VERSION_ID < 80000
-#define GC_TRY_ADDREF(ht) do { \
-    if (ht && !(GC_FLAGS(ht) & GC_IMMUTABLE)) { \
-        GC_ADDREF(ht); \
-    } \
-} while(0)
+    if (ht && !(GC_FLAGS(ht) & GC_IMMUTABLE)) {
+        GC_ADDREF(ht);
+    }
+#else
+    GC_TRY_ADDREF(ht);
 #endif
+}
 
 
 void redis_sock_set_context(RedisSock *redis_sock, HashTable *ht) {
@@ -3498,7 +3508,7 @@ void redis_sock_set_context(RedisSock *redis_sock, HashTable *ht) {
     if (ht == NULL)
         return;
 
-    GC_TRY_ADDREF(ht);
+    redis_gc_try_addref(ht);
     redis_sock->context = ht;
 }
 

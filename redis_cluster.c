@@ -104,7 +104,7 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmd *cmd;
     short slot;
 
-    c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
+    c->readonly = readonly && cluster_is_atomic(c);
 
     cmd = cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
     if (cmd == NULL) {
@@ -140,7 +140,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmd *cmd;
     short slot;
 
-    c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
+    c->readonly = readonly && cluster_is_atomic(c);
 
     cmd = cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, (char*)kw);
     if (cmd == NULL) {
@@ -274,7 +274,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     c->waitms = (long)(1000 * (timeout + read_timeout));
 
     /* Attempt to load slots from cache if caching is enabled */
-    if (CLUSTER_CACHING_ENABLED()) {
+    if (cluster_caching_enabled()) {
         /* Exit early if we can load from cache */
         hash = cluster_hash_seeds(seeds, nseeds);
         if ((cc = cluster_cache_load(hash))) {
@@ -471,7 +471,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
     ctx.ptr = mctx;
     ctx.dtor = cluster_multi_ctx_dtor;
 
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         // Process response now
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
         redis_cmd_ctx_free(ctx);
@@ -622,7 +622,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     }
 
     /* MGET is readonly, DEL is not */
-    c->readonly = kw_len == 4 && CLUSTER_IS_ATOMIC(c);
+    c->readonly = kw_len == 4 && cluster_is_atomic(c);
 
     // Initialize our "multi" command handler with command/len
     CLUSTER_MULTI_INIT(mc, kw, kw_len);
@@ -711,7 +711,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     }
 
     /* Return our object if we're in MULTI mode */
-    if (!CLUSTER_IS_ATOMIC(c))
+    if (!cluster_is_atomic(c))
         RETVAL_ZVAL(getThis(), 1, 0);
 
     // Success
@@ -806,7 +806,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     cluster_multi_free(&mc);
 
     /* Return our object if we're in MULTI mode */
-    if (!CLUSTER_IS_ATOMIC(c))
+    if (!cluster_is_atomic(c))
         RETVAL_ZVAL(getThis(), 1, 0);
 
     // Success
@@ -977,7 +977,7 @@ PHP_METHOD(RedisCluster, keys) {
     array_init(return_value);
 
     /* Treat as readonly */
-    c->readonly = CLUSTER_IS_ATOMIC(c);
+    c->readonly = cluster_is_atomic(c);
 
     /* Iterate over our known nodes */
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
@@ -2221,7 +2221,7 @@ PHP_METHOD(RedisCluster, watch) {
             RETURN_FALSE;
         }
 
-        SLOT_SOCK(c, slot)->watching = 1;
+        cluster_slot_master_sock(c, slot)->watching = 1;
 
         redis_cmd_free(cmd);
     } ZEND_HASH_FOREACH_END();
@@ -2238,7 +2238,7 @@ PHP_METHOD(RedisCluster, unwatch) {
 
     // Send UNWATCH to nodes that need it
     for(slot = 0; slot < REDIS_CLUSTER_SLOTS; slot++) {
-        if (c->master[slot] && SLOT_SOCK(c,slot)->watching) {
+        if (c->master[slot] && cluster_slot_master_sock(c,slot)->watching) {
             if (cluster_send_slot(c, slot, ZEND_STRL(RESP_UNWATCH_CMD),
                                   TYPE_LINE) == -1)
             {
@@ -2246,7 +2246,7 @@ PHP_METHOD(RedisCluster, unwatch) {
             }
 
             // No longer watching
-            SLOT_SOCK(c,slot)->watching = 0;
+            cluster_slot_master_sock(c,slot)->watching = 0;
         }
     }
 
@@ -2259,7 +2259,7 @@ PHP_METHOD(RedisCluster, exec) {
     clusterFoldItem *fi;
 
     // Verify we are in fact in multi mode
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         php_error_docref(NULL, E_WARNING, "RedisCluster is not in MULTI mode");
         RETURN_FALSE;
     }
@@ -2267,7 +2267,7 @@ PHP_METHOD(RedisCluster, exec) {
     // First pass, send EXEC and abort on failure
     fi = c->multi_head;
     while (fi) {
-        if (SLOT_SOCK(c, fi->slot)->mode == MULTI) {
+        if (cluster_slot_master_sock(c, fi->slot)->mode == MULTI) {
             if ( cluster_send_exec(c, fi->slot) < 0) {
                 cluster_abort_exec(c);
                 CLUSTER_THROW_EXCEPTION("Error processing EXEC across the cluster", 0);
@@ -2278,8 +2278,8 @@ PHP_METHOD(RedisCluster, exec) {
 
                 RETURN_FALSE;
             }
-            SLOT_SOCK(c, fi->slot)->mode     = ATOMIC;
-            SLOT_SOCK(c, fi->slot)->watching = 0;
+            cluster_slot_master_sock(c, fi->slot)->mode     = ATOMIC;
+            cluster_slot_master_sock(c, fi->slot)->watching = 0;
         }
         fi = fi->next;
     }
@@ -2297,7 +2297,7 @@ PHP_METHOD(RedisCluster, exec) {
 PHP_METHOD(RedisCluster, discard) {
     redisCluster *c = GET_CONTEXT();
 
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         php_error_docref(NULL, E_WARNING, "Cluster is not in MULTI mode");
         RETURN_FALSE;
     }
@@ -2452,7 +2452,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     short slot;
 
     /* Commands using this pass-through don't need to be enabled in MULTI mode */
-    if (!CLUSTER_IS_ATOMIC(c)) {
+    if (!cluster_is_atomic(c)) {
         php_error_docref(0, E_WARNING,
             "Command can't be issued in MULTI mode");
         RETURN_FALSE;
@@ -2510,7 +2510,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     uint64_t cursor;
 
     // Can't be in MULTI mode
-    if (!CLUSTER_IS_ATOMIC(c)) {
+    if (!cluster_is_atomic(c)) {
         CLUSTER_THROW_EXCEPTION("SCAN type commands can't be called in MULTI mode!", 0);
         RETURN_FALSE;
     }
@@ -2589,13 +2589,13 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
 static int redis_acl_op_readonly(zend_string *op) {
     /* Only return read-only for operations we know to be */
-    if (ZSTR_STRICMP_STATIC(op, "LIST") ||
-        ZSTR_STRICMP_STATIC(op, "USERS") ||
-        ZSTR_STRICMP_STATIC(op, "GETUSER") ||
-        ZSTR_STRICMP_STATIC(op, "CAT") ||
-        ZSTR_STRICMP_STATIC(op, "GENPASS") ||
-        ZSTR_STRICMP_STATIC(op, "WHOAMI") ||
-        ZSTR_STRICMP_STATIC(op, "LOG")) return 1;
+    if (zstr_str_ieq(op, ZEND_STRL("LIST")) ||
+        zstr_str_ieq(op, ZEND_STRL("USERS")) ||
+        zstr_str_ieq(op, ZEND_STRL("GETUSER")) ||
+        zstr_str_ieq(op, ZEND_STRL("CAT")) ||
+        zstr_str_ieq(op, ZEND_STRL("GENPASS")) ||
+        zstr_str_ieq(op, ZEND_STRL("WHOAMI")) ||
+        zstr_str_ieq(op, ZEND_STRL("LOG"))) return 1;
 
     return 0;
 }
@@ -2640,7 +2640,7 @@ PHP_METHOD(RedisCluster, acl) {
     }
 
     /* Can we use replicas? */
-    c->readonly = redis_acl_op_readonly(op) && CLUSTER_IS_ATOMIC(c);
+    c->readonly = redis_acl_op_readonly(op) && cluster_is_atomic(c);
 
     /* Kick off our command */
     if (cluster_send_slot_cmd(c, cmd->slot, cmd, TYPE_EOF) < 0) {
@@ -2649,7 +2649,7 @@ PHP_METHOD(RedisCluster, acl) {
         RETURN_FALSE;
     }
 
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_enqueue_response(c, cmd->slot, cb, redis_empty_ctx);
@@ -2672,10 +2672,10 @@ PHP_METHOD(RedisCluster, scan) {
     uint64_t cursor;
 
     /* Treat as read-only */
-    c->readonly = CLUSTER_IS_ATOMIC(c);
+    c->readonly = cluster_is_atomic(c);
 
     /* Can't be in MULTI mode */
-    if (!CLUSTER_IS_ATOMIC(c)) {
+    if (!cluster_is_atomic(c)) {
         CLUSTER_THROW_EXCEPTION("SCAN type commands can't be called in MULTI mode", 0);
         RETURN_FALSE;
     }
@@ -2846,14 +2846,14 @@ PHP_METHOD(RedisCluster, info) {
         redis_cmd_cat_zval_zstr(cmd, &args[i]);
     }
 
-    rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+    rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot_cmd(c, slot, cmd, rtype) < 0) {
         CLUSTER_THROW_EXCEPTION("Unable to send INFO command to specific node", 0);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
 
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         cluster_info_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_enqueue_response(c, slot, cluster_info_resp, redis_empty_ctx);
@@ -2890,7 +2890,7 @@ PHP_METHOD(RedisCluster, client) {
 
     /* Our return type and reply callback is different for all subcommands */
     if (zend_string_equals_literal_ci(op, "LIST")) {
-        rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+        rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;
         cb = cluster_client_list_resp;
     } else if (zend_string_equals_literal_ci(op, "KILL") ||
                zend_string_equals_literal_ci(op, "SETNAME"))
@@ -2898,7 +2898,7 @@ PHP_METHOD(RedisCluster, client) {
         rtype = TYPE_LINE;
         cb = cluster_bool_resp;
     } else if (zend_string_equals_literal_ci(op, "GETNAME")) {
-        rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+        rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;
         cb = cluster_bulk_resp;
     } else {
         php_error_docref(NULL, E_WARNING,
@@ -2920,7 +2920,7 @@ PHP_METHOD(RedisCluster, client) {
     }
 
     /* Now enqueue or process response */
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_enqueue_response(c, slot, cb, redis_empty_ctx);
@@ -2961,7 +2961,7 @@ PHP_METHOD(RedisCluster, script) {
     int argc = ZEND_NUM_ARGS();
 
     /* Commands using this pass-through don't need to be enabled in MULTI mode */
-    if (!CLUSTER_IS_ATOMIC(c)) {
+    if (!cluster_is_atomic(c)) {
         php_error_docref(0, E_WARNING,
             "Command can't be issued in MULTI mode");
         RETURN_FALSE;
@@ -3130,7 +3130,7 @@ void cluster_gen_wait_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
         RETURN_FALSE;
     }
 
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_enqueue_response(c, cmd->slot, cluster_variant_resp,
@@ -3167,7 +3167,7 @@ PHP_METHOD(RedisCluster, ping) {
     ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Treat this as a readonly command */
-    c->readonly = CLUSTER_IS_ATOMIC(c);
+    c->readonly = cluster_is_atomic(c);
 
     /* Grab slot either by key or host/port */
     slot = cluster_cmd_get_slot(c, z_node);
@@ -3180,7 +3180,7 @@ PHP_METHOD(RedisCluster, ping) {
         redis_cmd_cat_zstr(cmd, arg);
 
     /* Send it off */
-    rtype = CLUSTER_IS_ATOMIC(c) && arg != NULL ? TYPE_BULK : TYPE_LINE;
+    rtype = cluster_is_atomic(c) && arg != NULL ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot_cmd(c, slot, cmd, rtype) < 0) {
         CLUSTER_THROW_EXCEPTION(
             "Unable to send command at the specified node", 0);
@@ -3192,7 +3192,7 @@ PHP_METHOD(RedisCluster, ping) {
     redis_cmd_free(cmd);
 
     /* Process response */
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         if (arg != NULL) {
             cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                               redis_empty_ctx);
@@ -3357,7 +3357,7 @@ PHP_METHOD(RedisCluster, echo) {
     ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Treat this as a readonly command */
-    c->readonly = CLUSTER_IS_ATOMIC(c);
+    c->readonly = cluster_is_atomic(c);
 
     /* Grab slot either by key or host/port */
     slot = cluster_cmd_get_slot(c, z_arg);
@@ -3369,7 +3369,7 @@ PHP_METHOD(RedisCluster, echo) {
     cmd = redis_cmd_fmt(NULL, "ECHO", "S", msg);
 
     /* Send it off */
-    rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+    rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot_cmd(c, slot, cmd, rtype) < 0) {
         CLUSTER_THROW_EXCEPTION(
             "Unable to send command at the specified node", 0);
@@ -3378,7 +3378,7 @@ PHP_METHOD(RedisCluster, echo) {
     }
 
     /* Process bulk response */
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_enqueue_response(c, slot, cluster_bulk_resp, redis_empty_ctx);
@@ -3421,7 +3421,7 @@ PHP_METHOD(RedisCluster, rawcommand) {
     efree(z_args);
 
     /* Direct the command */
-    rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_EOF : TYPE_LINE;
+    rtype = cluster_is_atomic(c) ? TYPE_EOF : TYPE_LINE;
     if (cluster_send_slot_cmd(c, cmd->slot, cmd, rtype) < 0) {
         CLUSTER_THROW_EXCEPTION("Unable to send command to the specified node", 0);
         redis_cmd_free(cmd);
@@ -3429,7 +3429,7 @@ PHP_METHOD(RedisCluster, rawcommand) {
     }
 
     /* Process variant response */
-    if (CLUSTER_IS_ATOMIC(c)) {
+    if (cluster_is_atomic(c)) {
         cluster_variant_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                                  redis_empty_ctx);
     } else {

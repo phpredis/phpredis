@@ -21,10 +21,14 @@
 
 #define RESP_READONLY_CMD_LEN (sizeof(RESP_READONLY_CMD)-1)
 
-/* MOVED/ASK comparison macros */
-#define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
-                     p[4]=='D' && p[5]==' ')
-#define IS_ASK(p)   (p[0]=='A' && p[1]=='S' && p[2]=='K' && p[3]==' ')
+static zend_always_inline zend_bool cluster_is_moved(const char *p) {
+    return p[0] == 'M' && p[1] == 'O' && p[2] == 'V' && p[3] == 'E' &&
+           p[4] == 'D' && p[5] == ' ';
+}
+
+static zend_always_inline zend_bool cluster_is_ask(const char *p) {
+    return p[0] == 'A' && p[1] == 'S' && p[2] == 'K' && p[3] == ' ';
+}
 
 /* MOVED/ASK lengths */
 #define MOVED_LEN (sizeof("MOVED ")-1)
@@ -32,12 +36,6 @@
 
 /* Initial allocation size for key distribution container */
 #define CLUSTER_KEYDIST_ALLOC 8
-
-/* Macros to access nodes, sockets, and streams for a given slot */
-#define SLOT(c,s) (c->master[s])
-#define SLOT_SOCK(c,s) (SLOT(c,s)->sock)
-#define SLOT_STREAM(c,s) (SLOT_SOCK(c,s)->stream)
-#define SLOT_SLAVES(c,s) (c->master[s]->slaves)
 
 /* Compare redirection slot information with the passed node */
 #define CLUSTER_REDIR_CMP(c, sock) \
@@ -67,12 +65,9 @@
 #define CLUSTER_CLEAR_REPLY(c) \
     *c->line_reply = '\0'; c->reply_len = 0;
 
-/* Helper to determine if we're in MULTI mode */
-#define CLUSTER_IS_ATOMIC(c) (c->flags->mode != MULTI)
-
 /* Helper that either returns false or adds false in multi mode */
 #define CLUSTER_RETURN_FALSE(c) \
-    if(CLUSTER_IS_ATOMIC(c)) { \
+    if(cluster_is_atomic(c)) { \
         RETURN_FALSE; \
     } else { \
         add_next_index_bool(&c->multi_resp, 0); \
@@ -81,7 +76,7 @@
 
 /* Helper to either return a bool value or add it to MULTI response */
 #define CLUSTER_RETURN_BOOL(c, b) \
-    if(CLUSTER_IS_ATOMIC(c)) { \
+    if(cluster_is_atomic(c)) { \
         RETURN_BOOL(b); \
     } else { \
         add_next_index_bool(&c->multi_resp, b); \
@@ -89,7 +84,7 @@
 
 /* Helper to respond with a double or add it to our MULTI response */
 #define CLUSTER_RETURN_DOUBLE(c, d) \
-    if(CLUSTER_IS_ATOMIC(c)) { \
+    if(cluster_is_atomic(c)) { \
         RETURN_DOUBLE(d); \
     } else { \
         add_next_index_double(&c->multi_resp, d); \
@@ -97,7 +92,7 @@
 
 /* Helper to return a string value */
 #define CLUSTER_RETURN_STRING(c, str, len) \
-    if(CLUSTER_IS_ATOMIC(c)) { \
+    if(cluster_is_atomic(c)) { \
         RETVAL_STRINGL(str, len); \
     } else { \
         add_next_index_stringl(&c->multi_resp, str, len); \
@@ -105,7 +100,7 @@
 
 /* Return a LONG value */
 #define CLUSTER_RETURN_LONG(c, val) \
-    if(CLUSTER_IS_ATOMIC(c)) { \
+    if(cluster_is_atomic(c)) { \
         RETURN_LONG(val); \
     } else { \
         add_next_index_long(&c->multi_resp, val); \
@@ -122,7 +117,9 @@
     mc.kw     = keyword; \
     mc.kw_len = keyword_len; \
 
-#define CLUSTER_CACHING_ENABLED() (INI_INT("redis.clusters.cache_slots") == 1)
+static zend_always_inline zend_bool cluster_caching_enabled(void) {
+    return INI_INT("redis.clusters.cache_slots") == 1;
+}
 
 /* Cluster redirection enum */
 typedef enum CLUSTER_REDIR_TYPE {
@@ -248,6 +245,36 @@ typedef struct redisCluster {
     /* Zend object handler */
     zend_object std;
 } redisCluster;
+
+static zend_always_inline redisClusterNode *
+cluster_slot(redisCluster *c, unsigned short slot)
+{
+    return c->master[slot];
+}
+
+static zend_always_inline RedisSock *
+cluster_slot_master_sock(redisCluster *c, unsigned short slot)
+{
+    return cluster_slot(c, slot)->sock;
+}
+
+static zend_always_inline php_stream *
+cluster_slot_stream(redisCluster *c, unsigned short slot)
+{
+    return cluster_slot_master_sock(c, slot)->stream;
+}
+
+static zend_always_inline HashTable *
+cluster_slot_slaves(redisCluster *c, unsigned short slot)
+{
+    return cluster_slot(c, slot)->slaves;
+}
+
+static zend_always_inline zend_bool
+cluster_is_atomic(const redisCluster *c)
+{
+    return c->flags->mode != MULTI;
+}
 
 /* RedisCluster response processing callback */
 typedef void (*cluster_cb)(INTERNAL_FUNCTION_PARAMETERS, redisCluster*, RedisCmdCtx);

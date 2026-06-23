@@ -1248,7 +1248,7 @@ PS_OPEN_FUNC(rediscluster) {
     }
 
     /* First attempt to load from cache */
-    if (CLUSTER_CACHING_ENABLED()) {
+    if (cluster_caching_enabled()) {
         hash = cluster_hash_seeds(seeds, nseeds);
         if ((cc = cluster_cache_load(hash))) {
             cluster_init_cache(c, cc);

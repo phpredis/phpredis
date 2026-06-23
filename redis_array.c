@@ -27,12 +27,14 @@
 #include <ext/standard/info.h>
 #include <zend_exceptions.h>
 
-/* Simple macro to detect failure in a RedisArray call */
-#define RA_CALL_FAILED(rv, cmd) ( \
-    (Z_TYPE_P(rv) == IS_FALSE) || \
-    (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
-    (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE")) \
-)
+/* Simple helper to detect failure in a RedisArray call */
+static zend_always_inline zend_bool
+ra_call_failed(zval *rv, const char *cmd)
+{
+    return Z_TYPE_P(rv) == IS_FALSE ||
+           (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) ||
+           (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE"));
+}
 
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
@@ -319,7 +321,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
 
         if (!b_write_cmd) {
             /* check if we have an error. */
-            if (ra->prev && RA_CALL_FAILED(return_value, cmd)) { /* there was an error reading, try with prev ring. */
+            if (ra->prev && ra_call_failed(return_value, cmd)) { /* there was an error reading, try with prev ring. */
                 /* Free previous return value */
                 zval_ptr_dtor_nogc(return_value);
 
@@ -328,7 +330,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
             }
 
             /* Autorehash if the key was found on the previous node if this is a read command and auto rehashing is on */
-            if (ra->auto_rehash && z_new_target && !RA_CALL_FAILED(return_value, cmd)) { /* move key from old ring to new ring */
+            if (ra->auto_rehash && z_new_target && !ra_call_failed(return_value, cmd)) { /* move key from old ring to new ring */
                 ra_move_key(key, key_len, redis_inst, z_new_target);
             }
         }

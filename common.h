@@ -197,35 +197,39 @@ typedef enum {
 #define redisDbgStr(str) ((void)0)
 #endif
 
-#define IS_ATOMIC(redis_sock) (redis_sock->mode == ATOMIC)
-#define IS_MULTI(redis_sock) (redis_sock->mode & MULTI)
-#define IS_PIPELINE(redis_sock) (redis_sock->mode & PIPELINE)
-
-/* Case sensitive compare against compile-time static string */
-#define REDIS_STRCMP_STATIC(s, len, sstr) \
-    (len == sizeof(sstr) - 1 && !strncmp(s, sstr, len))
-
-/* Case insensitive compare against compile-time static string */
-#define REDIS_STRICMP_STATIC(s, len, sstr) \
-    (len == sizeof(sstr) - 1 && !strncasecmp(s, sstr, len))
-
 /* On some versions of glibc strncmp and strncasecmp can be a macro a macro.
  * This wrapper allows us to use it in combination with ZEND_STRL in those
  * cases. */
-static inline int redis_strncmp(const char *s1, const char *s2, size_t n) {
+static zend_always_inline int redis_strncmp(const char *s1, const char *s2, size_t n) {
     return strncmp(s1, s2, n);
 }
-static inline int redis_strncasecmp(const char *s1, const char *s2, size_t n) {
+static zend_always_inline int redis_strncasecmp(const char *s1, const char *s2, size_t n) {
     return strncasecmp(s1, s2, n);
 }
 
-/* Test if a zval is a string and (case insensitive) matches a static string */
-#define ZVAL_STRICMP_STATIC(zv, sstr) \
-    REDIS_STRICMP_STATIC(Z_STRVAL_P(zv), Z_STRLEN_P(zv), sstr)
+static zend_always_inline zend_bool
+redis_str_eq(const char *s, size_t len, const char *cmp, size_t cmp_len)
+{
+    return len == cmp_len && redis_strncmp(s, cmp, len) == 0;
+}
 
-/* Case insensitive compare of a zend_string to a static string */
-#define ZSTR_STRICMP_STATIC(zs, sstr) \
-    REDIS_STRICMP_STATIC(ZSTR_VAL(zs), ZSTR_LEN(zs), sstr)
+static zend_always_inline zend_bool
+redis_str_ieq(const char *s, size_t len, const char *cmp, size_t cmp_len)
+{
+    return len == cmp_len && redis_strncasecmp(s, cmp, len) == 0;
+}
+
+static zend_always_inline zend_bool
+zval_str_ieq(zval *zv, const char *cmp, size_t cmp_len)
+{
+    return redis_str_ieq(Z_STRVAL_P(zv), Z_STRLEN_P(zv), cmp, cmp_len);
+}
+
+static zend_always_inline zend_bool
+zstr_str_ieq(const zend_string *zs, const char *cmp, size_t cmp_len)
+{
+    return redis_str_ieq(ZSTR_VAL(zs), ZSTR_LEN(zs), cmp, cmp_len);
+}
 
 /* HOST_NAME_MAX doesn't exist everywhere */
 #ifndef HOST_NAME_MAX
@@ -301,6 +305,18 @@ typedef struct {
     uint8_t             flags;
 } RedisSock;
 /* }}} */
+
+static zend_always_inline zend_bool redis_sock_is_atomic(const RedisSock *redis_sock) {
+    return redis_sock->mode == ATOMIC;
+}
+
+static zend_always_inline zend_bool redis_sock_is_multi(const RedisSock *redis_sock) {
+    return (redis_sock->mode & MULTI) != 0;
+}
+
+static zend_always_inline zend_bool redis_sock_is_pipeline(const RedisSock *redis_sock) {
+    return (redis_sock->mode & PIPELINE) != 0;
+}
 
 typedef void (RedisCmdCtxDtor)(void *ptr);
 typedef struct RedisCmdCtx {
