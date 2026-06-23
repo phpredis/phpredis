@@ -32,12 +32,6 @@
 #include <ext/standard/info.h>
 #include <ext/hash/php_hash.h>
 
-#if PHP_VERSION_ID < 80400
-#include <ext/standard/php_random.h>
-#else
-#include <ext/random/php_random.h>
-#endif
-
 #ifdef PHP_SESSION
 #include <ext/session/php_session.h>
 #endif

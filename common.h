@@ -4,6 +4,8 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+#include "php_compat.h"
+
 #define PHPREDIS_CTX_PTR ((char *)0xDEADC0DE)
 #define PHPREDIS_NOTUSED(v) ((void)v)
 
@@ -185,23 +187,6 @@ typedef enum {
 #define PIPELINE 2
 
 #define PHPREDIS_DEBUG_LOGGING 0
-
-#if PHP_VERSION_ID < 80000
-#define Z_PARAM_ARRAY_OR_NULL(dest) \
-        Z_PARAM_ARRAY_EX(dest, 1, 0)
-#define Z_PARAM_ARRAY_HT_OR_NULL(dest) \
-        Z_PARAM_ARRAY_HT_EX(dest, 1, 0)
-#define Z_PARAM_STRING_OR_NULL(dest, dest_len) \
-	    Z_PARAM_STRING_EX(dest, dest_len, 1, 0)
-#define Z_PARAM_STR_OR_NULL(dest) \
-        Z_PARAM_STR_EX(dest, 1, 0)
-#define Z_PARAM_LONG_OR_NULL(dest, is_null) \
-	    Z_PARAM_LONG_EX(dest, is_null, 1, 0)
-#define Z_PARAM_ZVAL_OR_NULL(dest) \
-	    Z_PARAM_ZVAL_EX(dest, 1, 0)
-#define Z_PARAM_BOOL_OR_NULL(dest, is_null) \
-	    Z_PARAM_BOOL_EX(dest, is_null, 1, 0)
-#endif
 
 #if PHPREDIS_DEBUG_LOGGING == 1
 #define redisDbgFmt(fmt, ...) \

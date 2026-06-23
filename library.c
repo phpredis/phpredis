@@ -1760,21 +1760,6 @@ redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return res;
 }
 
-#if PHP_VERSION_ID < 80200
-static HashTable *zend_array_to_list(HashTable *arr) {
-    zval zret = {0}, *zv;
-
-    array_init_size(&zret, zend_hash_num_elements(arr));
-
-    ZEND_HASH_FOREACH_VAL(arr, zv) {
-        Z_TRY_ADDREF_P(zv);
-        add_next_index_zval(&zret, zv);
-    } ZEND_HASH_FOREACH_END();
-
-    return Z_ARRVAL(zret);
-}
-#endif
-
 PHP_REDIS_API int
 redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
                               long long elements, int with_aux_data)

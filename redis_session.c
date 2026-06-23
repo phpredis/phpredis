@@ -21,11 +21,6 @@
 #include "common.h"
 #include "redis_cmd.h"
 
-#if PHP_VERSION_ID < 80400
-#include <ext/standard/php_random.h>
-#else
-#include <ext/random/php_random.h>
-#endif
 #include <ext/hash/php_hash.h>
 
 #ifdef HAVE_CONFIG_H
