@@ -28,7 +28,7 @@ zend_string_concat2(const char *str1, size_t len1, const char *str2,
 }
 
 
-static zend_always_inliine const php_hash_ops *
+static zend_always_inline const php_hash_ops *
 redis_hash_fetch_ops(zend_string *zstr)
 {
     return php_hash_fetch_ops(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
