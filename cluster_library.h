@@ -21,13 +21,12 @@
 
 #define RESP_READONLY_CMD_LEN (sizeof(RESP_READONLY_CMD)-1)
 
-static zend_always_inline zend_bool cluster_is_moved(const char *p) {
-    return p[0] == 'M' && p[1] == 'O' && p[2] == 'V' && p[3] == 'E' &&
-           p[4] == 'D' && p[5] == ' ';
+static zend_always_inline zend_bool cluster_is_moved(const char *p, size_t len) {
+    return len >= sizeof("MOVED ") - 1 && !memcmp(p, ZEND_STRL("MOVED "));
 }
 
-static zend_always_inline zend_bool cluster_is_ask(const char *p) {
-    return p[0] == 'A' && p[1] == 'S' && p[2] == 'K' && p[3] == ' ';
+static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
+    return len >= sizeof("ASK ") - 1 && !memcmp(p, ZEND_STRL("ASK "));
 }
 
 /* MOVED/ASK lengths */

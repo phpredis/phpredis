@@ -1293,7 +1293,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
         }
 
         // Check for MOVED or ASK redirection
-        if ((moved = cluster_is_moved(inbuf)) || cluster_is_ask(inbuf)) {
+        if ((moved = cluster_is_moved(inbuf, nbytes)) || cluster_is_ask(inbuf, nbytes)) {
             /* Make sure we can parse the redirection host and port */
             return !cluster_set_redirection(c, inbuf, moved) ? 1 : -1;
         }
