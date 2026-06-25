@@ -3159,7 +3159,7 @@ redis_check_echo_response(RedisSock *redis_sock, char *hdr, const char *id,
 
     /* Sentinel doesn't have ECHO but it will contain the ID in the error
      * message so just check that */
-    if (redis_sock->sentinel) {
+    if (redis_sock->type == REDIS_SOCK_SENTINEL) {
         return redis_strncmp(hdr, ZEND_STRL("-ERR unknown command")) == 0 &&
                strstr(hdr, id) != NULL;
     }

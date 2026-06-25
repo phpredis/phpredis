@@ -55,7 +55,6 @@ PHP_METHOD(RedisSentinel, __construct)
     if (opts != NULL && redis_sock_configure(sentinel->sock, opts) != SUCCESS) {
         RETURN_THROWS();
     }
-    sentinel->sock->sentinel = 1;
 }
 
 PHP_METHOD(RedisSentinel, ckquorum)
