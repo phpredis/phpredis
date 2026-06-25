@@ -315,7 +315,6 @@ typedef struct {
     zend_bool           reply_literal;
     zend_bool           null_mbulk_as_null;
     zend_bool           tcp_keepalive;
-    zend_bool           sentinel;
     size_t              txBytes;
     size_t              rxBytes;
     uint8_t             flags;
