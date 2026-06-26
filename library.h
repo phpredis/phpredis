@@ -4,15 +4,6 @@
 #include "php_redis.h"
 #include "redis_cmd.h"
 
-#define REDIS_CMD_APPEND_SSTR_STATIC(sstr, str) \
-    redis_cmd_append_sstr(sstr, str, sizeof(str)-1);
-
-#define REDIS_CMD_APPEND_SSTR_OPT_STATIC(sstr, opt, str) \
-    if (opt) REDIS_CMD_APPEND_SSTR_STATIC(sstr, str);
-
-#define REDIS_CMD_INIT_SSTR_STATIC(sstr, argc, keyword) \
-    redis_cmd_init_sstr(sstr, argc, keyword, sizeof(keyword)-1);
-
 #define REDIS_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_exception_ce, (msg), code)
 
