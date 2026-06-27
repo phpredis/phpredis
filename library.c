@@ -1539,86 +1539,55 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
                                         int decode)
 {
 
-    HashTable *keytable = Z_ARRVAL_P(z_tab);
-    zend_string *hkey, *tmp;
-    zval z_ret, z_sub;
+    zval z_ret, zele, *zv, *zkey = NULL;
+    zend_string *key, *aux, *val;
+    HashTable *ht;
 
-    array_init_size(&z_ret, zend_hash_num_elements(keytable) / 2);
+    ht = Z_ARRVAL_P(z_tab);
 
-    for(zend_hash_internal_pointer_reset(keytable);
-        zend_hash_has_more_elements(keytable) == SUCCESS;
-        zend_hash_move_forward(keytable)) {
+    array_init_size(&z_ret, zend_hash_num_elements(ht) / 2);
 
-        zval *z_key_p, *z_value_p;
-
-        if ((z_key_p = zend_hash_get_current_data(keytable)) == NULL) {
-            continue;   /* this should never happen, according to the PHP people. */
+    ZEND_HASH_FOREACH_VAL(ht, zv) {
+        if (zkey == NULL) {
+            zkey = zv;
+            continue;
         }
 
-        /* get current value, a key */
-        hkey = zval_get_tmp_string(z_key_p, &tmp);
-
-        /* move forward */
-        zend_hash_move_forward(keytable);
-
-        /* fetch again */
-        if ((z_value_p = zend_hash_get_current_data(keytable)) == NULL) {
-            zend_tmp_string_release(tmp);
-            continue;   /* this should never happen, according to the PHP people. */
-        }
-
-        /* Decode the score depending on flag */
         if (decode == SCORE_DECODE_INT || decode == SCORE_DECODE_DOUBLE) {
-            zend_string *aux, *val;
-
-            val = zval_get_tmp_string(z_value_p, &aux);
+            val = zval_get_tmp_string(zv, &aux);
 
             if (decode == SCORE_DECODE_INT && ZSTR_LEN(val) > 0) {
-                ZVAL_LONG(&z_sub, atoi(ZSTR_VAL(val)+1));
+                ZVAL_LONG(&zele, atoi(ZSTR_VAL(val)+1));
             } else if (decode == SCORE_DECODE_DOUBLE) {
-                ZVAL_DOUBLE(&z_sub, atof(ZSTR_VAL(val)));
+                ZVAL_DOUBLE(&zele, atof(ZSTR_VAL(val)));
             } else {
-                ZVAL_ZVAL(&z_sub, z_value_p, 1, 0);
+                ZVAL_ZVAL(&zele, zv, 1, 0);
             }
 
             zend_tmp_string_release(aux);
         } else {
-            ZVAL_ZVAL(&z_sub, z_value_p, 1, 0);
+            ZVAL_ZVAL(&zele, zv, 1, 0);
         }
 
-        zend_symtable_update(Z_ARRVAL_P(&z_ret), hkey, &z_sub);
+        key = zval_get_tmp_string(zkey, &aux);
+        zend_symtable_update(Z_ARRVAL_P(&z_ret), key, &zele);
+        zend_tmp_string_release(aux);
 
-        zend_tmp_string_release(tmp);
-    }
+        zkey = NULL;
+    } ZEND_HASH_FOREACH_END();
 
-    /* replace */
+    /* Replace */
     zval_ptr_dtor_nogc(z_tab);
     ZVAL_ZVAL(z_tab, &z_ret, 0, 0);
 }
 
-static int
-array_zip_values_recursive(zval *z_tab)
-{
-    zend_string *zkey;
+static int array_zip_values_recursive(zval *z_tab) {
+    zend_string *zkey = NULL;
     zval z_ret, z_sub, *zv;
 
     array_init_size(&z_ret, zend_hash_num_elements(Z_ARRVAL_P(z_tab)));
-    for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(z_tab));
-         zend_hash_has_more_elements(Z_ARRVAL_P(z_tab)) == SUCCESS;
-         zend_hash_move_forward(Z_ARRVAL_P(z_tab))
-    ) {
-        if ((zv = zend_hash_get_current_data(Z_ARRVAL_P(z_tab))) == NULL) {
-            zval_ptr_dtor_nogc(&z_ret);
-            return FAILURE;
-        }
-        if (Z_TYPE_P(zv) == IS_STRING) {
-            zkey = zval_get_string(zv);
-            zend_hash_move_forward(Z_ARRVAL_P(z_tab));
-            if ((zv = zend_hash_get_current_data(Z_ARRVAL_P(z_tab))) == NULL) {
-                zend_string_release(zkey);
-                zval_ptr_dtor_nogc(&z_ret);
-                return FAILURE;
-            }
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_tab), zv) {
+        if (zkey != NULL) {
             if (Z_TYPE_P(zv) == IS_ARRAY && array_zip_values_recursive(zv) != SUCCESS) {
                 zend_string_release(zkey);
                 zval_ptr_dtor_nogc(&z_ret);
@@ -1627,6 +1596,9 @@ array_zip_values_recursive(zval *z_tab)
             ZVAL_ZVAL(&z_sub, zv, 1, 0);
             add_assoc_zval_ex(&z_ret, ZSTR_VAL(zkey), ZSTR_LEN(zkey), &z_sub);
             zend_string_release(zkey);
+            zkey = NULL;
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            zkey = zval_get_string(zv);
         } else {
             if (Z_TYPE_P(zv) == IS_ARRAY && array_zip_values_recursive(zv) != SUCCESS) {
                 zval_ptr_dtor_nogc(&z_ret);
@@ -1635,9 +1607,17 @@ array_zip_values_recursive(zval *z_tab)
             ZVAL_ZVAL(&z_sub, zv, 1, 0);
             add_next_index_zval(&z_ret, &z_sub);
         }
+    } ZEND_HASH_FOREACH_END();
+
+    if (zkey != NULL) {
+        zend_string_release(zkey);
+        zval_ptr_dtor_nogc(&z_ret);
+        return FAILURE;
     }
+
     zval_ptr_dtor_nogc(z_tab);
     ZVAL_ZVAL(z_tab, &z_ret, 0, 0);
+
     return SUCCESS;
 }
 
