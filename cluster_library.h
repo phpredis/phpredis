@@ -17,9 +17,6 @@
 #define RESP_CLUSTER_SLOTS_CMD "*2\r\n$7\r\nCLUSTER\r\n$5\r\nSLOTS\r\n"
 #define RESP_ASKING_CMD        "*1\r\n$6\r\nASKING\r\n"
 #define RESP_READONLY_CMD      "*1\r\n$8\r\nREADONLY\r\n"
-#define RESP_READWRITE_CMD     "*1\r\n$9\r\nREADWRITE\r\n"
-
-#define RESP_READONLY_CMD_LEN (sizeof(RESP_READONLY_CMD)-1)
 
 static zend_always_inline zend_bool cluster_is_moved(const char *p, size_t len) {
     return len >= sizeof("MOVED ") - 1 && !memcmp(p, ZEND_STRL("MOVED "));
@@ -360,7 +357,6 @@ HashTable *cluster_dist_create(void);
 void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
     size_t key_len, clusterKeyVal **kv);
-void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val);
 
 /* Aggregation for multi commands like MGET, MSET, and MSETNX */
 void cluster_multi_init(clusterMultiCmd *mc, char *kw, int kw_len);
@@ -445,8 +441,6 @@ void cluster_cache_clear(redisCluster *c);
 
 PHP_REDIS_API void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
-PHP_REDIS_API void cluster_ping_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-    RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_pop_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_object_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
@@ -466,8 +460,6 @@ PHP_REDIS_API void cluster_randmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCl
 PHP_REDIS_API void cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_geosearch_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-    RedisCmdCtx ctx);
-PHP_REDIS_API void cluster_single_line_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);

@@ -317,10 +317,6 @@ void redis_cmd_cat_u64(RedisCmd *cmd, uint64_t u64) {
     redis_cmd_cat_str(cmd, res, len);
 }
 
-void redis_cmd_cat_u32(RedisCmd *cmd, uint32_t u32) {
-    return redis_cmd_cat_u64(cmd, u32);
-}
-
 void redis_cmd_cat_double(RedisCmd *cmd, double dval) {
 #if PHP_VERSION_ID >= 80200
     char buf[ZEND_DOUBLE_MAX_LENGTH], *nul;

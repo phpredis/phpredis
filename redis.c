@@ -63,11 +63,6 @@ extern RedisCmdCtx redis_empty_ctx;
 #include "redis_arginfo.h"
 #endif
 
-extern const zend_function_entry *redis_get_methods(void)
-{
-    return class_Redis_methods;
-}
-
 extern int le_cluster_slot_cache;
 int le_redis_pconnect;
 
@@ -724,10 +719,6 @@ redis_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redis_cmd_cb *cmd_cb,
         redis_process_kw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, kw, cmd_cb, \
                              resp_func); \
     }
-
-#define REDIS_PROCESS_CMD(cmdname, resp_func) \
-    redis_process_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, \
-                      redis_##cmdname##_cmd, resp_func)
 
 void
 redis_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
