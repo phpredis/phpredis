@@ -21,11 +21,6 @@
 #include "common.h"
 #include "redis_cmd.h"
 
-#if PHP_VERSION_ID < 80400
-#include <ext/standard/php_random.h>
-#else
-#include <ext/random/php_random.h>
-#endif
 #include <ext/hash/php_hash.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1253,7 +1248,7 @@ PS_OPEN_FUNC(rediscluster) {
     }
 
     /* First attempt to load from cache */
-    if (CLUSTER_CACHING_ENABLED()) {
+    if (cluster_caching_enabled()) {
         hash = cluster_hash_seeds(seeds, nseeds);
         if ((cc = cluster_cache_load(hash))) {
             cluster_init_cache(c, cc);

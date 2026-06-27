@@ -4,6 +4,8 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+#include "php_compat.h"
+
 #define PHPREDIS_CTX_PTR ((char *)0xDEADC0DE)
 #define PHPREDIS_NOTUSED(v) ((void)v)
 
@@ -24,11 +26,6 @@
 #define REDIS_FALLTHROUGH __attribute__((__fallthrough__))
 #else
 #define REDIS_FALLTHROUGH do { } while (0)
-#endif
-
-/* NULL check so Eclipse doesn't go crazy */
-#ifndef NULL
-#define NULL   ((void *) 0)
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -191,61 +188,36 @@ typedef enum {
 
 #define PHPREDIS_DEBUG_LOGGING 0
 
-#if PHP_VERSION_ID < 80000
-#define Z_PARAM_ARRAY_OR_NULL(dest) \
-        Z_PARAM_ARRAY_EX(dest, 1, 0)
-#define Z_PARAM_ARRAY_HT_OR_NULL(dest) \
-        Z_PARAM_ARRAY_HT_EX(dest, 1, 0)
-#define Z_PARAM_STRING_OR_NULL(dest, dest_len) \
-	    Z_PARAM_STRING_EX(dest, dest_len, 1, 0)
-#define Z_PARAM_STR_OR_NULL(dest) \
-        Z_PARAM_STR_EX(dest, 1, 0)
-#define Z_PARAM_LONG_OR_NULL(dest, is_null) \
-	    Z_PARAM_LONG_EX(dest, is_null, 1, 0)
-#define Z_PARAM_ZVAL_OR_NULL(dest) \
-	    Z_PARAM_ZVAL_EX(dest, 1, 0)
-#define Z_PARAM_BOOL_OR_NULL(dest, is_null) \
-	    Z_PARAM_BOOL_EX(dest, is_null, 1, 0)
-#endif
-
 #if PHPREDIS_DEBUG_LOGGING == 1
 #define redisDbgFmt(fmt, ...) \
     php_printf("%s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, __VA_ARGS__)
-#define redisDbgStr(str) phpredisDebugFmt("%s", str)
+#define redisDbgStr(str) redisDbgFmt("%s", str)
 #else
 #define redisDbgFmt(fmt, ...) ((void)0)
 #define redisDbgStr(str) ((void)0)
 #endif
 
-#define IS_ATOMIC(redis_sock) (redis_sock->mode == ATOMIC)
-#define IS_MULTI(redis_sock) (redis_sock->mode & MULTI)
-#define IS_PIPELINE(redis_sock) (redis_sock->mode & PIPELINE)
-
-/* Case sensitive compare against compile-time static string */
-#define REDIS_STRCMP_STATIC(s, len, sstr) \
-    (len == sizeof(sstr) - 1 && !strncmp(s, sstr, len))
-
-/* Case insensitive compare against compile-time static string */
-#define REDIS_STRICMP_STATIC(s, len, sstr) \
-    (len == sizeof(sstr) - 1 && !strncasecmp(s, sstr, len))
-
 /* On some versions of glibc strncmp and strncasecmp can be a macro a macro.
  * This wrapper allows us to use it in combination with ZEND_STRL in those
  * cases. */
-static inline int redis_strncmp(const char *s1, const char *s2, size_t n) {
+static zend_always_inline int redis_strncmp(const char *s1, const char *s2, size_t n) {
     return strncmp(s1, s2, n);
 }
-static inline int redis_strncasecmp(const char *s1, const char *s2, size_t n) {
+static zend_always_inline int redis_strncasecmp(const char *s1, const char *s2, size_t n) {
     return strncasecmp(s1, s2, n);
 }
 
-/* Test if a zval is a string and (case insensitive) matches a static string */
-#define ZVAL_STRICMP_STATIC(zv, sstr) \
-    REDIS_STRICMP_STATIC(Z_STRVAL_P(zv), Z_STRLEN_P(zv), sstr)
+static zend_always_inline zend_bool
+redis_str_eq(const char *s, size_t len, const char *cmp, size_t cmp_len)
+{
+    return len == cmp_len && redis_strncmp(s, cmp, len) == 0;
+}
 
-/* Case insensitive compare of a zend_string to a static string */
-#define ZSTR_STRICMP_STATIC(zs, sstr) \
-    REDIS_STRICMP_STATIC(ZSTR_VAL(zs), ZSTR_LEN(zs), sstr)
+static zend_always_inline zend_bool
+redis_str_ieq(const char *s, size_t len, const char *cmp, size_t cmp_len)
+{
+    return len == cmp_len && redis_strncasecmp(s, cmp, len) == 0;
+}
 
 /* HOST_NAME_MAX doesn't exist everywhere */
 #ifndef HOST_NAME_MAX
@@ -320,6 +292,18 @@ typedef struct {
     uint8_t             flags;
 } RedisSock;
 /* }}} */
+
+static zend_always_inline zend_bool redis_sock_is_atomic(const RedisSock *redis_sock) {
+    return redis_sock->mode == ATOMIC;
+}
+
+static zend_always_inline zend_bool redis_sock_is_multi(const RedisSock *redis_sock) {
+    return (redis_sock->mode & MULTI) != 0;
+}
+
+static zend_always_inline zend_bool redis_sock_is_pipeline(const RedisSock *redis_sock) {
+    return (redis_sock->mode & PIPELINE) != 0;
+}
 
 typedef void (RedisCmdCtxDtor)(void *ptr);
 typedef struct RedisCmdCtx {

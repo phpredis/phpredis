@@ -23,43 +23,10 @@
     redis_sock_write(redis_sock, (sstr)->c, (sstr)->len)
 
 #if PHP_VERSION_ID < 80000
-    #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(ZSTR_VAL((zstr)), ZSTR_LEN((zstr)))
-
     /* use RedisException when ValueError not available */
     #define REDIS_VALUE_EXCEPTION(m) REDIS_THROW_EXCEPTION(m, 0)
-    #define RETURN_THROWS() RETURN_FALSE
-    /* ZVAL_STRINGL_FAST and RETVAL_STRINGL_FAST macros are supported since PHP 8 */
-    #define ZVAL_STRINGL_FAST(z, s, l) ZVAL_STRINGL(z, s, l)
-    #define RETVAL_STRINGL_FAST(s, l) RETVAL_STRINGL(s, l)
 #else
-    #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(zstr)
-
     #define REDIS_VALUE_EXCEPTION(m) zend_value_error(m)
-#endif
-
-#if PHP_VERSION_ID < 80200
-static zend_always_inline
-zend_bool zend_string_starts_with_cstr(const zend_string *str, const char *prefix,
-                                       size_t prefix_length)
-{
-	return ZSTR_LEN(str) >= prefix_length &&
-        !memcmp(ZSTR_VAL(str), prefix, prefix_length);
-}
-#endif
-
-#if PHP_VERSION_ID < 80000
-static zend_string *zend_string_concat2(const char *str1, size_t len1,
-                                        const char *str2, size_t len2)
-{
-	size_t len = len1 + len2;
-	zend_string *res = zend_string_alloc(len, 0);
-
-	memcpy(ZSTR_VAL(res), str1, len1);
-	memcpy(ZSTR_VAL(res) + len1, str2, len2);
-	ZSTR_VAL(res)[len] = '\0';
-
-	return res;
-}
 #endif
 
 
