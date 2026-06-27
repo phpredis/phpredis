@@ -6,23 +6,6 @@
 #include "cluster_library.h"
 #include "redis_cmd.h"
 
-/* Pick a random slot, any slot (for stuff like publish/subscribe) */
-static zend_always_inline void
-redis_cmd_rand_slot(unsigned short *slot)
-{
-    if (slot) {
-        *slot = rand() % REDIS_CLUSTER_MOD;
-    }
-}
-
-static zend_always_inline void
-redis_cmd_set_slot(unsigned short *slot, const char *key, int key_len)
-{
-    if (slot) {
-        *slot = cluster_hash_key(key, key_len);
-    }
-}
-
 /* Simple container so we can push subscribe context out */
 typedef struct {
     zend_fcall_info fci;

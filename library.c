@@ -4496,21 +4496,6 @@ static zend_string *redis_zstr_concat(zend_string *prefix, zend_string *suffix) 
 }
 
 PHP_REDIS_API zend_string *
-redis_key_prefix_zval(RedisSock *redis_sock, zval *zv) {
-    zend_string *zstr, *dup;
-
-    zstr = zval_get_string(zv);
-    if (redis_sock->prefix == NULL)
-        return zstr;
-
-    dup = redis_zstr_concat(redis_sock->prefix, zstr);
-
-    zend_string_release(zstr);
-
-    return dup;
-}
-
-PHP_REDIS_API zend_string *
 redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key) {
     if (redis_sock->prefix == NULL)
         return zend_string_copy(key);
@@ -5002,10 +4987,5 @@ uint64_t redisGetScanCursor(zval *zv, zend_bool *was_zero) {
         return Z_LVAL_P(zv);
     }
 }
-
-void redis_cmd_ctx_efree_dtor(void *ptr) {
-    efree(ptr);
-}
-
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

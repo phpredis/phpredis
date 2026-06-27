@@ -490,21 +490,6 @@ int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
     return SUCCESS;
 }
 
-/* Provided a clusterKeyVal, add a value */
-void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *z_val) {
-    char *val;
-    size_t val_len;
-    int val_free;
-
-    // Serialize our value
-    val_free = redis_pack(c->flags, z_val, &val, &val_len);
-
-    // Attach it to the provided keyval entry
-    kv->val = val;
-    kv->val_len = val_len;
-    kv->val_free = val_free;
-}
-
 /* Free allocated memory for a clusterMultiCmd */
 void cluster_multi_free(clusterMultiCmd *mc) {
     redis_cmd_free(mc->cmd);
@@ -1786,25 +1771,6 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
     efree(resp);
 }
 
-PHP_REDIS_API void
-cluster_single_line_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                         RedisCmdCtx ctx)
-{
-    char *p;
-
-    /* Cluster already has the reply so abort if this isn't a LINE response *or* if for
-     * some freaky reason we don't detect a null terminator */
-    if (c->reply_type != TYPE_LINE || !(p = memchr(c->line_reply,'\0',sizeof(c->line_reply)))) {
-        CLUSTER_RETURN_FALSE(c);
-    }
-
-    if (cluster_is_atomic(c)) {
-        CLUSTER_RETURN_STRING(c, c->line_reply, p - c->line_reply);
-    } else {
-        add_next_index_stringl(&c->multi_resp, c->line_reply, p - c->line_reply);
-    }
-}
-
 static int cluster_bulk_resp_to_zval(redisCluster *c, zval *zdst) {
     char *resp;
 
@@ -1885,19 +1851,6 @@ PHP_REDIS_API void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     // Check that we have +OK
     if (c->reply_type != TYPE_LINE || c->reply_len != 2 ||
        c->line_reply[0] != 'O' || c->line_reply[1] != 'K')
-    {
-        CLUSTER_RETURN_FALSE(c);
-    }
-
-    CLUSTER_RETURN_BOOL(c, 1);
-}
-
-/* Boolean response, specialized for PING */
-PHP_REDIS_API void cluster_ping_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                                     RedisCmdCtx ctx)
-{
-    if (c->reply_type != TYPE_LINE || c->reply_len != 4 ||
-       memcmp(c->line_reply,"PONG",sizeof("PONG")-1))
     {
         CLUSTER_RETURN_FALSE(c);
     }
