@@ -32,12 +32,6 @@
 #include <ext/standard/info.h>
 #include <ext/hash/php_hash.h>
 
-#if PHP_VERSION_ID < 80400
-#include <ext/standard/php_random.h>
-#else
-#include <ext/random/php_random.h>
-#endif
-
 #ifdef PHP_SESSION
 #include <ext/session/php_session.h>
 #endif
@@ -217,10 +211,6 @@ create_redis_object(zend_class_entry *ce)
     zend_object_std_init(&redis->std, ce);
     object_properties_init(&redis->std, ce);
 
-    memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(redis_object_handlers));
-    redis_object_handlers.offset = XtOffsetOf(redis_object, std);
-    redis_object_handlers.free_obj = free_redis_object;
-    redis_object_handlers.clone_obj = NULL;
     redis->std.handlers = &redis_object_handlers;
 
     return &redis->std;
@@ -346,6 +336,14 @@ static void redis_random_hex_bytes(char *dst, size_t dstsize) {
     zend_string_release(s);
 }
 
+static void redis_init_object_handlers(void) {
+    memcpy(&redis_object_handlers, zend_get_std_object_handlers(),
+           sizeof(redis_object_handlers));
+    redis_object_handlers.offset = XtOffsetOf(redis_object, std);
+    redis_object_handlers.free_obj = free_redis_object;
+    redis_object_handlers.clone_obj = NULL;
+}
+
 /**
  * PHP_MINIT_FUNCTION
  */
@@ -366,6 +364,9 @@ PHP_MINIT_FUNCTION(redis)
     /* Redis class */
     redis_ce = register_class_Redis();
     redis_ce->create_object = create_redis_object;
+
+    /* Redis object handler initialization */
+    redis_init_object_handlers();
 
     /* RedisArray class */
     ZEND_MINIT(redis_array)(INIT_FUNC_ARGS_PASSTHRU);
@@ -500,8 +501,8 @@ PHP_METHOD(Redis, __destruct) {
     }
 
     // If we think we're in MULTI mode, send a discard
-    if (IS_MULTI(redis_sock)) {
-        if (!IS_PIPELINE(redis_sock) && redis_sock->stream) {
+    if (redis_sock_is_multi(redis_sock)) {
+        if (!redis_sock_is_pipeline(redis_sock) && redis_sock->stream) {
             redis_send_discard(redis_sock);
         }
         redis_free_reply_callbacks(redis_sock);
@@ -647,7 +648,7 @@ static int
 redis_process_request_strl(RedisSock *redis_sock, const char *cmd, int len) {
     int res = SUCCESS;
 
-    if (IS_PIPELINE(redis_sock)) {
+    if (redis_sock_is_pipeline(redis_sock)) {
         pipeline_enqueue_cmd_strl(redis_sock, cmd, len);
     } else if (UNEXPECTED(redis_sock_write(redis_sock, cmd, len) < 0)) {
         res = FAILURE;
@@ -683,7 +684,7 @@ redis_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redis_cmd_cb *cmd_cb,
 
     ctx = redis_cmd_pop_ctx(cmd);
 
-    if (IS_PIPELINE(redis_sock)) {
+    if (redis_sock_is_pipeline(redis_sock)) {
         pipeline_enqueue_cmd(redis_sock, cmd);
         res = SUCCESS;
     } else {
@@ -697,11 +698,11 @@ redis_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redis_cmd_cb *cmd_cb,
         RETURN_FALSE;
     }
 
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         resp_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx);
         redis_cmd_ctx_free(ctx);
     } else {
-        if (!IS_PIPELINE(redis_sock)) {
+        if (!redis_sock_is_pipeline(redis_sock)) {
             if (redis_response_enqueued(redis_sock) != SUCCESS) {
                 redis_cmd_ctx_free(ctx);
                 RETURN_FALSE;
@@ -749,7 +750,7 @@ redis_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
 
     ctx = redis_cmd_pop_ctx(cmd);
 
-    if (IS_PIPELINE(redis_sock)) {
+    if (redis_sock_is_pipeline(redis_sock)) {
         pipeline_enqueue_cmd(redis_sock, cmd);
         res = SUCCESS;
     } else {
@@ -763,11 +764,11 @@ redis_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
         RETURN_FALSE;
     }
 
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         resp_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx);
         redis_cmd_ctx_free(ctx);
     } else {
-        if (!IS_PIPELINE(redis_sock)) {
+        if (!redis_sock_is_pipeline(redis_sock)) {
             if (redis_response_enqueued(redis_sock) != SUCCESS) {
                 redis_cmd_ctx_free(ctx);
                 RETURN_FALSE;
@@ -801,7 +802,7 @@ PHP_METHOD(Redis, reset)
         RETURN_FALSE;
     }
 
-    if (IS_PIPELINE(redis_sock)) {
+    if (redis_sock_is_pipeline(redis_sock)) {
         php_error_docref(NULL, E_ERROR,
             "Reset isn't allowed in pipeline mode!");
         RETURN_FALSE;
@@ -816,12 +817,12 @@ PHP_METHOD(Redis, reset)
     redis_cmd_free(cmd);
 
     if ((response = redis_sock_read(redis_sock, &response_len)) != NULL) {
-        ret = REDIS_STRCMP_STATIC(response, response_len, "+RESET");
+        ret = redis_str_eq(response, response_len, ZEND_STRL("+RESET"));
         efree(response);
     }
 
     if (!ret) {
-        if (IS_ATOMIC(redis_sock)) {
+        if (redis_sock_is_atomic(redis_sock)) {
             RETURN_FALSE;
         }
         REDIS_THROW_EXCEPTION("Reset failed in multi mode!", 0);
@@ -996,19 +997,19 @@ PHP_METHOD(Redis, multi)
 
     if (multi_value == PIPELINE) {
         /* Cannot enter pipeline mode in a MULTI block */
-        if (IS_MULTI(redis_sock)) {
+        if (redis_sock_is_multi(redis_sock)) {
             php_error_docref(NULL, E_ERROR, "Can't activate pipeline in multi mode!");
             RETURN_FALSE;
         }
 
         /* Enable PIPELINE if we're not already in one */
-        if (IS_ATOMIC(redis_sock)) {
+        if (redis_sock_is_atomic(redis_sock)) {
             redis_sock->mode |= PIPELINE;
         }
     } else if (multi_value == MULTI) {
         /* Don't want to do anything if we're already in MULTI mode */
-        if (!IS_MULTI(redis_sock)) {
-            if (IS_PIPELINE(redis_sock)) {
+        if (!redis_sock_is_multi(redis_sock)) {
+            if (redis_sock_is_pipeline(redis_sock)) {
                 pipeline_enqueue_cmd_strl(redis_sock, ZEND_STRL(RESP_MULTI_CMD));
                 redis_save_callback(redis_sock, NULL, redis_empty_ctx);
                 redis_sock->mode |= MULTI;
@@ -1048,10 +1049,10 @@ PHP_METHOD(Redis, discard)
         RETURN_FALSE;
     }
 
-    if (IS_PIPELINE(redis_sock)) {
+    if (redis_sock_is_pipeline(redis_sock)) {
         ret = SUCCESS;
         smart_string_free(&redis_sock->pipeline_cmd);
-    } else if (IS_MULTI(redis_sock)) {
+    } else if (redis_sock_is_multi(redis_sock)) {
         ret = redis_send_discard(redis_sock);
     }
     if (ret == SUCCESS) {
@@ -1102,8 +1103,8 @@ PHP_METHOD(Redis, exec)
 
     ZVAL_FALSE(&z_ret);
 
-    if (IS_MULTI(redis_sock)) {
-        if (IS_PIPELINE(redis_sock)) {
+    if (redis_sock_is_multi(redis_sock)) {
+        if (redis_sock_is_pipeline(redis_sock)) {
             pipeline_enqueue_cmd_strl(redis_sock, ZEND_STRL(RESP_EXEC_CMD));
             redis_save_callback(redis_sock, NULL, redis_empty_ctx);
             redis_sock->mode &= ~MULTI;
@@ -1123,7 +1124,7 @@ PHP_METHOD(Redis, exec)
         }
     }
 
-    if (IS_PIPELINE(redis_sock)) {
+    if (redis_sock_is_pipeline(redis_sock)) {
         if (redis_sock->pipeline_cmd.len == 0) {
             /* Empty array when no command was run. */
             ZVAL_EMPTY_ARRAY(&z_ret);
@@ -1220,14 +1221,14 @@ PHP_METHOD(Redis, pipeline)
     }
 
     /* User cannot enter MULTI mode if already in a pipeline */
-    if (IS_MULTI(redis_sock)) {
+    if (redis_sock_is_multi(redis_sock)) {
         php_error_docref(NULL, E_ERROR, "Can't activate pipeline in multi mode!");
         RETURN_FALSE;
     }
 
     /* Enable pipeline mode unless we're already in that mode in which case this
      * is just a NO OP */
-    if (IS_ATOMIC(redis_sock)) {
+    if (redis_sock_is_atomic(redis_sock)) {
         redis_sock->mode |= PIPELINE;
     }
 
@@ -1382,9 +1383,9 @@ PHP_METHOD(Redis, getMode) {
         RETURN_FALSE;
     }
 
-    if (IS_PIPELINE(redis_sock)) {
+    if (redis_sock_is_pipeline(redis_sock)) {
         RETVAL_LONG(PIPELINE);
-    } else if (IS_MULTI(redis_sock)) {
+    } else if (redis_sock_is_multi(redis_sock)) {
         RETVAL_LONG(MULTI);
     } else {
         RETVAL_LONG(ATOMIC);
@@ -1436,7 +1437,7 @@ PHP_METHOD(Redis, serverName) {
 
     if ((rs = redis_sock_get_instance(getThis(), 1)) == NULL) {
         RETURN_FALSE;
-    } else if (!IS_ATOMIC(rs)) {
+    } else if (!redis_sock_is_atomic(rs)) {
         php_error_docref(NULL, E_ERROR,
             "Can't call serverName in multi or pipeline mode!");
         RETURN_FALSE;
@@ -1452,7 +1453,7 @@ PHP_METHOD(Redis, serverVersion) {
 
     if ((rs = redis_sock_get_instance(getThis(), 1)) == NULL) {
         RETURN_FALSE;
-    } else if (!IS_ATOMIC(rs)) {
+    } else if (!redis_sock_is_atomic(rs)) {
         php_error_docref(NULL, E_ERROR,
             "Can't call serverVersion in multi or pipeline mode!");
         RETURN_FALSE;
@@ -1648,7 +1649,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     }
 
     /* Calling this in a pipeline makes no sense */
-    if (!IS_ATOMIC(redis_sock)) {
+    if (!redis_sock_is_atomic(redis_sock)) {
         php_error_docref(NULL, E_ERROR,
             "Can't call SCAN commands in multi or pipeline mode!");
         RETURN_FALSE;

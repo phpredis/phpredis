@@ -29,7 +29,11 @@ static const RespHeader bulk_header[] = {
     {ZEND_STRL("$30\r\n")}, {ZEND_STRL("$31\r\n")}, {ZEND_STRL("$32\r\n")},
 };
 
-#define BULK_HDR_STRL(n) bulk_header[n].str, bulk_header[n].len
+static zend_always_inline const RespHeader *
+bulk_header_get(size_t n)
+{
+    return &bulk_header[n];
+}
 
 /* zend_print_ulong_to_buf will null terminate the string which we do not want */
 static inline char *print_u64_to_buf(char *buf, uint64_t n) {
@@ -125,12 +129,15 @@ static void redis_cmd_finalize(RedisCmd *cmd) {
 }
 
 void redis_cmd_cat_str(RedisCmd *cmd, const char *str, size_t len) {
+    const RespHeader *hdr;
+
     if (cmd->argc == UINT32_MAX) {
         zend_error_noreturn(E_ERROR, "Too many arguments");
     }
 
     if (EXPECTED(len < sizeof(bulk_header) / sizeof(RespHeader))) {
-        smart_string_appendl_ex(&cmd->s, BULK_HDR_STRL(len), 0);
+        hdr = bulk_header_get(len);
+        smart_string_appendl_ex(&cmd->s, hdr->str, hdr->len, 0);
     } else {
         smart_string_appendc(&cmd->s, '$');
         smart_string_append_unsigned(&cmd->s, len);

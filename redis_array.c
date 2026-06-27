@@ -27,15 +27,24 @@
 #include <ext/standard/info.h>
 #include <zend_exceptions.h>
 
-/* Simple macro to detect failure in a RedisArray call */
-#define RA_CALL_FAILED(rv, cmd) ( \
-    (Z_TYPE_P(rv) == IS_FALSE) || \
-    (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
-    (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE")) \
-)
+/* Simple helper to detect failure in a RedisArray call */
+static zend_always_inline zend_bool
+ra_call_failed(zval *rv, const char *cmd)
+{
+    return Z_TYPE_P(rv) == IS_FALSE ||
+           (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) ||
+           (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE"));
+}
 
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
+
+zend_object_handlers redis_array_object_handlers;
+
+typedef struct {
+    RedisArray *ra;
+    zend_object std;
+} redis_array_object;
 
 #if PHP_VERSION_ID < 80000
 #include "redis_array_legacy_arginfo.h"
@@ -44,18 +53,7 @@ zend_class_entry *redis_array_ce;
 #include "redis_array_arginfo.h"
 #endif
 
-PHP_MINIT_FUNCTION(redis_array)
-{
-    /* RedisSentinel class */
-    redis_array_ce = register_class_RedisArray();
-    redis_array_ce->create_object = create_redis_array_object;
-
-    return SUCCESS;
-}
-
-static void
-redis_array_free(RedisArray *ra)
-{
+static void redis_array_free(RedisArray *ra) {
     int i;
 
     /* continuum */
@@ -89,12 +87,6 @@ redis_array_free(RedisArray *ra)
     efree(ra);
 }
 
-typedef struct {
-    RedisArray *ra;
-    zend_object std;
-} redis_array_object;
-
-zend_object_handlers redis_array_object_handlers;
 
 void
 free_redis_array_object(zend_object *object)
@@ -108,6 +100,16 @@ free_redis_array_object(zend_object *object)
     zend_object_std_dtor(&obj->std);
 }
 
+static void
+redis_array_init_object_handlers(void)
+{
+    memcpy(&redis_array_object_handlers, zend_get_std_object_handlers(),
+           sizeof(redis_array_object_handlers));
+    redis_array_object_handlers.offset = XtOffsetOf(redis_array_object, std);
+    redis_array_object_handlers.free_obj = free_redis_array_object;
+    redis_array_object_handlers.clone_obj = NULL;
+}
+
 zend_object *
 create_redis_array_object(zend_class_entry *ce)
 {
@@ -118,13 +120,22 @@ create_redis_array_object(zend_class_entry *ce)
     zend_object_std_init(&obj->std, ce);
     object_properties_init(&obj->std, ce);
 
-    memcpy(&redis_array_object_handlers, zend_get_std_object_handlers(), sizeof(redis_array_object_handlers));
-    redis_array_object_handlers.offset = XtOffsetOf(redis_array_object, std);
-    redis_array_object_handlers.free_obj = free_redis_array_object;
-    redis_array_object_handlers.clone_obj = NULL;
     obj->std.handlers = &redis_array_object_handlers;
 
     return &obj->std;
+}
+
+
+PHP_MINIT_FUNCTION(redis_array)
+{
+    /* RedisArray class */
+    redis_array_ce = register_class_RedisArray();
+    redis_array_ce->create_object = create_redis_array_object;
+
+    /* RedisArray object handler initialization */
+    redis_array_init_object_handlers();
+
+    return SUCCESS;
 }
 
 /**
@@ -310,7 +321,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
 
         if (!b_write_cmd) {
             /* check if we have an error. */
-            if (ra->prev && RA_CALL_FAILED(return_value, cmd)) { /* there was an error reading, try with prev ring. */
+            if (ra->prev && ra_call_failed(return_value, cmd)) { /* there was an error reading, try with prev ring. */
                 /* Free previous return value */
                 zval_ptr_dtor_nogc(return_value);
 
@@ -319,7 +330,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
             }
 
             /* Autorehash if the key was found on the previous node if this is a read command and auto rehashing is on */
-            if (ra->auto_rehash && z_new_target && !RA_CALL_FAILED(return_value, cmd)) { /* move key from old ring to new ring */
+            if (ra->auto_rehash && z_new_target && !ra_call_failed(return_value, cmd)) { /* move key from old ring to new ring */
                 ra_move_key(key, key_len, redis_inst, z_new_target);
             }
         }

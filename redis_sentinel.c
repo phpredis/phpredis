@@ -36,6 +36,9 @@ PHP_MINIT_FUNCTION(redis_sentinel)
     redis_sentinel_ce = register_class_RedisSentinel();
     redis_sentinel_ce->create_object = create_sentinel_object;
 
+    /* RedisSentinel object handler initialization */
+    redis_sentinel_init_object_handlers();
+
     return SUCCESS;
 }
 

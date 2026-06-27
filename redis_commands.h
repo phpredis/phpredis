@@ -7,12 +7,21 @@
 #include "redis_cmd.h"
 
 /* Pick a random slot, any slot (for stuff like publish/subscribe) */
-#define CMD_RAND_SLOT(slot) \
-    if(slot) *slot = rand() % REDIS_CLUSTER_MOD
+static zend_always_inline void
+redis_cmd_rand_slot(unsigned short *slot)
+{
+    if (slot) {
+        *slot = rand() % REDIS_CLUSTER_MOD;
+    }
+}
 
-/* Macro for setting the slot if we've been asked to */
-#define CMD_SET_SLOT(slot,key,key_len) \
-    if (slot) *slot = cluster_hash_key(key,key_len);
+static zend_always_inline void
+redis_cmd_set_slot(unsigned short *slot, const char *key, int key_len)
+{
+    if (slot) {
+        *slot = cluster_hash_key(key, key_len);
+    }
+}
 
 /* Simple container so we can push subscribe context out */
 typedef struct {
