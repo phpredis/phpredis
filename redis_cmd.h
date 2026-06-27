@@ -57,7 +57,6 @@ void redis_cmd_cat_zstr(RedisCmd *cmd, zend_string *str);
 void redis_cmd_cat_str(RedisCmd *cmd, const char *str, size_t len);
 void redis_cmd_cat_long(RedisCmd *cmd, zend_long lval);
 void redis_cmd_cat_ulong(RedisCmd *cmd, zend_ulong ulval);
-void redis_cmd_cat_u32(RedisCmd *cmd, uint32_t u32);
 void redis_cmd_cat_u64(RedisCmd *cmd, uint64_t u64);
 void redis_cmd_cat_double(RedisCmd *cmd, double dval);
 
@@ -91,9 +90,6 @@ static inline void redis_cmd_ctx_efree(void *ptr) {
 
 RedisCmd *redis_cmd_fmt(RedisSock *redis_sock, char *kw, char *fmt, ...);
 
-#define redis_cmd_fmt_literal(redis_sock, kw, fmt, ...) \
-    redis_cmd_fmt(redis_sock, kw, fmt, ##__VA_ARGS__)
-
 const char *redis_cmd_str(RedisCmd *cmd);
 size_t redis_cmd_len(RedisCmd *cmd);
 
@@ -105,7 +101,5 @@ void resp_str_cat_zstr(smart_str *s, zend_string *str);
 
 #define resp_str_cat_cmd_literal(s_, kw_, argc_) \
     resp_str_cat_cmd(s_, argc_, kw_, sizeof(kw_) - 1)
-#define resp_str_cat_literal(s_, lit_) \
-    resp_str_cat_str(s_, lit_, sizeof(lit_) - 1)
 
 #endif // REDIS_CMD_H

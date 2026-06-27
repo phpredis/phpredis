@@ -184,10 +184,6 @@ static zend_always_inline void redis_crosslot_warning(void) {
     redis_cmd_try_cat_key(cmd, redis_cmd_cat_key_zstr, zstr)
 #define redis_cmd_try_cat_key_zval(cmd, zval) \
     redis_cmd_try_cat_key(cmd, redis_cmd_cat_key_zval, zval)
-#define redis_cmd_try_cat_key_str(cmd, str, len) \
-    redis_cmd_try_cat_key(cmd, redis_cmd_cat_key_str, str, len)
-#define redis_cmd_try_cat_key_long(cmd, lval) \
-    redis_cmd_try_cat_key(cmd, redis_cmd_cat_key_long, lval)
 
 static zend_always_inline void
 redis_cmd_cat_channel_zstr(RedisCmd *cmd, zend_string *channel) {

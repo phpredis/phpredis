@@ -4,23 +4,11 @@
 #include "php_redis.h"
 #include "redis_cmd.h"
 
-#define REDIS_CMD_APPEND_SSTR_STATIC(sstr, str) \
-    redis_cmd_append_sstr(sstr, str, sizeof(str)-1);
-
-#define REDIS_CMD_APPEND_SSTR_OPT_STATIC(sstr, opt, str) \
-    if (opt) REDIS_CMD_APPEND_SSTR_STATIC(sstr, str);
-
-#define REDIS_CMD_INIT_SSTR_STATIC(sstr, argc, keyword) \
-    redis_cmd_init_sstr(sstr, argc, keyword, sizeof(keyword)-1);
-
 #define REDIS_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_exception_ce, (msg), code)
 
 #define CLUSTER_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_cluster_exception_ce, (msg), code)
-
-#define redis_sock_write_sstr(redis_sock, sstr) \
-    redis_sock_write(redis_sock, (sstr)->c, (sstr)->len)
 
 #if PHP_VERSION_ID < 80000
     /* use RedisException when ValueError not available */
@@ -150,8 +138,6 @@ PHP_REDIS_API int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
 PHP_REDIS_API int
 redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
-PHP_REDIS_API zend_string*
-redis_key_prefix_zval(RedisSock *redis_sock, zval *zv);
 PHP_REDIS_API zend_string *
 redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key);
 
