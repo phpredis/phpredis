@@ -15,7 +15,7 @@
 #include <zend_smart_str.h>
 #include <zend_smart_string.h>
 
-#define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - XtOffsetOf(class_entry, std))
+#define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - offsetof(class_entry, std))
 #define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, Z_OBJ_P(z))
 
 /* We'll fallthrough if we want to */

@@ -155,7 +155,7 @@ redis_pool_free(redis_pool *pool) {
 
 /* Retrieve session.gc_maxlifetime from php.ini protecting against an integer overflow */
 static int session_gc_maxlifetime(void) {
-    zend_long value = INI_INT("session.gc_maxlifetime");
+    zend_long value = zend_ini_long_literal("session.gc_maxlifetime");
     if (value > INT_MAX) {
         php_error_docref(NULL, E_NOTICE, "session.gc_maxlifetime overflows INT_MAX, truncating.");
         return INT_MAX;
@@ -169,7 +169,7 @@ static int session_gc_maxlifetime(void) {
 
 /* Retrieve redis.session.compression from php.ini */
 static int session_compression_type(void) {
-    const char *compression = INI_STR("redis.session.compression");
+    const char *compression = zend_ini_string_literal("redis.session.compression");
 
     if(compression == NULL || *compression == '\0' ||
        redis_strncasecmp(compression, ZEND_STRL("none")) == 0)
@@ -352,25 +352,25 @@ lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status) {
     int result;
 
     /* Short circuit if we are already locked or not using session locks */
-    if (lock_status->is_locked || !INI_INT("redis.session.locking_enabled"))
+    if (lock_status->is_locked || !zend_ini_long_literal("redis.session.locking_enabled"))
         return SUCCESS;
 
     /* How long to wait between attempts to acquire lock */
-    wait_time = INI_INT("redis.session.lock_wait_time");
+    wait_time = zend_ini_long_literal("redis.session.lock_wait_time");
     if (wait_time == 0) {
         wait_time = 20000;
     }
 
     /* Maximum number of times to retry (-1 means infinite) */
-    retries = INI_INT("redis.session.lock_retries");
+    retries = zend_ini_long_literal("redis.session.lock_retries");
     if (retries == 0) {
         retries = 100;
     }
 
     /* How long should the lock live (in seconds) */
-    expiry = INI_INT("redis.session.lock_expire");
+    expiry = zend_ini_long_literal("redis.session.lock_expire");
     if (expiry == 0) {
-        expiry = INI_INT("max_execution_time");
+        expiry = zend_ini_long_literal("max_execution_time");
     }
 
     generate_lock_key(lock_status);
@@ -422,13 +422,13 @@ static int
 write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_status) {
     RedisCmd *cmd;
 
-    if (!INI_INT("redis.session.locking_enabled")) {
+    if (!zend_ini_long_literal("redis.session.locking_enabled")) {
         return 1;
     }
     /* If locked and redis.session.lock_expire is not set => TTL=max_execution_time
        Therefore it is guaranteed that the current process is still holding the lock */
 
-    if (lock_status->is_locked && INI_INT("redis.session.lock_expire") != 0) {
+    if (lock_status->is_locked && zend_ini_long_literal("redis.session.lock_expire") != 0) {
         char *reply = NULL;
         int replylen;
 
@@ -569,9 +569,9 @@ lock_release_lua(RedisSock *redis_sock, redis_session_lock_status *status) {
 }
 
 static lockDelCmd lock_release_cmd(void) {
-    char *cmd;
+    const char *cmd;
 
-    cmd = INI_STR("redis.session.lock_release_cmd");
+    cmd = zend_ini_string_literal("redis.session.lock_release_cmd");
 
     if (cmd == NULL) {
         return LOCK_DEL_EVAL;
@@ -738,7 +738,7 @@ PS_OPEN_FUNC(redis)
             }
 
             redis_sock->compression = session_compression_type();
-            redis_sock->compression_level = INI_INT("redis.session.compression_level");
+            redis_sock->compression_level = zend_ini_long_literal("redis.session.compression_level");
 
             redis_sock_set_context_zval(redis_sock, &context);
 
@@ -905,7 +905,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
         return FAILURE;
 
     /* No need to update the session timestamp if we've already done so */
-    if (INI_INT("redis.session.early_refresh")) {
+    if (zend_ini_long_literal("redis.session.early_refresh")) {
         return SUCCESS;
     }
 
@@ -967,7 +967,7 @@ PS_READ_FUNC(redis)
     pool->lock_status.session_key = redis_session_key(redis_sock, key);
 
     /* Update the session ttl if early refresh is enabled */
-    if (INI_INT("redis.session.early_refresh")) {
+    if (zend_ini_long_literal("redis.session.early_refresh")) {
         cmd = redis_cmd_create_literal(redis_sock, "GETEX");
         redis_cmd_cat_zstr(cmd, pool->lock_status.session_key);
         redis_cmd_cat_literal(cmd, "EX");
@@ -978,7 +978,7 @@ PS_READ_FUNC(redis)
     }
 
     if (lock_acquire(redis_sock, &pool->lock_status) != SUCCESS) {
-        if (INI_INT("redis.session.lock_failure_readonly")) {
+        if (zend_ini_long_literal("redis.session.lock_failure_readonly")) {
             // opt-in legacy behavior: readonly session
             php_error_docref(NULL, E_WARNING, "Failed to acquire session lock, session will be read only");
         } else {
@@ -1239,7 +1239,7 @@ PS_OPEN_FUNC(rediscluster) {
     }
 
     c->flags->compression = session_compression_type();
-    c->flags->compression_level = INI_INT("redis.session.compression_level");
+    c->flags->compression_level = zend_ini_long_literal("redis.session.compression_level");
 
     redis_sock_set_auth(c->flags, user, pass);
 
@@ -1291,7 +1291,7 @@ PS_CREATE_SID_FUNC(rediscluster)
         return php_session_create_id(NULL);
     }
 
-    if (INI_INT("session.use_strict_mode") == 0) {
+    if (zend_ini_long_literal("session.use_strict_mode") == 0) {
         return php_session_create_id((void **) &c);
     }
 
@@ -1401,7 +1401,7 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
     short slot;
 
     /* No need to update the session timestamp if we've already done so */
-    if (INI_INT("redis.session.early_refresh")) {
+    if (zend_ini_long_literal("redis.session.early_refresh")) {
         return SUCCESS;
     }
 
@@ -1451,7 +1451,7 @@ PS_READ_FUNC(rediscluster) {
     key = cluster_session_key(c, key, &slot);
 
     /* Update the session ttl if early refresh is enabled */
-    if (INI_INT("redis.session.early_refresh")) {
+    if (zend_ini_long_literal("redis.session.early_refresh")) {
         cmd = redis_cmd_fmt(NULL, "GETEX", "Ssd", key, "EX", 2,
                             session_gc_maxlifetime());
         c->readonly = 0;

@@ -114,7 +114,7 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
     mc.kw_len = keyword_len; \
 
 static zend_always_inline zend_bool cluster_caching_enabled(void) {
-    return INI_INT("redis.clusters.cache_slots") == 1;
+    return zend_ini_long_literal("redis.clusters.cache_slots") == 1;
 }
 
 /* Cluster redirection enum */
