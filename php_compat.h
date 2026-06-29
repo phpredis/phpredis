@@ -1,6 +1,8 @@
 #ifndef PHP_REDIS_COMPAT_H
 #define PHP_REDIS_COMPAT_H
 
+#include <stddef.h>
+
 #include "php.h"
 #include <ext/hash/php_hash.h>
 
@@ -9,6 +11,25 @@
 #include <ext/standard/php_rand.h>
 #else
 #include <ext/random/php_random.h>
+#endif
+
+#ifndef ZEND_UNREACHABLE
+#define ZEND_UNREACHABLE() do { ZEND_ASSERT(0); ZEND_ASSUME(0); } while (0)
+#endif
+
+#if PHP_VERSION_ID < 80600
+
+#define zend_ini_bool_literal(name) \
+    zend_ini_parse_bool(zend_ini_str((name), sizeof("" name) - 1, 0))
+#define zend_ini_long_literal(name) \
+    zend_ini_long((name), sizeof("" name) - 1, 0)
+#define zend_ini_double_literal(name) \
+    zend_ini_double((name), sizeof("" name) - 1, 0)
+#define zend_ini_str_literal(name) \
+    zend_ini_str((name), sizeof("" name) - 1, 0)
+#define zend_ini_string_literal(name) \
+    zend_ini_string((name), sizeof("" name) - 1, 0)
+
 #endif
 
 #if PHP_VERSION_ID < 80000
