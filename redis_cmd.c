@@ -398,15 +398,15 @@ void redis_cmd_cat_zval(RedisCmd *cmd, zval *zv) {
  * l - A long
  * L - Alias to 'l'
  */
-RedisCmd *redis_cmd_fmt(RedisSock *redis_sock, char *kw, char *fmt, ...) {
+static RedisCmd *
+redis_cmd_vfmt(RedisSock *redis_sock, const char *kw, size_t kw_len,
+               const char *fmt, va_list ap)
+{
     RedisCmd *ret;
-    va_list ap;
     size_t len;
     char *str;
 
-    va_start(ap, fmt);
-
-    ret = redis_cmd_create(redis_sock, kw, strlen(kw));
+    ret = redis_cmd_create(redis_sock, kw, kw_len);
 
     while (*fmt) {
         switch (*fmt) {
@@ -446,6 +446,29 @@ RedisCmd *redis_cmd_fmt(RedisSock *redis_sock, char *kw, char *fmt, ...) {
         fmt++;
     }
 
+    return ret;
+}
+
+RedisCmd *redis_cmd_fmt(RedisSock *redis_sock, const char *kw, const char *fmt, ...) {
+    RedisCmd *ret;
+    va_list ap;
+
+    va_start(ap, fmt);
+    ret = redis_cmd_vfmt(redis_sock, kw, strlen(kw), fmt, ap);
+    va_end(ap);
+
+    return ret;
+}
+
+RedisCmd *
+redis_cmd_fmt_ex(RedisSock *redis_sock, const char *kw, size_t kw_len,
+                 const char *fmt, ...)
+{
+    RedisCmd *ret;
+    va_list ap;
+
+    va_start(ap, fmt);
+    ret = redis_cmd_vfmt(redis_sock, kw, kw_len, fmt, ap);
     va_end(ap);
 
     return ret;

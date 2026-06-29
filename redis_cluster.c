@@ -133,8 +133,8 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
 void
 cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                       const char *kw, redis_kw_cmd_cb cmd_cb, cluster_cb resp_cb,
-                       int readonly)
+                       const char *kw, size_t kw_len, redis_kw_cmd_cb cmd_cb,
+                       cluster_cb resp_cb, int readonly)
 {
     RedisCmdCtx ctx;
     RedisCmd *cmd;
@@ -142,7 +142,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     c->readonly = readonly && cluster_is_atomic(c);
 
-    cmd = cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, (char*)kw);
+    cmd = cmd_cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, kw_len);
     if (cmd == NULL) {
         RETURN_FALSE;
     }
@@ -1868,7 +1868,7 @@ PHP_METHOD(RedisCluster, psubscribe) {
 /* }}} */
 
 static void generic_unsub_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                              char *kw)
+                              const char *kw, size_t kw_len)
 {
     RedisCmdCtx ctx;
     RedisCmd *cmd;
@@ -1881,7 +1881,7 @@ static void generic_unsub_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     }
 
     // Call directly because we're going to set the slot manually
-    cmd = redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw);
+    cmd = redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, kw_len);
     if (cmd == NULL) {
         RETURN_FALSE;
     }
@@ -1909,14 +1909,14 @@ static void generic_unsub_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 /* {{{ proto array RedisCluster::unsubscribe(array chans) */
 PHP_METHOD(RedisCluster, unsubscribe) {
     generic_unsub_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(),
-        "UNSUBSCRIBE");
+        "UNSUBSCRIBE", sizeof("UNSUBSCRIBE") - 1);
 }
 /* }}} */
 
 /* {{{ proto array RedisCluster::punsubscribe(array pats) */
 PHP_METHOD(RedisCluster, punsubscribe) {
     generic_unsub_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(),
-        "PUNSUBSCRIBE");
+        "PUNSUBSCRIBE", sizeof("PUNSUBSCRIBE") - 1);
 }
 /* }}} */
 
