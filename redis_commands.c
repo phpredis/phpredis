@@ -4903,14 +4903,14 @@ redis_build_client_list_command(RedisSock *redis_sock, int argc, zval *z_args)
     redis_cmd_cat_literal(cmd, "LIST");
     if (type != NULL) {
         redis_cmd_cat_literal(cmd, "TYPE");
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(type), Z_STRLEN_P(type));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(type));
     }
     if (id != NULL) {
         redis_cmd_cat_literal(cmd, "ID");
         if (Z_TYPE_P(id) == IS_ARRAY) {
             ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(id), z_ele) {
                 if (Z_TYPE_P(z_ele) == IS_STRING) {
-                    redis_cmd_cat_str(cmd, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+                    redis_cmd_cat_zstr(cmd, Z_STR_P(z_ele));
                 } else {
                     zkey = zval_get_string(z_ele);
                     redis_cmd_cat_zstr(cmd, zkey);
@@ -4918,7 +4918,7 @@ redis_build_client_list_command(RedisSock *redis_sock, int argc, zval *z_args)
                 }
             } ZEND_HASH_FOREACH_END();
         } else {
-            redis_cmd_cat_str(cmd, Z_STRVAL_P(id), Z_STRLEN_P(id));
+            redis_cmd_cat_zstr(cmd, Z_STR_P(id));
         }
     }
     return cmd;
@@ -4986,31 +4986,31 @@ redis_build_client_kill_command(RedisSock *redis_sock, int argc, zval *z_args)
     cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
     redis_cmd_cat_literal(cmd, "KILL");
     if (address != NULL) {
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(address), Z_STRLEN_P(address));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(address));
     }
     if (id != NULL) {
         redis_cmd_cat_literal(cmd, "ID");
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(id), Z_STRLEN_P(id));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(id));
     }
     if (type != NULL) {
         redis_cmd_cat_literal(cmd, "TYPE");
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(type), Z_STRLEN_P(type));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(type));
     }
     if (user != NULL) {
         redis_cmd_cat_literal(cmd, "USER");
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(user), Z_STRLEN_P(user));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(user));
     }
     if (addr != NULL) {
         redis_cmd_cat_literal(cmd, "ADDR");
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(addr), Z_STRLEN_P(addr));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(addr));
     }
     if (laddr != NULL) {
         redis_cmd_cat_literal(cmd, "LADDR");
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(laddr), Z_STRLEN_P(laddr));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(laddr));
     }
     if (skipme != NULL) {
         redis_cmd_cat_literal(cmd, "SKIPME");
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(skipme), Z_STRLEN_P(skipme));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(skipme));
     }
     return cmd;
 }
@@ -5061,7 +5061,7 @@ redis_build_client_tracking_command(RedisSock *redis_sock, int argc, zval *z_arg
         zend_string_equals_literal_ci(Z_STR(z_args[0]), "on") ||
         zend_string_equals_literal_ci(Z_STR(z_args[0]), "off")
     )) {
-        redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+        redis_cmd_cat_zstr(cmd, Z_STR(z_args[0]));
     } else if (zend_is_true(&z_args[0])) {
         redis_cmd_cat_literal(cmd, "ON");
     } else {
@@ -5069,14 +5069,14 @@ redis_build_client_tracking_command(RedisSock *redis_sock, int argc, zval *z_arg
     }
     if (redirect != NULL) {
         redis_cmd_cat_literal(cmd, "REDIRECT");
-        redis_cmd_cat_str(cmd, Z_STRVAL_P(redirect), Z_STRLEN_P(redirect));
+        redis_cmd_cat_zstr(cmd, Z_STR_P(redirect));
     }
     if (prefix != NULL) {
         if (Z_TYPE_P(prefix) == IS_ARRAY) {
             ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(prefix), z_ele) {
                 redis_cmd_cat_literal(cmd, "PREFIX");
                 if (Z_TYPE_P(z_ele) == IS_STRING) {
-                    redis_cmd_cat_str(cmd, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+                    redis_cmd_cat_zstr(cmd, Z_STR_P(z_ele));
                 } else {
                     zkey = zval_get_string(z_ele);
                     redis_cmd_cat_zstr(cmd, zkey);
@@ -5085,7 +5085,7 @@ redis_build_client_tracking_command(RedisSock *redis_sock, int argc, zval *z_arg
             } ZEND_HASH_FOREACH_END();
         } else {
             redis_cmd_cat_literal(cmd, "PREFIX");
-            redis_cmd_cat_str(cmd, Z_STRVAL_P(prefix), Z_STRLEN_P(prefix));
+            redis_cmd_cat_zstr(cmd, Z_STR_P(prefix));
         }
     }
     redis_cmd_cat_literal_if(cmd, bcast, "BCAST");
@@ -5127,7 +5127,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
             zend_string_equals_literal_ci(Z_STR(z_args[0]), "yes") ||
             zend_string_equals_literal_ci(Z_STR(z_args[0]), "no")
         )) {
-            redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+            redis_cmd_cat_zstr(cmd, Z_STR(z_args[0]));
         } else if (zend_is_true(&z_args[0])) {
             redis_cmd_cat_literal(cmd, "YES");
         } else {
@@ -5155,7 +5155,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
             zend_string_equals_literal_ci(Z_STR(z_args[0]), "on") ||
             zend_string_equals_literal_ci(Z_STR(z_args[0]), "off")
         )) {
-            redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+            redis_cmd_cat_zstr(cmd, Z_STR(z_args[0]));
         } else if (zend_is_true(&z_args[0])) {
             redis_cmd_cat_literal(cmd, "ON");
         } else {
@@ -5177,7 +5177,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         redis_cmd_cat_literal(cmd, "PAUSE");
         redis_cmd_cat_long(cmd, Z_LVAL(z_args[0]));
         if (argc > 1) {
-            redis_cmd_cat_str(cmd, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+            redis_cmd_cat_zstr(cmd, Z_STR(z_args[1]));
         }
         ctx = PHPREDIS_CTX_PTR + 1;
     } else if (zend_string_equals_literal_ci(op, "REPLY")) {
@@ -5193,7 +5193,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "REPLY");
         if (argc > 0) {
-            redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+            redis_cmd_cat_zstr(cmd, Z_STR(z_args[0]));
         }
         ctx = PHPREDIS_CTX_PTR + 1;
     } else if (zend_string_equals_literal_ci(op, "SETNAME")) {
@@ -5202,7 +5202,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         }
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "SETNAME");
-        redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+        redis_cmd_cat_zstr(cmd, Z_STR(z_args[0]));
         ctx = PHPREDIS_CTX_PTR + 1;
     } else if (zend_string_equals_literal_ci(op, "TRACKING")) {
         cmd = redis_build_client_tracking_command(redis_sock, argc, z_args);
@@ -5224,9 +5224,9 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         }
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "UNBLOCK");
-        redis_cmd_cat_str(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+        redis_cmd_cat_zstr(cmd, Z_STR(z_args[0]));
         if (argc > 1) {
-            redis_cmd_cat_str(cmd, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+            redis_cmd_cat_zstr(cmd, Z_STR(z_args[1]));
         }
         ctx = PHPREDIS_CTX_PTR + 2;
     } else if (zend_string_equals_literal_ci(op, "UNPAUSE")) {
