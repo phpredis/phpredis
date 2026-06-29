@@ -173,7 +173,7 @@ redis_cluster_init_object_handlers(void)
 {
     memcpy(&RedisCluster_handlers, zend_get_std_object_handlers(),
            sizeof(RedisCluster_handlers));
-    RedisCluster_handlers.offset = XtOffsetOf(redisCluster, std);
+    RedisCluster_handlers.offset = offsetof(redisCluster, std);
     RedisCluster_handlers.free_obj = free_cluster_context;
     RedisCluster_handlers.clone_obj = NULL;
 }
@@ -300,12 +300,12 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0, read_timeout = 0;
     int persistent = 0;
-    char *iptr;
+    const char *iptr;
     HashTable *ht_seeds = NULL;
 
     /* Seeds */
     array_init(&z_seeds);
-    if ((iptr = INI_STR("redis.clusters.seeds")) != NULL) {
+    if ((iptr = zend_ini_string_literal("redis.clusters.seeds")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_seeds);
     }
     if ((z_value = zend_hash_str_find(Z_ARRVAL(z_seeds), name, name_len)) != NULL) {
@@ -317,7 +317,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     }
 
     /* Connection timeout */
-    if ((iptr = INI_STR("redis.clusters.timeout")) != NULL) {
+    if ((iptr = zend_ini_string_literal("redis.clusters.timeout")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &timeout);
@@ -325,7 +325,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     }
 
     /* Read timeout */
-    if ((iptr = INI_STR("redis.clusters.read_timeout")) != NULL) {
+    if ((iptr = zend_ini_string_literal("redis.clusters.read_timeout")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &read_timeout);
@@ -333,14 +333,14 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     }
 
     /* Persistent connections */
-    if ((iptr = INI_STR("redis.clusters.persistent")) != NULL) {
+    if ((iptr = zend_ini_string_literal("redis.clusters.persistent")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_bool(Z_ARRVAL(z_tmp), name, name_len, &persistent);
         zval_ptr_dtor_nogc(&z_tmp);
     }
 
-    if ((iptr = INI_STR("redis.clusters.auth"))) {
+    if ((iptr = zend_ini_string_literal("redis.clusters.auth"))) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         redis_conf_auth(Z_ARRVAL(z_tmp), name, name_len, &user, &pass);

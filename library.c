@@ -131,7 +131,7 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
     zend_string *persistent_id;
 
     /* Generate our unique pool id depending on configuration */
-    persistent_id = redis_pool_spprintf(redis_sock, INI_STR("redis.pconnect.pool_pattern"));
+    persistent_id = redis_pool_spprintf(redis_sock, zend_ini_string_literal("redis.pconnect.pool_pattern"));
 
     /* Return early if we can find the pool */
     if ((le = zend_hash_find_ptr(&EG(persistent_list), persistent_id))) {
@@ -938,7 +938,7 @@ static void append_auth_hash(smart_str *dst, zend_string *user, zend_string *pas
 
 /* A printf like function to generate our connection pool hash value. */
 PHP_REDIS_API zend_string *
-redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
+redis_pool_spprintf(RedisSock *redis_sock, const char *fmt, ...) {
     smart_str str = {0};
 
     smart_str_alloc(&str, 128, 0);
@@ -3047,7 +3047,7 @@ static php_socket_t redis_stream_fd_for_select(php_stream *stream) {
 }
 
 static int redis_detect_dirty_config(void) {
-    int val = INI_INT("redis.pconnect.pool_detect_dirty");
+    int val = zend_ini_long_literal("redis.pconnect.pool_detect_dirty");
 
     if (val >= 0 && val <= 2)
         return val;
@@ -3058,7 +3058,7 @@ static int redis_detect_dirty_config(void) {
 }
 
 static int redis_pool_poll_timeout(void) {
-    int val = INI_INT("redis.pconnect.pool_poll_timeout");
+    int val = zend_ini_long_literal("redis.pconnect.pool_poll_timeout");
     if (val >= 0)
         return val;
 
@@ -3152,7 +3152,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         goto failure;
 
     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
-    if (!INI_INT("redis.pconnect.echo_check_liveness")) {
+    if (!zend_ini_long_literal("redis.pconnect.echo_check_liveness")) {
         return SUCCESS;
     }
 
@@ -3283,7 +3283,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     }
 
     if (redis_sock->persistent) {
-        if (INI_INT("redis.pconnect.pooling_enabled")) {
+        if (zend_ini_long_literal("redis.pconnect.pooling_enabled")) {
             p = redis_sock_get_connection_pool(redis_sock);
             if (zend_llist_count(&p->list) > 0) {
                 redis_sock->stream = *(php_stream **)zend_llist_get_last(&p->list);
@@ -3296,7 +3296,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                 p->nb_active--;
             }
 
-            int limit = INI_INT("redis.pconnect.connection_limit");
+            int limit = zend_ini_long_literal("redis.pconnect.connection_limit");
             if (limit > 0 && p->nb_active >= limit) {
                 redis_sock_set_err(redis_sock, ZEND_STRL("Connection limit reached"));
                 return FAILURE;
@@ -3423,7 +3423,7 @@ redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
     } else if (redis_sock->stream) {
         if (redis_sock->persistent) {
             ConnectionPool *p = NULL;
-            if (INI_INT("redis.pconnect.pooling_enabled")) {
+            if (zend_ini_long_literal("redis.pconnect.pooling_enabled")) {
                 p = redis_sock_get_connection_pool(redis_sock);
             }
             if (force || !redis_sock_is_atomic(redis_sock)) {
@@ -4365,7 +4365,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
             return 1;
 #endif
             break;
-        EMPTY_SWITCH_DEFAULT_CASE()
+        default:
+            ZEND_UNREACHABLE();
     }
 
     return 0;
@@ -4432,7 +4433,8 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             ret = !php_json_decode(z_ret, (char *)val, val_len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH);
 #endif
             break;
-        EMPTY_SWITCH_DEFAULT_CASE()
+        default:
+            ZEND_UNREACHABLE();
     }
 
     return ret;
