@@ -88,7 +88,9 @@ static inline void redis_cmd_ctx_efree(void *ptr) {
     if (ptr) efree(ptr);
 }
 
-RedisCmd *redis_cmd_fmt(RedisSock *redis_sock, char *kw, char *fmt, ...);
+RedisCmd *redis_cmd_fmt(RedisSock *redis_sock, const char *kw, const char *fmt, ...);
+RedisCmd *redis_cmd_fmt_ex(RedisSock *redis_sock, const char *kw, size_t kw_len,
+                           const char *fmt, ...);
 
 const char *redis_cmd_str(RedisCmd *cmd);
 size_t redis_cmd_len(RedisCmd *cmd);
