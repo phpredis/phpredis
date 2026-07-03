@@ -27,15 +27,24 @@
 #include <ext/standard/info.h>
 #include <zend_exceptions.h>
 
-/* Simple macro to detect failure in a RedisArray call */
-#define RA_CALL_FAILED(rv, cmd) ( \
-    (Z_TYPE_P(rv) == IS_FALSE) || \
-    (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
-    (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE")) \
-)
+/* Simple helper to detect failure in a RedisArray call */
+static zend_always_inline zend_bool
+ra_call_failed(zval *rv, const char *cmd)
+{
+    return Z_TYPE_P(rv) == IS_FALSE ||
+           (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) ||
+           (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE"));
+}
 
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
+
+zend_object_handlers redis_array_object_handlers;
+
+typedef struct {
+    RedisArray *ra;
+    zend_object std;
+} redis_array_object;
 
 #if PHP_VERSION_ID < 80000
 #include "redis_array_legacy_arginfo.h"
@@ -44,18 +53,7 @@ zend_class_entry *redis_array_ce;
 #include "redis_array_arginfo.h"
 #endif
 
-PHP_MINIT_FUNCTION(redis_array)
-{
-    /* RedisSentinel class */
-    redis_array_ce = register_class_RedisArray();
-    redis_array_ce->create_object = create_redis_array_object;
-
-    return SUCCESS;
-}
-
-static void
-redis_array_free(RedisArray *ra)
-{
+static void redis_array_free(RedisArray *ra) {
     int i;
 
     /* continuum */
@@ -66,17 +64,17 @@ redis_array_free(RedisArray *ra)
 
     /* Redis objects */
     for(i = 0; i< ra->count; i++) {
-        zval_dtor(&ra->redis[i]);
+        zval_ptr_dtor_nogc(&ra->redis[i]);
         zend_string_release(ra->hosts[i]);
     }
     efree(ra->redis);
     efree(ra->hosts);
 
     /* delete hash function */
-    zval_dtor(&ra->z_fun);
+    zval_ptr_dtor_nogc(&ra->z_fun);
 
     /* Distributor */
-    zval_dtor(&ra->z_dist);
+    zval_ptr_dtor_nogc(&ra->z_dist);
 
     /* Hashing algorithm */
     if (ra->algorithm) zend_string_release(ra->algorithm);
@@ -89,12 +87,6 @@ redis_array_free(RedisArray *ra)
     efree(ra);
 }
 
-typedef struct {
-    RedisArray *ra;
-    zend_object std;
-} redis_array_object;
-
-zend_object_handlers redis_array_object_handlers;
 
 void
 free_redis_array_object(zend_object *object)
@@ -108,6 +100,16 @@ free_redis_array_object(zend_object *object)
     zend_object_std_dtor(&obj->std);
 }
 
+static void
+redis_array_init_object_handlers(void)
+{
+    memcpy(&redis_array_object_handlers, zend_get_std_object_handlers(),
+           sizeof(redis_array_object_handlers));
+    redis_array_object_handlers.offset = offsetof(redis_array_object, std);
+    redis_array_object_handlers.free_obj = free_redis_array_object;
+    redis_array_object_handlers.clone_obj = NULL;
+}
+
 zend_object *
 create_redis_array_object(zend_class_entry *ce)
 {
@@ -118,12 +120,22 @@ create_redis_array_object(zend_class_entry *ce)
     zend_object_std_init(&obj->std, ce);
     object_properties_init(&obj->std, ce);
 
-    memcpy(&redis_array_object_handlers, zend_get_std_object_handlers(), sizeof(redis_array_object_handlers));
-    redis_array_object_handlers.offset = XtOffsetOf(redis_array_object, std);
-    redis_array_object_handlers.free_obj = free_redis_array_object;
     obj->std.handlers = &redis_array_object_handlers;
 
     return &obj->std;
+}
+
+
+PHP_MINIT_FUNCTION(redis_array)
+{
+    /* RedisArray class */
+    redis_array_ce = register_class_RedisArray();
+    redis_array_ce->create_object = create_redis_array_object;
+
+    /* RedisArray object handler initialization */
+    redis_array_init_object_handlers();
+
+    return SUCCESS;
 }
 
 /**
@@ -155,9 +167,11 @@ PHP_METHOD(RedisArray, __construct)
     zend_string *algorithm = NULL, *user = NULL, *pass = NULL;
     redis_array_object *obj;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z|a", &z0, &z_opts) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_ZVAL(z0)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY(z_opts)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Bail if z0 isn't a string or an array.
      * Note:  WRONG_PARAM_COUNT seems wrong but this is what we have been doing
@@ -214,8 +228,8 @@ PHP_METHOD(RedisArray, __construct)
     if (algorithm) zend_string_release(algorithm);
     if (user) zend_string_release(user);
     if (pass) zend_string_release(pass);
-    zval_dtor(&z_dist);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_dist);
+    zval_ptr_dtor_nogc(&z_fun);
 
 finish:
 
@@ -277,10 +291,10 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
     /* multi/exec */
     if(ra->z_multi_exec) {
         call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs);
-        zval_dtor(return_value);
-        zval_dtor(&z_fun);
+        zval_ptr_dtor_nogc(return_value);
+        zval_ptr_dtor_nogc(&z_fun);
         for (i = 0; i < argc; ++i) {
-            zval_dtor(&z_callargs[i]);
+            zval_ptr_dtor_nogc(&z_callargs[i]);
         }
         efree(z_callargs);
         RETURN_ZVAL(getThis(), 1, 0);
@@ -295,7 +309,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
         ra_index_multi(redis_inst, MULTI);
         /* call using discarded temp value and extract exec results after. */
         call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs);
-        zval_dtor(return_value);
+        zval_ptr_dtor_nogc(return_value);
 
         /* add keys to index. */
         ra_index_key(key, key_len, redis_inst);
@@ -307,44 +321,43 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
 
         if (!b_write_cmd) {
             /* check if we have an error. */
-            if (ra->prev && RA_CALL_FAILED(return_value, cmd)) { /* there was an error reading, try with prev ring. */
+            if (ra->prev && ra_call_failed(return_value, cmd)) { /* there was an error reading, try with prev ring. */
                 /* Free previous return value */
-                zval_dtor(return_value);
+                zval_ptr_dtor_nogc(return_value);
 
                 /* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
                 ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target ? z_new_target : redis_inst);
             }
 
             /* Autorehash if the key was found on the previous node if this is a read command and auto rehashing is on */
-            if (ra->auto_rehash && z_new_target && !RA_CALL_FAILED(return_value, cmd)) { /* move key from old ring to new ring */
+            if (ra->auto_rehash && z_new_target && !ra_call_failed(return_value, cmd)) { /* move key from old ring to new ring */
                 ra_move_key(key, key_len, redis_inst, z_new_target);
             }
         }
     }
 
     /* cleanup */
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
     for (i = 0; i < argc; ++i) {
-        zval_dtor(&z_callargs[i]);
+        zval_ptr_dtor_nogc(&z_callargs[i]);
     }
     efree(z_callargs);
 }
 
 PHP_METHOD(RedisArray, __call)
 {
-    zval *object;
     RedisArray *ra;
     zval *z_args;
 
     char *cmd;
     size_t cmd_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Osa",
-                &object, redis_array_ce, &cmd, &cmd_len, &z_args) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STRING(cmd, cmd_len)
+        Z_PARAM_ARRAY(z_args)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -353,16 +366,10 @@ PHP_METHOD(RedisArray, __call)
 
 PHP_METHOD(RedisArray, _hosts)
 {
-    zval *object;
     int i;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
-                &object, redis_array_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -374,19 +381,17 @@ PHP_METHOD(RedisArray, _hosts)
 
 PHP_METHOD(RedisArray, _target)
 {
-    zval *object;
     RedisArray *ra;
     char *key;
     size_t key_len;
     zval *redis_inst;
     int i;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Os",
-                &object, redis_array_ce, &key, &key_len) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STRING(key, key_len)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -400,17 +405,15 @@ PHP_METHOD(RedisArray, _target)
 
 PHP_METHOD(RedisArray, _instance)
 {
-    zval *object;
     RedisArray *ra;
     zend_string *host;
     zval *z_redis;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OS",
-                &object, redis_array_ce, &host) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STR(host)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -422,15 +425,9 @@ PHP_METHOD(RedisArray, _instance)
 
 PHP_METHOD(RedisArray, _function)
 {
-    zval *object;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
-                &object, redis_array_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -439,15 +436,9 @@ PHP_METHOD(RedisArray, _function)
 
 PHP_METHOD(RedisArray, _distributor)
 {
-    zval *object;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
-                &object, redis_array_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -456,17 +447,16 @@ PHP_METHOD(RedisArray, _distributor)
 
 PHP_METHOD(RedisArray, _rehash)
 {
-    zval *object;
     RedisArray *ra;
     zend_fcall_info z_cb = {0};
     zend_fcall_info_cache z_cb_cache = {0};
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O|f",
-                &object, redis_array_ce, &z_cb, &z_cb_cache) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(0, 1)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_FUNC(z_cb, z_cb_cache)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -480,15 +470,10 @@ PHP_METHOD(RedisArray, _rehash)
 PHP_METHOD(RedisArray, _continuum)
 {
     int i;
-    zval *object, z_ret;
+    zval z_ret;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
-                &object, redis_array_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -526,15 +511,10 @@ multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int a
 static void
 multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 {
-    zval *object, z_fun;
+    zval z_fun;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
-                &object, redis_array_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -543,22 +523,22 @@ multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 
     multihost_distribute_call(ra, return_value, &z_fun, 0, NULL);
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 static void
 multihost_distribute_flush(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 {
-    zval *object, z_fun, z_args[1];
+    zval z_fun, z_args[1];
     zend_bool async = 0;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O|b",
-                                     &object, redis_array_ce, &async) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(0, 1)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_BOOL(async)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -568,7 +548,7 @@ multihost_distribute_flush(INTERNAL_FUNCTION_PARAMETERS, const char *method_name
 
     multihost_distribute_call(ra, return_value, &z_fun, 1, z_args);
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 PHP_METHOD(RedisArray, info)
@@ -604,20 +584,17 @@ PHP_METHOD(RedisArray, bgsave)
 
 PHP_METHOD(RedisArray, keys)
 {
-    zval *object, z_fun, z_args[1];
+    zval z_fun, z_args[1];
     RedisArray *ra;
     char *pattern;
     size_t pattern_len;
 
-    /* Make sure the prototype is correct */
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Os",
-                                    &object, redis_array_ce, &pattern, &pattern_len) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STRING(pattern, pattern_len)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* Make sure we can grab our RedisArray object */
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -629,22 +606,21 @@ PHP_METHOD(RedisArray, keys)
 
     multihost_distribute_call(ra, return_value, &z_fun, 1, z_args);
 
-    zval_dtor(&z_args[0]);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_args[0]);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 PHP_METHOD(RedisArray, getOption)
 {
-    zval *object, z_fun, z_args[1];
+    zval z_fun, z_args[1];
     RedisArray *ra;
     zend_long opt;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Ol",
-                &object, redis_array_ce, &opt) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(opt)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -656,23 +632,23 @@ PHP_METHOD(RedisArray, getOption)
 
     multihost_distribute_call(ra, return_value, &z_fun, 1, z_args);
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 PHP_METHOD(RedisArray, setOption)
 {
-    zval *object, z_fun, z_args[2];
+    zval z_fun, z_args[2];
     RedisArray *ra;
     zend_long opt;
     char *val_str;
     size_t val_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Ols",
-                &object, redis_array_ce, &opt, &val_str, &val_len) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(opt)
+        Z_PARAM_STRING(val_str, val_len)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -685,22 +661,21 @@ PHP_METHOD(RedisArray, setOption)
 
     multihost_distribute_call(ra, return_value, &z_fun, 2, z_args);
 
-    zval_dtor(&z_args[1]);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_args[1]);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 PHP_METHOD(RedisArray, select)
 {
-    zval *object, z_fun, z_args[1];
+    zval z_fun, z_args[1];
     RedisArray *ra;
     zend_long opt;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Ol",
-                &object, redis_array_ce, &opt) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(opt)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -712,17 +687,16 @@ PHP_METHOD(RedisArray, select)
 
     multihost_distribute_call(ra, return_value, &z_fun, 1, z_args);
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 }
 
 #define HANDLE_MULTI_EXEC(ra, cmd, cmdlen) do { \
     if (ra && ra->z_multi_exec) { \
         int i, num_varargs; \
         zval *varargs = NULL, z_arg_array; \
-        if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O*", \
-                                            &object, redis_array_ce, &varargs, &num_varargs) == FAILURE) { \
-            RETURN_FALSE;\
-        } \
+        ZEND_PARSE_PARAMETERS_START(0, -1) \
+            Z_PARAM_VARIADIC('*', varargs, num_varargs) \
+        ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE); \
         /* copy all args into a zval hash table */\
         array_init(&z_arg_array); \
         for (i = 0; i < num_varargs; i++) { \
@@ -732,7 +706,7 @@ PHP_METHOD(RedisArray, select)
         } \
         /* call */\
         ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmdlen, &z_arg_array, NULL); \
-        zval_dtor(&z_arg_array); \
+        zval_ptr_dtor_nogc(&z_arg_array); \
         return; \
     } \
 } while(0)
@@ -740,7 +714,7 @@ PHP_METHOD(RedisArray, select)
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
 {
-    zval *object, *z_keys, *data, z_ret, *z_cur, z_tmp_array, z_fun, z_arg, **argv;
+    zval *z_keys, *data, z_ret, *z_cur, z_tmp_array, z_fun, z_arg, **argv;
     int i, j, n, *pos, argc, *argc_each;
     HashTable *h_keys;
     RedisArray *ra;
@@ -752,11 +726,9 @@ PHP_METHOD(RedisArray, mget)
     /* Multi/exec support */
     HANDLE_MULTI_EXEC(ra, "MGET", sizeof("MGET") - 1);
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Oa",
-                &object, redis_array_ce, &z_keys) == FAILURE) {
-        RETURN_FALSE;
-    }
-
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ARRAY(z_keys)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* init data structures */
     h_keys = Z_ARRVAL_P(z_keys);
@@ -825,13 +797,13 @@ PHP_METHOD(RedisArray, mget)
         call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_arg);
 
         /* cleanup args array */
-        zval_dtor(&z_arg);
+        zval_ptr_dtor_nogc(&z_arg);
 
         /* Error out if we didn't get a proper response */
         if (Z_TYPE(z_ret) != IS_ARRAY) {
             /* cleanup */
-            zval_dtor(&z_ret);
-            zval_dtor(&z_tmp_array);
+            zval_ptr_dtor_nogc(&z_ret);
+            zval_ptr_dtor_nogc(&z_tmp_array);
             RETVAL_FALSE;
             goto cleanup;
         }
@@ -842,10 +814,10 @@ PHP_METHOD(RedisArray, mget)
             ZVAL_ZVAL(&z_arg, z_cur, 1, 0);
             add_index_zval(&z_tmp_array, i, &z_arg);
         }
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_ret);
     }
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     array_init(return_value);
     /* copy temp array in the right order to return_value */
@@ -857,7 +829,7 @@ PHP_METHOD(RedisArray, mget)
     }
 
     /* cleanup */
-    zval_dtor(&z_tmp_array);
+    zval_ptr_dtor_nogc(&z_tmp_array);
 cleanup:
     efree(argv);
     efree(pos);
@@ -868,7 +840,7 @@ cleanup:
 /* MSET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mset)
 {
-    zval *object, *z_keys, z_argarray, *data, z_fun, z_ret, **argv;
+    zval *z_keys, z_argarray, *data, z_fun, z_ret, **argv;
     int i = 0, n, *pos, argc, *argc_each, key_len;
     RedisArray *ra;
     HashTable *h_keys;
@@ -883,11 +855,9 @@ PHP_METHOD(RedisArray, mset)
     /* Multi/exec support */
     HANDLE_MULTI_EXEC(ra, "MSET", sizeof("MSET") - 1);
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Oa",
-                                     &object, redis_array_ce, &z_keys) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ARRAY(z_keys)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* init data structures */
     h_keys = Z_ARRVAL_P(z_keys);
@@ -954,7 +924,7 @@ PHP_METHOD(RedisArray, mset)
         }
 
         if(!found) {
-            zval_dtor(&z_argarray);
+            zval_ptr_dtor_nogc(&z_argarray);
             continue; /* don't run empty MSETs */
         }
 
@@ -967,11 +937,11 @@ PHP_METHOD(RedisArray, mset)
             call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
         }
 
-        zval_dtor(&z_argarray);
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_argarray);
+        zval_ptr_dtor_nogc(&z_ret);
     }
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     /* Free any keys that we needed to allocate memory for, because they weren't strings */
     for(i = 0; i < argc; i++) {
@@ -991,7 +961,7 @@ PHP_METHOD(RedisArray, mset)
 static void
 ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
 {
-    zval *object, z_keys, z_fun, *data, z_ret, *z_args, **argv;
+    zval z_keys, z_fun, *data, z_ret, *z_args, **argv;
     int i, n, *pos, argc = ZEND_NUM_ARGS(), *argc_each, free_zkeys = 0;
     HashTable *h_keys;
     RedisArray *ra;
@@ -1027,7 +997,7 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     /* init data structures */
     h_keys = Z_ARRVAL(z_keys);
     if ((argc = zend_hash_num_elements(h_keys)) == 0) {
-        if (free_zkeys) zval_dtor(&z_keys);
+        if (free_zkeys) zval_ptr_dtor_nogc(&z_keys);
         efree(z_args);
         RETURN_FALSE;
     }
@@ -1075,7 +1045,7 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
         }
 
         if(!found) {    /* don't run empty DEL or UNLINK commands */
-            zval_dtor(&z_argarray);
+            zval_ptr_dtor_nogc(&z_argarray);
             continue;
         }
 
@@ -1089,11 +1059,11 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
         }
         total += Z_LVAL(z_ret);    /* increment total */
 
-        zval_dtor(&z_argarray);
-        zval_dtor(&z_ret);
+        zval_ptr_dtor_nogc(&z_argarray);
+        zval_ptr_dtor_nogc(&z_ret);
     }
 
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     RETVAL_LONG(total);
 
@@ -1103,7 +1073,7 @@ cleanup:
     efree(argc_each);
 
     if(free_zkeys) {
-        zval_dtor(&z_keys);
+        zval_ptr_dtor_nogc(&z_keys);
     }
     efree(z_args);
 }
@@ -1123,15 +1093,18 @@ ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw_len)
 {
     RedisArray *ra;
     zend_string *key, *pattern = NULL;
-    zval *object, *redis_inst, *z_cursor, z_fun, z_args[4];
+    zval *redis_inst, *z_cursor, z_fun, z_args[4];
     zend_long count = 0;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OSz/|S!l",
-            &object, redis_array_ce, &key, &z_cursor, &pattern, &count) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 4)
+        Z_PARAM_STR(key)
+        Z_PARAM_ZVAL_EX(z_cursor, 0, 1)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR_OR_NULL(pattern)
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -1147,7 +1120,7 @@ ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw_len)
 
     ZVAL_STRINGL(&z_fun, kw, kw_len);
     call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, ZEND_NUM_ARGS(), z_args);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     ZVAL_ZVAL(z_cursor, &z_args[1], 0, 1);
 }
@@ -1171,15 +1144,18 @@ PHP_METHOD(RedisArray, scan)
 {
     RedisArray *ra;
     zend_string *host, *pattern = NULL;
-    zval *object, *redis_inst, *z_iter, z_fun, z_args[3];
+    zval *redis_inst, *z_iter, z_fun, z_args[3];
     zend_long count = 0;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Oz/S|S!l",
-            &object, redis_array_ce, &z_iter, &host, &pattern, &count) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 4)
+        Z_PARAM_ZVAL_EX(z_iter, 0, 1)
+        Z_PARAM_STR(host)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR_OR_NULL(pattern)
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -1193,25 +1169,25 @@ PHP_METHOD(RedisArray, scan)
 
     ZVAL_STRING(&z_fun, "SCAN");
     call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, ZEND_NUM_ARGS() - 1, z_args);
-    zval_dtor(&z_fun);
+    zval_ptr_dtor_nogc(&z_fun);
 
     ZVAL_ZVAL(z_iter, &z_args[0], 0, 1);
 }
 
 PHP_METHOD(RedisArray, multi)
 {
-    zval *object;
     RedisArray *ra;
     zval *z_redis;
     zend_string *host;
     zend_long multi_value = MULTI;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OS|l",
-                &object, redis_array_ce, &host, &multi_value) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(host)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(multi_value)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
-    if ((ra = redis_array_get(object)) == NULL) {
+    if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
     }
 
@@ -1231,20 +1207,14 @@ PHP_METHOD(RedisArray, multi)
     ra_index_multi(z_redis, multi_value);
 
     /* return this. */
-    RETURN_ZVAL(object, 1, 0);
+    RETURN_ZVAL(getThis(), 1, 0);
 }
 
 PHP_METHOD(RedisArray, exec)
 {
-    zval *object;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
-                &object, redis_array_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if ((ra = redis_array_get(object)) == NULL || !ra->z_multi_exec) {
+    if ((ra = redis_array_get(getThis())) == NULL || !ra->z_multi_exec) {
         RETURN_FALSE;
     }
 
@@ -1257,15 +1227,9 @@ PHP_METHOD(RedisArray, exec)
 
 PHP_METHOD(RedisArray, discard)
 {
-    zval *object;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
-                &object, redis_array_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if ((ra = redis_array_get(object)) == NULL || !ra->z_multi_exec) {
+    if ((ra = redis_array_get(getThis())) == NULL || !ra->z_multi_exec) {
         RETURN_FALSE;
     }
 
@@ -1278,15 +1242,9 @@ PHP_METHOD(RedisArray, discard)
 
 PHP_METHOD(RedisArray, unwatch)
 {
-    zval *object;
     RedisArray *ra;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
-                &object, redis_array_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if ((ra = redis_array_get(object)) == NULL || !ra->z_multi_exec) {
+    if ((ra = redis_array_get(getThis())) == NULL || !ra->z_multi_exec) {
         RETURN_FALSE;
     }
 

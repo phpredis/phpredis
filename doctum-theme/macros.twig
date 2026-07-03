@@ -1,0 +1,194 @@
+
+{% macro class_category_name(categoryId) -%}
+{% if categoryId == 1 %}{% trans 'class' %}{% endif %}
+{% if categoryId == 2 %}{% trans 'interface' %}{% endif %}
+{% if categoryId == 3 %}{% trans 'trait' %}{% endif %}
+{%- endmacro %}
+
+{% macro namespace_link(namespace) -%}
+    <a href="{{ namespace_path(namespace) }}">{{ namespace == '' ? global_namespace_name() : namespace|raw }}</a>
+{%- endmacro %}
+
+{% macro class_link(class, absolute) -%}
+    {%- if class.isProjectClass() -%}
+        <a href="{{ class_path(class) }}">
+    {%- elseif class.isPhpClass() -%}
+        <a target="_blank" rel="noopener" href="https://www.php.net/{{ class|raw }}">
+    {%- endif %}
+    {{- abbr_class(class, absolute|default(false)) }}
+    {%- if class.isProjectClass() or class.isPhpClass() %}</a>{% endif %}
+{%- endmacro %}
+
+{% macro method_link(method, absolute, classonly) -%}
+{#  #}<a href="{{ method_path(method) }}">
+{#    #}{{- abbr_class(method.class) }}{% if not classonly|default(false) %}::{{ method.name|raw }}{% endif -%}
+{#  #}</a>
+{%- endmacro %}
+
+{% macro property_link(property, absolute, classonly) -%}
+{#  #}<a href="{{ property_path(property) }}">
+{#    #}{{- abbr_class(property.class) }}{% if not classonly|default(false) %}#{{ property.name|raw }}{% endif -%}
+{#  #}</a>
+{%- endmacro %}
+
+{% macro hint_link(hints, isIntersectionType = false) -%}
+    {%- from _self import class_link %}
+
+    {%- if hints %}
+        {%- for hint in hints %}
+            {%- if hint.class %}
+                {{- class_link(hint.name) }}
+            {%- elseif hint.name %}
+                {{- abbr_class(hint.name) }}
+            {%- endif %}
+            {%- if hint.array %}[]{% endif %}
+            {%- if not loop.last %}{%- if isIntersectionType %}&{% else %}|{% endif %}{% endif %}
+        {%- endfor %}
+    {%- endif %}
+{%- endmacro %}
+
+{% macro source_link(project, class) -%}
+    {% if class.sourcepath %}
+        (<a href="{{ class.sourcepath }}">{% trans 'View source'%}</a>)
+    {%- endif %}
+{%- endmacro %}
+
+{% macro method_source_link(method) -%}
+    {% if method.sourcepath %}
+        {#- l10n: Method at line %s -#}
+        <a href="{{ method.sourcepath }}">{{'at line %s'|trans|format(
+            method.line
+        )|raw }}</a>
+    {%- else %}
+        {#- l10n: Method at line %s -#}
+        {{- 'at line %s'|trans|format(
+            method.line
+        )|raw -}}
+    {%- endif %}
+{%- endmacro %}
+
+{% macro method_parameters_signature(method) -%}
+    {%- from "macros.twig" import hint_link -%}
+    (
+        {%- for parameter in method.parameters %}
+            {%- if parameter.hashint %}{{ hint_link(parameter.hint, parameter.isIntersectionType()) }} {% endif -%}
+            {%- if parameter.variadic %}...{% endif %}${{ parameter.name|raw }}
+            {%- if parameter.default is not null %} = {{ parameter.default }}{% endif %}
+            {%- if not loop.last %}, {% endif %}
+        {%- endfor -%}
+    )
+{%- endmacro %}
+
+{% macro function_parameters_signature(method) -%}
+    {%- from "macros.twig" import hint_link -%}
+    (
+        {%- for parameter in method.parameters %}
+            {%- if parameter.hashint %}{{ hint_link(parameter.hint, parameter.isIntersectionType()) }} {% endif -%}
+            {%- if parameter.variadic %}...{% endif %}${{ parameter.name|raw }}
+            {%- if parameter.default is not null %} = {{ parameter.default }}{% endif %}
+            {%- if not loop.last %}, {% endif %}
+        {%- endfor -%}
+    )
+{%- endmacro %}
+
+{% macro render_classes(classes) -%}
+    {% from _self import class_link, deprecated %}
+
+    <div class="container-fluid underlined">
+        {% for class in classes %}
+            <div class="row">
+                <div class="col-md-6">
+                    {% if class.isInterface %}
+                        <em>{{- class_link(class, true) -}}</em>
+                    {% else %}
+                        {{- class_link(class, true) -}}
+                    {% endif %}
+                    {{- deprecated(class) -}}
+                </div>
+                <div class="col-md-6">
+                    {{- class.shortdesc|desc(class)|md_to_html -}}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{%- endmacro %}
+
+{% macro breadcrumbs(namespace) %}
+    {% set current_ns = '' %}
+    {% for ns in namespace|split('\\') %}
+        {%- if current_ns -%}
+            {% set current_ns = current_ns ~ '\\' ~ ns %}
+        {%- else -%}
+            {% set current_ns = ns %}
+        {%- endif -%}
+        <li><a href="{{ namespace_path(current_ns) }}">{{ ns|raw }}</a></li><li class="backslash">\</li>
+    {%- endfor %}
+{% endmacro %}
+
+{% macro deprecated(reflection) %}
+    {% if reflection.deprecated %}<small><span class="label label-danger">{% trans 'deprecated' %}</span></small>{% endif %}
+{% endmacro %}
+
+{% macro deprecations(reflection) %}
+    {% from _self import deprecated %}
+
+    {% if reflection.deprecated %}
+        <p>
+            {{ deprecated(reflection )}}
+            {% for tag in reflection.deprecated %}
+                <tr>
+                    <td>{{ tag[0]|raw }}</td>
+                    <td>{{ tag[1:]|join(' ')|raw }}</td>
+                </tr>
+            {% endfor %}
+        </p>
+    {% endif %}
+{% endmacro %}
+
+{% macro internals(reflection) %}
+    {% if reflection.isInternal() %}
+        {% for internalTag in reflection.getInternal() %}
+        <table>
+            <tr>
+                <td><span class="label label-warning">{% trans 'internal' %}</span></td>
+                <td>&nbsp;{{ internalTag[0]|raw }} {{ internalTag[1:]|join(' ')|raw }}</td>
+            </tr>
+        </table>
+        {% endfor %}
+        &nbsp;
+    {% endif %}
+{% endmacro %}
+
+{% macro categories(reflection) %}
+    {% if reflection.hasCategories() %}
+        <p>
+            {% for categoryTag in reflection.getCategories() %}
+                {% for category in categoryTag %}
+                    <span class="label label-default">{{ category }}</span>
+                {% endfor %}
+            {% endfor %}
+        </p>
+    {% endif %}
+{% endmacro %}
+
+{% macro todo(reflection) %}
+        {% if project.config('insert_todos') == true %}
+            {% if reflection.todo %}<small><span class="label label-info">{% trans 'todo' %}</span></small>{% endif %}
+        {% endif %}
+{% endmacro %}
+
+{% macro todos(reflection) %}
+        {% from _self import todo %}
+
+        {% if reflection.todo %}
+            <p>
+                {{ todo(reflection )}}
+                {% for tag in reflection.todo %}
+                    <tr>
+                        <td>{{ tag[0]|raw }}</td>
+                        <td>{{ tag[1:]|join(' ')|raw }}</td>
+                        </tr>
+                {% endfor %}
+            </p>
+        {% endif %}
+{% endmacro %}

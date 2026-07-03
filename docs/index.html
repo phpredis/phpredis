@@ -5,7 +5,7 @@
     <meta name="robots" content="index, follow, all" />
     <title>All Classes | PhpRedis API</title>
 
-            <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+                <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css">
         <link rel="stylesheet" type="text/css" href="css/doctum.css">
         <link rel="stylesheet" type="text/css" href="fonts/doctum-font.css">
@@ -16,11 +16,400 @@
         <meta name="MobileOptimized" content="width">
         <meta name="HandheldFriendly" content="true">
         <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+    <link rel="stylesheet" type="text/css" href="css/highlight-github.min.css">
+    <script defer src="js/highlight.min.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+            if (!window.hljs) {
+                return;
+            }
+
+            function ensureCustomClassesAreBuiltIn() {
+                var classesToAdd = ['Redis', 'RedisCluster', 'RedisArray'];
+
+                if (!hljs.getLanguage) {
+                    return;
+                }
+
+                var phpLanguage = hljs.getLanguage('php');
+                if (!phpLanguage || !phpLanguage.keywords) {
+                    return;
+                }
+
+                var builtIns = phpLanguage.keywords.built_in;
+                if (!builtIns) {
+                    phpLanguage.keywords.built_in = classesToAdd.join(' ');
+                    return;
+                }
+
+                if (Array.isArray(builtIns)) {
+                    classesToAdd.forEach(function (className) {
+                        if (builtIns.indexOf(className) === -1) {
+                            builtIns.push(className);
+                        }
+                    });
+                    return;
+                }
+
+                if (typeof builtIns === 'string') {
+                    classesToAdd.forEach(function (className) {
+                        if (builtIns.indexOf(className) === -1) {
+                            builtIns += ' ' + className;
+                        }
+                    });
+                    phpLanguage.keywords.built_in = builtIns;
+                }
+            }
+
+            function collectLinkMetadata(container, typeText) {
+                var anchors = container.querySelectorAll('a');
+                var lastIndex = 0;
+                var meta = [];
+
+                for (var i = 0; i < anchors.length; i++) {
+                    var anchor = anchors[i];
+                    var text = anchor.textContent.trim();
+                    if (!text) {
+                        continue;
+                    }
+
+                    var href = anchor.getAttribute('href');
+                    var start = typeText.indexOf(text, lastIndex);
+
+                    if (start === -1) {
+                        start = typeText.indexOf(text);
+                        if (start === -1) {
+                            continue;
+                        }
+                    }
+
+                    meta.push({
+                        start: start,
+                        end: start + text.length,
+                        href: href
+                    });
+
+                    lastIndex = start + text.length;
+                }
+
+                return meta;
+            }
+
+            function findTextPosition(container, targetIndex) {
+                var walker = document.createTreeWalker(
+                    container,
+                    NodeFilter.SHOW_TEXT,
+                    null
+                );
+
+                var currentIndex = 0;
+                var currentNode;
+
+                while ((currentNode = walker.nextNode())) {
+                    var nextIndex = currentIndex + currentNode.textContent.length;
+
+                    if (targetIndex <= nextIndex) {
+                        return {
+                            node: currentNode,
+                            offset: targetIndex - currentIndex
+                        };
+                    }
+
+                    currentIndex = nextIndex;
+                }
+
+                return null;
+            }
+
+            function restoreLinks(codeElement, meta) {
+                var sorted = meta.slice().sort(function (a, b) {
+                    return b.start - a.start;
+                });
+
+                for (var i = 0; i < sorted.length; i++) {
+                    var info = sorted[i];
+                    var startPos = findTextPosition(codeElement, info.start);
+                    var endPos = findTextPosition(codeElement, info.end);
+
+                    if (!startPos || !endPos) {
+                        continue;
+                    }
+
+                    var range = document.createRange();
+                    range.setStart(startPos.node, startPos.offset);
+                    range.setEnd(endPos.node, endPos.offset);
+
+                    var anchor = document.createElement('a');
+                    anchor.setAttribute('href', info.href);
+                    anchor.appendChild(range.extractContents());
+                    range.insertNode(anchor);
+                    range.detach();
+                }
+            }
+
+            function highlightAndRestore(codeElement, metadata) {
+                hljs.highlightElement(codeElement);
+
+                if (metadata && metadata.length) {
+                    restoreLinks(codeElement, metadata);
+                }
+            }
+
+            ensureCustomClassesAreBuiltIn();
+
+            var exampleBlocks = document.querySelectorAll('pre.examples');
+            exampleBlocks.forEach(function (block) {
+                if (!block.dataset.language) {
+                    block.dataset.language = 'php';
+                }
+                block.classList.add('language-php');
+                hljs.highlightElement(block);
+            });
+
+            var signatureBlocks = document.querySelectorAll('code.method-signature');
+            signatureBlocks.forEach(function (block) {
+                if (!block.classList.contains('language-php')) {
+                    block.classList.add('language-php');
+                }
+                hljs.highlightElement(block);
+            });
+
+            var phpCodeBlocks = document.querySelectorAll('pre code.language-php');
+            phpCodeBlocks.forEach(function (block) {
+                if (block.classList.contains('method-signature')) {
+                    return;
+                }
+
+                if (block.closest('pre.examples')) {
+                    return;
+                }
+
+                if (block.parentElement && !block.parentElement.classList.contains('language-php')) {
+                    block.parentElement.classList.add('language-php');
+                }
+
+                hljs.highlightElement(block);
+            });
+
+            highlightReturnTypes();
+            highlightMethodParameters();
+            highlightApiIndex();
+
+            function highlightReturnTypes() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var containers = document.querySelectorAll('.return-value-content');
+                containers.forEach(function (container) {
+                    var table = container.querySelector('table');
+                    if (!table) {
+                        return;
+                    }
+
+                    table.querySelectorAll('tr').forEach(function (row) {
+                        var typeCell = row.querySelector('td');
+                        if (!typeCell || typeCell.querySelector('code.return-type')) {
+                            return;
+                        }
+
+                        var typeText = typeCell.textContent.trim();
+                        if (!typeText) {
+                            return;
+                        }
+
+                        var linkMeta = collectLinkMetadata(typeCell, typeText);
+                        var code = document.createElement('code');
+                        code.className = 'return-type language-php';
+                        code.textContent = typeText;
+
+                        typeCell.innerHTML = '';
+                        typeCell.appendChild(code);
+
+                        highlightAndRestore(code, linkMeta);
+                    });
+                });
+            }
+
+            function highlightMethodParameters() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var headings = document.querySelectorAll('.tags > h4');
+                headings.forEach(function (heading) {
+                    if (!heading.textContent || heading.textContent.trim() !== 'Parameters') {
+                        return;
+                    }
+
+                    var table = heading.nextElementSibling;
+                    while (table && table.tagName !== 'TABLE') {
+                        table = table.nextElementSibling;
+                    }
+
+                    if (!table) {
+                        return;
+                    }
+
+                    table.querySelectorAll('tr').forEach(function (row) {
+                        var cells = row.querySelectorAll('td');
+                        if (!cells.length) {
+                            return;
+                        }
+
+                        enhanceParameterCell(cells[0], 'parameter-type');
+
+                        if (cells.length > 1) {
+                            enhanceParameterCell(cells[1], 'parameter-name');
+                        }
+                    });
+                });
+
+                function enhanceParameterCell(cell, className) {
+                    if (!cell || cell.querySelector('code.' + className)) {
+                        return;
+                    }
+
+                    var cellText = cell.textContent.trim();
+                    if (!cellText) {
+                        return;
+                    }
+
+                    var meta = collectLinkMetadata(cell, cellText);
+                    var code = document.createElement('code');
+                    code.className = className + ' language-php';
+                    code.textContent = cellText;
+
+                    cell.innerHTML = '';
+                    cell.appendChild(code);
+
+                    highlightAndRestore(code, meta);
+                }
+            }
+
+            function highlightApiIndex() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var potentialContainers = document.querySelectorAll('.container-fluid.underlined');
+                var containers = [];
+                var anchorSelector = '.row .col-md-8 > a[href^="#method_"]';
+
+                for (var i = 0; i < potentialContainers.length; i++) {
+                    var candidate = potentialContainers[i];
+                    if (!candidate.querySelector(anchorSelector)) {
+                        continue;
+                    }
+
+                    var heading = candidate.previousElementSibling;
+                    if (heading && heading.tagName === 'H2' && heading.textContent && heading.textContent.trim() === 'Methods') {
+                        containers.push(candidate);
+                    }
+                }
+
+                if (!containers.length) {
+                    return;
+                }
+
+                for (var j = 0; j < containers.length; j++) {
+                    var container = containers[j];
+                    var rows = container.querySelectorAll('.row');
+
+                    for (var k = 0; k < rows.length; k++) {
+                        var row = rows[k];
+                        enhanceTypeCell(row.querySelector('.col-md-2.type'));
+                        enhanceSignatureCell(row.querySelector('.col-md-8'));
+                    }
+                }
+
+                function enhanceTypeCell(typeCell) {
+                    if (!typeCell || typeCell.querySelector('code.method-index-type')) {
+                        return;
+                    }
+
+                    var typeText = typeCell.textContent.trim();
+                    if (!typeText) {
+                        return;
+                    }
+
+                    var meta = collectLinkMetadata(typeCell, typeText);
+
+                    var code = document.createElement('code');
+                    code.className = 'method-index-type language-php';
+                    code.textContent = typeText;
+
+                    typeCell.innerHTML = '';
+                    typeCell.appendChild(code);
+
+                    highlightAndRestore(code, meta);
+                }
+
+                function enhanceSignatureCell(signatureCell) {
+                    if (!signatureCell || signatureCell.querySelector('code.method-index-signature')) {
+                        return;
+                    }
+
+                    var descriptionStart = null;
+                    for (var i = 0; i < signatureCell.children.length; i++) {
+                        var child = signatureCell.children[i];
+                        if (child.tagName === 'P') {
+                            descriptionStart = child;
+                            break;
+                        }
+                    }
+
+                    var nodesToProcess = [];
+                    var current = signatureCell.firstChild;
+                    while (current && current !== descriptionStart) {
+                        nodesToProcess.push(current);
+                        current = current.nextSibling;
+                    }
+
+                    if (!nodesToProcess.length) {
+                        return;
+                    }
+
+                    var signatureText = '';
+                    for (var j = 0; j < nodesToProcess.length; j++) {
+                        signatureText += nodesToProcess[j].textContent || '';
+                    }
+                    signatureText = signatureText.replace(/\s+/g, ' ').trim();
+
+                    if (!signatureText) {
+                        return;
+                    }
+
+                    var tempWrapper = document.createElement('div');
+                    for (var k = 0; k < nodesToProcess.length; k++) {
+                        tempWrapper.appendChild(nodesToProcess[k].cloneNode(true));
+                    }
+
+                    var meta = collectLinkMetadata(tempWrapper, signatureText);
+
+                    for (var l = 0; l < nodesToProcess.length; l++) {
+                        if (nodesToProcess[l].parentNode === signatureCell) {
+                            signatureCell.removeChild(nodesToProcess[l]);
+                        }
+                    }
+
+                    var code = document.createElement('code');
+                    code.className = 'method-index-signature language-php';
+                    code.textContent = signatureText;
+
+                    signatureCell.insertBefore(code, descriptionStart);
+
+                    highlightAndRestore(code, meta);
+                }
+            }
+        });
+    </script>
+
 
         <link rel="search"
           type="application/opensearchdescription+xml"
           href="https://phpredis.github.io/opensearch.xml"
-          title="PhpRedis API (main)" />
+          title="PhpRedis API (develop)" />
     </head>
 
     <body id="index" data-name="" data-root-path="" data-search-index-url="doctum-search.json">

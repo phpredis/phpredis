@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: ddb92422452cb767a7d6694aa8ac60d883db6672 */
+ * Stub hash: 1293a0ccef1e700da87d9ace76c3a05d91c0ffc7 */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisArray___call, 0, 2, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, function_name, IS_STRING, 0)
@@ -109,7 +109,6 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisArray_zscan arginfo_class_RedisArray_hscan
 
-
 ZEND_METHOD(RedisArray, __call);
 ZEND_METHOD(RedisArray, __construct);
 ZEND_METHOD(RedisArray, _continuum);
@@ -141,7 +140,6 @@ ZEND_METHOD(RedisArray, sscan);
 ZEND_METHOD(RedisArray, unlink);
 ZEND_METHOD(RedisArray, unwatch);
 ZEND_METHOD(RedisArray, zscan);
-
 
 static const zend_function_entry class_RedisArray_methods[] = {
 	ZEND_ME(RedisArray, __call, arginfo_class_RedisArray___call, ZEND_ACC_PUBLIC)
@@ -183,7 +181,11 @@ static zend_class_entry *register_class_RedisArray(void)
 	zend_class_entry ce, *class_entry;
 
 	INIT_CLASS_ENTRY(ce, "RedisArray", class_RedisArray_methods);
+#if (PHP_VERSION_ID >= 80400)
+	class_entry = zend_register_internal_class_with_flags(&ce, NULL, 0);
+#else
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#endif
 
 	return class_entry;
 }

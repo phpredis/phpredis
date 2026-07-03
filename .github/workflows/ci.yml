@@ -186,13 +186,25 @@ jobs:
 
       - name: Wait for ${{ matrix.server }} instances
         run: |
+          WAIT_TIMEOUT_SECONDS=30
+
           for PORT in {6379..6382} {7000..7005} {32767..32768} {26379..26380}; do
+            START_TIME=$SECONDS
             until echo PING | ${{ matrix.server }}-cli -p "$PORT" 2>&1 | grep -qE 'PONG|NOAUTH'; do
+              if (( SECONDS - START_TIME >= WAIT_TIMEOUT_SECONDS )); then
+                echo "Timed out waiting for ${{ matrix.server }} on port $PORT after ${WAIT_TIMEOUT_SECONDS}s"
+                exit 1
+              fi
               echo "Still waiting for ${{ matrix.server }} on port $PORT"
               sleep .5
             done
           done
+          START_TIME=$SECONDS
           until echo PING | ${{ matrix.server }}-cli -s /tmp/redis.sock 2>&1 | grep -qE 'PONG|NOAUTH'; do
+            if (( SECONDS - START_TIME >= WAIT_TIMEOUT_SECONDS )); then
+              echo "Timed out waiting for ${{ matrix.server }} at /tmp/redis.sock after ${WAIT_TIMEOUT_SECONDS}s"
+              exit 1
+            fi
             echo "Still waiting for ${{ matrix.server }} at /tmp/redis.sock"
             sleep .5
           done
@@ -231,7 +243,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -253,49 +265,34 @@ jobs:
           phpize
           ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
           sudo make install
+          sudo mkdir -p "$(php-config --ini-dir)"
           echo 'extension = redis.so' | sudo tee -a "$(php-config --ini-dir)/90-redis.ini"
 
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     continue-on-error: false
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4']
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         ts: [nts, ts]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
-      - name: Install PHP ${{ matrix.php }}
-        uses: php/setup-php-sdk@v0.10
-        id: setup-php-sdk
-        with:
-          version: ${{ matrix.php }}
-          arch: x64
-          ts: ${{matrix.ts}}
-          cache: true
-      - name: Install dependencies
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-          toolset: ${{steps.setup-php-sdk.outputs.toolset}}
       - name: Build phpredis
-        run: |
-          phpize
-          ./configure --enable-redis --with-prefix=${{steps.setup-php-sdk.outputs.prefix}}
-          nmake
-      - name: package
-        run: |
-          md binaries
-          copy LICENSE binaries
-          Get-ChildItem -Recurse -Filter "php_redis.dll" | ForEach-Object {Copy-Item -Path $_.FullName -Destination "binaries"}
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: php/php-windows-builder/extension@v1
         with:
-          name: redis-${{matrix.php}}-x64-${{matrix.ts}}
-          path: binaries
+          arch: x64
+          php-version: ${{ matrix.php }}
+          ts: ${{ matrix.ts }}
+          run-tests: false
+          # The builder embeds the ref in the build-log/artifact filename without
+          # sanitizing it. A branch like "fix/foo" turns the "/" into a path
+          # separator on Windows and the build fails. Pass the commit SHA so the
+          # name is always slash-free.
+          extension-ref: ${{ github.sha }}
 
   pecl:
     runs-on: ubuntu-latest

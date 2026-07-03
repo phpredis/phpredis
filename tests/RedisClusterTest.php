@@ -47,6 +47,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSwapDB() { $this->markTestSkipped(); }
     public function testConnectException() { $this->markTestSkipped(); }
     public function testTlsConnect() { $this->markTestSkipped(); }
+    public function testTlsReconnect() { $this->markTestSkipped(); }
     public function testReset() { $this->markTestSkipped(); }
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
@@ -70,6 +71,40 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession_defaultLockRetryCount() { $this->markTestSkipped(); }
     public function testSession_noUnlockOfOtherProcess() { $this->markTestSkipped(); }
     public function testSession_lockWaitTime() { $this->markTestSkipped(); }
+
+    /* Regression test for GH #2810 */
+    public function testConstructNullSeeds() {
+        /* new RedisCluster(null, null) must not throw TypeError.
+         * $seeds is declared ?array so null is a valid argument. */
+        $thrown = false;
+        try {
+            new RedisCluster(null, null);
+        } catch (\Throwable $e) {
+            $thrown = true;
+            $this->assertFalse($e instanceof \TypeError);
+        }
+        $this->assertTrue($thrown);
+
+        /* Passing an empty array must also not throw TypeError (control). */
+        $thrown = false;
+        try {
+            new RedisCluster(null, []);
+        } catch (\Throwable $e) {
+            $thrown = true;
+            $this->assertFalse($e instanceof \TypeError);
+        }
+        $this->assertTrue($thrown);
+
+        /* Both (null) and (null, null) mean "no name, no seeds" and must
+         * produce the same exception type. */
+        $ex1 = $ex2 = null;
+        try { new RedisCluster(null); }
+        catch (\Throwable $e) { $ex1 = get_class($e); }
+        try { new RedisCluster(null, null); }
+        catch (\Throwable $e) { $ex2 = get_class($e); }
+        $this->assertTrue($ex1 !== null);
+        $this->assertEquals($ex1, $ex2);
+    }
 
     private function loadSeedsFromHostPort($host, $port) {
         try {
@@ -126,8 +161,8 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     /* Load our seeds on construction */
-    public function __construct($host, $port, $auth) {
-        parent::__construct($host, $port, $auth);
+    public function __construct($host, $port, $auth, $tls_port = 6378) {
+        parent::__construct($host, $port, $auth, $tls_port);
 
         self::$seeds = $this->loadSeeds($host, $port);
     }

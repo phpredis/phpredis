@@ -31,11 +31,11 @@ class Redis_Test extends TestSuite {
         $result = [Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP];
 
         if (defined('Redis::SERIALIZER_IGBINARY'))
-            $result[] = Redis::SERIALIZER_IGBINARY;
+            $result['igbinary'] = Redis::SERIALIZER_IGBINARY;
         if (defined('Redis::SERIALIZER_JSON'))
-            $result[] = Redis::SERIALIZER_JSON;
+            $result['json'] = Redis::SERIALIZER_JSON;
         if (defined('Redis::SERIALIZER_MSGPACK'))
-            $result[] = Redis::SERIALIZER_MSGPACK;
+            $result['msgpack'] = Redis::SERIALIZER_MSGPACK;
 
         return $result;
     }
@@ -61,23 +61,28 @@ class Redis_Test extends TestSuite {
         return Redis::RIGHT;
     }
 
-    protected function detectKeyDB(array $info) {
+    protected function detectKeyDB($info) {
+        if (!is_array($info))
+            return false;
+
         return strpos($info['executable'] ?? '', 'keydb') !== false ||
-               isset($info['keydb']) ||
-               isset($info['mvcc_depth']);
+               isset($info['keydb']) || isset($info['mvcc_depth']);
     }
 
-    protected function detectValkey(array $info) {
-        return isset($info['server_name']) && $info['server_name'] === 'valkey';
+    protected function detectValkey($info) {
+        return is_array($info) && ($info['executable'] ?? '') === 'valkey';
     }
 
     public function setUp() {
         $this->redis = $this->newInstance();
+
         $info = $this->redis->info();
-        $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
+
+        $this->version = $info['redis_version'] ?? '0.0.0';
+        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
+
         $this->is_keydb = $this->detectKeyDB($info);
         $this->is_valkey = $this->detectValKey($info);
-        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
     }
 
     protected function haveCommand(string $cmd): bool {
@@ -1010,17 +1015,14 @@ class Redis_Test extends TestSuite {
         /* Add multiple keys */
         $mkeys = [];
         for ($i = 0; $i < 10; $i++) {
-            if (rand(1, 2) == 1) {
-                $mkey = "{exists}key:$i";
-                $this->redis->set($mkey, $i);
-                $mkeys[] = $mkey;
-            }
+            $mkey = "{exists}key:$i";
+            $this->redis->set($mkey, $i);
+            $mkeys[] = $mkey;
         }
 
         /* Test passing an array as well as the keys variadic */
         $this->assertEquals(count($mkeys), $this->redis->exists($mkeys));
-        if (count($mkeys))
-            $this->assertEquals(count($mkeys), $this->redis->exists(...$mkeys));
+        $this->assertEquals(count($mkeys), $this->redis->exists(...$mkeys));
     }
 
     public function testTouch() {
@@ -2593,6 +2595,61 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
+    public function testMSetEx() {
+        if ( ! $this->haveCommand('MSETEX'))
+            $this->markTestSkipped();
+
+        $kvals = ['{msetex}:1' => 'v1', '{msetex}:2' => 'v2'];
+        $keys  = array_keys($kvals);
+
+        // No options, same as MSET
+        $this->redis->del($keys);
+        $ret = $this->redis->msetex($kvals);
+        $this->assertEquals(1, $ret);
+        $this->assertGT(0, $ret);
+        $this->assertEquals(array_values($kvals), $this->redis->mget($keys));
+        foreach ($keys as $key) {
+            $this->assertEquals(-1, $this->redis->ttl($key));
+        }
+
+        $options = [
+            ['EX', 100, 'TTL'],
+            ['PX', 100000, 'PTTL'],
+            ['EXAT', time() + 100, 'EXPIRETIME'],
+            ['PXAT', $this->mstime() + 100000, 'PEXPIRETIME']
+        ];
+
+        foreach ($options as [$opt, $val, $desc]) {
+            $this->assertIsInt($this->redis->del($keys));
+            $this->redis->msetex($kvals, [$opt => $val]);
+            foreach ($keys as $key) {
+                /* Timiing tests on GitHub CI are atrocious so we just
+                   want to verify that >= 1 and <= $val */
+                $ttl = $this->redis->$desc($key);
+                $this->assertBetween($val, 1, $ttl + 1);
+            }
+        }
+
+        /* KEEPTTL */
+        $this->redis->set('{kt}:1', 'v1', 100);
+        $this->assertEquals(1, $this->redis->msetex(['{kt}:1' => 'v2'],
+                                                    ['KEEPTTL']));
+        $this->assertBetween($this->redis->ttl('{kt}:1'), 1, 100);
+
+        $keys = ['{xxnx}:1' => '1', '{xxnx}:2' => '2'];
+        $this->assertTrue($this->redis->mset($keys));
+
+        /* XX: Only set if they all already exist */
+        $this->assertEquals(1, $this->redis->msetex($keys, ['XX']));
+        $this->assertEquals(1, $this->redis->del(array_rand($keys)));
+        $this->assertEquals(0, $this->redis->msetex($keys, ['XX']));
+
+        /* NX: Only if none exist. Right now one does */
+        $this->assertEquals(0, $this->redis->msetex($keys, ['NX']));
+        $this->assertGT(0, $this->redis->del(array_keys($keys)));
+        $this->assertEquals(1, $this->redis->msetex($keys, ['NX']));
+    }
+
     public function testMsetNX() {
         $this->redis->del('x', 'y', 'z');    // remove x y z
         $this->assertTrue($this->redis->msetnx(['x' => 'a', 'y' => 'b', 'z' => 'c']));    // set x y z
@@ -3014,6 +3071,23 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(0, $this->redis->zRevRank('z', 'five'));
     }
 
+    /* Regression for GitHub issue #2791 */
+    public function testZSetSerialization() {
+        $this->redis->del('zs_f', 'zs_a');
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+        $this->redis->zAdd('zs_f', 3.14, 3.14);
+        $this->redis->zAdd('zs_a', 1, ['foo', 'bar']);
+
+        $res_float = $this->redis->zRange('zs_f', 0, -1, true);
+        $this->assertEquals(['3.14' => 3.14], $res_float);
+
+        $res_array = @$this->redis->zRange('zs_a', 0, -1, true);
+        $this->assertEquals(['Array' => 1.0], $res_array);
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+    }
+
     public function testZRangeScoreArg() {
         $this->redis->del('{z}');
 
@@ -3411,6 +3485,37 @@ class Redis_Test extends TestSuite {
 
         // The keys from our local variable and res should be equal
         $this->assertEqualsCanonicalizing(array_keys($hash), array_keys($res));
+    }
+
+    /* Regression test for GitHub issue 2795 / PR 2796 */
+    public function testNumericStringEncoding() {
+        $fields = [
+            '0001', '0010', '-0005', '+0005', '1e3', '1E+3', '1e-3', '-1E-3',
+            '+1.5e2', '-2.25E+4', '0001e-2',
+        ];
+
+        $hashKey = 'hash:numeric-strings';
+        $this->assertIsInt($this->redis->del($hashKey));
+
+        $payload = [];
+        foreach ($fields as $index => $field) {
+            $payload[$field] = "value-{$index}";
+        }
+
+        $this->assertTrue($this->redis->hMset($hashKey, $payload));
+
+        $hmget = $this->redis->hMget($hashKey, $fields);
+        $this->assertEquals($payload, $hmget);
+
+        foreach ($payload as $key => $value) {
+            $this->assertTrue($this->redis->mset([$key => $value]));
+            $this->assertEquals([$value], $this->redis->mget([$key]));
+        }
+
+        $this->redis->del($hashKey);
+        if ($payload !== []) {
+            $this->redis->del(...array_keys($payload));
+        }
     }
 
     public function testHRandField() {
@@ -5471,13 +5576,49 @@ class Redis_Test extends TestSuite {
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 9);
     }
 
-
     public function testCompressionLZ4() {
         if ( ! defined('Redis::COMPRESSION_LZ4'))
             $this->markTestSkipped();
 
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_LZ4);
+        $payload = $this->lz4PayloadWithDeclaredLength('LEAK_ME!', 4096);
+        $this->assertThrowsMatch($payload, function ($payload) {
+            $this->redis->_uncompress($payload);
+        }, '/Invalid compressed data or uncompression error/');
+
         $this->checkCompression(Redis::COMPRESSION_LZ4, 0);
         $this->checkCompression(Redis::COMPRESSION_LZ4, 9);
+    }
+
+    private function lz4PayloadWithDeclaredLength($value, $declared_len) {
+        $len = strlen($value);
+        $lz4 = chr(min($len, 15) << 4);
+
+        if ($len >= 15) {
+            $extra = $len - 15;
+            while ($extra >= 255) {
+                $lz4 .= "\xff";
+                $extra -= 255;
+            }
+            $lz4 .= chr($extra);
+        }
+
+        $declared = pack('V', $declared_len);
+
+        return chr($this->crc8($declared)) . $declared . $lz4 . $value;
+    }
+
+    private function crc8($value) {
+        $crc = 0xff;
+
+        for ($i = 0; $i < strlen($value); $i++) {
+            $crc ^= ord($value[$i]);
+            for ($j = 0; $j < 8; $j++) {
+                $crc = $crc & 0x80 ? (($crc << 1) ^ 0x31) & 0xff : ($crc << 1) & 0xff;
+            }
+        }
+
+        return $crc;
     }
 
     private function checkCompression($mode, $level) {
@@ -5891,9 +6032,9 @@ class Redis_Test extends TestSuite {
             $this->redis->getOption(Redis::OPT_COMPRESSION)
         ];
 
-        foreach ($this->getSerializers() as $ser) {
+        foreach ($this->getSerializers() as $ser_name => $ser) {
             $compressors = $this->getCompressors();
-            foreach ($compressors as $cmp) {
+            foreach ($compressors as $cmp_name => $cmp) {
                 $this->redis->setOption(Redis::OPT_SERIALIZER, $ser);
                 $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
 
@@ -5911,10 +6052,12 @@ class Redis_Test extends TestSuite {
                     $this->redis->setOption(Redis::OPT_SERIALIZER, $ser);
                     $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
 
-                    $this->assertEquals($raw, $this->redis->_pack($v));
+                    $this->assertEquals($raw, $this->redis->_pack($v),
+                                        "{$ser_name} + {$cmp_name}");
 
                     $unpacked = $this->redis->get('packkey');
-		    $this->assertEquals($unpacked, $this->redis->_unpack($raw));
+                    $this->assertEquals($unpacked, $this->redis->_unpack($raw),
+                                        "{$ser_name} + {$cmp_name}");
 		}
 	    }
         }
@@ -7468,6 +7611,27 @@ class Redis_Test extends TestSuite {
         $this->assertFalse(@$this->redis->xDel('s', []));
     }
 
+    public function testXDelex() {
+        if ( ! $this->haveCommand('XDELEX'))
+            $this->markTestSkipped();
+
+        $stream = 'xdelex-stream';
+        $missing = '9999999999999-0';
+        $modes = [NULL, 'KEEPREF', 'DELREF', 'ACKED'];
+
+        foreach ($modes as $mode) {
+            $ids = $this->addStreamEntries($stream, 2);
+            $targets = [$ids[0], $missing];
+
+            $response = $mode === NULL
+                ? $this->redis->xdelex($stream, $targets)
+                : $this->redis->xdelex($stream, $targets, $mode);
+
+            $this->assertIsArray($response, 2);
+            $this->assertEquals([1, -1], array_values($response));
+        }
+    }
+
     public function testXTrim() {
         if ( ! $this->minVersionCheck('5.0'))
             $this->markTestSkipped();
@@ -7992,6 +8156,23 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(3, count($res));
     }
 
+    public function testGcra() {
+        if ( ! $this->haveCommand('GCRA'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('gcra'));
+
+        $res = $this->redis->gcra('gcra', 5, 1, 1000);
+        $this->assertIsArray($res);
+        $this->assertEquals(5, count($res));
+        $this->assertEquals(5, count(array_filter($res, 'is_int')));
+
+        $res = $this->redis->gcra('gcra', 5, 1, 1000, 5);
+        $this->assertIsArray($res);
+        $this->assertEquals(5, count($res));
+        $this->assertEquals(5, count(array_filter($res, 'is_int')));
+    }
+
     public function testInvalidAuthArgs() {
         $client = $this->newInstance();
 
@@ -8495,15 +8676,45 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    /* Regression test for GitHub PR #2802). Make sure we don't leak the
+     * context array when explicitly reconnecting in a loop */
+    public function testTlsReconnect() {
+        $tls_port = $this->getTlsPort();
+        if (($fp = @fsockopen($this->getHost(), $tls_port)) == NULL)
+            $this->markTestSkipped();
+
+        fclose($fp);
+
+        $redis = new Redis;
+
+        $context = ['stream' => [
+            'verify_peer_name' => false,
+            'verify_peer' => false,
+        ]];
+
+        $base = memory_get_usage(true);
+
+        for ($i = 0; $i < 20; $i++) {
+            $redis->connect('tls://' . $this->getHost(), $tls_port, 0, null, 0,
+                            0, $context);
+        }
+
+        $final = memory_get_usage(true);
+
+        $this->assertLTE(10000, $final - $base);
+    }
+
     public function testTlsConnect() {
-        if (($fp = @fsockopen($this->getHost(), 6378)) == NULL)
+        $tls_port = $this->getTlsPort();
+
+        if (($fp = @fsockopen($this->getHost(), $tls_port)) == NULL)
             $this->markTestSkipped();
 
         fclose($fp);
 
         foreach (['localhost' => true, '127.0.0.1' => false] as $host => $verify) {
             $redis = new Redis();
-            $this->assertTrue($redis->connect('tls://' . $host, 6378, 0, null, 0, 0, [
+            $this->assertTrue($redis->connect('tls://' . $host, $tls_port, 0, null, 0, 0, [
                 'stream' => ['verify_peer_name' => $verify, 'verify_peer' => false]
             ]));
         }
@@ -8554,6 +8765,13 @@ class Redis_Test extends TestSuite {
             $list = $this->redis->command('list', 'filterby', 'pattern', 'lol*');
             $this->assertIsArray($list);
             $this->assertEquals(['lolwut'], $list);
+
+            $keys_and_flags = $this->redis->command(
+                'getkeysandflags', 'MSET', 'key1', 'value1',
+            );
+            $this->assertEquals(
+                [['key1', ['OW', 'update']]], $keys_and_flags,
+            );
         }
     }
 
@@ -8678,6 +8896,79 @@ class Redis_Test extends TestSuite {
 
         $this->assertEquals($data, $runner->getData());
         $this->assertEquals(600, $this->redis->ttl($runner->getSessionKey()));
+    }
+
+    public function testDigest() {
+        if ( ! $this->haveCommand('DIGEST'))
+            $this->markTestSkipped();
+
+        $key = 'foo';
+        $val = 'bar';
+
+        $this->redis->set($key, $val);
+        $digest = $this->redis->digest($key);
+        $this->assertTrue(is_string($digest) && strlen($digest) == 16);
+
+        /* In PHP >= 8.1 we can verify the value */
+        if (PHP_VERSION_ID >= 80100) {
+            $this->assertEquals($this->redis->_digest($val), $digest);
+
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+            $this->assertTrue($this->redis->set($key, $val));
+            $this->assertEquals(
+                $this->redis->_digest($val),
+                $this->redis->digest($key)
+            );
+
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        } else {
+            /* Make sure we don't crash when XXH3 isn't available */
+            try {
+                $this->redis->_digest('foo');
+            } catch (Exception $ex) {
+
+            }
+        }
+    }
+
+    public function testDelEx() {
+        if ( ! $this->haveCommand('DELEX'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('captain'));
+        $this->assertTrue($this->redis->set('captain', 'picard'));
+
+        $this->assertEquals(0, $this->redis->delex('captain', ['ifeq' => 'not-picard']));
+        $this->assertEquals(0, $this->redis->delex('captain', ['ifne' => 'picard']));
+        $this->assertEquals(1, $this->redis->delex('captain', ['ifeq' => 'picard']));
+
+        $this->assertTrue($this->redis->set('captain', 'Sisko'));
+        $digest = $this->redis->digest('captain');
+        $this->assertEquals(0, $this->redis->delex('captain', ['ifdne' => $digest]));
+        $this->assertEquals(1, $this->redis->delex('captain', ['ifdeq' => $digest]));
+
+        $this->assertTrue($this->redis->set('captain', 'Janeway'));
+        $this->assertEquals(1, $this->redis->delex('captain'));
+
+        foreach ([[], null] as $arg) {
+            $this->assertTrue($this->redis->set('captain', 'Archer'));
+            $this->assertEquals(1, $this->redis->delex('captain', $arg));
+        }
+    }
+
+    public function testAnonymousClassSerializationFailure() {
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+        $obj = new class() {};
+
+        $this->assertThrowsMatch(null, function () use ($obj) {
+            $this->redis->set('payload', $obj);
+        }, "/Serialization of 'class@anonymous' is not allowed/");
+
+        /* Ensure extension remains stable after failure */
+        $this->assertTrue($this->redis->set('after_failure', 'ok'));
+        $this->assertEquals('ok', $this->redis->get('after_failure'));
     }
 }
 ?>
