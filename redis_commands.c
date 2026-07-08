@@ -3450,8 +3450,11 @@ int fill_sunioncard_options(sunioncardOptions *dst, HashTable *ht) {
     return SUCCESS;
 }
 
-/* SUNIONCARd */
-RedisCmd *redis_sunioncard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+/* SUNIONCARD/SDIFFCARD */
+static RedisCmd *
+gen_suniondiffcard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                       const char *kw, size_t kw_len, zend_bool has_approx)
+{
     HashTable *keys, *htopt = NULL;
     sunioncardOptions opt;
     RedisCmd *cmd;
@@ -3471,7 +3474,7 @@ RedisCmd *redis_sunioncard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
     if (fill_sunioncard_options(&opt, htopt) == FAILURE)
         return NULL;
 
-    cmd = redis_cmd_create_literal(redis_sock, "SUNIONCARD");
+    cmd = redis_cmd_create(redis_sock, kw, kw_len);
 
     redis_cmd_cat_long(cmd, zend_hash_num_elements(keys));
 
@@ -3484,9 +3487,21 @@ RedisCmd *redis_sunioncard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
         redis_cmd_cat_long(cmd, opt.limit);
     }
 
-    redis_cmd_cat_literal_if(cmd, opt.approx, "APPROX");
+    redis_cmd_cat_literal_if(cmd, has_approx && opt.approx, "APPROX");
 
     return cmd;
+}
+
+RedisCmd *
+redis_sunioncard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    return gen_suniondiffcard_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                      redis_sock, ZEND_STRL("SUNIONCARD"), 1);
+}
+
+RedisCmd *
+redis_sdiffcard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    return gen_suniondiffcard_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                      redis_sock, ZEND_STRL("SDIFFCARD"), 0);
 }
 
 /* HSET */
