@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6c7a87611b3bc9039650a3cf2e3c4d4f916611b0 */
+ * Stub hash: e62cede3638a062a2502ffdb38c3ff33ae1164c0 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -704,6 +704,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_sintercard, 0, 0, 1)
 	ZEND_ARG_INFO(0, limit)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_sunioncard, 0, 0, 1)
+	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_RedisCluster_sinterstore arginfo_class_RedisCluster_del
 
 #define arginfo_class_RedisCluster_sismember arginfo_class_RedisCluster_append
@@ -1034,10 +1039,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zunion arginfo_class_RedisCluster_zinter
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zdiff, 0, 0, 1)
-	ZEND_ARG_INFO(0, keys)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_zdiff arginfo_class_RedisCluster_sunioncard
 
 #define arginfo_class_RedisCluster_digest arginfo_class_RedisCluster__prefix
 
@@ -1219,6 +1221,7 @@ ZEND_METHOD(RedisCluster, setoption);
 ZEND_METHOD(RedisCluster, setrange);
 ZEND_METHOD(RedisCluster, sinter);
 ZEND_METHOD(RedisCluster, sintercard);
+ZEND_METHOD(RedisCluster, sunioncard);
 ZEND_METHOD(RedisCluster, sinterstore);
 ZEND_METHOD(RedisCluster, sismember);
 ZEND_METHOD(RedisCluster, smismember);
@@ -1483,6 +1486,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, setrange, arginfo_class_RedisCluster_setrange, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sinter, arginfo_class_RedisCluster_sinter, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sintercard, arginfo_class_RedisCluster_sintercard, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, sunioncard, arginfo_class_RedisCluster_sunioncard, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sinterstore, arginfo_class_RedisCluster_sinterstore, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sismember, arginfo_class_RedisCluster_sismember, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, smismember, arginfo_class_RedisCluster_smismember, ZEND_ACC_PUBLIC)
