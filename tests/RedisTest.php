@@ -2240,6 +2240,53 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(0, $count);
     }
 
+    public function testUnionCard() {
+        if ( ! $this->haveCommand('SUNIONCARD'))
+            $this->markTestSkipped();
+
+        $set_data = [
+            ['aardvark', 'dog', 'fish', 'squirrel', 'tiger'],
+            ['bear', 'coyote', 'fish', 'gorilla', 'dog']
+        ];
+
+        $ssets = [];
+
+        foreach ($set_data as $n => $values) {
+            $sset = "s{set}:$n";
+            $this->redis->del($sset);
+            $ssets[] = $sset;
+
+            foreach ($values as $value) {
+                $this->assertEquals(1, $this->redis->sAdd($sset, $value));
+            }
+        }
+
+        $exp = count(array_unique(array_merge(...$set_data)));
+
+        $this->assertEquals($exp, $this->redis->sunioncard($ssets));
+        $this->assertEquals($exp, $this->redis->sunioncard($ssets, null));
+        $this->assertEquals($exp, $this->redis->sunioncard($ssets, []));
+
+        $this->assertEquals(1, $this->redis->sunioncard($ssets, ['LIMIT' => 1]));
+        $this->assertEquals(2, $this->redis->sunioncard($ssets, ['LIMIT' => 2]));
+        $this->assertEquals($exp, $this->redis->sunioncard($ssets, ['LIMIT' => 0]));
+
+        $approx = $this->redis->sunioncard($ssets, ['APPROX']);
+        $this->assertIsInt($approx);
+        $this->assertTrue($approx >= 1);
+        $this->assertTrue($approx <= $exp);
+
+        $approx = $this->redis->sunioncard($ssets, ['LIMIT' => 2, 'APPROX']);
+        $this->assertIsInt($approx);
+        $this->assertTrue($approx >= 1);
+        $this->assertTrue($approx <= 2);
+
+        $this->assertFalse(@$this->redis->sunioncard($ssets, ['LIMIT' => -1]));
+        $this->assertFalse(@$this->redis->sunioncard([]));
+
+        $this->redis->del($ssets);
+    }
+
     public function testInterCard() {
         if (version_compare($this->version, '7.0.0') < 0)
             $this->markTestSkipped();

@@ -989,6 +989,11 @@ class RedisCluster {
     public function sintercard(array $keys, int $limit = -1): RedisCluster|int|false;
 
     /**
+     * @see \Redis::sUnionCard()
+     */
+    public function sunioncard(array $keys, ?array $options = null): RedisCluster|int|false;
+
+    /**
      * @see \Redis::sInterStore()
      */
     public function sinterstore(array|string $key, string ...$other_keys): RedisCluster|int|false;

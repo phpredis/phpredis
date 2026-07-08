@@ -3417,6 +3417,78 @@ RedisCmd *redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     return cmd;
 }
 
+typedef struct sunioncardOptions {
+    zend_long limit;
+    zend_bool approx;
+} sunioncardOptions;
+
+int fill_sunioncard_options(sunioncardOptions *dst, HashTable *ht) {
+    zend_string *key;
+    zend_long lval;
+    zval *zv;
+
+    memset(dst, 0, sizeof(*dst));
+    if (ht == NULL)
+        return SUCCESS;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        if (key != NULL) {
+            if (zend_string_equals_literal_ci(key, "LIMIT")) {
+                lval = zval_get_long(zv);
+                if (lval < 0) {
+                    php_error_docref(NULL, E_WARNING, "LIMIT must be >= 0");
+                    return FAILURE;
+                }
+
+                dst->limit = lval;
+            }
+        } else if (Z_TYPE_P(zv) == IS_STRING && zend_string_equals_literal_ci(Z_STR_P(zv), "APPROX")) {
+            dst->approx = 1;
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    return SUCCESS;
+}
+
+/* SUNIONCARd */
+RedisCmd *redis_sunioncard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    HashTable *keys, *htopt = NULL;
+    sunioncardOptions opt;
+    RedisCmd *cmd;
+    zval *zkey;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2) {
+        Z_PARAM_ARRAY_HT(keys)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(htopt)
+    } ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    if (zend_hash_num_elements(keys) == 0) {
+        php_error_docref(NULL, E_WARNING, "At least one key must be provided");
+        return NULL;
+    }
+
+    if (fill_sunioncard_options(&opt, htopt) == FAILURE)
+        return NULL;
+
+    cmd = redis_cmd_create_literal(redis_sock, "SUNIONCARD");
+
+    redis_cmd_cat_long(cmd, zend_hash_num_elements(keys));
+
+    ZEND_HASH_FOREACH_VAL(keys, zkey) {
+        redis_cmd_try_cat_key_zval(cmd, zkey);
+    } ZEND_HASH_FOREACH_END();
+
+    if (opt.limit > 0) {
+        redis_cmd_cat_literal(cmd, "LIMIT");
+        redis_cmd_cat_long(cmd, opt.limit);
+    }
+
+    redis_cmd_cat_literal_if(cmd, opt.approx, "APPROX");
+
+    return cmd;
+}
+
 /* HSET */
 RedisCmd *redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     int i, argc;

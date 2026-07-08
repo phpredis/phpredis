@@ -119,6 +119,7 @@ RedisCmd *redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 RedisCmd *redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_lpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_sunioncard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
