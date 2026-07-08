@@ -90,7 +90,7 @@ jobs:
           tools: none
       - name: Install system dependencies
         run: |
-          sudo apt-get update
+          sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install valgrind libzstd-dev liblz4-dev libssl-dev
 
       - name: Install Redis
@@ -103,7 +103,7 @@ jobs:
                sudo tee /etc/apt/sources.list.d/redis.list
           curl -fsSL "https://$REDIS_PPA_KEY" | \
                sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/redis.gpg
-          sudo apt-get update
+          sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install redis
 
       - name: Install KeyDB
@@ -115,7 +115,7 @@ jobs:
           echo "deb https://$KEYDB_PPA_URI $(lsb_release -sc) main" | \
                sudo tee /etc/apt/sources.list.d/keydb.list
           sudo wget -O /etc/apt/trusted.gpg.d/keydb.gpg "https://$KEYDB_PPA_KEY"
-          sudo apt-get update
+          sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install keydb
 
       - name: Install ValKey
