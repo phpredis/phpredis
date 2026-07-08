@@ -1795,6 +1795,7 @@ REDIS_METHOD(sortAscAlpha, redis_sort_asc_alpha_cmd, redis_read_variant_reply);
 REDIS_METHOD(sortDesc, redis_sort_desc_numeric_cmd, redis_read_variant_reply);
 REDIS_METHOD(sortDescAlpha, redis_sort_desc_alpha_cmd, redis_read_variant_reply);
 REDIS_METHOD(sunioncard, redis_sunioncard_cmd, redis_long_response);
+REDIS_METHOD(sdiffcard, redis_sdiffcard_cmd, redis_long_response);
 REDIS_METHOD(vadd, redis_vadd_cmd, redis_long_response);
 REDIS_METHOD(vemb, redis_vemb_cmd, redis_vemb_reply);
 REDIS_METHOD(vgetattr, redis_vgetattr_cmd, redis_vgetattr_reply);

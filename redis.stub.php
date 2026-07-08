@@ -3742,6 +3742,24 @@ class Redis {
     public function sunioncard(array $keys, ?array $options = null): Redis|int|false;
 
     /**
+     * Compute the difference of one or more sets and return the cardinality of the result.o
+     *
+     * @param array      $keys    One or more set key names.
+     * @param array|null $options An optional array of options that modifies how the command works
+     *
+     * @return Redis|int|false The cardinality of the difference of the sets.
+     *
+     * @see https://redis.io/docs/latest/commands/sdiffcard/
+     *
+     * @example
+     * $redis->sAdd('set1', 'apple', 'pear', 'banana
+     * $redis->sAdd('set2', 'apple',         'banana');
+     * $redis->sAdd('set3',          'pear', 'banana');
+     *
+     */
+    public function sdiffcard(array $keys, ?array $options = null): Redis|int|false;
+
+    /**
      * Perform the intersection of one or more Redis SETs, storing the result in a destination
      * key, rather than returning them.
      *

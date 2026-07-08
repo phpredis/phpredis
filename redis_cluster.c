@@ -1201,6 +1201,10 @@ PHP_METHOD(RedisCluster, sunioncard) {
     CLUSTER_PROCESS_CMD(sunioncard, cluster_long_resp, 0);
 }
 
+PHP_METHOD(RedisCluster, sdiffcard) {
+    CLUSTER_PROCESS_CMD(sdiffcard, cluster_long_resp, 0);
+}
+
 /* {{{ proto long RedisCluster::sunionstore(string dst, string k1, ... kN) */
 PHP_METHOD(RedisCluster, sunionstore) {
     CLUSTER_PROCESS_KW_CMD("SUNIONSTORE", redis_varkey_cmd, cluster_long_resp, 0);

@@ -2287,6 +2287,44 @@ class Redis_Test extends TestSuite {
         $this->redis->del($ssets);
     }
 
+    public function testDiffCard() {
+        if ( ! $this->haveCommand('SDIFFCARD'))
+            $this->markTestSkipped();
+
+        $set_data = [
+            ['aardvark', 'dog', 'fish', 'squirrel', 'tiger'],
+            ['bear', 'coyote', 'fish', 'gorilla', 'dog'],
+            ['coyote', 'squirrel']
+        ];
+
+        $ssets = [];
+
+        foreach ($set_data as $n => $values) {
+            $sset = "s{set}:$n";
+            $this->redis->del($sset);
+            $ssets[] = $sset;
+
+            foreach ($values as $value) {
+                $this->assertEquals(1, $this->redis->sAdd($sset, $value));
+            }
+        }
+
+        $exp = count(array_diff($set_data[0], ...array_slice($set_data, 1)));
+
+        $this->assertEquals($exp, $this->redis->sdiffcard($ssets));
+        $this->assertEquals($exp, $this->redis->sdiffcard($ssets, null));
+        $this->assertEquals($exp, $this->redis->sdiffcard($ssets, []));
+
+        $this->assertEquals(1, $this->redis->sdiffcard($ssets, ['LIMIT' => 1]));
+        $this->assertEquals(2, $this->redis->sdiffcard($ssets, ['LIMIT' => 2]));
+        $this->assertEquals($exp, $this->redis->sdiffcard($ssets, ['LIMIT' => 0]));
+
+        $this->assertFalse(@$this->redis->sdiffcard($ssets, ['LIMIT' => -1]));
+        $this->assertFalse(@$this->redis->sdiffcard([]));
+
+        $this->redis->del($ssets);
+    }
+
     public function testInterCard() {
         if (version_compare($this->version, '7.0.0') < 0)
             $this->markTestSkipped();
