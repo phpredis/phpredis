@@ -17,6 +17,13 @@
 #define ZEND_UNREACHABLE() do { ZEND_ASSERT(0); ZEND_ASSUME(0); } while (0)
 #endif
 
+#if PHP_VERSION_ID >= 80600
+/* php_hash_bin2hex() was dropped from ext/hash in PHP 8.6; the equivalent
+ * routine now lives in the Zend engine as zend_bin2hex(), which has an
+ * identical signature (char *out, const unsigned char *in, size_t in_len). */
+#define php_hash_bin2hex(out, in, in_len) zend_bin2hex((out), (in), (in_len))
+#endif
+
 #if PHP_VERSION_ID < 80600
 
 #define zend_ini_bool_literal(name) \
