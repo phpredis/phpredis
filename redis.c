@@ -1827,6 +1827,7 @@ REDIS_KW_METHOD(bgSave, "BGSAVE", redis_empty_cmd, redis_boolean_response);
 REDIS_KW_METHOD(bgrewriteaof, "BGREWRITEAOF", redis_empty_cmd, redis_boolean_response);
 REDIS_KW_METHOD(blPop, "BLPOP", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 REDIS_KW_METHOD(blmove, "BLMOVE", redis_lmove_cmd, redis_string_response);
+REDIS_KW_METHOD(blmovem, "BLMOVEM", redis_blmovem_cmd, redis_sock_read_multibulk_reply);
 REDIS_KW_METHOD(blmpop, "BLMPOP", redis_mpop_cmd, redis_mpop_response);
 REDIS_KW_METHOD(brPop, "BRPOP", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 REDIS_KW_METHOD(bzPopMax, "BZPOPMAX", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
@@ -1885,6 +1886,7 @@ REDIS_KW_METHOD(incrByFloat, "INCRBYFLOAT", redis_key_dbl_cmd, redis_bulk_double
 REDIS_KW_METHOD(keys, "KEYS", redis_key_cmd, redis_mbulk_reply_raw);
 REDIS_KW_METHOD(lLen, "LLEN", redis_key_cmd, redis_long_response);
 REDIS_KW_METHOD(lMove, "LMOVE", redis_lmove_cmd, redis_string_response);
+REDIS_KW_METHOD(lmovem, "LMOVEM", redis_lmovem_cmd, redis_sock_read_multibulk_reply);
 REDIS_KW_METHOD(lPop, "LPOP", redis_pop_cmd, redis_pop_response);
 REDIS_KW_METHOD(lPush, "LPUSH", redis_key_varval_cmd, redis_long_response);
 REDIS_KW_METHOD(lPushx, "LPUSHX", redis_kv_cmd, redis_long_response);
