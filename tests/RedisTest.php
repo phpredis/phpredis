@@ -1588,6 +1588,74 @@ class Redis_Test extends TestSuite {
         $this->assertGT(.09, $et - $st);
     }
 
+    public function testLmovem() {
+        if ( ! $this->haveCommand('LMOVEM'))
+            $this->markTestSkipped();
+
+        [$src, $dst] = ['{lm}src', '{lm}dst'];
+        $left = $this->getLeftConstant();
+        $right = $this->getRightConstant();
+
+        $this->redis->del($src, $dst);
+        $this->redis->rPush($src, 'one', 'two', 'three', 'four');
+
+        $this->assertEquals(['one'], $this->redis->lmovem($src, $dst, $left, $right));
+        $this->assertEquals(
+            ['two', 'three'],
+            $this->redis->lmovem($src, $dst, $left, $right, ['COUNT' => [2, 'BULK']])
+        );
+        $this->assertEquals(['four'], $this->redis->lRange($src, 0, -1));
+        $this->assertEquals(['one', 'two', 'three'], $this->redis->lRange($dst, 0, -1));
+
+        $this->redis->del($src, $dst);
+        $this->redis->rPush($src, 'one', 'two', 'three', 'four');
+
+        $this->assertEquals(
+            ['three', 'two', 'one'],
+            $this->redis->lmovem($src, $dst, $left, $left, ['COUNT' => [3, 'OBO']])
+        );
+        $this->assertEquals(['three', 'two', 'one'], $this->redis->lRange($dst, 0, -1));
+        $this->assertEquals([],
+            $this->redis->lmovem($src, $dst, $left, $right, ['EXACTLY' => [2, 'BULK']])
+        );
+        $this->assertEquals(['four'], $this->redis->lRange($src, 0, -1));
+
+        $this->assertFalse(@$this->redis->lmovem(
+            $src, $dst, $left, $right, ['COUNT' => [0, 'BULK']]
+        ));
+        $this->assertFalse(@$this->redis->lmovem(
+            $src, $dst, $left, $right, ['COUNT' => [1, 'INVALID']]
+        ));
+    }
+
+    public function testBlmovem() {
+        if ( ! $this->haveCommand('BLMOVEM'))
+            $this->markTestSkipped();
+
+        [$src, $dst] = ['{blm}src', '{blm}dst'];
+        $left = $this->getLeftConstant();
+        $right = $this->getRightConstant();
+
+        $this->redis->del($src, $dst);
+        $this->redis->rPush($src, 'one', 'two', 'three');
+        $this->assertEquals(
+            ['one', 'two'],
+            $this->redis->blmovem(
+                $src, $dst, $left, $right, .1, ['EXACTLY' => [2, 'BULK']]
+            )
+        );
+
+        $st = microtime(true);
+        $ret = $this->redis->blmovem(
+            $src, $dst, $left, $right, .1, ['EXACTLY' => [2, 'BULK']]
+        );
+        $et = microtime(true);
+
+        $this->assertEquals([], $ret);
+        $this->assertGT(.09, $et - $st);
+        $this->assertEquals(['three'], $this->redis->lRange($src, 0, -1));
+    }
+
     // lRem testing
     public function testLRem() {
         $this->redis->del('list');

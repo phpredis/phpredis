@@ -3284,6 +3284,161 @@ RedisCmd *redis_lmove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, c
     return cmd;
 }
 
+typedef enum redisLmovemCountType {
+    REDIS_LMOVEM_COUNT_NONE,
+    REDIS_LMOVEM_COUNT,
+    REDIS_LMOVEM_EXACTLY
+} redisLmovemCountType;
+
+typedef enum redisLmovemMoveType {
+    REDIS_LMOVEM_MOVE_NONE,
+    REDIS_LMOVEM_MOVE_OBO,
+    REDIS_LMOVEM_MOVE_BULK
+} redisLmovemMoveType;
+
+typedef struct redisLmovemOptions {
+    redisLmovemCountType count_type;
+    redisLmovemMoveType move_type;
+    zend_long count;
+} redisLmovemOptions;
+
+static int redis_get_lmovem_options(redisLmovemOptions *dst, HashTable *options)
+{
+    zval *zv, *zcount, *zmove;
+    zend_string *key;
+
+    memset(dst, 0, sizeof(*dst));
+
+    if (options == NULL)
+        return SUCCESS;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(options, key, zv) {
+        if (key == NULL || (dst->count_type != REDIS_LMOVEM_COUNT_NONE)) {
+            php_error_docref(NULL, E_WARNING,
+                "Exactly one of COUNT or EXACTLY may be specified");
+            return FAILURE;
+        }
+
+        if (zend_string_equals_literal_ci(key, "COUNT")) {
+            dst->count_type = REDIS_LMOVEM_COUNT;
+        } else if (zend_string_equals_literal_ci(key, "EXACTLY")) {
+            dst->count_type = REDIS_LMOVEM_EXACTLY;
+        } else {
+            php_error_docref(NULL, E_WARNING, "Unknown LMOVEM option '%s'",
+                ZSTR_VAL(key));
+            return FAILURE;
+        }
+
+        ZVAL_DEREF(zv);
+        if (Z_TYPE_P(zv) != IS_ARRAY || zend_hash_num_elements(Z_ARRVAL_P(zv)) != 2 ||
+            (zcount = zend_hash_index_find(Z_ARRVAL_P(zv), 0)) == NULL ||
+            (zmove = zend_hash_index_find(Z_ARRVAL_P(zv), 1)) == NULL)
+        {
+            php_error_docref(NULL, E_WARNING,
+                "%s must be an array containing a count and movement type",
+                dst->count_type == REDIS_LMOVEM_COUNT ? "COUNT" : "EXACTLY");
+            return FAILURE;
+        }
+
+        ZVAL_DEREF(zcount);
+        if (Z_TYPE_P(zcount) != IS_LONG || Z_LVAL_P(zcount) <= 0) {
+            php_error_docref(NULL, E_WARNING, "LMOVEM count must be a positive integer");
+            return FAILURE;
+        }
+        dst->count = Z_LVAL_P(zcount);
+
+        ZVAL_DEREF(zmove);
+        if (Z_TYPE_P(zmove) != IS_STRING) {
+            php_error_docref(NULL, E_WARNING, "Movement type must be 'OBO' or 'BULK'");
+            return FAILURE;
+        } else if (zend_string_equals_literal_ci(Z_STR_P(zmove), "OBO")) {
+            dst->move_type = REDIS_LMOVEM_MOVE_OBO;
+        } else if (zend_string_equals_literal_ci(Z_STR_P(zmove), "BULK")) {
+            dst->move_type = REDIS_LMOVEM_MOVE_BULK;
+        } else {
+            php_error_docref(NULL, E_WARNING, "Movement type must be 'OBO' or 'BULK'");
+            return FAILURE;
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    return SUCCESS;
+}
+
+static RedisCmd *redis_lmovem_cmd_impl(INTERNAL_FUNCTION_PARAMETERS,
+    RedisSock *redis_sock, const char *kw, size_t kw_len, zend_bool blocking)
+{
+    zend_string *src, *dst, *from, *to;
+    HashTable *options = NULL;
+    redisLmovemOptions opt;
+    double timeout = 0;
+    RedisCmd *cmd;
+
+    ZEND_PARSE_PARAMETERS_START(4 + blocking, 5 + blocking)
+        Z_PARAM_STR(src)
+        Z_PARAM_STR(dst)
+        Z_PARAM_STR(from)
+        Z_PARAM_STR(to)
+        if (blocking) {
+            Z_PARAM_DOUBLE(timeout)
+        }
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(options)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    if (!zend_string_equals_literal_ci(from, "LEFT") &&
+        !zend_string_equals_literal_ci(from, "RIGHT"))
+    {
+        php_error_docref(NULL, E_WARNING, "Wherefrom argument must be 'LEFT' or 'RIGHT'");
+        return NULL;
+    } else if (!zend_string_equals_literal_ci(to, "LEFT") &&
+               !zend_string_equals_literal_ci(to, "RIGHT"))
+    {
+        php_error_docref(NULL, E_WARNING, "Whereto argument must be 'LEFT' or 'RIGHT'");
+        return NULL;
+    } else if (redis_get_lmovem_options(&opt, options) == FAILURE) {
+        return NULL;
+    }
+
+    cmd = redis_cmd_create(redis_sock, kw, kw_len);
+    redis_cmd_cat_key_zstr(cmd, src);
+    redis_cmd_try_cat_key_zstr(cmd, dst);
+    redis_cmd_cat_zstr(cmd, from);
+    redis_cmd_cat_zstr(cmd, to);
+
+    if (blocking)
+        redis_cmd_cat_double(cmd, timeout);
+
+    if (opt.count_type != REDIS_LMOVEM_COUNT_NONE) {
+        if (opt.count_type == REDIS_LMOVEM_COUNT) {
+            redis_cmd_cat_literal(cmd, "COUNT");
+        } else {
+            redis_cmd_cat_literal(cmd, "EXACTLY");
+        }
+        redis_cmd_cat_long(cmd, opt.count);
+        if (opt.move_type == REDIS_LMOVEM_MOVE_OBO) {
+            redis_cmd_cat_literal(cmd, "OBO");
+        } else {
+            redis_cmd_cat_literal(cmd, "BULK");
+        }
+    }
+
+    return cmd;
+}
+
+RedisCmd *redis_lmovem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           const char *kw, size_t kw_len)
+{
+    return redis_lmovem_cmd_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        redis_sock, kw, kw_len, 0);
+}
+
+RedisCmd *redis_blmovem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                            const char *kw, size_t kw_len)
+{
+    return redis_lmovem_cmd_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        redis_sock, kw, kw_len, 1);
+}
+
 /* LINSERT */
 RedisCmd *
 redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
