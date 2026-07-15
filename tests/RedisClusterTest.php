@@ -319,6 +319,29 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    /* Regression test for GH #2890 */
+    public function testDirectedFlushUsesMaster() {
+        $master = $this->redis->_masters()[0];
+
+        $this->assertTrue(
+            $this->redis->setOption(
+                RedisCluster::OPT_SLAVE_FAILOVER,
+                RedisCluster::FAILOVER_DISTRIBUTE_SLAVES
+            )
+        );
+
+        /* Should succeed being sent to the primary */
+        $this->assertTrue($this->redis->flushdb($master));
+        $this->assertTrue($this->redis->flushall($master));
+
+        $this->assertTrue(
+            $this->redis->setOption(
+                RedisCluster::OPT_SLAVE_FAILOVER,
+                RedisCluster::FAILOVER_NONE
+            )
+        );
+    }
+
     public function testInfo() {
         $fields = [
             "redis_version", "arch_bits", "uptime_in_seconds", "uptime_in_days",

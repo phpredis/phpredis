@@ -2430,6 +2430,9 @@ cluster_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
         RETURN_FALSE;
     }
 
+    /* These are write commands and must always be sent to the master */
+    c->readonly = 0;
+
     cmd = redis_cmd_create(NULL, kw, strlen(kw));
 
     redis_cmd_cat_literal_if(cmd, async, "ASYNC");
