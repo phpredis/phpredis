@@ -533,12 +533,6 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     redis_object *redis;
     int af_unix;
 
-#ifdef ZTS
-    /* not sure how in threaded mode this works so disabled persistence at
-     * first */
-    persistent = 0;
-#endif
-
     ZEND_PARSE_PARAMETERS_START(1, 7)
         Z_PARAM_STRING(host, host_len)
         Z_PARAM_OPTIONAL

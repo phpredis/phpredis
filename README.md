@@ -335,8 +335,8 @@ or host + persistent_id or unix socket + timeout.
 
 Since v4.2.1, it became possible to use connection pooling by setting INI variable `redis.pconnect.pooling_enabled` to 1.
 
-This feature is not available in threaded versions. `pconnect` and `popen` then work like their non
-persistent equivalents.
+In threaded versions (ZTS), persistent connections are kept per-thread: each thread reuses its own
+connections across requests and never shares them with other threads.
 
 ###### *Parameters*
 
