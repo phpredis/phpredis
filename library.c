@@ -3354,9 +3354,10 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     /* Attempt to set TCP_NODELAY/TCP_KEEPALIVE if we're not using a unix socket. */
     if (!usocket) {
         php_netstream_data_t *sock = (php_netstream_data_t*)redis_sock->stream->abstract;
+        int tcp_keepalive = redis_sock->tcp_keepalive;
         err = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char*) &tcp_flag, sizeof(tcp_flag));
         PHPREDIS_NOTUSED(err);
-        err = setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (char*) &redis_sock->tcp_keepalive, sizeof(redis_sock->tcp_keepalive));
+        err = setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (char*) &tcp_keepalive, sizeof(tcp_keepalive));
         PHPREDIS_NOTUSED(err);
     }
 
