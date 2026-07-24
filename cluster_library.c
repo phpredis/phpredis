@@ -1273,7 +1273,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
         int moved;
 
         // Attempt to read the error
-        if (!redis_sock_get_line(c->cmd_sock, inbuf, sizeof(inbuf), &nbytes)) {
+        if (redis_sock_gets(c->cmd_sock, inbuf, sizeof(inbuf), &nbytes) < 0) {
             return -1;
         }
 
@@ -1283,7 +1283,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
             return !cluster_set_redirection(c, inbuf, moved) ? 1 : -1;
         }
         // Capture the error string Redis returned
-        cluster_set_err(c, inbuf, strlen(inbuf)-2);
+        cluster_set_err(c, inbuf, nbytes);
         return 0;
     }
 
