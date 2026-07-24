@@ -4497,7 +4497,9 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
         return -1;
     }
 
-    if(redis_sock_get_line(redis_sock, buf, buf_size, line_size) == NULL) {
+    if(redis_sock_get_line(redis_sock, buf, buf_size, line_size) == NULL ||
+       *line_size < 2 || memcmp(buf + *line_size - 2, ZEND_STRL("\r\n")) != 0)
+    {
         if (redis_sock->port < 0) {
             snprintf(buf, buf_size, "read error on connection to %s", ZSTR_VAL(redis_sock->host));
         } else {
@@ -4512,8 +4514,8 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
     }
 
     /* We don't need \r\n */
-    *line_size-=2;
-    buf[*line_size]='\0';
+    *line_size -= 2;
+    buf[*line_size] = '\0';
 
     /* Success! */
     return 0;
