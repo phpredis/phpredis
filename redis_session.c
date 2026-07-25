@@ -111,6 +111,7 @@ typedef struct {
 
     redis_pool_member *head;
     redis_session_lock_status lock_status;
+    zend_bool session_key_missing;
     int buster;
 } redis_pool;
 
@@ -904,12 +905,15 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     if (ZSTR_LEN(key) < 1)
         return FAILURE;
 
-    /* No need to update the session timestamp if we've already done so */
-    if (zend_ini_long_literal("redis.session.early_refresh")) {
+    redis_pool *pool = PS_GET_MOD_DATA();
+
+    /* GETEX already refreshed an existing session during the read */
+    if (zend_ini_long_literal("redis.session.early_refresh") &&
+        !pool->session_key_missing
+    ) {
         return SUCCESS;
     }
 
-    redis_pool *pool = PS_GET_MOD_DATA();
     redis_pool_member *rpm = redis_pool_get_sock(pool, key);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
@@ -934,8 +938,13 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
 
     /* Do the full check in the next major version */
     res = rlen == 2 && rstr[0] == ':';
+    zend_bool missing = res && rstr[1] == '0';
 
     efree(rstr);
+
+    if (missing) {
+        return ps_write_redis(mod_data, key, val, maxlifetime);
+    }
 
     return res ? SUCCESS : FAILURE;
 }
@@ -1004,7 +1013,9 @@ PS_READ_FUNC(redis)
         return FAILURE;
     }
 
-    if (resp_len < 0) {
+    pool->session_key_missing = resp_len < 0;
+
+    if (pool->session_key_missing) {
         *val = ZSTR_EMPTY_ALLOC();
     } else {
         compressed_free = session_uncompress_data(redis_sock, resp, resp_len, &compressed_buf, &compressed_len);
@@ -1400,16 +1411,18 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
     RedisCmd *cmd;
     short slot;
 
-    /* No need to update the session timestamp if we've already done so */
-    if (zend_ini_long_literal("redis.session.early_refresh")) {
+    /* GETEX already refreshed an existing session during the read */
+    if (zend_ini_long_literal("redis.session.early_refresh") &&
+        !c->session_key_missing
+    ) {
         return SUCCESS;
     }
 
     /* Set up command and slot info */
-    key = cluster_session_key(c, key, &slot);
-    cmd = redis_cmd_fmt(NULL, "EXPIRE", "Sd", key, session_gc_maxlifetime());
+    zend_string *session = cluster_session_key(c, key, &slot);
+    cmd = redis_cmd_fmt(NULL, "EXPIRE", "Sd", session, session_gc_maxlifetime());
 
-    zend_string_release(key);
+    zend_string_release(session);
 
     /* Attempt to send EXPIRE command */
     c->readonly = 0;
@@ -1429,8 +1442,14 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
         return FAILURE;
     }
 
+    zend_bool missing = reply->type == TYPE_INT && reply->integer == 0;
+
     /* Clean up */
     cluster_free_reply(reply, 1);
+
+    if (missing) {
+        return ps_write_rediscluster(mod_data, key, val, maxlifetime);
+    }
 
     return SUCCESS;
 }
@@ -1479,7 +1498,9 @@ PS_READ_FUNC(rediscluster) {
     }
 
     /* Push reply value to caller */
-    if (reply->str == NULL) {
+    c->session_key_missing = reply->len == -1;
+
+    if (c->session_key_missing) {
         *val = ZSTR_EMPTY_ALLOC();
     } else {
         compressed_free = session_uncompress_data(c->flags, reply->str, reply->len, &compressed_buf, &compressed_len);

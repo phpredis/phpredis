@@ -77,6 +77,8 @@ class Runner {
         'data' => '',
         'lifetime' => 1440,
         'compression' => 'none',
+        'strict-mode' => false,
+        'early-refresh' => false,
     ];
 
     private $prefix = NULL;
@@ -174,6 +176,14 @@ class Runner {
         return $this->set('compression', $compression);
     }
 
+    public function strictMode(bool $enabled): self {
+        return $this->set('strict-mode', $enabled);
+    }
+
+    public function earlyRefresh(bool $enabled): self {
+        return $this->set('early-refresh', $enabled);
+    }
+
     protected function validateArgs(array $required) {
         foreach ($required as $req) {
             if ( ! isset($this->args[$req]) || $this->args[$req] === null)
@@ -242,7 +252,6 @@ class Runner {
 
     public function output(?int $timeout = NULL): ?string {
         if ($this->output) {
-            var_dump("early return");
             return $this->output;
         }
 
