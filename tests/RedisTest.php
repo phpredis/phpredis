@@ -8561,11 +8561,24 @@ class Redis_Test extends TestSuite {
         $runner = $this->sessionRunner();
 
         $this->assertSessionRunnerResult($runner);
-        $this->assertKeyExists($runner->getSessionKey());
+        if ( ! $this->assertKeyExists($runner->getSessionKey())) {
+            $this->externalCmdFailure($runner->getCmd(), $runner->output(),
+                                      'Failed to save session data to Redis',
+                                      $runner->getExitCode());
+        }
+    }
 
-        $this->externalCmdFailure($runner->getCmd(), $runner->output(),
-                                  'Failed to save session data to Redis',
-                                  $runner->getExitCode());
+    public function testSession_savedToRedisEarlyRefresh() {
+        $this->testRequiresMode('cli');
+
+        $runner = $this->sessionRunner()->earlyRefresh(true);
+
+        $this->assertSessionRunnerResult($runner);
+        if ( ! $this->assertKeyExists($runner->getSessionKey())) {
+            $this->externalCmdFailure($runner->getCmd(), $runner->output(),
+                                      'Failed to save session data to Redis',
+                                      $runner->getExitCode());
+        }
     }
 
     protected function sessionWaitUsec() {

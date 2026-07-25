@@ -4,7 +4,7 @@ error_reporting(E_ERROR | E_WARNING);
 $opt = getopt('', [
     'handler:', 'save-path:', 'id:', 'sleep:', 'max-execution-time:' ,
     'locking-enabled:', 'lock-wait-time:', 'lock-retries:', 'lock-expires:',
-    'data:', 'lifetime:', 'compression:'
+    'data:', 'lifetime:', 'compression:', 'strict-mode:', 'early-refresh:'
 ]);
 
 $handler = $opt['handler'] ?? NULL;
@@ -19,6 +19,8 @@ $lifetime = $opt['lifetime'] ?? 0;
 $locking_enabled = $opt['locking-enabled'] ?? NULL;
 $lock_wait_time = $opt['lock-wait-time'] ?? 0;
 $compression = $opt['compression'] ?? NULL;
+$strict_mode = !!($opt['strict-mode'] ?? false);
+$early_refresh = !!($opt['early-refresh'] ?? false);
 
 if ( ! $handler) {
     fprintf(STDERR, "--handler is required\n");
@@ -37,6 +39,8 @@ ini_set('session.gc_maxlifetime', $lifetime);
 ini_set("{$handler}.session.locking_enabled", $locking_enabled);
 ini_set("{$handler}.session.lock_wait_time", $lock_wait_time);
 ini_set('redis.session.compression', $compression);
+ini_set('session.use_strict_mode', $strict_mode);
+ini_set('redis.session.early_refresh', $early_refresh);
 
 session_id($id);
 $status = session_start();

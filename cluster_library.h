@@ -185,6 +185,9 @@ typedef struct redisCluster {
     /* RedisCluster failover options (never, on error, to load balance) */
     short failover;
 
+    /* Whether the current session read found no backing key */
+    zend_bool session_key_missing;
+
     /* Hash table of seed host/ports */
     HashTable *seeds;
 
