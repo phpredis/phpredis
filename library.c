@@ -916,7 +916,7 @@ static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
     efree(ctx);
 
     hex = zend_string_safe_alloc(ops->digest_size, 2, 0, 0);
-    php_hash_bin2hex(ZSTR_VAL(hex), digest, ops->digest_size);
+    zend_bin2hex(ZSTR_VAL(hex), digest, ops->digest_size);
     ZSTR_VAL(hex)[2 * ops->digest_size] = 0;
 
     efree(digest);

@@ -336,7 +336,7 @@ static void generate_lock_secret(redis_session_lock_status *status) {
 
     if (php_random_bytes_silent(buf, sizeof(buf)) == SUCCESS) {
         zend_string *s = zend_string_alloc(sizeof(buf) * 2, 0);
-        php_hash_bin2hex(ZSTR_VAL(s), buf, sizeof(buf));
+        zend_bin2hex(ZSTR_VAL(s), buf, sizeof(buf));
         ZSTR_VAL(s)[sizeof(buf) * 2] = '\0';
         status->lock_secret = s;
         return;
