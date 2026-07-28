@@ -7278,7 +7278,7 @@ static zend_string *redis_xxh3_digest(RedisSock *redis_sock, zval *zv) {
     ops->hash_final(digest, ctx);
 
     hex = zend_string_safe_alloc(ops->digest_size, 2, 0, 0);
-    php_hash_bin2hex(ZSTR_VAL(hex), digest, ops->digest_size);
+    zend_bin2hex(ZSTR_VAL(hex), digest, ops->digest_size);
     ZSTR_VAL(hex)[ZSTR_LEN(hex)] = '\0';
 
     efree(ctx);
