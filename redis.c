@@ -315,7 +315,7 @@ static void redis_random_hex_bytes(char *dst, size_t dstsize) {
 
     /* First try to have PHP generate the bytes */
     if (php_random_bytes_silent(ZSTR_VAL(s), bytes) == SUCCESS) {
-        php_hash_bin2hex(dst, (unsigned char *)ZSTR_VAL(s), bytes);
+        zend_bin2hex(dst, (unsigned char *)ZSTR_VAL(s), bytes);
         zend_string_release(s);
         return;
     }
