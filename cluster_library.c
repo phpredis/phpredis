@@ -1078,7 +1078,8 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
                                  c->flags->timeout, c->flags->read_timeout,
                                  c->flags->persistent, NULL, 0);
 
-        /* Stream context */
+        /* Credentials and context */
+        redis_sock_set_auth(sock, c->flags->user, c->flags->pass);
         redis_sock_set_context(sock, c->flags->context);
 
         /* Add to seed nodes */
