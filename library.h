@@ -4,6 +4,11 @@
 #include "php_redis.h"
 #include "redis_cmd.h"
 
+/* Declared here so every user of the macros below can throw without having
+ * to redeclare these itself */
+extern zend_class_entry *redis_exception_ce;
+extern zend_class_entry *redis_cluster_exception_ce;
+
 #define REDIS_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_exception_ce, (msg), code)
 
