@@ -114,7 +114,13 @@ class Redis_Cluster_Test extends Redis_Test {
         $conf = $this->redis->config($this->redis->_masters()[0], 'GET',
                                      'cluster-databases');
 
-        return (int)($conf['cluster-databases'] ?? 1) > 1;
+        /* Depending on the reply mode this is either an associative array or
+         * a flat [name, value] list */
+        $databases = is_array($conf)
+            ? ($conf['cluster-databases'] ?? ($conf[1] ?? 1))
+            : 1;
+
+        return (int)$databases > 1;
     }
 
     protected function newInstanceWithDatabase(int $database) {

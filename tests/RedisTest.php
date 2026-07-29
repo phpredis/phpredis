@@ -70,7 +70,14 @@ class Redis_Test extends TestSuite {
     }
 
     protected function detectValkey($info) {
-        return is_array($info) && ($info['executable'] ?? '') === 'valkey';
+        if ( ! is_array($info))
+            return false;
+
+        /* Valkey reports both of these, and 'executable' is a full path so
+         * it can only be matched loosely. */
+        return ($info['server_name'] ?? '') === 'valkey' ||
+               isset($info['valkey_version']) ||
+               strpos($info['executable'] ?? '', 'valkey') !== false;
     }
 
     public function setUp() {
