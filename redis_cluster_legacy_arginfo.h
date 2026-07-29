@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 65b0169d3db8c36a27189f63b956c10ba42dfdfb */
+ * Stub hash: d7f922f665d6a6f5ff658eb9aa5abd47f4155f35 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -9,6 +9,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, persistent)
 	ZEND_ARG_INFO(0, auth)
 	ZEND_ARG_INFO(0, context)
+	ZEND_ARG_INFO(0, database)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster__compress, 0, 0, 1)
@@ -334,6 +335,8 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_getex arginfo_class_RedisCluster_delex
 
 #define arginfo_class_RedisCluster_getbit arginfo_class_RedisCluster_append
+
+#define arginfo_class_RedisCluster_getdbnum arginfo_class_RedisCluster__masters
 
 #define arginfo_class_RedisCluster_getlasterror arginfo_class_RedisCluster__masters
 
@@ -685,6 +688,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_sdiffstore, 0, 0, 2)
 	ZEND_ARG_INFO(0, dst)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_VARIADIC_INFO(0, other_keys)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_select, 0, 0, 1)
+	ZEND_ARG_INFO(0, db)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_set arginfo_class_RedisCluster_lpos
@@ -1140,6 +1147,7 @@ ZEND_METHOD(RedisCluster, getdel);
 ZEND_METHOD(RedisCluster, getWithMeta);
 ZEND_METHOD(RedisCluster, getex);
 ZEND_METHOD(RedisCluster, getbit);
+ZEND_METHOD(RedisCluster, getdbnum);
 ZEND_METHOD(RedisCluster, getlasterror);
 ZEND_METHOD(RedisCluster, getmode);
 ZEND_METHOD(RedisCluster, getoption);
@@ -1234,6 +1242,7 @@ ZEND_METHOD(RedisCluster, scard);
 ZEND_METHOD(RedisCluster, script);
 ZEND_METHOD(RedisCluster, sdiff);
 ZEND_METHOD(RedisCluster, sdiffstore);
+ZEND_METHOD(RedisCluster, select);
 ZEND_METHOD(RedisCluster, set);
 ZEND_METHOD(RedisCluster, setbit);
 ZEND_METHOD(RedisCluster, setex);
@@ -1408,6 +1417,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, getWithMeta, arginfo_class_RedisCluster_getWithMeta, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, getex, arginfo_class_RedisCluster_getex, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, getbit, arginfo_class_RedisCluster_getbit, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, getdbnum, arginfo_class_RedisCluster_getdbnum, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, getlasterror, arginfo_class_RedisCluster_getlasterror, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, getmode, arginfo_class_RedisCluster_getmode, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, getoption, arginfo_class_RedisCluster_getoption, ZEND_ACC_PUBLIC)
@@ -1502,6 +1512,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, script, arginfo_class_RedisCluster_script, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sdiff, arginfo_class_RedisCluster_sdiff, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sdiffstore, arginfo_class_RedisCluster_sdiffstore, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, select, arginfo_class_RedisCluster_select, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, set, arginfo_class_RedisCluster_set, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, setbit, arginfo_class_RedisCluster_setbit, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, setex, arginfo_class_RedisCluster_setex, ZEND_ACC_PUBLIC)

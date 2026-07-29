@@ -246,12 +246,17 @@ void free_cluster_context(zend_object *object) {
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
 static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
                                double read_timeout, int persistent, zend_string *user,
-                               zend_string *pass, zval *context)
+                               zend_string *pass, zval *context, zend_long database)
 {
     zend_string *hash = NULL, **seeds;
     redisCachedCluster *cc;
     uint32_t nseeds;
     char *err;
+
+    if (database < 0 || database > INT_MAX) {
+        REDIS_VALUE_EXCEPTION("Invalid database number");
+        return;
+    }
 
     /* Validate our arguments and get a sanitized seed array */
     seeds = cluster_validate_args(timeout, read_timeout, ht_seeds, &nseeds, &err);
@@ -271,6 +276,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     c->flags->timeout = timeout;
     c->flags->read_timeout = read_timeout;
     c->flags->persistent = persistent;
+    c->flags->dbNumber = database;
     c->waitms = (long)(1000 * (timeout + read_timeout));
 
     /* Attempt to load slots from cache if caching is enabled */
@@ -299,6 +305,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     zval z_seeds, z_tmp, *z_value;
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0, read_timeout = 0;
+    zend_long database = 0;
     int persistent = 0;
     const char *iptr;
     HashTable *ht_seeds = NULL;
@@ -347,8 +354,16 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
         zval_ptr_dtor_nogc(&z_tmp);
     }
 
+    /* Database (requires a server with database support in cluster mode) */
+    if ((iptr = zend_ini_string_literal("redis.clusters.database")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_long(Z_ARRVAL(z_tmp), name, name_len, &database);
+        zval_ptr_dtor_nogc(&z_tmp);
+    }
+
     /* Attempt to create/connect to the cluster */
-    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass, NULL);
+    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass, NULL, database);
 
     /* Clean up */
     zval_ptr_dtor_nogc(&z_seeds);
@@ -365,12 +380,13 @@ PHP_METHOD(RedisCluster, __construct) {
     zval *z_seeds = NULL, *z_auth = NULL, *context = NULL;
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0.0, read_timeout = 0.0;
+    zend_long database = 0;
     size_t name_len;
     zend_bool persistent = 0;
     redisCluster *c = GET_CONTEXT();
     char *name;
 
-    ZEND_PARSE_PARAMETERS_START(1, 7)
+    ZEND_PARSE_PARAMETERS_START(1, 8)
         Z_PARAM_STRING_OR_NULL(name, name_len)
         Z_PARAM_OPTIONAL
         Z_PARAM_ARRAY_OR_NULL(z_seeds)
@@ -379,6 +395,7 @@ PHP_METHOD(RedisCluster, __construct) {
         Z_PARAM_BOOL(persistent)
         Z_PARAM_ZVAL(z_auth)
         Z_PARAM_ARRAY_OR_NULL(context)
+        Z_PARAM_LONG(database)
     ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
     /* If we've got a string try to load from INI */
@@ -393,7 +410,7 @@ PHP_METHOD(RedisCluster, __construct) {
     /* The normal case, loading from arguments */
     redis_extract_auth_info(z_auth, &user, &pass);
     redis_cluster_init(c, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
-                       persistent, user, pass, context);
+                       persistent, user, pass, context, database);
 
     if (user) zend_string_release(user);
     if (pass) zend_string_release(pass);
@@ -1967,6 +1984,35 @@ PHP_METHOD(RedisCluster, evalsha_ro) {
 PHP_METHOD(RedisCluster, getmode) {
     redisCluster *c = GET_CONTEXT();
     RETURN_LONG(c->flags->mode);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::select(long db)
+ * Select a database on every cluster connection.  Requires a server with
+ * database support in cluster mode (e.g. Valkey >= 9.0 configured with
+ * cluster-databases > 1). */
+PHP_METHOD(RedisCluster, select) {
+    redisCluster *c = GET_CONTEXT();
+    zend_long db;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(db)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
+
+    if (db < 0 || db > INT_MAX)
+        RETURN_FALSE;
+
+    if (cluster_select_db(c, db) != SUCCESS)
+        RETURN_FALSE;
+
+    RETURN_TRUE;
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::getdbnum() */
+PHP_METHOD(RedisCluster, getdbnum) {
+    redisCluster *c = GET_CONTEXT();
+    RETURN_LONG(c->flags->dbNumber);
 }
 /* }}} */
 

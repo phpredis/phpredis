@@ -50,6 +50,7 @@ PHP_REDIS_API int redis_sock_configure(RedisSock *redis_sock, HashTable *opts);
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock);
 PHP_REDIS_API int redis_sock_server_open(RedisSock *redis_sock);
 PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock);
+PHP_REDIS_API int redis_sock_select_db(RedisSock *redis_sock, zend_long db);
 PHP_REDIS_API zend_string *redis_sock_auth_cmd(RedisSock *redis_sock);
 PHP_REDIS_API void redis_sock_set_auth(RedisSock *redis_sock, zend_string *user, zend_string *pass);
 PHP_REDIS_API void redis_sock_set_auth_zval(RedisSock *redis_sock, zval *zv);
