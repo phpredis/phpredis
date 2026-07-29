@@ -1170,7 +1170,7 @@ PS_OPEN_FUNC(rediscluster) {
     zval z_conf, *zv, *context;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
-    int persistent = 0, failover = REDIS_FAILOVER_NONE;
+    int persistent = 0, failover = REDIS_FAILOVER_NONE, db = -1;
     zend_string *prefix = NULL, *user = NULL, *pass = NULL, *failstr = NULL;
 
 #if PHP_VERSION_ID >= 80600
@@ -1198,6 +1198,7 @@ PS_OPEN_FUNC(rediscluster) {
     REDIS_CONF_DOUBLE_STATIC(ht_conf, "timeout", &timeout);
     REDIS_CONF_DOUBLE_STATIC(ht_conf, "read_timeout", &read_timeout);
     REDIS_CONF_BOOL_STATIC(ht_conf, "persistent", &persistent);
+    REDIS_CONF_INT_STATIC(ht_conf, "database", &db);
 
     /* Sanity check on our timeouts */
     if (timeout < 0 || read_timeout < 0) {
@@ -1253,6 +1254,13 @@ PS_OPEN_FUNC(rediscluster) {
     c->flags->compression_level = zend_ini_long_literal("redis.session.compression_level");
 
     redis_sock_set_auth(c->flags, user, pass);
+
+    /* Requires a server with database support in cluster mode, e.g.
+     * Valkey >= 9.0 with cluster-databases > 1.  Default is -1 which
+     * leaves the choice to the server. */
+    if (db >= 0) {
+        c->flags->dbNumber = db;
+    }
 
     if ((context = REDIS_HASH_STR_FIND_TYPE_STATIC(ht_conf, "stream", IS_ARRAY)) != NULL) {
         redis_sock_set_context_zval(c->flags, context);
