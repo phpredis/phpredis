@@ -75,6 +75,13 @@ jobs:
       matrix:
         php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         server: ['redis', 'keydb', 'valkey']
+        include:
+          # Valkey 9 supports numbered databases in cluster mode.  The other
+          # valkey legs stay on 8.1.3 so we keep testing servers without it.
+          - php: '8.4'
+            server: 'valkey'
+            valkey_branch: '9.1.1'
+            cluster_databases: '16'
 
     steps:
       - name: Checkout
@@ -121,7 +128,8 @@ jobs:
       - name: Install ValKey
         if: matrix.server == 'valkey'
         run: |
-          git clone --depth 1 --branch 8.1.3 https://github.com/valkey-io/valkey.git
+          git clone --depth 1 --branch "${{ matrix.valkey_branch || '8.1.3' }}" \
+              https://github.com/valkey-io/valkey.git
           cd valkey && BUILD_TLS=yes sudo make install
 
       - name: Build phpredis
@@ -167,7 +175,8 @@ jobs:
               --cluster-config-file "$PORT".conf \
               --daemonize yes \
               --aclfile tests/users.acl \
-              --acl-pubsub-default allchannels
+              --acl-pubsub-default allchannels \
+              ${{ matrix.cluster_databases && format('--cluster-databases {0}', matrix.cluster_databases) || '' }}
             echo 127.0.0.1:"$PORT" >> tests/nodes/nodemap
           done
 
