@@ -8871,6 +8871,33 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(1, $redis->client('info')['db']);
     }
 
+    /* Persistent streams are pooled per database, so a stream left on a
+     * nonzero database must never be handed to a client expecting another
+     * database. */
+    public function testPersistentDatabasePoolIsolation() {
+        $options = [
+            'host' => $this->getHost(),
+            'port' => $this->getPort(),
+            'persistent' => true,
+            'database' => 2,
+        ];
+
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
+
+        $db2 = new Redis($options);
+        $this->assertEquals(2, $db2->client('info')['db']);
+
+        /* Return the stream to the pool */
+        unset($db2);
+
+        /* A fresh database 0 client must not pick up the database 2 stream */
+        $options['database'] = 0;
+        $db0 = new Redis($options);
+        $this->assertEquals(0, $db0->client('info')['db']);
+    }
+
     public function testConnectException() {
         $host = 'github.com';
         if (gethostbyname($host) === $host)
