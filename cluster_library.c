@@ -1415,7 +1415,11 @@ PHP_REDIS_API int cluster_select_db(redisCluster *c, zend_long db) {
         return FAILURE;
     }
 
-    /* Eagerly SELECT the new database on our target to validate it */
+    /* Eagerly SELECT the new database on our target to validate it.  Clear
+     * any previous error first so we can tell a rejected database apart
+     * from a write failure. */
+    redis_sock_clear_err(target);
+
     if (redis_sock_select_db(target, db) != 0) {
         if (target->err) {
             /* Server rejected the database (e.g. "SELECT is not allowed in
