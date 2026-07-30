@@ -443,7 +443,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len)
 static zend_string *
 ra_extract_key(RedisArray *ra, const char *key, int key_len)
 {
-    char *start, *end;
+    const char *start, *end;
 
     if (Z_TYPE(ra->z_fun) != IS_NULL) {
         return ra_call_extractor(ra, key, key_len);
