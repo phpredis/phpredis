@@ -49,6 +49,17 @@
 #define LOCK_DEL_LUA_STR "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end"
 #define LOCK_DEL_SHA_STR "b70c2384248f88e6b75b9f89241a180f856ad852"
 
+/* Atomic acquire-and-read Lua script for the cluster handler.
+ *   KEYS[1] - session data key
+ *   KEYS[2] - lock key, hash tagged to same slot
+ *   ARGV[1] - lock secret
+ *   ARGV[2] - lock TTL in milliseconds
+ *   ARGV[3] - session TTL in seconds (a positive value issues GETEX EX <ttl> to support early_refresh)
+ *
+ * Returns {locked ? 1 : 0, data}; reads data unconditionally to honour lock_failure_readonly. */
+#define LOCK_RW_LUA_STR "local d;if tonumber(ARGV[3])>0 then d=redis.call('GETEX',KEYS[1],'EX',ARGV[3]) else d=redis.call('GET',KEYS[1]) end;local l;if tonumber(ARGV[2])>0 then l=redis.call('SET',KEYS[2],ARGV[1],'NX','PX',ARGV[2]) else l=redis.call('SET',KEYS[2],ARGV[1],'NX') end;return {l and 1 or 0,d or ''}"
+#define LOCK_RW_SHA_STR "87c7c94521579faf92d4f7cae910d3546923c8d8"
+
 typedef struct evalCmd {
     char *kw;
     char *str;
@@ -58,6 +69,11 @@ typedef struct evalCmd {
 static evalCmd lua_cmd[2] = {
     {"EVALSHA", ZEND_STRL(LOCK_DEL_SHA_STR)},
     {"EVAL", ZEND_STRL(LOCK_DEL_LUA_STR)}
+};
+
+static evalCmd lua_rw_cmd[2] = {
+    {"EVALSHA", ZEND_STRL(LOCK_RW_SHA_STR)},
+    {"EVAL", ZEND_STRL(LOCK_RW_LUA_STR)}
 };
 
 typedef enum lockDelCmd {
@@ -327,6 +343,88 @@ static void generate_lock_key(redis_session_lock_status *status) {
                                            ZEND_STRL(suffix));
 }
 
+/* Select the lock-key form based on the full (prefixed) session key.
+ * Mirrors Redis's keyHashSlot() (src/cluster.c) first-{tag} rule so
+ * the derived lock key co-locates with the session key:
+ *   EXISTING_TAG : non-empty first "{tag}" -> lock = <sk>_LOCK
+ *   WRAP         : no braces at all        -> lock = {<sk>}_LOCK
+ *   INVALID      : any other brace shape   -> reject
+ *
+ * Runs once per PS_READ; PHP's session-id generator never emits braces,
+ * so INVALID is in practice reachable only via misconfigured
+ * redis.session.prefix or explicit session_id() calls. */
+typedef enum {
+    LOCK_KEY_INVALID = 0,
+    LOCK_KEY_EXISTING_TAG,
+    LOCK_KEY_WRAP,
+} cluster_lock_key_form;
+
+static cluster_lock_key_form select_cluster_lock_key_form(const char *sk, size_t slen)
+{
+    int s = -1;
+    size_t i;
+
+    for (i = 0; i < slen; i++) {
+        if (sk[i] == '{') {
+            if (s < 0) s = (int)i;
+        } else if (sk[i] == '}') {
+            if (s >= 0) {
+                return (i == (size_t)s + 1) ? LOCK_KEY_INVALID : LOCK_KEY_EXISTING_TAG;
+            }
+            if (s == -1) s = -2;
+        }
+    }
+    return (s == -1) ? LOCK_KEY_WRAP : LOCK_KEY_INVALID;
+}
+
+/* Create a lock key that hashes to the SAME slot as the session key,
+ * so the atomic acquire-and-read Lua script never trips CROSSSLOT.
+ * Returns SUCCESS / FAILURE; on FAILURE the caller (PS_READ) emits a
+ * diagnostic warning and fails the request */
+static int generate_cluster_lock_key(redis_session_lock_status *status)
+{
+    const char *sk = ZSTR_VAL(status->session_key);
+    size_t slen = ZSTR_LEN(status->session_key);
+    size_t klen;
+    cluster_lock_key_form form;
+    zend_string *out;
+    char *p;
+    const char *prefix = "", *suffix = "";
+    size_t prefix_len = 0, suffix_len = 0;
+
+    /* Always (re)derive so lock_key stays in sync with the current session_key.
+     * Caching was not worth the sid-change invalidation hazard. */
+    if (status->lock_key) {
+        zend_string_release(status->lock_key);
+        status->lock_key = NULL;
+    }
+
+    form = select_cluster_lock_key_form(sk, slen);
+
+    if (form == LOCK_KEY_EXISTING_TAG) {
+        suffix = "_LOCK";
+        suffix_len = sizeof("_LOCK") - 1;
+    } else if (form == LOCK_KEY_WRAP) {
+        prefix = "{";
+        prefix_len = 1;
+        suffix = "}_LOCK";
+        suffix_len = sizeof("}_LOCK") - 1;
+    } else {
+        return FAILURE;
+    }
+
+    klen = prefix_len + slen + suffix_len;
+    out = zend_string_alloc(klen, 0);
+    p = ZSTR_VAL(out);
+    memcpy(p, prefix, prefix_len);                     /* optional '{'          */
+    memcpy(p + prefix_len, sk, slen);                  /* the session key bytes */
+    memcpy(p + prefix_len + slen, suffix, suffix_len); /* "_LOCK" or "}_LOCK"   */
+    p[klen] = '\0';                                    /* terminating NUL       */
+
+    status->lock_key = out;
+    return SUCCESS;
+}
+
 static void generate_lock_secret(redis_session_lock_status *status) {
     unsigned char buf[16];
     char hostname[HOST_NAME_MAX] = {0};
@@ -379,11 +477,11 @@ lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status) {
 
     if (expiry > 0) {
         cmd = redis_cmd_fmt(redis_sock, "SET", "SSssd", lock_status->lock_key,
-                             lock_status->lock_secret, "NX", 2, "PX", 2,
+                             lock_status->lock_secret, ZEND_STRL("NX"), ZEND_STRL("PX"),
                              expiry * 1000);
     } else {
         cmd = redis_cmd_fmt(redis_sock, "SET", "SSs", lock_status->lock_key,
-                             lock_status->lock_secret, "NX", 2);
+                             lock_status->lock_secret, ZEND_STRL("NX"));
     }
 
     /* Attempt to get our lock */
@@ -1145,6 +1243,480 @@ PS_GC_FUNC(redis)
  * Redis Cluster session handler functions
  */
 
+/* Bundle the cluster handle with the lock state so the lock_status
+ * (mirroring how redis_pool carries lock_status for standalone). */
+typedef struct {
+    redisCluster *cluster;
+    redis_session_lock_status lock_status;
+} redis_cluster_session;
+
+static redis_cluster_session *cluster_session_alloc(redisCluster *c) {
+    redis_cluster_session *rcs = ecalloc(1, sizeof(*rcs));
+    rcs->cluster = c;
+    return rcs;
+}
+
+static void cluster_session_free(redis_cluster_session *rcs) {
+    if (rcs == NULL) return;
+
+    if (rcs->lock_status.session_key) zend_string_release(rcs->lock_status.session_key);
+    if (rcs->lock_status.lock_secret) zend_string_release(rcs->lock_status.lock_secret);
+    if (rcs->lock_status.lock_key)    zend_string_release(rcs->lock_status.lock_key);
+
+    if (rcs->cluster) cluster_free(rcs->cluster, 1);
+    efree(rcs);
+}
+
+/* Send a single command at the given slot. Returns SUCCESS (+OK = locked),
+ * NEGATIVE_LOCK_RESPONSE (nil = busy), or FAILURE (transport error). */
+static int cluster_set_session_lock_key(redisCluster *c, RedisCmd *cmd, short slot) {
+    clusterReply *reply;
+    int result;
+
+    /* Must go to the slot master, not a replica */
+    c->readonly = 0;
+    if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err) {
+        return FAILURE;
+    }
+
+    /* status_strings=1: +OK reply has len>0, nil bulk has len<=0. */
+    reply = cluster_read_resp(c, 1);
+    if (!reply || c->err) {
+        if (reply) cluster_free_reply(reply, 1);
+        return FAILURE;
+    }
+
+    result = (reply->len > 0) ? SUCCESS : NEGATIVE_LOCK_RESPONSE;
+    cluster_free_reply(reply, 1);
+    return result;
+}
+
+/* Cluster equivalent of lock_acquire(). Idempotent on lock_status: re-entry
+ * is safe because generate_cluster_lock_key() and generate_lock_secret() are
+ * deterministic on session_key and process identity respectively. */
+static int cluster_lock_acquire(redisCluster *c, redis_session_lock_status *lock_status)
+{
+    zend_long wait_time, expiry, retries, attempt = 0;
+    int result;
+    RedisCmd *cmd;
+    short slot;
+
+    if (lock_status->is_locked || !zend_ini_long_literal("redis.session.locking_enabled"))
+        return SUCCESS;
+
+    wait_time = zend_ini_long_literal("redis.session.lock_wait_time");
+    if (wait_time == 0) wait_time = 20000;
+
+    retries = zend_ini_long_literal("redis.session.lock_retries");
+    if (retries == 0) retries = 100;
+
+    expiry = zend_ini_long_literal("redis.session.lock_expire");
+    if (expiry == 0) expiry = zend_ini_long_literal("max_execution_time");
+
+    /* Defensive re-derive in case we're ever called outside PS_READ */
+    if (generate_cluster_lock_key(lock_status) != SUCCESS) {
+        return FAILURE;
+    }
+    if (!lock_status->lock_secret) {
+        generate_lock_secret(lock_status);
+    }
+
+    if (expiry > 0) {
+        cmd = redis_cmd_fmt(NULL, "SET", "SSssd",
+                            lock_status->lock_key, lock_status->lock_secret,
+                            ZEND_STRL("NX"), ZEND_STRL("PX"), expiry * 1000);
+    } else {
+        cmd = redis_cmd_fmt(NULL, "SET", "SSs",
+                            lock_status->lock_key, lock_status->lock_secret,
+                            ZEND_STRL("NX"));
+    }
+    slot = cluster_hash_key_zstr(lock_status->lock_key);
+
+    /* Attempt to get our lock */
+    for (;;) {
+        result = cluster_set_session_lock_key(c, cmd, slot);
+
+        if (result == SUCCESS) {
+            lock_status->is_locked = 1;
+            break;
+        } else if (result == FAILURE) {
+            /* Network failure */
+            break;
+        }
+
+        /* Lock is busy */
+
+        if (retries >= 0 && attempt++ >= retries) {
+            break;
+        }
+
+        usleep(wait_time);
+    }
+
+    /* Cleanup SET command */
+    redis_cmd_free(cmd);
+
+    /* Success if we're locked */
+    return lock_status->is_locked ? SUCCESS : FAILURE;
+}
+
+/* Cluster equivalent of write_allowed(). GETs the lock key and verifies the
+ * value still matches our secret; warns and clears is_locked if not. */
+static int cluster_write_allowed(redisCluster *c, redis_session_lock_status *lock_status)
+{
+    if (!zend_ini_long_literal("redis.session.locking_enabled")) {
+        return 1;
+    }
+    /* If locked and redis.session.lock_expire is not set => TTL=max_execution_time
+       Therefore it is guaranteed that the current process is still holding the lock */
+
+    if (lock_status->is_locked && zend_ini_long_literal("redis.session.lock_expire") != 0) {
+        RedisCmd *cmd;
+        short slot;
+        clusterReply *reply = NULL;
+
+        /* Command to get our lock key value and compare secrets */
+        cmd = redis_cmd_fmt(NULL, "GET", "S", lock_status->lock_key);
+        slot = cluster_hash_key_zstr(lock_status->lock_key);
+
+        /* Must go to the slot master, not a replica */
+        c->readonly = 0;
+
+        /* Attempt to refresh the lock */
+        if (cluster_send_rcmd_ex(c, slot, cmd) >= 0 && !c->err) {
+            reply = cluster_read_resp(c, 0);
+            if (c->err && reply) {
+                cluster_free_reply(reply, 1);
+                reply = NULL;
+            }
+        }
+        /* Cleanup */
+        redis_cmd_free(cmd);
+
+        if (reply == NULL) {
+            lock_status->is_locked = 0;
+        } else {
+            lock_status->is_locked = is_lock_secret(reply->str, reply->len, lock_status->lock_secret);
+            cluster_free_reply(reply, 1);
+        }
+
+        /* Issue a warning if we're not locked.  We don't attempt to refresh the lock
+         * if we aren't flagged as locked, so if we're not flagged here something
+         * failed */
+        if (!lock_status->is_locked) {
+            php_error_docref(NULL, E_WARNING, "Session lock expired");
+        }
+    }
+
+    return lock_status->is_locked;
+}
+
+static delResult
+cluster_get_del_result(redisCluster *c, clusterReply *reply)
+{
+    zend_bool nocmd = 0;
+
+    #define NOCMD_PFX "ERR unknown command"
+
+    if (reply == NULL || c->err) {
+        if (c->err) {
+            php_error_docref(NULL, E_WARNING, "%s", ZSTR_VAL(c->err));
+            nocmd = zend_string_starts_with_cstr(c->err, ZEND_STRL(NOCMD_PFX));
+            zend_string_release(c->err);
+            c->err = NULL;
+        }
+        return nocmd ? DEL_NO_CMD : DEL_FAILURE;
+    } else if (reply->integer == 1) {
+        return DEL_SUCCESS;
+    } else {
+        return DEL_FAILURE;
+    }
+
+    #undef NOCMD_PFX
+}
+
+/* Send a release command (DELEX or DELIFEQ) and parse the reply. */
+static delResult cluster_send_release_cmd(redisCluster *c, short slot, RedisCmd *cmd)
+{
+    clusterReply *reply;
+    delResult result;
+
+    /* Scrub stale c->err so cluster_get_del_result classifies this call's
+     * error (in particular "ERR unknown command" → DEL_NO_CMD so the
+     * caller can fall back to LUA), not whatever the previous call left. */
+    if (c->err) {
+        zend_string_release(c->err);
+        c->err = NULL;
+    }
+
+    c->readonly = 0;
+    if (cluster_send_rcmd_ex(c, slot, cmd) < 0) {
+        return DEL_FAILURE;
+    }
+
+    reply = cluster_read_resp(c, 0);
+    result = cluster_get_del_result(c, reply);
+    if (reply) cluster_free_reply(reply, 1);
+
+    return result;
+}
+
+static delResult
+cluster_lock_release_delex(redisCluster *c, redis_session_lock_status *status)
+{
+    RedisCmd *cmd;
+    short slot;
+    delResult result;
+
+    cmd = redis_cmd_fmt(NULL, "DELEX", "SsS", status->lock_key,
+                        ZEND_STRL("IFEQ"), status->lock_secret);
+    slot = cluster_hash_key_zstr(status->lock_key);
+
+    result = cluster_send_release_cmd(c, slot, cmd);
+
+    redis_cmd_free(cmd);
+
+    return result;
+}
+
+static delResult
+cluster_lock_release_delifeq(redisCluster *c, redis_session_lock_status *status)
+{
+    RedisCmd *cmd;
+    short slot;
+    delResult result;
+
+    cmd = redis_cmd_fmt(NULL, "DELIFEQ", "SS", status->lock_key,
+                        status->lock_secret);
+    slot = cluster_hash_key_zstr(status->lock_key);
+
+    result = cluster_send_release_cmd(c, slot, cmd);
+
+    redis_cmd_free(cmd);
+
+    return result;
+}
+
+/* Release any session lock we hold and cleanup allocated lock data.  This
+ * function first attempts to use EVALSHA and then falls back to EVAL if
+ * EVALSHA fails.  This will cause Redis to cache the script, so subsequent
+ * calls should then succeed using EVALSHA. */
+static void
+cluster_lock_release_lua(redisCluster *c, redis_session_lock_status *status)
+{
+    int i;
+    RedisCmd *cmd;
+    short slot;
+    clusterReply *reply;
+
+    slot = cluster_hash_key_zstr(status->lock_key);
+
+    /* We first want to try EVALSHA and then fall back to EVAL */
+    for (i = 0; status->is_locked && i < (int)(sizeof(lua_cmd) / sizeof(*lua_cmd)); i++) {
+        cmd = redis_cmd_fmt(NULL, lua_cmd[i].kw, "sdSS",
+                            lua_cmd[i].str, lua_cmd[i].len, 1,
+                            status->lock_key, status->lock_secret);
+
+        c->readonly = 0;
+        if (cluster_send_rcmd_ex(c, slot, cmd) < 0) {
+            redis_cmd_free(cmd);
+            continue;
+        }
+        redis_cmd_free(cmd);
+
+        reply = cluster_read_resp(c, 0);
+        if (reply && !c->err) {
+            status->is_locked = 0;
+        }
+        if (reply) cluster_free_reply(reply, 1);
+    }
+
+    /* Something has failed if we are still locked */
+    if (status->is_locked) {
+        php_error_docref(NULL, E_WARNING, "Failed to release session lock");
+    }
+}
+
+static void
+cluster_lock_release(redisCluster *c, redis_session_lock_status *status)
+{
+    delResult res = DEL_NO_CMD;
+
+    if (status->lock_key == NULL)
+        return;
+
+    switch (lock_release_cmd()) {
+        case LOCK_DEL_DELEX:
+            res = cluster_lock_release_delex(c, status);
+            break;
+        case LOCK_DEL_DELIFEQ:
+            res = cluster_lock_release_delifeq(c, status);
+            break;
+        case LOCK_DEL_EVAL:
+            break; /* fallthrough */
+    }
+
+    /* If res == DEL_NO_CMD LUA is selected or the new command didn't exist */
+    if (res == DEL_NO_CMD)
+        cluster_lock_release_lua(c, status);
+}
+
+/* Plain session data read for PS_READ. Used when locking is disabled and
+ * after a successful retry-acquire (the pre-lock read is discarded since
+ * another writer may have mutated the data before we got the lock).
+ *
+ * Returns SUCCESS on transport success and writes the data into *out_data
+ * (zero-length zend_string when the session key is missing). */
+static int cluster_read_session_data(redisCluster *c,
+                                     zend_string *session_key,
+                                     zend_long session_ttl_seconds,
+                                     zend_string **out_data)
+{
+    RedisCmd *cmd;
+    short slot;
+    clusterReply *reply;
+
+    slot = cluster_hash_key_zstr(session_key);
+
+    /* Must go to the slot master, not a replica */
+    if (session_ttl_seconds > 0) {
+        cmd = redis_cmd_fmt(NULL, "GETEX", "Ssd", session_key,
+                            ZEND_STRL("EX"), session_ttl_seconds);
+    } else {
+        cmd = redis_cmd_fmt(NULL, "GET", "S", session_key);
+    }
+    c->readonly = 0;
+
+    if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err) {
+        redis_cmd_free(cmd);
+        return FAILURE;
+    }
+    redis_cmd_free(cmd);
+
+    reply = cluster_read_resp(c, 0);
+    if (!reply || c->err) {
+        if (reply) cluster_free_reply(reply, 1);
+        return FAILURE;
+    }
+
+    if (reply->str == NULL) {
+        *out_data = ZSTR_EMPTY_ALLOC();
+    } else {
+        *out_data = zend_string_init(reply->str, reply->len, 0);
+    }
+
+    cluster_free_reply(reply, 1);
+    return SUCCESS;
+}
+
+/* Atomic acquire-and-read for PS_READ via EVAL/EVALSHA against
+ * KEYS=[session_data, lock_key]. SUCCESS means the EVAL completed; the
+ * caller inspects lock_status->is_locked and reads *out_data (zero-length
+ * when the key is missing). Tries EVALSHA first, falls back to EVAL on
+ * NOSCRIPT (which also warms the script cache for subsequent EVALSHA hits). */
+static int cluster_lock_acquire_and_read(redisCluster *c,
+                                         redis_session_lock_status *lock_status,
+                                         zend_string *session_key,
+                                         zend_long session_ttl_seconds,
+                                         zend_string **out_data)
+{
+    zend_long expiry;
+    zend_long lock_ms;
+    RedisCmd *cmd;
+    int i;
+    short slot;
+    clusterReply *reply;
+    int got_response = 0;
+
+    expiry = zend_ini_long_literal("redis.session.lock_expire");
+    if (expiry == 0) expiry = zend_ini_long_literal("max_execution_time");
+    lock_ms = expiry > 0 ? expiry * 1000 : 0;
+
+    /* Caller must have generated the lock key (slot/co-location decided
+     * up front). Lock secret is process-stable; (re)generate if missing. */
+    if (!lock_status->lock_key) {
+        return FAILURE;
+    }
+    if (!lock_status->lock_secret) {
+        generate_lock_secret(lock_status);
+    }
+
+    /* Both keys hash to the same slot (caller-confirmed). */
+    slot = cluster_hash_key_zstr(lock_status->lock_key);
+
+    /* We first want to try EVALSHA and then fall back to EVAL */
+    for (i = 0; i < (int)(sizeof(lua_rw_cmd) / sizeof(*lua_rw_cmd)); i++) {
+        /* Clear prior NOSCRIPT error so the EVAL fallback can run */
+        if (c->err) {
+            zend_string_release(c->err);
+            c->err = NULL;
+        }
+
+        /* EVAL[SHA] <script> 2 <session_key> <lock_key> <secret> <lock_ms> <session_ttl> */
+        cmd = redis_cmd_fmt(NULL, lua_rw_cmd[i].kw, "sdSSSdd",
+                            lua_rw_cmd[i].str, lua_rw_cmd[i].len,
+                            2,
+                            session_key, lock_status->lock_key,
+                            lock_status->lock_secret,
+                            lock_ms,
+                            session_ttl_seconds);
+
+        c->readonly = 0;
+        if (cluster_send_rcmd_ex(c, slot, cmd) < 0) {
+            redis_cmd_free(cmd);
+            /* Transport failure — EVAL fallback can't help */
+            return FAILURE;
+        }
+        redis_cmd_free(cmd);
+
+        reply = cluster_read_resp(c, 0);
+        if (reply && reply->type == TYPE_MULTIBULK && reply->elements >= 2) {
+            clusterReply *r_locked = reply->element[0];
+            clusterReply *r_data   = reply->element[1];
+            zend_long locked_int = 0;
+
+            /* Lua returns RESP integer per spec; accept bulk "1"/"0" too so
+             * a RESP3 proxy can't force a wasted retry after we hold the lock */
+            if (r_locked) {
+                if (r_locked->type == TYPE_INT) {
+                    locked_int = r_locked->integer;
+                } else if (r_locked->type == TYPE_BULK && r_locked->str
+                           && r_locked->len > 0)
+                {
+                    locked_int = strtol(r_locked->str, NULL, 10);
+                }
+            }
+
+            if (locked_int == 1) {
+                lock_status->is_locked = 1;
+            }
+
+            if (r_data && r_data->str) {
+                *out_data = zend_string_init(r_data->str, r_data->len, 0);
+            } else {
+                *out_data = ZSTR_EMPTY_ALLOC();
+            }
+
+            cluster_free_reply(reply, 1);
+            got_response = 1;
+            break;
+        }
+
+        if (reply) cluster_free_reply(reply, 1);
+
+        /* NOSCRIPT or unrecognised reply — let EVAL try next iteration */
+    }
+
+    /* Drop residual error so the caller's retry/write paths don't inherit it */
+    if (c->err) {
+        zend_string_release(c->err);
+        c->err = NULL;
+    }
+
+    return got_response ? SUCCESS : FAILURE;
+}
+
+/* Prefix a session key */
 static zend_string *
 cluster_session_key(redisCluster *c, zend_string *key, short *slot) {
     if (ZSTR_LEN(c->flags->prefix) > ZSTR_MAX_LEN - ZSTR_LEN(key)) {
@@ -1278,7 +1850,7 @@ PS_OPEN_FUNC(rediscluster) {
 
 success:
     CLUSTER_SESSION_CLEANUP();
-    PS_SET_MOD_DATA(c);
+    PS_SET_MOD_DATA(cluster_session_alloc(c));
     return SUCCESS;
 
 failure:
@@ -1291,7 +1863,8 @@ failure:
  */
 PS_CREATE_SID_FUNC(rediscluster)
 {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *rcs = PS_GET_MOD_DATA();
+    redisCluster *c = rcs ? rcs->cluster : NULL;
     clusterReply *reply;
     zend_string *sid, *key;
     RedisCmd *cmd;
@@ -1312,7 +1885,7 @@ PS_CREATE_SID_FUNC(rediscluster)
         /* Create session key if it doesn't already exist */
         key = cluster_session_key(c, sid, &slot);
         cmd = redis_cmd_fmt(NULL, "SET", "Ssssd", key,
-                            "", 0, "NX", 2, "EX", 2,
+                            ZEND_STRL(""), ZEND_STRL("NX"), ZEND_STRL("EX"),
                             session_gc_maxlifetime());
 
         zend_string_release(key);
@@ -1356,7 +1929,8 @@ PS_CREATE_SID_FUNC(rediscluster)
  */
 PS_VALIDATE_SID_FUNC(rediscluster)
 {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *rcs = PS_GET_MOD_DATA();
+    redisCluster *c = rcs ? rcs->cluster : NULL;
     clusterReply *reply;
     int res = FAILURE;
     RedisCmd *cmd;
@@ -1406,7 +1980,8 @@ PS_VALIDATE_SID_FUNC(rediscluster)
 /* {{{ PS_UPDATE_TIMESTAMP_FUNC
  */
 PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *rcs = PS_GET_MOD_DATA();
+    redisCluster *c = rcs ? rcs->cluster : NULL;
     clusterReply *reply;
     RedisCmd *cmd;
     short slot;
@@ -1456,22 +2031,116 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
 /* }}} */
 
 /* {{{ PS_READ_FUNC
- */
+ *
+ * Locking enabled: atomic SET-NX + GET/GETEX via Lua on the slot owner
+ * (lock_key co-located with session_key via hash tag). On lock contention
+ * we retry with plain SET NX and re-fetch under the lock on success.
+ * Prefixes that can't produce a co-located lock key fail PS_READ with a
+ * diagnostic rather than silently degrading.
+ *
+ * Locking disabled: plain GET (or GETEX with early_refresh). No Lua, no
+ * lock keys, no prefix validation. */
 PS_READ_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *rcs = PS_GET_MOD_DATA();
+    redisCluster *c = rcs ? rcs->cluster : NULL;
     clusterReply *reply;
     char *compressed_buf;
     RedisCmd *cmd;
     int compressed_free;
     size_t compressed_len;
     short slot;
+    zend_string *raw_data = NULL;
 
-    /* Set up our command and slot information */
+    if (!c) return FAILURE;
+
+    /* Build the prefixed session key once. The locking-enabled branch below
+     * transfers ownership into lock_status.session_key; the disabled branch
+     * uses it for the GET/GETEX command and releases it. */
     key = cluster_session_key(c, key, &slot);
 
+    if (zend_ini_long_literal("redis.session.locking_enabled")) {
+        zend_long ttl = zend_ini_long_literal("redis.session.early_refresh")
+                          ? session_gc_maxlifetime() : 0;
+        int rv;
+
+        if (rcs->lock_status.session_key) {
+            zend_string_release(rcs->lock_status.session_key);
+        }
+        rcs->lock_status.session_key = key; /* transfer ownership */
+
+        /* Co-located lock key required by the atomic Lua; malformed brace
+         * usage in the prefix is a hard failure. */
+        if (generate_cluster_lock_key(&rcs->lock_status) != SUCCESS) {
+            php_error_docref(NULL, E_WARNING,
+                "Cluster session prefix must contain no braces or a non-empty {hash-tag}");
+            return FAILURE;
+        }
+
+        rv = cluster_lock_acquire_and_read(c, &rcs->lock_status,
+                                           rcs->lock_status.session_key,
+                                           ttl, &raw_data);
+
+        if (rv != SUCCESS) {
+            return FAILURE;
+        }
+
+        if (!rcs->lock_status.is_locked) {
+            /* Lua didn't get the lock — the read is potentially stale and
+             * MUST NOT be reused on retry-success (lost-update race).
+             *   1. Retry SUCCESS - re-fetch under the lock.
+             *   2. Retry FAILURE + lock_failure_readonly=1 - keep stale
+             *      read, warn, let PS_WRITE refuse via cluster_write_allowed.
+             *   3. Retry FAILURE + lock_failure_readonly=0 - fail PS_READ. */
+            int retry_rv = cluster_lock_acquire(c, &rcs->lock_status);
+
+            if (retry_rv == SUCCESS) {
+                if (raw_data) {
+                    zend_string_release(raw_data);
+                    raw_data = NULL;
+                }
+                if (cluster_read_session_data(c, rcs->lock_status.session_key,
+                                              ttl, &raw_data) != SUCCESS)
+                {
+                    return FAILURE;
+                }
+            } else if (zend_ini_long_literal("redis.session.lock_failure_readonly")) {
+                php_error_docref(NULL, E_WARNING,
+                    "Failed to acquire session lock, session will be read only");
+            } else {
+                php_error_docref(NULL, E_WARNING, "Failed to acquire session lock");
+                if (raw_data) zend_string_release(raw_data);
+                return FAILURE;
+            }
+        }
+
+        /* An empty read means the session key was absent; PS_UPDATE_TIMESTAMP
+         * reads this to skip the redundant EXPIRE when early_refresh is on. */
+        c->session_key_missing = raw_data == NULL || ZSTR_LEN(raw_data) == 0;
+
+        /* Decompress and hand off */
+        if (raw_data == NULL) {
+            *val = ZSTR_EMPTY_ALLOC();
+        } else if (ZSTR_LEN(raw_data) == 0) {
+            *val = raw_data;            /* hand ownership to caller */
+        } else {
+            compressed_free = session_uncompress_data(c->flags,
+                ZSTR_VAL(raw_data), ZSTR_LEN(raw_data),
+                &compressed_buf, &compressed_len);
+            *val = zend_string_init(compressed_buf, compressed_len, 0);
+            if (compressed_free) {
+                efree(compressed_buf);
+            }
+            zend_string_release(raw_data);
+        }
+        return SUCCESS;
+    }
+
+    /* Locking disabled: GETEX writes the TTL and goes to master, plain
+     * GET is replica-OK via failover=distribute. Master-only reads
+     * require enabling locking. */
     /* Update the session ttl if early refresh is enabled */
     if (zend_ini_long_literal("redis.session.early_refresh")) {
-        cmd = redis_cmd_fmt(NULL, "GETEX", "Ssd", key, "EX", 2,
+        cmd = redis_cmd_fmt(NULL, "GETEX", "Ssd", key, ZEND_STRL("EX"),
                             session_gc_maxlifetime());
         c->readonly = 0;
     } else {
@@ -1520,13 +2189,22 @@ PS_READ_FUNC(rediscluster) {
 /* {{{ PS_WRITE_FUNC
  */
 PS_WRITE_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *rcs = PS_GET_MOD_DATA();
+    redisCluster *c = rcs ? rcs->cluster : NULL;
     clusterReply *reply;
     char *sval;
     RedisCmd *cmd;
     int compressed_free;
     size_t svallen;
     short slot;
+
+    if (!c) return FAILURE;
+
+    /* If locking is enabled but our lock is no longer held (expired or
+     * stolen), refuse to write — same semantics as the standalone handler. */
+    if (!cluster_write_allowed(c, &rcs->lock_status)) {
+        return FAILURE;
+    }
 
     compressed_free = session_compress_data(c->flags, ZSTR_VAL(val), ZSTR_LEN(val),
                                             &sval, &svallen);
@@ -1567,10 +2245,13 @@ PS_WRITE_FUNC(rediscluster) {
 /* {{{ PS_DESTROY_FUNC(rediscluster)
  */
 PS_DESTROY_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *rcs = PS_GET_MOD_DATA();
+    redisCluster *c = rcs ? rcs->cluster : NULL;
     clusterReply *reply;
     RedisCmd *cmd;
     short slot;
+
+    if (!c) return FAILURE;
 
     /* Set up command and slot info */
     key = cluster_session_key(c, key, &slot);
@@ -1597,6 +2278,10 @@ PS_DESTROY_FUNC(rediscluster) {
     /* Clean up our reply */
     cluster_free_reply(reply, 1);
 
+    /* Release the lock if we hold one — destroyed sessions don't need a
+     * dangling lock. */
+    cluster_lock_release(c, &rcs->lock_status);
+
     return SUCCESS;
 }
 
@@ -1604,9 +2289,12 @@ PS_DESTROY_FUNC(rediscluster) {
  */
 PS_CLOSE_FUNC(rediscluster)
 {
-    redisCluster *c = PS_GET_MOD_DATA();
-    if (c) {
-        cluster_free(c, 1);
+    redis_cluster_session *rcs = PS_GET_MOD_DATA();
+    if (rcs) {
+        if (rcs->cluster) {
+            cluster_lock_release(rcs->cluster, &rcs->lock_status);
+        }
+        cluster_session_free(rcs);
         PS_SET_MOD_DATA(NULL);
     }
     return SUCCESS;
