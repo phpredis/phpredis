@@ -4,7 +4,7 @@
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
 [![PHP version](https://img.shields.io/badge/php-%3E%3D%207.4-8892BF.svg)](https://github.com/phpredis/phpredis)
 
-The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. [Valkey](https://valkey.io/) and [KeyDB](https://docs.keydb.dev/) are supported as well.
+The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. [Valkey](https://valkey.io/), [Dragonfly](https://dragonflydb.io), and [KeyDB](https://docs.keydb.dev/) are supported as well.
 
 It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 
