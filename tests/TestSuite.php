@@ -497,6 +497,8 @@ class TestSuite
             return true;
 
         self::$errors []= $this->assertionTrace("'%s' not found in '%s'", $needle, $haystack);
+
+        return false;
     }
 
     protected function assertPatternMatch(string $pattern, string $value): bool {
@@ -679,12 +681,13 @@ class TestSuite
                     $result = self::make_fail('FAILED');
                     $failed = true;
                 }
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 /* We may have simply skipped the test */
                 if ($e instanceof TestSkippedException) {
                     $result = self::make_warning('SKIPPED');
                 } else {
-                    $class_name::$errors[] = "Uncaught exception '".$e->getMessage()."' ($name)\n";
+                    $type = $e instanceof Exception ? 'exception' : get_class($e);
+                    $class_name::$errors[] = "Uncaught $type '".$e->getMessage()."' ($name)\n";
                     $result = self::make_fail('FAILED');
                     $failed = true;
                 }
