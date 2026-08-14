@@ -35,6 +35,7 @@ class TestSuite
 
     public static array $errors = [];
     public static array $warnings = [];
+    private static array $failed_tests = [];
 
     public function __construct(string $host, ?int $port, $auth, ?int $tls_port = 6378) {
         $this->host = $host;
@@ -612,6 +613,10 @@ class TestSuite
                           defined('STDOUT') && posix_isatty(STDOUT);
     }
 
+    public static function getFailedTests(): array {
+        return array_keys(self::$failed_tests);
+    }
+
     public static function run($class_name, $limit = NULL,
                                ?string $host = NULL, ?int $port = NULL,
                                $auth = NULL, ?int $tls_port = 6378)
@@ -639,6 +644,7 @@ class TestSuite
 
             $count = count($class_name::$errors);
             $rt = new $class_name($host, $port, $auth, $tls_port);
+            $failed = false;
 
             try {
                 $rt->setUp();
@@ -648,6 +654,7 @@ class TestSuite
                     $result = self::make_success('PASSED');
                 } else {
                     $result = self::make_fail('FAILED');
+                    $failed = true;
                 }
             } catch (Exception $e) {
                 /* We may have simply skipped the test */
@@ -656,8 +663,12 @@ class TestSuite
                 } else {
                     $class_name::$errors[] = "Uncaught exception '".$e->getMessage()."' ($name)\n";
                     $result = self::make_fail('FAILED');
+                    $failed = true;
                 }
             }
+
+            if ($failed)
+                self::$failed_tests[$name] = true;
 
             echo "[" . $result . "]\n";
         }
