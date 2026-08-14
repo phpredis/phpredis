@@ -96,11 +96,12 @@ php tests/TestRedis.php --class RedisSentinel [--port <sentinel-port>]
 With any of the above test invocations you can limit tests with the `--test
 <name>` option. Each value is a substring match. Multiple filters can be passed
 as a comma-separated list, as repeated `--test` options, or by mixing both forms.
-For example
+Prefix a filter with `!` to exclude matching tests. Exclusions take precedence;
+when there are no positive filters, all tests not excluded will run. For example
 
 ```sh
-# Will run any test with "get", "set", or "echo" in the name
-php tests/TestRedis.php --class Redis --test get,set --test echo
+# Run tests matching "get", "set", or "echo", except those matching "range"
+php tests/TestRedis.php --class Redis --test 'get,set,!range' --test echo
 ```
 
 ### Regression tests

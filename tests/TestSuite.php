@@ -519,42 +519,66 @@ class TestSuite
         throw new TestSkippedException($msg);
     }
 
-    private static function normalizeTestLimit($limit): ?array {
+    private static function normalizeTestFilters($limit): ?array {
         if ( ! $limit)
             return NULL;
 
         if ( ! is_array($limit))
             $limit = [$limit];
 
-        $result = [];
+        $result = [
+            'include' => [],
+            'exclude' => [],
+        ];
 
         foreach ($limit as $tests) {
             foreach (explode(',', $tests) as $test) {
                 $test = strtolower(trim($test));
 
+                if ($test === '')
+                    continue;
+
+                $type = $test[0] === '!' ? 'exclude' : 'include';
+                if ($type === 'exclude')
+                    $test = trim(substr($test, 1));
+
                 if ($test !== '')
-                    $result[$test] = true;
+                    $result[$type][$test] = true;
             }
         }
 
-        return $result ? array_keys($result) : NULL;
+        if ( ! $result['include'] && ! $result['exclude'])
+            return NULL;
+
+        return [
+            'include' => array_keys($result['include']),
+            'exclude' => array_keys($result['exclude']),
+        ];
     }
 
-    private static function testMatches(string $name, ?array $limits): bool {
-        if ($limits === NULL)
+    private static function testMatches(string $name, ?array $filters): bool {
+        if ($filters === NULL)
             return true;
 
         $name = strtolower($name);
 
-        foreach ($limits as $limit) {
-            if (strstr($name, $limit) !== false)
+        foreach ($filters['exclude'] as $filter) {
+            if (strstr($name, $filter) !== false)
+                return false;
+        }
+
+        if ( ! $filters['include'])
+            return true;
+
+        foreach ($filters['include'] as $filter) {
+            if (strstr($name, $filter) !== false)
                 return true;
         }
 
         return false;
     }
 
-    private static function getMaxTestLen(array $methods, ?array $limits): int {
+    private static function getMaxTestLen(array $methods, ?array $filters): int {
         $result = 0;
 
         foreach ($methods as $obj_method) {
@@ -562,7 +586,7 @@ class TestSuite
 
             if (substr($name, 0, 4) != 'test')
                 continue;
-            if ( ! self::testMatches($name, $limits))
+            if ( ! self::testMatches($name, $filters))
                 continue;
 
             if (strlen($name) > $result) {
@@ -621,21 +645,20 @@ class TestSuite
                                ?string $host = NULL, ?int $port = NULL,
                                $auth = NULL, ?int $tls_port = 6378)
     {
-        $limits = self::normalizeTestLimit($limit);
+        $filters = self::normalizeTestFilters($limit);
 
         $rc = new ReflectionClass($class_name);
         $methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
-        $max_test_len = self::getMaxTestLen($methods, $limits);
+        $max_test_len = self::getMaxTestLen($methods, $filters);
 
         foreach($methods as $m) {
             $name = $m->name;
             if (substr($name, 0, 4) !== 'test')
                 continue;
 
-            /* If we're trying to limit the run and none of the requested
-             * substrings match, skip */
-            if ( ! self::testMatches($name, $limits)) {
+            /* Skip tests that don't satisfy the requested filters */
+            if ( ! self::testMatches($name, $filters)) {
                 continue;
             }
 
