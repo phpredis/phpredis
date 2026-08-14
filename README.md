@@ -154,7 +154,7 @@ tests/make-cluster.sh stop
 php tests/TestRedis.php --class RedisSentinel
 ~~~
 
-Note that it is possible to run only tests which match a substring of the test itself by passing the additional argument '--test <str>' when invoking. Multiple test filters can be provided either as a comma-separated list, with repeated `--test` arguments, or by combining both forms.
+Note that it is possible to filter tests by a substring of the test itself by passing the additional argument '--test <str>' when invoking. Multiple test filters can be provided either as a comma-separated list, with repeated `--test` arguments, or by combining both forms. Prefix a filter with `!` to exclude matching tests. Exclusions take precedence over inclusions, and when only exclusions are provided all other tests run.
 
 ~~~
 # Just run the 'echo' test
@@ -162,6 +162,12 @@ php tests/TestRedis.php --class Redis --test echo
 
 # Run tests matching 'get', 'set', or 'echo'
 php tests/TestRedis.php --class Redis --test get,set --test echo
+
+# Run tests matching 'get' or 'set', except those matching 'range'
+php tests/TestRedis.php --class Redis --test 'get,set,!range'
+
+# Run every test except those matching 'commandstats'
+php tests/TestRedis.php --class Redis --test '!commandstats'
 ~~~
 
 ## API Documentation
