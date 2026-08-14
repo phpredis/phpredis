@@ -518,15 +518,50 @@ class TestSuite
         throw new TestSkippedException($msg);
     }
 
-    private static function getMaxTestLen(array $methods, ?string $limit): int {
+    private static function normalizeTestLimit($limit): ?array {
+        if ( ! $limit)
+            return NULL;
+
+        if ( ! is_array($limit))
+            $limit = [$limit];
+
+        $result = [];
+
+        foreach ($limit as $tests) {
+            foreach (explode(',', $tests) as $test) {
+                $test = strtolower(trim($test));
+
+                if ($test !== '')
+                    $result[$test] = true;
+            }
+        }
+
+        return $result ? array_keys($result) : NULL;
+    }
+
+    private static function testMatches(string $name, ?array $limits): bool {
+        if ($limits === NULL)
+            return true;
+
+        $name = strtolower($name);
+
+        foreach ($limits as $limit) {
+            if (strstr($name, $limit) !== false)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static function getMaxTestLen(array $methods, ?array $limits): int {
         $result = 0;
 
         foreach ($methods as $obj_method) {
-            $name = strtolower($obj_method->name);
+            $name = $obj_method->name;
 
             if (substr($name, 0, 4) != 'test')
                 continue;
-            if ($limit && !strstr($name, $limit))
+            if ( ! self::testMatches($name, $limits))
                 continue;
 
             if (strlen($name) > $result) {
@@ -577,26 +612,25 @@ class TestSuite
                           defined('STDOUT') && posix_isatty(STDOUT);
     }
 
-    public static function run($class_name, ?string $limit = NULL,
+    public static function run($class_name, $limit = NULL,
                                ?string $host = NULL, ?int $port = NULL,
                                $auth = NULL, ?int $tls_port = 6378)
     {
-        if ($limit)
-            $limit = strtolower($limit);
+        $limits = self::normalizeTestLimit($limit);
 
         $rc = new ReflectionClass($class_name);
         $methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
-        $max_test_len = self::getMaxTestLen($methods, $limit);
+        $max_test_len = self::getMaxTestLen($methods, $limits);
 
         foreach($methods as $m) {
             $name = $m->name;
             if (substr($name, 0, 4) !== 'test')
                 continue;
 
-            /* If we're trying to limit to a specific test and can't match the
-             * substring, skip */
-            if ($limit && stristr($name, $limit) === false) {
+            /* If we're trying to limit the run and none of the requested
+             * substrings match, skip */
+            if ( ! self::testMatches($name, $limits)) {
                 continue;
             }
 
