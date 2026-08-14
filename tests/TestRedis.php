@@ -48,6 +48,73 @@ function raHosts($host, $ports) {
     }, $ports);
 }
 
+function getOriginalCommand(array $args): array {
+    $fallback = array_merge([PHP_BINARY], $args);
+
+    /* On Linux, /proc preserves the executable and any PHP options exactly as
+     * they were invoked. */
+    if ( ! is_readable('/proc/self/cmdline'))
+        return $fallback;
+
+    $raw = @file_get_contents('/proc/self/cmdline');
+    if ($raw === false)
+        return $fallback;
+
+    $command = explode("\0", rtrim($raw, "\0"));
+
+    /* The PHP-visible argument vector should be the tail of the process
+     * command line, beginning with the test script. */
+    if (count($command) < count($args) ||
+        array_slice($command, -count($args)) !== $args)
+    {
+        return $fallback;
+    }
+
+    return $command;
+}
+
+function escapeCommandArgument(string $arg): string {
+    if (preg_match('/^[a-zA-Z0-9_@%+=:,\.\/-]+$/D', $arg))
+        return $arg;
+
+    return escapeshellarg($arg);
+}
+
+function getFailedTestCommand(array $args, array $failed_tests): string {
+    $command = getOriginalCommand($args);
+    $script_index = count($command) - count($args);
+    $result = array_slice($command, 0, $script_index + 1);
+
+    /* Keep the original invocation but replace its test filters with the
+     * complete set of failed tests. */
+    for ($i = $script_index + 1; $i < count($command); $i++) {
+        if ($command[$i] === '--test') {
+            $i++;
+            continue;
+        }
+
+        if (strncmp($command[$i], '--test=', strlen('--test=')) === 0)
+            continue;
+
+        $result[] = $command[$i];
+    }
+
+    $result[] = '--test';
+    $result[] = implode(',', $failed_tests);
+
+    return implode(' ', array_map('escapeCommandArgument', $result));
+}
+
+function printFailedTestCommand(array $args) {
+    $failed_tests = TestSuite::getFailedTests();
+
+    if ( ! $failed_tests)
+        return;
+
+    echo "\nTo rerun only the failed tests:\n";
+    echo getFailedTestCommand($args, $failed_tests) . "\n";
+}
+
 /* Make sure errors go to stdout and are shown */
 error_reporting(E_ALL);
 ini_set( 'display_errors','1');
@@ -111,14 +178,17 @@ foreach ($classes as $class) {
             foreach ($test_classes as $test_class) {
                 /* Run until we encounter a failure */
                 if (run_ra_tests($test_class, $filter, $host, $full_ring, $sub_ring, $auth) != 0) {
+                    printFailedTestCommand($argv);
                     exit(1);
                 }
             }
         }
     } else {
         echo TestSuite::make_bold($class) . "\n";
-        if (TestSuite::run("$class", $filter, $host, $port, $auth, $tls_port))
+        if (TestSuite::run("$class", $filter, $host, $port, $auth, $tls_port)) {
+            printFailedTestCommand($argv);
             exit(1);
+        }
     }
 }
 
