@@ -1012,6 +1012,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $this->assertIsArray($info);
         foreach ($info as $k => $value) {
+            if ($this->is_dragonfly && strpos($k, 'unknown_') === 0)
+                continue;
+
             $this->assertStringContains('cmdstat_', $k);
         }
     }
