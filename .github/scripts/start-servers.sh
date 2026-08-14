@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-server="${1:?Expected redis or valkey}-server"
+backend=${1:?Expected redis, valkey or dragonfly}
+server="$backend-server"
 cli="${1}-cli"
+if [[ $backend == dragonfly ]]; then
+    server=redis-server
+    cli=redis-cli
+fi
 state="${RUNNER_TEMP:?}/phpredis-servers"
 acl="$PWD/tests/users.acl"
 mkdir -p "$state" tests/nodes
@@ -11,6 +16,12 @@ start_server() {
     local name=$1
     shift
     mkdir -p "$state/$name"
+    if [[ $backend == dragonfly ]]; then
+        dragonfly --bind=127.0.0.1 --dir="$state/$name" --aclfile="$acl" \
+            --proactor_threads=1 --maxmemory=256mb --maxclients=1000 \
+            --version_check=false "$@" >"$state/$name/server.log" 2>&1 &
+        return
+    fi
     "$server" --bind 127.0.0.1 --daemonize yes --save '' \
         --dir "$state/$name" --pidfile "$state/$name/server.pid" \
         --logfile "$state/$name/server.log" \
@@ -28,10 +39,11 @@ wait_for() {
     done
 }
 
+socket_port=0
 for port in {6379..6382}; do
     start_server "$port" --port "$port"
 done
-start_server socket --port 0 --unixsocket /tmp/redis.sock
+start_server socket --port "$socket_port" --unixsocket /tmp/redis.sock
 
 # testHighPorts probes with an unauthenticated PING before testing AUTH.
 sed '/^user default /s/>phpredis/nopass/' "$acl" > "$state/highports.acl"
@@ -42,9 +54,14 @@ done
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
     -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' \
     -keyout "$state/server.key" -out "$state/server.crt"
-start_server tls --port 0 --tls-port 6378 --tls-auth-clients no \
-    --tls-cert-file "$state/server.crt" --tls-key-file "$state/server.key" \
-    --tls-ca-cert-file "$state/server.crt"
+if [[ $backend == dragonfly ]]; then
+    start_server tls --port 6378 --tls \
+        --tls_cert_file "$state/server.crt" --tls_key_file "$state/server.key"
+else
+    start_server tls --port 0 --tls-port 6378 --tls-auth-clients no \
+        --tls-cert-file "$state/server.crt" --tls-key-file "$state/server.key" \
+        --tls-ca-cert-file "$state/server.crt"
+fi
 
 cluster_args=()
 REDISCLI_AUTH=phpredis wait_for --user phpredis PING
@@ -55,9 +72,16 @@ if REDISCLI_AUTH=phpredis "$cli" --user phpredis CONFIG GET cluster-bus-port-pro
 fi
 
 : > tests/nodes/nodemap
-for port in {7000..7005}; do
-    start_server "$port" --port "$port" --cluster-enabled yes \
-        --cluster-config-file nodes.conf "${cluster_args[@]}"
+cluster_ports=({7000..7005})
+if [[ $backend == dragonfly ]]; then
+    cluster_ports=(7000)
+    start_server 7000 --port 7000 --cluster_mode=emulated
+fi
+for port in "${cluster_ports[@]}"; do
+    if [[ $backend != dragonfly ]]; then
+        start_server "$port" --port "$port" --cluster-enabled yes \
+            --cluster-config-file nodes.conf "${cluster_args[@]}"
+    fi
     echo "127.0.0.1:$port" >> tests/nodes/nodemap
 done
 
@@ -78,14 +102,16 @@ EOF
 done
 
 export REDISCLI_AUTH=phpredis
-for port in {6379..6382} {7000..7005} {32767..32770}; do
+for port in {6379..6382} "${cluster_ports[@]}" {32767..32770}; do
     wait_for --user phpredis -p "$port" PING
 done
 wait_for --user phpredis -s /tmp/redis.sock PING
 wait_for --user phpredis --tls --cacert "$state/server.crt" -p 6378 PING
 
-"$cli" --user phpredis --cluster create 127.0.0.1:{7000..7005} \
-    --cluster-replicas 1 --cluster-yes
-for port in {7000..7005}; do
+if [[ $backend != dragonfly ]]; then
+    "$cli" --user phpredis --cluster create 127.0.0.1:{7000..7005} \
+        --cluster-replicas 1 --cluster-yes
+fi
+for port in "${cluster_ports[@]}"; do
     wait_for --user phpredis -p "$port" CLUSTER INFO
 done

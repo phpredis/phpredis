@@ -81,7 +81,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
-        server: ['redis', 'valkey']
+        server: ['redis', 'dragonfly', 'valkey']
 
     steps:
       - name: Checkout
@@ -114,6 +114,16 @@ jobs:
             sudo tee /etc/apt/sources.list.d/redis.list
           sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install -y --no-install-recommends redis
+
+      - name: Install Dragonfly
+        if: matrix.server == 'dragonfly'
+        run: |
+          sudo curl -Lo /usr/share/keyrings/dragonfly-keyring.public \
+            https://packages.dragonflydb.io/pgp-key.public
+          sudo curl -Lo /etc/apt/sources.list.d/dragonfly.sources \
+            https://packages.dragonflydb.io/dragonfly.sources
+          sudo apt-get update --allow-releaseinfo-change-label
+          sudo apt-get install dragonfly redis-server redis-tools
 
       - name: Cache Valkey
         if: matrix.server == 'valkey'
@@ -148,7 +158,12 @@ jobs:
           echo 'extension = redis.so' | sudo tee "$(php-config --ini-dir)"/90-redis.ini
 
       - name: Attempt to shutdown default server
-        run: ${{ matrix.server }}-cli SHUTDOWN NOSAVE || true
+        run: |
+          if [ "${{ matrix.server }}" = dragonfly ]; then
+            sudo systemctl stop dragonfly redis-server || true
+          else
+            ${{ matrix.server }}-cli SHUTDOWN NOSAVE || true
+          fi
 
       - name: Start standalone, TLS, cluster and Sentinel servers
         id: servers
