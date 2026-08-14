@@ -93,12 +93,14 @@ php tests/TestRedis.php --class RedisSentinel [--port <sentinel-port>]
 
 ### Running specific tests
 
-With any of the above test invocations you can limit to a specific test with the
-`--test <name>` option. This is a substring match so for example
+With any of the above test invocations you can limit tests with the `--test
+<name>` option. Each value is a substring match. Multiple filters can be passed
+as a comma-separated list, as repeated `--test` options, or by mixing both forms.
+For example
 
 ```sh
-# Will run any test with "get" in the name
-php tests/TestRedis.php --class Redis --test get
+# Will run any test with "get", "set", or "echo" in the name
+php tests/TestRedis.php --class Redis --test get,set --test echo
 ```
 
 ### Regression tests
