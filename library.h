@@ -10,6 +10,12 @@
 #define CLUSTER_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_cluster_exception_ce, (msg), code)
 
+typedef enum {
+    REDIS_GEOSEARCH_WITHCOORD = 1 << 0,
+    REDIS_GEOSEARCH_WITHDIST  = 1 << 1,
+    REDIS_GEOSEARCH_WITHHASH  = 1 << 2,
+} RedisGeoSearchOptions;
+
 #if PHP_VERSION_ID < 80000
     /* use RedisException when ValueError not available */
     #define REDIS_VALUE_EXCEPTION(m) REDIS_THROW_EXCEPTION(m, 0)
@@ -192,7 +198,8 @@ PHP_REDIS_API int redis_zadd_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 PHP_REDIS_API int redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_set_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
-PHP_REDIS_API int redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock, long long elements, int with_aux_data);
+PHP_REDIS_API int redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
+    long long elements, uintptr_t options);
 PHP_REDIS_API int redis_geosearch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_hrandfield_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_pop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);

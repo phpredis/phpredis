@@ -1650,14 +1650,78 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return 0;
 }
 
-static int
-geosearch_cast(zval *zv)
+static int geosearch_cast_double(zval *zv)
 {
-    if (Z_TYPE_P(zv) == IS_ARRAY) {
-        zend_hash_apply(Z_ARRVAL_P(zv), geosearch_cast);
-    } else if (Z_TYPE_P(zv) == IS_STRING) {
-        convert_to_double(zv);
+    if (Z_TYPE_P(zv) == IS_ARRAY)
+        return FAILURE;
+
+    convert_to_double(zv);
+
+    return SUCCESS;
+}
+
+static int
+geosearch_cast(zval *zv, uintptr_t options)
+{
+    zval *zcoord, *zsub;
+    HashTable *ht;
+    zend_long hash;
+    zend_ulong idx = 1;
+    uint32_t expected = 1;
+
+    expected += (options & REDIS_GEOSEARCH_WITHDIST) != 0;
+    expected += (options & REDIS_GEOSEARCH_WITHHASH) != 0;
+    expected += (options & REDIS_GEOSEARCH_WITHCOORD) != 0;
+
+    if (Z_TYPE_P(zv) != IS_ARRAY ||
+        zend_hash_num_elements(Z_ARRVAL_P(zv)) != expected)
+    {
+        return FAILURE;
     }
+
+    ht = Z_ARRVAL_P(zv);
+    zsub = zend_hash_index_find(ht, 0);
+    if (zsub == NULL || Z_TYPE_P(zsub) == IS_ARRAY)
+        return FAILURE;
+
+    if (options & REDIS_GEOSEARCH_WITHDIST) {
+        zsub = zend_hash_index_find(ht, idx++);
+        if (zsub == NULL || geosearch_cast_double(zsub) == FAILURE)
+            return FAILURE;
+    }
+
+    if (options & REDIS_GEOSEARCH_WITHHASH) {
+        zsub = zend_hash_index_find(ht, idx++);
+        if (zsub == NULL)
+            return FAILURE;
+
+        if (Z_TYPE_P(zsub) == IS_STRING) {
+            if (is_numeric_string(Z_STRVAL_P(zsub), Z_STRLEN_P(zsub),
+                                  &hash, NULL, 0) != IS_LONG)
+            {
+                return FAILURE;
+            }
+            zval_ptr_dtor_nogc(zsub);
+            ZVAL_LONG(zsub, hash);
+        } else if (Z_TYPE_P(zsub) != IS_LONG) {
+            return FAILURE;
+        }
+    }
+
+    if (options & REDIS_GEOSEARCH_WITHCOORD) {
+        zsub = zend_hash_index_find(ht, idx);
+        if (zsub == NULL || Z_TYPE_P(zsub) != IS_ARRAY ||
+            zend_hash_num_elements(Z_ARRVAL_P(zsub)) != 2)
+        {
+            return FAILURE;
+        }
+
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(zsub), zcoord) {
+            if (geosearch_cast_double(zcoord) == FAILURE)
+                return FAILURE;
+        } ZEND_HASH_FOREACH_END();
+    }
+
     return SUCCESS;
 }
 
@@ -1743,7 +1807,7 @@ redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 PHP_REDIS_API int
 redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
-                              long long elements, int with_aux_data)
+                              long long elements, uintptr_t options)
 {
     zval z_multi_result, z_sub, *z_ele, *zv;
     zend_string *zkey;
@@ -1756,23 +1820,26 @@ redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
 
     array_init_size(zdst, elements > 0 ? elements : 0);
 
-    if (with_aux_data == 0) {
+    if (options == 0) {
         redis_mbulk_reply_loop(redis_sock, zdst, elements, UNSERIALIZE_NONE);
     } else {
         array_init_size(&z_multi_result, elements > 0 ? elements : 0);
 
-        redis_read_multibulk_recursive(redis_sock, elements, 0, &z_multi_result);
+        if (redis_read_multibulk_recursive(redis_sock, elements, 0,
+                                           &z_multi_result) == FAILURE)
+        {
+            goto fail;
+        }
 
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_multi_result), z_ele) {
+            if (geosearch_cast(z_ele, options) == FAILURE)
+                goto fail;
+
             // The first item in the sub-array is always the name of the returned item
             zv = zend_hash_index_find(Z_ARRVAL_P(z_ele), 0);
             zkey = zval_get_string(zv);
 
             zend_hash_index_del(Z_ARRVAL_P(z_ele), 0);
-
-            // The other information is returned in the following order as successive
-            // elements of the sub-array: distance, geohash, coordinates
-            zend_hash_apply(Z_ARRVAL_P(z_ele), geosearch_cast);
 
             // Reindex elements so they start at zero */
             ZVAL_ARR(&z_sub, zend_array_to_list(Z_ARRVAL_P(z_ele)));
@@ -1786,6 +1853,11 @@ redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
     }
 
     return SUCCESS;
+
+fail:
+    zval_ptr_dtor_nogc(&z_multi_result);
+    zval_ptr_dtor_nogc(zdst);
+    return FAILURE;
 }
 
 PHP_REDIS_API int
@@ -1797,7 +1869,7 @@ redis_geosearch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     if (read_mbulk_header(redis_sock, &elements) < 0 ||
         redis_read_geosearch_response(&zret, redis_sock, elements,
-                                      ctx.ptr != NULL) < 0)
+                                      (uintptr_t)ctx.ptr) < 0)
     {
         ZVAL_FALSE(&zret);
     }

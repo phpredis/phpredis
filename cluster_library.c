@@ -1914,7 +1914,7 @@ cluster_geosearch_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     c->cmd_sock->null_mbulk_as_null = c->flags->null_mbulk_as_null;
     if (c->reply_type != TYPE_MULTIBULK ||
         redis_read_geosearch_response(&zret, c->cmd_sock, c->reply_len,
-                                      ctx.ptr != NULL) < 0)
+                                      (uintptr_t)ctx.ptr) < 0)
     {
         ZVAL_FALSE(&zret);
     }

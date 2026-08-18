@@ -4549,6 +4549,7 @@ RedisCmd *
 redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 {
     zval *position, *shape, *z_ele;
+    uint64_t response_options = 0;
     geoSearchOptions sopts = {0};
     zend_string *zkey, *zstr;
     zend_string *key, *unit;
@@ -4623,9 +4624,14 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         redis_cmd_cat_literal_if(cmd, gopts.any, "ANY");
     }
 
-    if (gopts.withcoord + gopts.withdist + gopts.withhash > 0) {
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
-    }
+    if (gopts.withcoord)
+        response_options |= REDIS_GEOSEARCH_WITHCOORD;
+    if (gopts.withdist)
+        response_options |= REDIS_GEOSEARCH_WITHDIST;
+    if (gopts.withhash)
+        response_options |= REDIS_GEOSEARCH_WITHHASH;
+
+    redis_cmd_set_ctx_u64(cmd, response_options);
 
     return cmd;
 }
