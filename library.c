@@ -3588,7 +3588,12 @@ redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
         array_init_size(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
-        redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, UNSERIALIZE_NONE);
+        if (redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems,
+                                   UNSERIALIZE_NONE) == FAILURE) {
+            zval_ptr_dtor_nogc(&z_multi_result);
+            REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+            return FAILURE;
+        }
     }
 
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_multi_result);
@@ -3679,7 +3684,7 @@ redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
  * no intermediate copy. Returns NULL for null/error replies, mirroring
  * redis_sock_read's NULL semantics. */
 static zend_string *
-redis_sock_read_zstr(RedisSock *redis_sock)
+redis_sock_read_zstr(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type)
 {
     char inbuf[4096];
     size_t len;
@@ -3688,7 +3693,9 @@ redis_sock_read_zstr(RedisSock *redis_sock)
         return NULL;
     }
 
-    switch (inbuf[0]) {
+    *reply_type = inbuf[0];
+
+    switch (*reply_type) {
         case '-':
             redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
             redis_error_throw(redis_sock);
@@ -3713,13 +3720,15 @@ redis_sock_read_zstr(RedisSock *redis_sock)
             if (len > 2 && memcmp(inbuf + 1, "-1", 2) == 0) {
                 return NULL;
             }
+            if (len > 1) {
+                return zend_string_init(inbuf, len, 0);
+            }
             REDIS_FALLTHROUGH;
         case '+':
         case ':':
-            /* Single line reply (+OK or :123), kept verbatim like
-             * redis_sock_read does, including the leading type byte. */
+            /* Materialize inline values without their RESP type byte. */
             if (len > 1) {
-                return zend_string_init(inbuf, len, 0);
+                return zend_string_init(inbuf + 1, len - 1, 0);
             }
             REDIS_FALLTHROUGH;
         default:
@@ -3736,6 +3745,7 @@ PHP_REDIS_API int
 redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
                        int unserialize)
 {
+    REDIS_REPLY_TYPE reply_type;
     zval z_value;
     zend_string *zstr;
     int i;
@@ -3747,7 +3757,7 @@ redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
                  redis_sock->compression != REDIS_COMPRESSION_NONE;
 
     for (i = 0; i < count; ++i) {
-        if ((zstr = redis_sock_read_zstr(redis_sock)) == NULL) {
+        if ((zstr = redis_sock_read_zstr(redis_sock, &reply_type)) == NULL) {
             add_next_index_bool(z_tab, 0);
             if (EG(exception) || redis_sock->stream == NULL ||
                 redis_sock->status == REDIS_SOCK_STATUS_FAILED
@@ -3766,7 +3776,7 @@ redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
             (unserialize == UNSERIALIZE_VALS && i % 2 != 0)
         );
 
-        if (unwrap && repack) {
+        if (unwrap && repack && reply_type == TYPE_BULK) {
             redis_unpack(redis_sock, ZSTR_VAL(zstr), ZSTR_LEN(zstr), &z_value);
             zend_string_release(zstr);
         } else {
