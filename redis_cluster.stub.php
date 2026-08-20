@@ -54,7 +54,7 @@ class RedisCluster {
      */
     public const FAILOVER_DISTRIBUTE_SLAVES = UNKNOWN;
 
-    public function __construct(string|null $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = null, ?array $context = null);
+    public function __construct(string|null $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = null, ?array $context = null, int $database = 0);
 
     /**
      * {@see \Redis::_compress()}
@@ -473,6 +473,13 @@ class RedisCluster {
      * @see \Redis::getBit()
      */
     public function getbit(string $key, int $value): RedisCluster|int|false;
+
+    /**
+     * Get the database number the cluster is configured to use.
+     *
+     * @see \Redis::getDBNum()
+     */
+    public function getdbnum(): int;
 
     /**
      * @see \Redis::getLastError()
@@ -971,6 +978,17 @@ class RedisCluster {
      * @see \Redis::sDiffStore()
      */
     public function sdiffstore(string $dst, string $key, string ...$other_keys): RedisCluster|int|false;
+
+    /**
+     * Select a database on every connection in the cluster.  This requires
+     * a server which supports databases in cluster mode, e.g. Valkey >= 9.0
+     * with `cluster-databases` configured to a value greater than 1.  On
+     * servers without support the method returns false and the server error
+     * is available via getlasterror().
+     *
+     * @see \Redis::select()
+     */
+    public function select(int $db): bool;
 
     /**
      * @see https://redis.io/commands/set

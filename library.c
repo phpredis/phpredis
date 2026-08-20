@@ -165,14 +165,16 @@ static int redis_sock_response_ok(RedisSock *redis_sock, char *buf, int buf_size
     return 1;
 }
 
-/* Helper to select the proper DB number */
-static int redis_select_db(RedisSock *redis_sock) {
+/* Send SELECT <db> on a socket and consume the reply.  On a server error
+ * the message is captured in redis_sock->err.  Does not modify
+ * redis_sock->dbNumber. */
+PHP_REDIS_API int redis_sock_select_db(RedisSock *redis_sock, zend_long db) {
     char response[4096];
     RedisCmd *cmd;
 
     cmd = redis_cmd_create_literal(redis_sock, "SELECT");
 
-    redis_cmd_cat_long(cmd, redis_sock->dbNumber);
+    redis_cmd_cat_long(cmd, db);
 
     if (redis_sock_write(redis_sock, redis_cmd_str(cmd), redis_cmd_len(cmd)) < 0) {
         redis_cmd_free(cmd);
@@ -186,6 +188,11 @@ static int redis_select_db(RedisSock *redis_sock) {
     }
 
     return 0;
+}
+
+/* Helper to select the proper DB number */
+static int redis_select_db(RedisSock *redis_sock) {
+    return redis_sock_select_db(redis_sock, redis_sock->dbNumber);
 }
 
 /* Append an AUTH command to a smart string if necessary.  This will either
@@ -948,6 +955,14 @@ redis_pool_spprintf(RedisSock *redis_sock, const char *fmt, ...) {
     smart_str_append_ex(&str, redis_sock->host, 0);
     smart_str_appendc(&str, ':');
     smart_str_append_long(&str, (zend_long)redis_sock->port);
+
+    /* Segregate persistent streams by database so a stream left on a nonzero
+     * db can never be handed to a client expecting another db.  Omitted for
+     * db 0 so existing pool keys are unchanged. */
+    if (redis_sock->dbNumber != 0) {
+        smart_str_appendl(&str, ":db", sizeof(":db") - 1);
+        smart_str_append_long(&str, (zend_long)redis_sock->dbNumber);
+    }
 
     /* Short circuit if we don't have a pattern */
     if (fmt == NULL) {
@@ -3310,6 +3325,14 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                 persistent_id = strpprintf(0, "phpredis:%s:%s", host, ZSTR_VAL(redis_sock->persistent_id));
             } else {
                 persistent_id = strpprintf(0, "phpredis:%s:%f", host, redis_sock->timeout);
+            }
+
+            /* Segregate persistent streams by database (see redis_pool_spprintf) */
+            if (redis_sock->dbNumber != 0) {
+                zend_string *dbid = strpprintf(0, "%s:db%ld", ZSTR_VAL(persistent_id),
+                                               redis_sock->dbNumber);
+                zend_string_release(persistent_id);
+                persistent_id = dbid;
             }
         }
     }

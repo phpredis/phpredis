@@ -70,7 +70,14 @@ class Redis_Test extends TestSuite {
     }
 
     protected function detectValkey($info) {
-        return is_array($info) && ($info['executable'] ?? '') === 'valkey';
+        if ( ! is_array($info))
+            return false;
+
+        /* Valkey reports both of these, and 'executable' is a full path so
+         * it can only be matched loosely. */
+        return ($info['server_name'] ?? '') === 'valkey' ||
+               isset($info['valkey_version']) ||
+               strpos($info['executable'] ?? '', 'valkey') !== false;
     }
 
     public function setUp() {
@@ -8869,6 +8876,33 @@ class Redis_Test extends TestSuite {
 
         $this->assertEquals(1, $redis->getDBNum());
         $this->assertEquals(1, $redis->client('info')['db']);
+    }
+
+    /* Persistent streams are pooled per database, so a stream left on a
+     * nonzero database must never be handed to a client expecting another
+     * database. */
+    public function testPersistentDatabasePoolIsolation() {
+        $options = [
+            'host' => $this->getHost(),
+            'port' => $this->getPort(),
+            'persistent' => true,
+            'database' => 2,
+        ];
+
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
+
+        $db2 = new Redis($options);
+        $this->assertEquals(2, $db2->client('info')['db']);
+
+        /* Return the stream to the pool */
+        unset($db2);
+
+        /* A fresh database 0 client must not pick up the database 2 stream */
+        $options['database'] = 0;
+        $db0 = new Redis($options);
+        $this->assertEquals(0, $db0->client('info')['db']);
     }
 
     public function testConnectException() {
