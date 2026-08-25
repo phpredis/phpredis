@@ -45,7 +45,7 @@ ini_set('redis.session.early_refresh', $early_refresh);
 session_id($id);
 $status = session_start();
 
-sleep($sleep);
+usleep((int)round($sleep * 1000000));
 
 if ($data) {
     $_SESSION['redis_test'] = $data;

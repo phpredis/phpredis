@@ -140,7 +140,7 @@ class Runner {
         return $this->set('id', $id);
     }
 
-    public function sleep(int $sleep): self {
+    public function sleep(float $sleep): self {
         return $this->set('sleep', $sleep);
     }
 
@@ -213,16 +213,24 @@ class Runner {
      *
      * @return bool
      */
-    public function waitForLockKey($redis, $max_wait_sec) {
+    private function waitForLockKeyState($redis, bool $exists, $max_wait_sec) {
         $now = microtime(true);
 
         do {
-            if ($redis->exists($this->getSessionLockKey()))
+            if ((bool)$redis->exists($this->getSessionLockKey()) === $exists)
                 return true;
             usleep(10000);
         } while (microtime(true) <= $now + $max_wait_sec);
 
         return false;
+    }
+
+    public function waitForLockKey($redis, $max_wait_sec) {
+        return $this->waitForLockKeyState($redis, true, $max_wait_sec);
+    }
+
+    public function waitForLockRelease($redis, $max_wait_sec) {
+        return $this->waitForLockKeyState($redis, false, $max_wait_sec);
     }
 
     private function appendCmdArgs(array $args): string {
