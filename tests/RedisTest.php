@@ -709,7 +709,9 @@ class Redis_Test extends TestSuite {
 
     public function testRandomKey() {
         $this->redis->set('randomkey-test', 'value');
-        $this->assertKeyExists($this->redis->randomKey());
+        $k = $this->redis->randomKey();
+        $this->assertIsString($k);
+        $this->assertKeyExists($k);
         $this->redis->del('randomkey-test');
     }
 
