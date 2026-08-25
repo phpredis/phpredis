@@ -185,6 +185,15 @@ foreach ($classes as $class) {
         }
     } else {
         echo TestSuite::make_bold($class) . "\n";
+
+        try {
+            $test = new $class($host, $port, $auth, $tls_port);
+            if (($server = $test->getServerVersion()) !== NULL)
+                echo "Using $server\n";
+        } catch (Throwable $e) {
+            /* Version reporting is best-effort; let the test run report errors. */
+        }
+
         if (TestSuite::run("$class", $filter, $host, $port, $auth, $tls_port)) {
             printFailedTestCommand($argv);
             exit(1);
