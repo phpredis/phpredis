@@ -61,8 +61,8 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession_lockKeyCorrect() { $this->markTestSkipped(); }
     public function testSession_lockingDisabledByDefault() { $this->markTestSkipped(); }
     public function testSession_lockReleasedOnClose() { $this->markTestSkipped(); }
-    public function testSession_ttlMaxExecutionTime() { $this->markTestSkipped(); }
-    public function testSession_ttlLockExpire() { $this->markTestSkipped(); }
+    public function testSession_lock_ttlMaxExecutionTime() { $this->markTestSkipped(); }
+    public function testSession_lock_ttlLockExpire() { $this->markTestSkipped(); }
     public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock() { $this->markTestSkipped(); }
     public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock() { $this->markTestSkipped(); }
     public function testSession_correctLockRetryCount() { $this->markTestSkipped(); }

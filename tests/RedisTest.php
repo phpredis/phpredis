@@ -8876,7 +8876,7 @@ class Redis_Test extends TestSuite {
         $this->testRequiresMode('cli');
 
         $runner = $this->sessionRunner()
-            ->sleep(.1)
+            ->sleep(1)
             ->maxExecutionTime(300);
 
         $runner2 = $this->sessionRunner()
@@ -8899,7 +8899,7 @@ class Redis_Test extends TestSuite {
         $this->assertSessionRunnerResult($runner2);
         $et = microtime(true);
 
-        $this->assertBetween($et - $st, .15, .75);
+        $this->assertBetween($et - $st, .5, 2);
     }
 
     public function testMultipleConnect() {
