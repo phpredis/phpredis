@@ -706,8 +706,14 @@ class Redis_Test extends TestSuite {
     }
 
     public function testRandomKey() {
-        for ($i = 0; $i < 1000; $i++) {
+        /* Make sure we can run this test in isolation */
+        for ($i = 0; $i < 10; $i++) {
+            $this->redis->set('{key}' . $i, 'val' . $i);
+        }
+
+        for ($i = 0; $i < 10; $i++) {
             $k = $this->redis->randomKey();
+            $this->assertIsString($k);
             $this->assertKeyExists($k);
         }
     }
