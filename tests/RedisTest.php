@@ -70,13 +70,30 @@ class Redis_Test extends TestSuite {
     }
 
     protected function detectValkey($info) {
-        return is_array($info) && ($info['executable'] ?? '') === 'valkey';
+        return is_array($info) &&
+               (($info['server_name'] ?? NULL) === 'valkey' ||
+                isset($info['valkey_version']));
+    }
+
+    /* RedisCluster overrides this because INFO must be directed at a node. */
+    protected function queryServerInfo($redis) {
+        return $redis->info();
+    }
+
+    public function getServerInfo() {
+        $redis = $this->newInstance();
+
+        try {
+            return $this->queryServerInfo($redis);
+        } finally {
+            $redis->close();
+        }
     }
 
     public function setUp() {
         $this->redis = $this->newInstance();
 
-        $info = $this->redis->info();
+        $info = $this->queryServerInfo($this->redis);
 
         $this->version = $info['redis_version'] ?? '0.0.0';
         $this->valkey_version = $info['valkey_version'] ?? '0.0.0';

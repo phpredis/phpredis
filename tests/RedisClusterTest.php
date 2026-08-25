@@ -165,14 +165,8 @@ class Redis_Cluster_Test extends Redis_Test {
         self::$seeds = $this->loadSeeds($host, $port);
     }
 
-    /* Override setUp to get info from a specific node */
-    public function setUp() {
-        $this->redis    = $this->newInstance();
-        $info           = $this->redis->info(uniqid());
-        $this->version  = $info['redis_version'] ?? '0.0.0';
-        $this->is_keydb = $this->detectKeyDB($info);
-        $this->is_valkey = $this->detectValkey($info);
-        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
+    protected function queryServerInfo($redis) {
+        return $redis->info(uniqid());
     }
 
     private function findCliExe() {
