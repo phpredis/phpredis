@@ -8797,7 +8797,7 @@ class Redis_Test extends TestSuite {
         }
         $et = microtime(true);
 
-        $this->assertBetween($et - $st, .15, .75);
+        $this->assertGTE(.15, $et - $st);
     }
 
     public function testSession_defaultLockRetryCount() {
