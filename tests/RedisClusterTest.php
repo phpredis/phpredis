@@ -382,6 +382,17 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals(strval(intval($usec)), strval($usec));
     }
 
+    public function testExpireAt() {
+        $this->redis->del('key');
+        $this->redis->set('key', 'value');
+
+        $now = $this->redis->time('key');
+        $this->assertTrue($this->redis->expireAt('key', $now[0] + 10));
+        $this->assertLTE(10, $this->redis->ttl('key'));
+
+        $this->redis->del('key');
+    }
+
     public function testScan() {
         $key_count = 0;
         $scan_count = 0;
