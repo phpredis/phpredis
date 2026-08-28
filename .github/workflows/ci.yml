@@ -74,7 +74,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
-        server: ['redis', 'keydb', 'valkey']
+        server: ['redis', 'dragonfly', 'valkey']
 
     steps:
       - name: Checkout
@@ -106,17 +106,15 @@ jobs:
           sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install redis
 
-      - name: Install KeyDB
-        if: matrix.server == 'keydb'
-        env:
-          KEYDB_PPA_URI: "download.keydb.dev/open-source-dist"
-          KEYDB_PPA_KEY: "download.keydb.dev/open-source-dist/keyring.gpg"
+      - name: Install Dragonfly
+        if: matrix.server == 'dragonfly'
         run: |
-          echo "deb https://$KEYDB_PPA_URI $(lsb_release -sc) main" | \
-               sudo tee /etc/apt/sources.list.d/keydb.list
-          sudo wget -O /etc/apt/trusted.gpg.d/keydb.gpg "https://$KEYDB_PPA_KEY"
+          sudo curl -Lo /usr/share/keyrings/dragonfly-keyring.public \
+            https://packages.dragonflydb.io/pgp-key.public
+          sudo curl -Lo /etc/apt/sources.list.d/dragonfly.sources \
+            https://packages.dragonflydb.io/dragonfly.sources
           sudo apt-get update --allow-releaseinfo-change-label
-          sudo apt-get install keydb
+          sudo apt-get install dragonfly redis-server redis-tools
 
       - name: Install ValKey
         if: matrix.server == 'valkey'
@@ -138,9 +136,15 @@ jobs:
           echo 'extension = redis.so' | sudo tee -a "$(php-config --ini-dir)"/90-redis.ini
 
       - name: Attempt to shutdown default server
-        run: ${{ matrix.server }}-cli SHUTDOWN NOSAVE || true
+        run: |
+          if [ "${{ matrix.server }}" = dragonfly ]; then
+            sudo systemctl stop dragonfly redis-server || true
+          else
+            ${{ matrix.server }}-cli SHUTDOWN NOSAVE || true
+          fi
 
       - name: Start ${{ matrix.server }}-server
+        if: matrix.server != 'dragonfly'
         run: |
           for PORT in {6379..6382} {32767..32769}; do
             ${{ matrix.server }}-server \
@@ -156,7 +160,35 @@ jobs:
             --aclfile tests/users.acl \
             --acl-pubsub-default allchannels
 
+      - name: Start dragonfly
+        if: matrix.server == 'dragonfly'
+        run: |
+          for PORT in {6379..6382} {32767..32769}; do
+            mkdir -p "/tmp/dragonfly-data-$PORT"
+            dragonfly \
+              --port="$PORT" \
+              --dir="/tmp/dragonfly-data-$PORT" \
+              --aclfile=tests/users.acl \
+              --proactor_threads=1 \
+              --maxmemory=256mb \
+              --maxclients=1000 \
+              --version_check=false \
+              >"/tmp/dragonfly-$PORT.log" 2>&1 &
+          done
+          mkdir -p /tmp/dragonfly-data-unixsocket
+          dragonfly \
+            --port=0 \
+            --unixsocket=/tmp/redis.sock \
+            --dir=/tmp/dragonfly-data-unixsocket \
+            --aclfile=tests/users.acl \
+            --proactor_threads=1 \
+            --maxmemory=256mb \
+            --maxclients=1000 \
+            --version_check=false \
+            >/tmp/dragonfly-unixsocket.log 2>&1 &
+
       - name: Start ${{ matrix.server }} cluster
+        if: matrix.server != 'dragonfly'
         run: |
           mkdir -p tests/nodes
           echo -n > tests/nodes/nodemap
@@ -171,13 +203,34 @@ jobs:
             echo 127.0.0.1:"$PORT" >> tests/nodes/nodemap
           done
 
+      - name: Start dragonfly cluster
+        if: matrix.server == 'dragonfly'
+        run: |
+          mkdir -p tests/nodes
+          mkdir -p /tmp/dragonfly-data-cluster
+          echo 127.0.0.1:7000 > tests/nodes/nodemap
+          dragonfly \
+            --port=7000 \
+            --cluster_mode=emulated \
+            --dir=/tmp/dragonfly-data-cluster \
+            --aclfile=tests/users.acl \
+            --proactor_threads=1 \
+            --maxmemory=256mb \
+            --maxclients=1000 \
+            --version_check=false \
+            >/tmp/dragonfly-cluster.log 2>&1 &
+
       - name: Start ${{ matrix.server }} sentinel
         run: |
           wget raw.githubusercontent.com/redis/redis/7.0/sentinel.conf
+          SERVER=${{ matrix.server }}-server
+          if [ "${{ matrix.server }}" = dragonfly ]; then
+            SERVER=redis-server
+          fi
           for PORT in {26379..26380}; do
             cp sentinel.conf "$PORT.conf"
             sed -i '/^sentinel/Id' "$PORT.conf"
-            ${{ matrix.server }}-server "$PORT.conf" \
+            "$SERVER" "$PORT.conf" \
               --port "$PORT" \
               --daemonize yes \
               --sentinel monitor mymaster 127.0.0.1 6379 1 \
@@ -187,12 +240,21 @@ jobs:
       - name: Wait for ${{ matrix.server }} instances
         run: |
           WAIT_TIMEOUT_SECONDS=30
+          CLI=${{ matrix.server }}-cli
+          CLUSTER_PORTS=({7000..7005})
+          if [ "${{ matrix.server }}" = dragonfly ]; then
+            CLI=redis-cli
+            CLUSTER_PORTS=(7000)
+          fi
 
-          for PORT in {6379..6382} {7000..7005} {32767..32768} {26379..26380}; do
+          for PORT in {6379..6382} "${CLUSTER_PORTS[@]}" {32767..32768} {26379..26380}; do
             START_TIME=$SECONDS
-            until echo PING | ${{ matrix.server }}-cli -p "$PORT" 2>&1 | grep -qE 'PONG|NOAUTH'; do
+            until echo PING | "$CLI" -p "$PORT" 2>&1 | grep -qE 'PONG|NOAUTH'; do
               if (( SECONDS - START_TIME >= WAIT_TIMEOUT_SECONDS )); then
                 echo "Timed out waiting for ${{ matrix.server }} on port $PORT after ${WAIT_TIMEOUT_SECONDS}s"
+                if [ "${{ matrix.server }}" = dragonfly ]; then
+                  cat /tmp/dragonfly*.log
+                fi
                 exit 1
               fi
               echo "Still waiting for ${{ matrix.server }} on port $PORT"
@@ -200,9 +262,12 @@ jobs:
             done
           done
           START_TIME=$SECONDS
-          until echo PING | ${{ matrix.server }}-cli -s /tmp/redis.sock 2>&1 | grep -qE 'PONG|NOAUTH'; do
+          until echo PING | "$CLI" -s /tmp/redis.sock 2>&1 | grep -qE 'PONG|NOAUTH'; do
             if (( SECONDS - START_TIME >= WAIT_TIMEOUT_SECONDS )); then
               echo "Timed out waiting for ${{ matrix.server }} at /tmp/redis.sock after ${WAIT_TIMEOUT_SECONDS}s"
+              if [ "${{ matrix.server }}" = dragonfly ]; then
+                cat /tmp/dragonfly*.log
+              fi
               exit 1
             fi
             echo "Still waiting for ${{ matrix.server }} at /tmp/redis.sock"
@@ -210,6 +275,7 @@ jobs:
           done
 
       - name: Initialize ${{ matrix.server }} cluster
+        if: matrix.server != 'dragonfly'
         run: |
           echo yes | ${{ matrix.server }}-cli --cluster create 127.0.0.1:{7000..7005} \
                                               --cluster-replicas 1 --user phpredis -a phpredis

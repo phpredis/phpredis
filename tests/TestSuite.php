@@ -17,6 +17,7 @@ class TestSuite
     /* Redis server version */
     protected $version;
     protected string $valkey_version;
+    protected bool $is_dragonfly;
     protected bool $is_keydb;
     protected bool $is_valkey;
 
