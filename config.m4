@@ -211,7 +211,15 @@ if test "$PHP_REDIS" != "no"; then
         if test -r $i/include/lzf.h; then
           AC_MSG_RESULT(found in $i)
           LIBLZF_DIR=$i
+          LIBLZF_INCLUDE_DIR=$i/include
           break
+        fi
+        if test -r $i/include/liblzf/lzf.h; then
+            AC_MSG_RESULT(found in $i)
+            LIBLZF_DIR=$i
+            LIBLZF_INCLUDE_DIR=$i/include/liblzf
+            PHP_ADD_INCLUDE($LIBLZF_INCLUDE_DIR)
+            break
         fi
       done
       if test -z "$LIBLZF_DIR"; then
@@ -225,7 +233,7 @@ if test "$PHP_REDIS" != "no"; then
       ], [
         AC_MSG_ERROR([could not find usable liblzf])
       ], [
-        -L$LIBLZF_DIR/$PHP_LIBDIR
+        -L$LIBLZF_DIR/$PHP_LIBDIR -I$LIBLZF_INCLUDE_DIR
       ])
     else
       PHP_ADD_INCLUDE(liblzf)
