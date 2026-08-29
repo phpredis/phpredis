@@ -19,7 +19,9 @@ class Redis_Cluster_Test extends Redis_Test {
     private $failover_types = [
         RedisCluster::FAILOVER_NONE,
         RedisCluster::FAILOVER_ERROR,
-        RedisCluster::FAILOVER_DISTRIBUTE
+        RedisCluster::FAILOVER_DISTRIBUTE,
+        RedisCluster::FAILOVER_DISTRIBUTE_SLAVES,
+        RedisCluster::FAILOVER_PREFER_REPLICA
     ];
 
     protected static array $seeds = [];
@@ -979,6 +981,70 @@ class Redis_Cluster_Test extends Redis_Test {
 
     protected function execWaitAOF() {
         return $this->redis->waitaof(uniqid(), 0, 0, 0);
+    }
+
+    /* Test FAILOVER_PREFER_REPLICA mode specifically */
+    public function testFailoverPreferReplica() {
+        if ($this->is_keydb)
+            $this->markTestSkipped();
+
+        /* Enable readonly mode and set FAILOVER_PREFER_REPLICA */
+        $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_PREFER_REPLICA);
+
+        /* Create test keys across different slots */
+        $test_data = [];
+        for ($i = 0; $i < 50; $i++) {
+            $key = "failover-test-key-$i";
+            $value = "value-$i";
+            $this->redis->set($key, $value);
+            /* Wait for replication to ensure the key has propagated to replicas.
+             * Using 1 replica as CI sets up clusters with 1 replica per node.
+             * Timeout is 1000ms (1 second) which should be sufficient. */
+            $this->redis->rawCommand($key, 'WAIT', '1', '1000');
+            $test_data[$key] = $value;
+        }
+
+        /* Verify all reads work correctly with FAILOVER_PREFER_REPLICA mode.
+         * The actual replica preference is tested at the C level, but we verify
+         * that the mode doesn't break read operations and returns correct values. */
+        foreach ($test_data as $key => $expected_value) {
+            $actual_value = $this->redis->get($key);
+            $this->assertEquals($expected_value, $actual_value,
+                "FAILOVER_PREFER_REPLICA mode should return correct value for key: $key");
+        }
+
+        /* Test with different data types */
+        $this->redis->del('pref-list', 'pref-set', 'pref-hash', 'pref-zset');
+
+        /* List */
+        $this->redis->rpush('pref-list', 'a', 'b', 'c');
+        $this->redis->rawCommand('pref-list', 'WAIT', '1', '1000');
+        $this->assertEquals(['a', 'b', 'c'], $this->redis->lrange('pref-list', 0, -1));
+
+        /* Set */
+        $this->redis->sadd('pref-set', 'x', 'y', 'z');
+        $this->redis->rawCommand('pref-set', 'WAIT', '1', '1000');
+        $members = $this->redis->smembers('pref-set');
+        sort($members);
+        $this->assertEquals(['x', 'y', 'z'], $members);
+
+        /* Hash */
+        $this->redis->hmset('pref-hash', ['field1' => 'val1', 'field2' => 'val2']);
+        $this->redis->rawCommand('pref-hash', 'WAIT', '1', '1000');
+        $this->assertEquals(['field1' => 'val1', 'field2' => 'val2'],
+            $this->redis->hgetall('pref-hash'));
+
+        /* Sorted Set */
+        $this->redis->zadd('pref-zset', 1, 'm1', 2, 'm2', 3, 'm3');
+        $this->redis->rawCommand('pref-zset', 'WAIT', '1', '1000');
+        $this->assertEquals(['m1', 'm2', 'm3'], $this->redis->zrange('pref-zset', 0, -1));
+
+        /* Clean up */
+        $this->redis->del(...array_keys($test_data));
+        $this->redis->del('pref-list', 'pref-set', 'pref-hash', 'pref-zset');
+
+        /* Reset failover mode */
+        $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_NONE);
     }
 }
 ?>
