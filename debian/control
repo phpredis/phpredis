@@ -1,16 +1,17 @@
-Source: php5-redis
+Package: php7.0-redis
+Version: 3.1.3
 Section: web
 Priority: optional
-Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>
-Build-Depends: debhelper (>= 7), php5-dev
-Standards-Version: 3.8.0
-Homepage: https://github.com/nicolasff/phpredis
-
-Package: php5-redis
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${php5:Depends}
-Recommends: php5
-Provides: php5-redis
+Architecture: all
+Essential: no
+Depends: php7.0-dev
+Build-Depends:
+Pre-Depends: php7.0-dev
+Recommends: php7.0
+Suggests:
+Installed-Size:
+Maintainer: Eugene Kirdzei [masterjus@gmail.com]
 Conflicts: phpredis
 Replaces: phpredis
-Description: Redis C extension for PHP5.
+Provides: php7.0-redis
+Description: Redis C extension for PHP7.0
