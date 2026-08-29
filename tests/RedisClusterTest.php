@@ -336,6 +336,23 @@ class Redis_Cluster_Test extends Redis_Test {
         );
     }
 
+    /* Regression test for directed commands in MULTI mode */
+    public function testDirectedCommandsInMulti() {
+        $key = __METHOD__;
+
+        $result = $this->redis
+            ->multi()
+            ->flushdb($key)
+            ->dbsize($key)
+            ->flushall($key)
+            ->exec();
+
+        $this->assertIsArray($result, 3);
+        $this->assertTrue($result[0]);
+        $this->assertIsInt($result[1]);
+        $this->assertTrue($result[2]);
+    }
+
     public function testInfo() {
         $fields = [
             "redis_version", "arch_bits", "uptime_in_seconds", "uptime_in_days",
