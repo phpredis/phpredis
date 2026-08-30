@@ -2582,6 +2582,160 @@ RedisCmd *redis_decr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         TYPE_DECR, redis_sock);
 }
 
+/* INCREX - atomic increment with optional bounds, saturation, and expiration */
+RedisCmd *redis_increx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
+{
+    zval *z_increment = NULL, *z_opts = NULL;
+    zend_bool byfloat = 0, saturate = 0, enx = 0, persist = 0;
+    zend_long expire = -1;
+    char *exp_type = NULL;
+    zend_bool has_lbound = 0, has_ubound = 0;
+    zend_long lbound_l = 0, ubound_l = 0;
+    double lbound_d = 0, ubound_d = 0;
+    zend_string *key, *zkey_opt;
+    zval *z_ele;
+    RedisCmd *cmd;
+
+    ZEND_PARSE_PARAMETERS_START(1, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL(z_increment)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(z_opts)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    /* Determine increment type */
+    if (z_increment != NULL && Z_TYPE_P(z_increment) == IS_DOUBLE) {
+        byfloat = 1;
+    }
+
+    /* Parse options */
+    if (z_opts != NULL && Z_TYPE_P(z_opts) == IS_ARRAY) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey_opt, z_ele) {
+            if (zkey_opt != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey_opt, "EX") ||
+                    zend_string_equals_literal_ci(zkey_opt, "PX") ||
+                    zend_string_equals_literal_ci(zkey_opt, "EXAT") ||
+                    zend_string_equals_literal_ci(zkey_opt, "PXAT")
+                ) {
+                    exp_type = ZSTR_VAL(zkey_opt);
+                    expire = zval_get_long(z_ele);
+                    persist = 0;
+                } else if (zend_string_equals_literal_ci(zkey_opt, "PERSIST")) {
+                    persist = zend_is_true(z_ele);
+                    exp_type = NULL;
+                } else if (zend_string_equals_literal_ci(zkey_opt, "SATURATE")) {
+                    saturate = zend_is_true(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey_opt, "ENX")) {
+                    enx = zend_is_true(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey_opt, "LBOUND")) {
+                    has_lbound = 1;
+                    if (Z_TYPE_P(z_ele) == IS_DOUBLE) {
+                        lbound_d = Z_DVAL_P(z_ele);
+                        lbound_l = (zend_long)lbound_d;
+                    } else {
+                        lbound_l = zval_get_long(z_ele);
+                        lbound_d = (double)lbound_l;
+                    }
+                } else if (zend_string_equals_literal_ci(zkey_opt, "UBOUND")) {
+                    has_ubound = 1;
+                    if (Z_TYPE_P(z_ele) == IS_DOUBLE) {
+                        ubound_d = Z_DVAL_P(z_ele);
+                        ubound_l = (zend_long)ubound_d;
+                    } else {
+                        ubound_l = zval_get_long(z_ele);
+                        ubound_d = (double)ubound_l;
+                    }
+                }
+            } else {
+                ZVAL_DEREF(z_ele);
+                if (Z_TYPE_P(z_ele) == IS_STRING) {
+                    if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "PERSIST")) {
+                        persist = 1;
+                        exp_type = NULL;
+                    } else if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "SATURATE")) {
+                        saturate = 1;
+                    } else if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "ENX")) {
+                        enx = 1;
+                    }
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    /* Validate */
+    if (exp_type != NULL && expire < 1) {
+        php_error_docref(NULL, E_WARNING, "EXPIRE can't be < 1");
+        return NULL;
+    }
+
+    if (enx && exp_type == NULL) {
+        php_error_docref(NULL, E_WARNING,
+            "ENX requires one of EX, PX, EXAT, or PXAT");
+        return NULL;
+    }
+
+    /* Build INCREX command */
+    cmd = redis_cmd_create_literal(redis_sock, "INCREX");
+    redis_cmd_cat_key_zstr(cmd, key);
+
+    /* BYFLOAT / BYINT */
+    if (z_increment != NULL) {
+        if (byfloat) {
+            redis_cmd_cat_literal(cmd, "BYFLOAT");
+            if (Z_TYPE_P(z_increment) == IS_LONG) {
+                redis_cmd_cat_double(cmd, (double)Z_LVAL_P(z_increment));
+            } else {
+                redis_cmd_cat_double(cmd, Z_DVAL_P(z_increment));
+            }
+        } else {
+            redis_cmd_cat_literal(cmd, "BYINT");
+            redis_cmd_cat_long(cmd, zval_get_long(z_increment));
+        }
+    }
+
+    /* LBOUND */
+    if (has_lbound) {
+        redis_cmd_cat_literal(cmd, "LBOUND");
+        if (byfloat) {
+            redis_cmd_cat_double(cmd, lbound_d);
+        } else {
+            redis_cmd_cat_long(cmd, lbound_l);
+        }
+    }
+
+    /* UBOUND */
+    if (has_ubound) {
+        redis_cmd_cat_literal(cmd, "UBOUND");
+        if (byfloat) {
+            redis_cmd_cat_double(cmd, ubound_d);
+        } else {
+            redis_cmd_cat_long(cmd, ubound_l);
+        }
+    }
+
+    /* SATURATE */
+    if (saturate) {
+        redis_cmd_cat_literal(cmd, "SATURATE");
+    }
+
+    /* Expiration */
+    if (exp_type != NULL) {
+        redis_cmd_cat_str(cmd, exp_type, strlen(exp_type));
+        redis_cmd_cat_long(cmd, expire);
+    } else if (persist) {
+        redis_cmd_cat_literal(cmd, "PERSIST");
+    }
+
+    /* ENX */
+    if (enx) {
+        redis_cmd_cat_literal(cmd, "ENX");
+    }
+
+    return cmd;
+}
+
 typedef enum xdelExMode {
     REDIS_XDELEX_NONE,
     REDIS_XDELEX_KEEPREF,

@@ -1763,6 +1763,7 @@ REDIS_METHOD(hgetdel, redis_hgetdel_cmd, redis_mbulk_reply_assoc);
 REDIS_METHOD(hgetex, redis_hgetex_cmd, redis_mbulk_reply_assoc);
 REDIS_METHOD(hsetex, redis_hsetex_cmd, redis_long_response);
 REDIS_METHOD(incr, redis_incr_cmd, redis_long_response);
+REDIS_METHOD(incrEx, redis_increx_cmd, redis_read_variant_reply);
 REDIS_METHOD(info, redis_info_cmd, redis_info_response);
 REDIS_METHOD(lInsert, redis_linsert_cmd, redis_long_response);
 REDIS_METHOD(lPos, redis_lpos_cmd, redis_lpos_response);

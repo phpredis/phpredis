@@ -998,6 +998,108 @@ class Redis_Test extends TestSuite {
         $this->redis->del('someprefix:key');
     }
 
+    public function testIncrEx() {
+        if (version_compare($this->version, '8.8.0') < 0)
+            $this->markTestSkipped('INCREX requires Redis >= 8.8.0');
+
+        $this->redis->del('increx_key');
+
+        /* Basic increment from non-existing key (starts at 0) */
+        [$newValue, $applied] = $this->redis->incrEx('increx_key');
+        $this->assertEquals(1, $newValue);
+        $this->assertEquals(1, $applied);
+
+        /* Increment again */
+        [$newValue, $applied] = $this->redis->incrEx('increx_key');
+        $this->assertEquals(2, $newValue);
+        $this->assertEquals(1, $applied);
+
+        /* BYINT with explicit value */
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 5);
+        $this->assertEquals(7, $newValue);
+        $this->assertEquals(5, $applied);
+
+        /* Negative increment (decrement) */
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', -3);
+        $this->assertEquals(4, $newValue);
+        $this->assertEquals(-3, $applied);
+
+        /* BYFLOAT increment */
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 1.5);
+        $this->assertEquals('5.5', $newValue);
+        $this->assertEquals('1.5', $applied);
+
+        /* BYINT with UBOUND -- within bounds */
+        $this->redis->set('increx_key', 10);
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 5, ['UBOUND' => 100]);
+        $this->assertEquals(15, $newValue);
+        $this->assertEquals(5, $applied);
+
+        /* BYINT with UBOUND -- out of bounds (no SATURATE) */
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 5, ['UBOUND' => 17]);
+        $this->assertEquals(15, $newValue);  /* value unchanged */
+        $this->assertEquals(0, $applied);    /* no change applied */
+
+        /* BYINT with UBOUND + SATURATE */
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 5, ['UBOUND' => 17, 'SATURATE']);
+        $this->assertEquals(17, $newValue);
+        $this->assertEquals(2, $applied);    /* saturated delta */
+
+        /* LBOUND test */
+        $this->redis->set('increx_key', 5);
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', -10, ['LBOUND' => 0]);
+        $this->assertEquals(5, $newValue);   /* unchanged */
+        $this->assertEquals(0, $applied);
+
+        /* LBOUND + SATURATE */
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', -10, ['LBOUND' => 0, 'SATURATE']);
+        $this->assertEquals(0, $newValue);
+        $this->assertEquals(-5, $applied);   /* saturated delta */
+
+        /* EX option */
+        $this->redis->del('increx_key');
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 1, ['EX' => 100]);
+        $this->assertEquals(1, $newValue);
+        $ttl = $this->redis->ttl('increx_key');
+        $this->assertGT(0, $ttl);
+        $this->assertLTE(100, $ttl);
+
+        /* ENX option */
+        $this->redis->del('increx_key');
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 1, ['EX' => 100, 'ENX']);
+        $this->assertEquals(1, $newValue);
+        $ttl = $this->redis->ttl('increx_key');
+        $this->assertGT(0, $ttl);
+
+        /* PERSIST option */
+        $this->redis->set('increx_key', 10);
+        $this->redis->expire('increx_key', 100);
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 1, ['PERSIST']);
+        $this->assertEquals(11, $newValue);
+        $this->assertEquals(-1, $this->redis->ttl('increx_key'));
+
+        /* PERSIST as positional boolean flag */
+        $this->redis->set('increx_key', 5);
+        $this->redis->expire('increx_key', 100);
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 1, ['PERSIST' => true]);
+        $this->assertEquals(6, $newValue);
+        $this->assertEquals(-1, $this->redis->ttl('increx_key'));
+
+        /* SATURATE as positional boolean flag */
+        $this->redis->set('increx_key', 95);
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 10, ['UBOUND' => 100, 'SATURATE']);
+        $this->assertEquals(100, $newValue);
+        $this->assertEquals(5, $applied);
+
+        /* Default increment with options */
+        $this->redis->del('increx_key');
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 1, ['EX' => 60]);
+        $this->assertEquals(1, $newValue);
+        $this->assertGT(0, $this->redis->ttl('increx_key'));
+
+        $this->redis->del('increx_key');
+    }
+
     public function testDecr() {
         $this->redis->set('key', 5);
 
