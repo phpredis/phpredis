@@ -3176,6 +3176,12 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         return SUCCESS;
     }
 
+    /* RESET server-side state (Redis 6.2+) */
+    zend_bool send_reset = INI_INT("redis.pconnect.reset_on_reuse");
+    if (send_reset) {
+        smart_str_appendl(&cmd, RESP_RESET_CMD, sizeof(RESP_RESET_CMD) - 1);
+    }
+
     /* AUTH (if we need it) */
     auth = redis_sock_append_auth(redis_sock, &cmd);
 
@@ -3192,6 +3198,16 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     }
 
     smart_str_free(&cmd);
+
+    /* Consume RESET response */
+    if (send_reset) {
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+            goto failure;
+        }
+        if (redis_strncmp(inbuf, ZEND_STRL("+RESET")) != 0) {
+            goto failure;
+        }
+    }
 
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
         goto failure;
