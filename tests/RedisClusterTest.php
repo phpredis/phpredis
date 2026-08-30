@@ -336,6 +336,13 @@ class Redis_Cluster_Test extends Redis_Test {
         );
     }
 
+    /* Regression test for setting TCP_KEEPALIVE on the hostless cluster flags socket */
+    public function testSetTcpKeepaliveOption() {
+        $this->assertTrue(
+            $this->redis->setOption(Redis::OPT_TCP_KEEPALIVE, true)
+        );
+    }
+
     /* Regression test for directed commands in MULTI mode */
     public function testDirectedCommandsInMulti() {
         $key = __METHOD__;
