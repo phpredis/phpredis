@@ -1747,6 +1747,7 @@ redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
 {
     zval z_multi_result, z_sub, *z_ele, *zv;
     zend_string *zkey;
+    int status = SUCCESS;
 
     /* Handle the trivial "empty" result first */
     if (elements < 0 && redis_sock->null_mbulk_as_null) {
@@ -1761,11 +1762,25 @@ redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
     } else {
         array_init_size(&z_multi_result, elements > 0 ? elements : 0);
 
-        redis_read_multibulk_recursive(redis_sock, elements, 0, &z_multi_result);
+        if (redis_read_multibulk_recursive(redis_sock, elements, 0,
+                                           &z_multi_result) == FAILURE)
+        {
+            status = FAILURE;
+        }
 
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_multi_result), z_ele) {
             // The first item in the sub-array is always the name of the returned item
+            if (Z_TYPE_P(z_ele) != IS_ARRAY) {
+                status = FAILURE;
+                break;
+            }
+
             zv = zend_hash_index_find(Z_ARRVAL_P(z_ele), 0);
+            if (zv == NULL) {
+                status = FAILURE;
+                break;
+            }
+
             zkey = zval_get_string(zv);
 
             zend_hash_index_del(Z_ARRVAL_P(z_ele), 0);
@@ -1783,9 +1798,14 @@ redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
 
         // Cleanup
         zval_ptr_dtor_nogc(&z_multi_result);
+
+        if (status == FAILURE) {
+            zval_ptr_dtor_nogc(zdst);
+            ZVAL_UNDEF(zdst);
+        }
     }
 
-    return SUCCESS;
+    return status;
 }
 
 PHP_REDIS_API int
