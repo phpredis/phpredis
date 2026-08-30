@@ -2252,6 +2252,13 @@ PHP_METHOD(RedisCluster, unwatch) {
     redisCluster *c = GET_CONTEXT();
     short slot;
 
+    // Disallow in MULTI mode
+    if (c->flags->mode == MULTI) {
+        php_error_docref(NULL, E_WARNING,
+            "UNWATCH command not allowed in MULTI mode");
+        RETURN_FALSE;
+    }
+
     // Send UNWATCH to nodes that need it
     for(slot = 0; slot < REDIS_CLUSTER_SLOTS; slot++) {
         if (c->master[slot] && cluster_slot_master_sock(c,slot)->watching) {
