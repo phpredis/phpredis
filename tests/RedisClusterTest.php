@@ -588,6 +588,15 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals(['44'], $ret);
     }
 
+    /* UNWATCH cannot be issued after entering MULTI mode */
+    public function testUnwatchInMulti() {
+        $key = __METHOD__;
+
+        $this->redis->multi()->set($key, 'value');
+        $this->assertFalse(@$this->redis->unwatch());
+        $this->assertEquals([true], $this->redis->exec());
+    }
+
     public function testDiscard() {
         $this->redis->multi();
         $this->redis->set('pipecount', 'over9000');
