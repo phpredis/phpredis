@@ -7066,7 +7066,9 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
         case REDIS_OPT_TCP_KEEPALIVE:
 
             /* Don't set TCP_KEEPALIVE if we're using a unix socket. */
-            if (ZSTR_VAL(redis_sock->host)[0] == '/' && redis_sock->port < 1) {
+            if (redis_sock->host && ZSTR_VAL(redis_sock->host)[0] == '/' &&
+                redis_sock->port < 1
+            ) {
                 RETURN_FALSE;
             }
             tcp_keepalive = zval_get_long(val) > 0 ? 1 : 0;
