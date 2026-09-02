@@ -6,6 +6,7 @@
 *.dep
 *.deps
 *.libs
+modules/
 *.o
 *.la
 *.lo
@@ -25,3 +26,5 @@ compile_commands.json
 doctum.phar
 run-tests.php
 vendor/
+.agents.md
+.codex

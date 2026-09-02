@@ -9,6 +9,7 @@ class TestSuite
     /* Host and port the unit tests will use */
     private string $host;
     private ?int $port = 6379;
+    private ?int $tls_port = 6378;
 
     /* Redis authentication we'll use */
     private $auth;
@@ -34,16 +35,47 @@ class TestSuite
 
     public static array $errors = [];
     public static array $warnings = [];
+    private static array $failed_tests = [];
 
-    public function __construct(string $host, ?int $port, $auth) {
+    public function __construct(string $host, ?int $port, $auth, ?int $tls_port = 6378) {
         $this->host = $host;
         $this->port = $port;
         $this->auth = $auth;
+        $this->tls_port = $tls_port;
     }
 
     public function getHost() { return $this->host; }
     public function getPort() { return $this->port; }
+    public function getTlsPort() { return $this->tls_port; }
     public function getAuth() { return $this->auth; }
+
+    /* Test classes that can query INFO may override this. */
+    public function getServerInfo() {
+        return NULL;
+    }
+
+    /* Return a human-readable server/version string when INFO identifies it. */
+    public function getServerVersion() {
+        $info = $this->getServerInfo();
+
+        if ( ! is_array($info))
+            return NULL;
+
+        if (isset($info['dragonfly_version']))
+            return 'Dragonfly version ' . $info['dragonfly_version'];
+
+        if (($info['server_name'] ?? NULL) === 'valkey' ||
+            isset($info['valkey_version']))
+        {
+            $version = $info['valkey_version'] ?? $info['redis_version'] ?? NULL;
+            return $version === NULL ? 'Valkey' : 'Valkey version ' . $version;
+        }
+
+        if (isset($info['redis_version']))
+            return 'Redis version ' . $info['redis_version'];
+
+        return NULL;
+    }
 
     public static function errorMessage(string $fmt, ...$args) {
         $msg = vsprintf($fmt . "\n", $args);
@@ -461,12 +493,14 @@ class TestSuite
         return false;
     }
 
-    protected function assertEquals($expected, $actual): bool {
+    protected function assertEquals($expected, $actual, ?string $context = NULL): bool {
         if ($expected === $actual)
             return true;
 
-        self::$errors[] = $this->assertionTrace("%s !== %s", $this->printArg($actual),
-                                                $this->printArg($expected));
+        $context = $context === NULL ? '' : " ({$context})";
+
+        self::$errors[] = $this->assertionTrace("%s !== %s%s", $this->printArg($actual),
+                                                $this->printArg($expected), $context);
 
         return false;
     }
@@ -491,6 +525,8 @@ class TestSuite
             return true;
 
         self::$errors []= $this->assertionTrace("'%s' not found in '%s'", $needle, $haystack);
+
+        return false;
     }
 
     protected function assertPatternMatch(string $pattern, string $value): bool {
@@ -513,15 +549,74 @@ class TestSuite
         throw new TestSkippedException($msg);
     }
 
-    private static function getMaxTestLen(array $methods, ?string $limit): int {
+    private static function normalizeTestFilters($limit): ?array {
+        if ( ! $limit)
+            return NULL;
+
+        if ( ! is_array($limit))
+            $limit = [$limit];
+
+        $result = [
+            'include' => [],
+            'exclude' => [],
+        ];
+
+        foreach ($limit as $tests) {
+            foreach (explode(',', $tests) as $test) {
+                $test = strtolower(trim($test));
+
+                if ($test === '')
+                    continue;
+
+                $type = $test[0] === '!' ? 'exclude' : 'include';
+                if ($type === 'exclude')
+                    $test = trim(substr($test, 1));
+
+                if ($test !== '')
+                    $result[$type][$test] = true;
+            }
+        }
+
+        if ( ! $result['include'] && ! $result['exclude'])
+            return NULL;
+
+        return [
+            'include' => array_keys($result['include']),
+            'exclude' => array_keys($result['exclude']),
+        ];
+    }
+
+    private static function testMatches(string $name, ?array $filters): bool {
+        if ($filters === NULL)
+            return true;
+
+        $name = strtolower($name);
+
+        foreach ($filters['exclude'] as $filter) {
+            if (strstr($name, $filter) !== false)
+                return false;
+        }
+
+        if ( ! $filters['include'])
+            return true;
+
+        foreach ($filters['include'] as $filter) {
+            if (strstr($name, $filter) !== false)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static function getMaxTestLen(array $methods, ?array $filters): int {
         $result = 0;
 
         foreach ($methods as $obj_method) {
-            $name = strtolower($obj_method->name);
+            $name = $obj_method->name;
 
             if (substr($name, 0, 4) != 'test')
                 continue;
-            if ($limit && !strstr($name, $limit))
+            if ( ! self::testMatches($name, $filters))
                 continue;
 
             if (strlen($name) > $result) {
@@ -572,26 +667,28 @@ class TestSuite
                           defined('STDOUT') && posix_isatty(STDOUT);
     }
 
-    public static function run($class_name, ?string $limit = NULL,
+    public static function getFailedTests(): array {
+        return array_keys(self::$failed_tests);
+    }
+
+    public static function run($class_name, $limit = NULL,
                                ?string $host = NULL, ?int $port = NULL,
-                               $auth = NULL)
+                               $auth = NULL, ?int $tls_port = 6378)
     {
-        if ($limit)
-            $limit = strtolower($limit);
+        $filters = self::normalizeTestFilters($limit);
 
         $rc = new ReflectionClass($class_name);
         $methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
-        $max_test_len = self::getMaxTestLen($methods, $limit);
+        $max_test_len = self::getMaxTestLen($methods, $filters);
 
         foreach($methods as $m) {
             $name = $m->name;
             if (substr($name, 0, 4) !== 'test')
                 continue;
 
-            /* If we're trying to limit to a specific test and can't match the
-             * substring, skip */
-            if ($limit && stristr($name, $limit) === false) {
+            /* Skip tests that don't satisfy the requested filters */
+            if ( ! self::testMatches($name, $filters)) {
                 continue;
             }
 
@@ -599,7 +696,8 @@ class TestSuite
             echo self::make_bold($padded_name);
 
             $count = count($class_name::$errors);
-            $rt = new $class_name($host, $port, $auth);
+            $rt = new $class_name($host, $port, $auth, $tls_port);
+            $failed = false;
 
             try {
                 $rt->setUp();
@@ -609,16 +707,22 @@ class TestSuite
                     $result = self::make_success('PASSED');
                 } else {
                     $result = self::make_fail('FAILED');
+                    $failed = true;
                 }
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 /* We may have simply skipped the test */
                 if ($e instanceof TestSkippedException) {
                     $result = self::make_warning('SKIPPED');
                 } else {
-                    $class_name::$errors[] = "Uncaught exception '".$e->getMessage()."' ($name)\n";
+                    $type = $e instanceof Exception ? 'exception' : get_class($e);
+                    $class_name::$errors[] = "Uncaught $type '".$e->getMessage()."' ($name)\n";
                     $result = self::make_fail('FAILED');
+                    $failed = true;
                 }
             }
+
+            if ($failed)
+                self::$failed_tests[$name] = true;
 
             echo "[" . $result . "]\n";
         }

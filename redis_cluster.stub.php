@@ -178,6 +178,30 @@ class RedisCluster {
     public function lmove(string $src, string $dst, string $wherefrom, string $whereto): RedisCluster|string|false;
 
     /**
+     * Move one or more element from one list to another.
+     *
+     * @param string $src       The source list
+     * @param string $dst       The destination list
+     * @param string $wherefrom Where in the source list to extract the element.
+     * @param string $whereto   Where in the destination list to put the element.
+     * @param null|array $options  An array of options to modify how the command behaves.
+     *
+     * @return Redis|array|false The element(s) removed from the source list.
+     *
+     * @see https://redis.io/docs/latest/commands/lmovem/
+     *
+     * @example
+     * $redis->rPush('numbers', 'one', 'two', 'three');
+     * $redis->lMovem('numbers', 'odds', Redis::LEFT, Redis::LEFT, ['COUNT' => [2, 'BULK']]);
+     */
+    public function lmovem(string $src, string $dst, string $wherefrom, string $whereto, ?array $options = null): RedisCluster|array|false;
+
+    /**
+     * @see \Redis::blmovem()
+     */
+    public function blmovem(string $src, string $dst, string $wherefrom, string $whereto, float $timeout, ?array $options = null): RedisCluster|array|false;
+
+    /**
      * Move an element from one list to another, blocking up to a timeout until an element is available.
      *
      * @see \Redis::blmove()
@@ -993,6 +1017,16 @@ class RedisCluster {
     public function sintercard(array $keys, int $limit = -1): RedisCluster|int|false;
 
     /**
+     * @see \Redis::sunioncard()
+     */
+    public function sunioncard(array $keys, ?array $options = null): RedisCluster|int|false;
+
+    /**
+     * @see \Redis::sdiffcard()
+     */
+    public function sdiffcard(array $keys, ?array $options = null): RedisCluster|int|false;
+
+    /**
      * @see \Redis::sInterStore()
      */
     public function sinterstore(array|string $key, string ...$other_keys): RedisCluster|int|false;
@@ -1186,6 +1220,13 @@ class RedisCluster {
     public function vsetattr(string $key, mixed $member, array|string $attributes): RedisCluster|int|false;
 
     /**
+     * @see \Redis::gcra()
+     */
+    public function gcra(string $key, int $maxBurst, int $requestsPerPeriod,
+                         int $period, int $tokens = 0): RedisCluster|array|false;
+
+
+    /**
      * @see \Redis::xack()
      */
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;
@@ -1208,7 +1249,7 @@ class RedisCluster {
     /**
      * @see \Redis::xdelex()
      */
-    public function xdelex(string $key, array $ids, ?string $mode = null): Relay|array|false;
+    public function xdelex(string $key, array $ids, ?string $mode = null): RedisCluster|array|false;
 
     /**
      * @see \Redis::xgroup()
