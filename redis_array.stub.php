@@ -34,6 +34,7 @@
  * @method RedisArray|string debug(string $key)
  * @method RedisArray|int|false decr(string $key, int $by = 1)
  * @method RedisArray|int|false decrBy(string $key, int $value)
+ * @method RedisArray|int|false delex(string $key, ?array $options = null)
  * @method RedisArray|int|false delifeq(string $key, mixed $value)
  * @method RedisArray|int|false delete(array|string $key, string ...$other_keys)
  * @method RedisArray|string|false dump(string $key)
@@ -129,6 +130,7 @@
  * @method RedisArray|int|false lrem(string $key, mixed $value, int $count = 0)
  * @method RedisArray|bool ltrim(string $key, int $start , int $end)
  * @method RedisArray|bool move(string $key, int $index)
+ * @method RedisArray|int|false msetex(array $key_vals, int|float|array|null $expiry = null)
  * @method RedisArray|bool msetnx(array $key_values)
  * @method RedisArray|int|string|false object(string $subcommand, string $key)
  * @method bool open(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, ?array $context = null)
@@ -205,6 +207,7 @@
  * @method RedisArray|bool|array xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false)
  * @method RedisArray|array|bool xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options)
  * @method RedisArray|int|false xdel(string $key, array $ids)
+ * @method Relay|array|false xdelex(string $key, array $ids, ?string $mode = null)
  * @method mixed xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1)
  * @method RedisArray|int|false xlen(string $key)
  * @method RedisArray|array|false xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null)
@@ -255,6 +258,7 @@
  * @method RedisArray|int|false zinterstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null)
  * @method RedisArray|array|false zunion(array $keys, ?array $weights = null, ?array $options = null)
  * @method RedisArray|int|false zunionstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null)
+ * @method RedisArray|string|false digest(string $key)
  */
 class RedisArray {
 

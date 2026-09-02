@@ -90,7 +90,7 @@ jobs:
           tools: none
       - name: Install system dependencies
         run: |
-          sudo apt-get update
+          sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install valgrind libzstd-dev liblz4-dev libssl-dev
 
       - name: Install Redis
@@ -103,7 +103,7 @@ jobs:
                sudo tee /etc/apt/sources.list.d/redis.list
           curl -fsSL "https://$REDIS_PPA_KEY" | \
                sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/redis.gpg
-          sudo apt-get update
+          sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install redis
 
       - name: Install KeyDB
@@ -115,7 +115,7 @@ jobs:
           echo "deb https://$KEYDB_PPA_URI $(lsb_release -sc) main" | \
                sudo tee /etc/apt/sources.list.d/keydb.list
           sudo wget -O /etc/apt/trusted.gpg.d/keydb.gpg "https://$KEYDB_PPA_KEY"
-          sudo apt-get update
+          sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install keydb
 
       - name: Install ValKey
@@ -186,13 +186,25 @@ jobs:
 
       - name: Wait for ${{ matrix.server }} instances
         run: |
+          WAIT_TIMEOUT_SECONDS=30
+
           for PORT in {6379..6382} {7000..7005} {32767..32768} {26379..26380}; do
+            START_TIME=$SECONDS
             until echo PING | ${{ matrix.server }}-cli -p "$PORT" 2>&1 | grep -qE 'PONG|NOAUTH'; do
+              if (( SECONDS - START_TIME >= WAIT_TIMEOUT_SECONDS )); then
+                echo "Timed out waiting for ${{ matrix.server }} on port $PORT after ${WAIT_TIMEOUT_SECONDS}s"
+                exit 1
+              fi
               echo "Still waiting for ${{ matrix.server }} on port $PORT"
               sleep .5
             done
           done
+          START_TIME=$SECONDS
           until echo PING | ${{ matrix.server }}-cli -s /tmp/redis.sock 2>&1 | grep -qE 'PONG|NOAUTH'; do
+            if (( SECONDS - START_TIME >= WAIT_TIMEOUT_SECONDS )); then
+              echo "Timed out waiting for ${{ matrix.server }} at /tmp/redis.sock after ${WAIT_TIMEOUT_SECONDS}s"
+              exit 1
+            fi
             echo "Still waiting for ${{ matrix.server }} at /tmp/redis.sock"
             sleep .5
           done
@@ -276,6 +288,11 @@ jobs:
           php-version: ${{ matrix.php }}
           ts: ${{ matrix.ts }}
           run-tests: false
+          # The builder embeds the ref in the build-log/artifact filename without
+          # sanitizing it. A branch like "fix/foo" turns the "/" into a path
+          # separator on Windows and the build fails. Pass the commit SHA so the
+          # name is always slash-free.
+          extension-ref: ${{ github.sha }}
 
   pecl:
     runs-on: ubuntu-latest

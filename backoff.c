@@ -1,11 +1,5 @@
 #include "common.h"
 
-#if PHP_VERSION_ID < 80400
-#include <ext/standard/php_rand.h>
-#else
-#include <ext/random/php_random.h>
-#endif
-
 #include "backoff.h"
 
 static zend_ulong random_range(zend_ulong min, zend_ulong max) {

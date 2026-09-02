@@ -45,6 +45,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSwapDB() { $this->markTestSkipped(); }
     public function testConnectException() { $this->markTestSkipped(); }
     public function testTlsConnect() { $this->markTestSkipped(); }
+    public function testTlsReconnect() { $this->markTestSkipped(); }
     public function testReset() { $this->markTestSkipped(); }
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
@@ -60,14 +61,48 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession_lockKeyCorrect() { $this->markTestSkipped(); }
     public function testSession_lockingDisabledByDefault() { $this->markTestSkipped(); }
     public function testSession_lockReleasedOnClose() { $this->markTestSkipped(); }
-    public function testSession_ttlMaxExecutionTime() { $this->markTestSkipped(); }
-    public function testSession_ttlLockExpire() { $this->markTestSkipped(); }
+    public function testSession_lock_ttlMaxExecutionTime() { $this->markTestSkipped(); }
+    public function testSession_lock_ttlLockExpire() { $this->markTestSkipped(); }
     public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock() { $this->markTestSkipped(); }
     public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock() { $this->markTestSkipped(); }
     public function testSession_correctLockRetryCount() { $this->markTestSkipped(); }
     public function testSession_defaultLockRetryCount() { $this->markTestSkipped(); }
     public function testSession_noUnlockOfOtherProcess() { $this->markTestSkipped(); }
     public function testSession_lockWaitTime() { $this->markTestSkipped(); }
+
+    /* Regression test for GH #2810 */
+    public function testConstructNullSeeds() {
+        /* new RedisCluster(null, null) must not throw TypeError.
+         * $seeds is declared ?array so null is a valid argument. */
+        $thrown = false;
+        try {
+            new RedisCluster(null, null);
+        } catch (\Throwable $e) {
+            $thrown = true;
+            $this->assertFalse($e instanceof \TypeError);
+        }
+        $this->assertTrue($thrown);
+
+        /* Passing an empty array must also not throw TypeError (control). */
+        $thrown = false;
+        try {
+            new RedisCluster(null, []);
+        } catch (\Throwable $e) {
+            $thrown = true;
+            $this->assertFalse($e instanceof \TypeError);
+        }
+        $this->assertTrue($thrown);
+
+        /* Both (null) and (null, null) mean "no name, no seeds" and must
+         * produce the same exception type. */
+        $ex1 = $ex2 = null;
+        try { new RedisCluster(null); }
+        catch (\Throwable $e) { $ex1 = get_class($e); }
+        try { new RedisCluster(null, null); }
+        catch (\Throwable $e) { $ex2 = get_class($e); }
+        $this->assertTrue($ex1 !== null);
+        $this->assertEquals($ex1, $ex2);
+    }
 
     private function loadSeedsFromHostPort($host, $port) {
         try {
@@ -124,20 +159,14 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     /* Load our seeds on construction */
-    public function __construct($host, $port, $auth) {
-        parent::__construct($host, $port, $auth);
+    public function __construct($host, $port, $auth, $tls_port = 6378) {
+        parent::__construct($host, $port, $auth, $tls_port);
 
         self::$seeds = $this->loadSeeds($host, $port);
     }
 
-    /* Override setUp to get info from a specific node */
-    public function setUp() {
-        $this->redis    = $this->newInstance();
-        $info           = $this->redis->info(uniqid());
-        $this->version  = $info['redis_version'] ?? '0.0.0';
-        $this->is_keydb = $this->detectKeyDB($info);
-        $this->is_valkey = $this->detectValkey($info);
-        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
+    protected function queryServerInfo($redis) {
+        return $redis->info(uniqid());
     }
 
     private function findCliExe() {
@@ -661,6 +690,53 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    /* Regression test for GH #2890 */
+    public function testDirectedFlushUsesMaster() {
+        $master = $this->redis->_masters()[0];
+
+        $this->assertTrue(
+            $this->redis->setOption(
+                RedisCluster::OPT_SLAVE_FAILOVER,
+                RedisCluster::FAILOVER_DISTRIBUTE_SLAVES
+            )
+        );
+
+        /* Should succeed being sent to the primary */
+        $this->assertTrue($this->redis->flushdb($master));
+        $this->assertTrue($this->redis->flushall($master));
+
+        $this->assertTrue(
+            $this->redis->setOption(
+                RedisCluster::OPT_SLAVE_FAILOVER,
+                RedisCluster::FAILOVER_NONE
+            )
+        );
+    }
+
+    /* Regression test for setting TCP_KEEPALIVE on the hostless cluster flags socket */
+    public function testSetTcpKeepaliveOption() {
+        $this->assertTrue(
+            $this->redis->setOption(Redis::OPT_TCP_KEEPALIVE, true)
+        );
+    }
+
+    /* Regression test for directed commands in MULTI mode */
+    public function testDirectedCommandsInMulti() {
+        $key = __METHOD__;
+
+        $result = $this->redis
+            ->multi()
+            ->flushdb($key)
+            ->dbsize($key)
+            ->flushall($key)
+            ->exec();
+
+        $this->assertIsArray($result, 3);
+        $this->assertTrue($result[0]);
+        $this->assertIsInt($result[1]);
+        $this->assertTrue($result[2]);
+    }
+
     public function testInfo() {
         $fields = [
             "redis_version", "arch_bits", "uptime_in_seconds", "uptime_in_days",
@@ -705,6 +781,17 @@ class Redis_Cluster_Test extends Redis_Test {
         [$sec, $usec] = $this->redis->time(uniqid());
         $this->assertEquals(strval(intval($sec)), strval($sec));
         $this->assertEquals(strval(intval($usec)), strval($usec));
+    }
+
+    public function testExpireAt() {
+        $this->redis->del('key');
+        $this->redis->set('key', 'value');
+
+        $now = $this->redis->time('key');
+        $this->assertTrue($this->redis->expireAt('key', $now[0] + 10));
+        $this->assertLTE(10, $this->redis->ttl('key'));
+
+        $this->redis->del('key');
     }
 
     public function testScan() {
@@ -883,6 +970,15 @@ class Redis_Cluster_Test extends Redis_Test {
         // This should succeed as the watch has been cancelled
         $ret = $this->redis->multi()->get('x')->exec();
         $this->assertEquals(['44'], $ret);
+    }
+
+    /* UNWATCH cannot be issued after entering MULTI mode */
+    public function testUnwatchInMulti() {
+        $key = __METHOD__;
+
+        $this->redis->multi()->set($key, 'value');
+        $this->assertFalse(@$this->redis->unwatch());
+        $this->assertEquals([true], $this->redis->exec());
     }
 
     public function testDiscard() {

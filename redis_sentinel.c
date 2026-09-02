@@ -36,6 +36,9 @@ PHP_MINIT_FUNCTION(redis_sentinel)
     redis_sentinel_ce = register_class_RedisSentinel();
     redis_sentinel_ce->create_object = create_sentinel_object;
 
+    /* RedisSentinel object handler initialization */
+    redis_sentinel_init_object_handlers();
+
     return SUCCESS;
 }
 
@@ -50,11 +53,11 @@ PHP_METHOD(RedisSentinel, __construct)
     ZEND_PARSE_PARAMETERS_END_EX(RETURN_THROWS());
 
     sentinel = PHPREDIS_ZVAL_GET_OBJECT(redis_sentinel_object, getThis());
-    sentinel->sock = redis_sock_create(ZEND_STRL("127.0.0.1"), 26379, 0, 0, 0, NULL, 0);
+    sentinel->sock = redis_sock_create(REDIS_SOCK_SENTINEL, ZEND_STRL("127.0.0.1"),
+                                       26379, 0, 0, 0, NULL, 0);
     if (opts != NULL && redis_sock_configure(sentinel->sock, opts) != SUCCESS) {
         RETURN_THROWS();
     }
-    sentinel->sock->sentinel = 1;
 }
 
 PHP_METHOD(RedisSentinel, ckquorum)

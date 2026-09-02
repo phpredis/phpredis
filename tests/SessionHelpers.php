@@ -77,6 +77,8 @@ class Runner {
         'data' => '',
         'lifetime' => 1440,
         'compression' => 'none',
+        'strict-mode' => false,
+        'early-refresh' => false,
     ];
 
     private $prefix = NULL;
@@ -138,7 +140,7 @@ class Runner {
         return $this->set('id', $id);
     }
 
-    public function sleep(int $sleep): self {
+    public function sleep(float $sleep): self {
         return $this->set('sleep', $sleep);
     }
 
@@ -174,6 +176,14 @@ class Runner {
         return $this->set('compression', $compression);
     }
 
+    public function strictMode(bool $enabled): self {
+        return $this->set('strict-mode', $enabled);
+    }
+
+    public function earlyRefresh(bool $enabled): self {
+        return $this->set('early-refresh', $enabled);
+    }
+
     protected function validateArgs(array $required) {
         foreach ($required as $req) {
             if ( ! isset($this->args[$req]) || $this->args[$req] === null)
@@ -203,16 +213,24 @@ class Runner {
      *
      * @return bool
      */
-    public function waitForLockKey($redis, $max_wait_sec) {
+    private function waitForLockKeyState($redis, bool $exists, $max_wait_sec) {
         $now = microtime(true);
 
         do {
-            if ($redis->exists($this->getSessionLockKey()))
+            if ((bool)$redis->exists($this->getSessionLockKey()) === $exists)
                 return true;
             usleep(10000);
         } while (microtime(true) <= $now + $max_wait_sec);
 
         return false;
+    }
+
+    public function waitForLockKey($redis, $max_wait_sec) {
+        return $this->waitForLockKeyState($redis, true, $max_wait_sec);
+    }
+
+    public function waitForLockRelease($redis, $max_wait_sec) {
+        return $this->waitForLockKeyState($redis, false, $max_wait_sec);
     }
 
     private function appendCmdArgs(array $args): string {
@@ -242,7 +260,6 @@ class Runner {
 
     public function output(?int $timeout = NULL): ?string {
         if ($this->output) {
-            var_dump("early return");
             return $this->output;
         }
 

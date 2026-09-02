@@ -4,7 +4,7 @@
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
 [![PHP version](https://img.shields.io/badge/php-%3E%3D%207.4-8892BF.svg)](https://github.com/phpredis/phpredis)
 
-The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. [Valkey](https://valkey.io/) and [KeyDB](https://docs.keydb.dev/) are supported as well.
+The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. [Valkey](https://valkey.io/), [Dragonfly](https://dragonflydb.io), and [KeyDB](https://docs.keydb.dev/) are supported as well.
 
 It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 
@@ -75,7 +75,8 @@ phpredis can be used to store PHP sessions. To do this, configure `session.save_
 
 * weight (integer): the weight of a host is used in comparison with the others to customize the session distribution on several hosts. If host A has twice the weight of host B, it will get twice the amount of sessions. In the example, *host1* stores 20% of all the sessions (1/(1+2+2)) while *host2* and *host3* each store 40% (2/(1+2+2)). The target host is determined once and for all at the start of the session, and doesn't change. The default weight is 1.
 * timeout (float): the connection timeout to a redis host, expressed in seconds. If the host is unreachable in that amount of time, the session storage will be unavailable for the client. The default timeout is very high (86400 seconds).
-* persistent (integer, should be 1 or 0): defines if a persistent connection should be used.
+* read_timeout (float): the timeout for read operations on an established connection, expressed in seconds. If a Redis response is not received within this time, the session operation fails. The default is `0` (no timeout), meaning PHP can hang indefinitely if Redis becomes unresponsive or a connection goes stale. Setting this to a low value (e.g. `2.5`) is strongly recommended in production environments.
+* persistent (integer, should be 1 or 0): defines if a persistent connection should be used. The default value is `0` (persistent connection is not used).
 * prefix (string, defaults to "PHPREDIS_SESSION:"): used as a prefix to the Redis key in which the session is stored. The key is composed of the prefix followed by the session ID.
 * auth (string, or an array with one or two elements): used to authenticate with the server prior to sending commands.
 * database (integer): selects a different database.
@@ -153,11 +154,20 @@ tests/make-cluster.sh stop
 php tests/TestRedis.php --class RedisSentinel
 ~~~
 
-Note that it is possible to run only tests which match a substring of the test itself by passing the additional argument '--test <str>' when invoking.
+Note that it is possible to filter tests by a substring of the test itself by passing the additional argument '--test <str>' when invoking. Multiple test filters can be provided either as a comma-separated list, with repeated `--test` arguments, or by combining both forms. Prefix a filter with `!` to exclude matching tests. Exclusions take precedence over inclusions, and when only exclusions are provided all other tests run.
 
 ~~~
 # Just run the 'echo' test
 php tests/TestRedis.php --class Redis --test echo
+
+# Run tests matching 'get', 'set', or 'echo'
+php tests/TestRedis.php --class Redis --test get,set --test echo
+
+# Run tests matching 'get' or 'set', except those matching 'range'
+php tests/TestRedis.php --class Redis --test 'get,set,!range'
+
+# Run every test except those matching 'commandstats'
+php tests/TestRedis.php --class Redis --test '!commandstats'
 ~~~
 
 ## API Documentation
@@ -334,8 +344,8 @@ or host + persistent_id or unix socket + timeout.
 
 Since v4.2.1, it became possible to use connection pooling by setting INI variable `redis.pconnect.pooling_enabled` to 1.
 
-This feature is not available in threaded versions. `pconnect` and `popen` then work like their non
-persistent equivalents.
+In threaded versions (ZTS), persistent connections are kept per-thread: each thread reuses its own
+connections across requests and never shares them with other threads.
 
 ###### *Parameters*
 
