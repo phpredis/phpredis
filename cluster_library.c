@@ -2000,6 +2000,19 @@ cluster_object_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 }
 
 PHP_REDIS_API void
+cluster_himport_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                     RedisCmdCtx ctx)
+{
+    ZEND_ASSERT(ctx.ptr == NULL || ctx.ptr == PHPREDIS_CTX_PTR);
+
+    if (ctx.ptr == PHPREDIS_CTX_PTR) {
+        cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
+    } else {
+        cluster_bool_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
+    }
+}
+
+PHP_REDIS_API void
 cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
 {
     if (ctx.ptr == NULL) {

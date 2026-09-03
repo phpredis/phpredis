@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d53b980175361aad909f18e3d13d5ffaf084b968 */
+ * Stub hash: 745c9be9bad265ecb49d4784a57101d019835758 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -411,6 +411,13 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Redis_hsetex arginfo_class_Redis_hgetex
 
 #define arginfo_class_Redis_hgetdel arginfo_class_Redis_hMget
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_himport, 0, 0, 1)
+	ZEND_ARG_INFO(0, op)
+	ZEND_ARG_INFO(0, hash)
+	ZEND_ARG_INFO(0, fieldset)
+	ZEND_ARG_INFO(0, fields)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hMset, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
@@ -1283,6 +1290,7 @@ ZEND_METHOD(Redis, hMget);
 ZEND_METHOD(Redis, hgetex);
 ZEND_METHOD(Redis, hsetex);
 ZEND_METHOD(Redis, hgetdel);
+ZEND_METHOD(Redis, himport);
 ZEND_METHOD(Redis, hMset);
 ZEND_METHOD(Redis, hRandField);
 ZEND_METHOD(Redis, hSet);
@@ -1584,6 +1592,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, hgetex, arginfo_class_Redis_hgetex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hsetex, arginfo_class_Redis_hsetex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hgetdel, arginfo_class_Redis_hgetdel, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, himport, arginfo_class_Redis_himport, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hMset, arginfo_class_Redis_hMset, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hRandField, arginfo_class_Redis_hRandField, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hSet, arginfo_class_Redis_hSet, ZEND_ACC_PUBLIC)
