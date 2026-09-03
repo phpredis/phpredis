@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d53b980175361aad909f18e3d13d5ffaf084b968 */
+ * Stub hash: 745c9be9bad265ecb49d4784a57101d019835758 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -460,6 +460,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hsetex, 0, 2, Re
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_hgetdel arginfo_class_Redis_hMget
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_himport, 0, 1, Redis, MAY_BE_BOOL|MAY_BE_LONG)
+	ZEND_ARG_TYPE_INFO(0, op, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, hash, IS_STRING, 1, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, fieldset, IS_STRING, 1, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, fields, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hMset, 0, 2, Redis, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -1457,6 +1464,7 @@ ZEND_METHOD(Redis, hMget);
 ZEND_METHOD(Redis, hgetex);
 ZEND_METHOD(Redis, hsetex);
 ZEND_METHOD(Redis, hgetdel);
+ZEND_METHOD(Redis, himport);
 ZEND_METHOD(Redis, hMset);
 ZEND_METHOD(Redis, hRandField);
 ZEND_METHOD(Redis, hSet);
@@ -1758,6 +1766,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, hgetex, arginfo_class_Redis_hgetex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hsetex, arginfo_class_Redis_hsetex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hgetdel, arginfo_class_Redis_hgetdel, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, himport, arginfo_class_Redis_himport, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hMset, arginfo_class_Redis_hMset, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hRandField, arginfo_class_Redis_hRandField, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hSet, arginfo_class_Redis_hSet, ZEND_ACC_PUBLIC)
