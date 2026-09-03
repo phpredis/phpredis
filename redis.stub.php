@@ -2330,6 +2330,35 @@ class Redis {
     public function hgetdel(string $key, array $fields): Redis|array|false;
 
     /**
+     * Manage session local fieldsets and import hashes that use them.
+     *
+     * A fieldset is a named, session local list of field names that Redis can
+     * reuse for many hashes, allowing it to store them in a more memory
+     * efficient way.
+     *
+     * <code>
+     * <?php
+     * $redis->himport('PREPARE', null, 'user', ['first', 'last']);
+     * $redis->himport('SET', 'user:1', 'user', ['Jane', 'Doe']);
+     * $redis->himport('DISCARD', null, 'user');
+     * $redis->himport('DISCARDALL');
+     * ?>
+     * </code>
+     *
+     * @param string      $op        One of 'PREPARE', 'SET', 'DISCARD', or 'DISCARDALL'.
+     * @param string|null $hash      The hash to create, required for 'SET'.
+     * @param string|null $fieldset  The fieldset name, required for every operation but 'DISCARDALL'.
+     * @param array       $fields    Field names for 'PREPARE' or values for 'SET'.
+     *
+     * @return Redis|bool|int True for 'PREPARE' and 'SET', the number of
+     *                        fieldsets removed for 'DISCARD' and 'DISCARDALL',
+     *                        or false on failure.
+     *
+     * @see https://redis.io/docs/latest/commands/himport/
+     */
+    public function himport(string $op, ?string $hash = null, ?string $fieldset = null, array $fields = []): Redis|bool|int;
+
+    /**
      * Add or update one or more hash fields and values
      *
      * @param string $key        The hash to create/update

@@ -6920,6 +6920,112 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(['ship' => 'Defiant'], $this->redis->hgetall('hash'));
     }
 
+    public function testHImport() {
+        if ( ! $this->haveCommand('HIMPORT'))
+            $this->markTestSkipped();
+
+        $this->assertIsInt($this->redis->del('hash'));
+
+        /* Note that we always pass the hash, as RedisCluster requires it to
+         * direct the command even when it isn't sent to Redis. */
+        $this->assertIsInt($this->redis->himport('DISCARDALL', 'hash'));
+
+        $fields = ['ship', 'captain'];
+        $values = ['Defiant', 'Sisko'];
+
+        $this->assertTrue($this->redis->himport('PREPARE', 'hash', 'crew', $fields));
+        $this->assertTrue($this->redis->himport('SET', 'hash', 'crew', $values));
+
+        /* HIMPORT doesn't preserve the order fields were prepared in */
+        $expected = array_combine($fields, $values);
+        ksort($expected);
+
+        $actual = $this->redis->hgetall('hash');
+        ksort($actual);
+
+        $this->assertEquals($expected, $actual);
+
+        /* The whole point of the command is a more efficient encoding */
+        $this->assertEquals('template-listpack',
+                            $this->redis->object('encoding', 'hash'));
+
+        /* We can reuse the fieldset for as many hashes as we want */
+        $this->assertIsInt($this->redis->del('hash'));
+        $this->assertTrue($this->redis->himport('SET', 'hash', 'crew', ['Rio Grande', 'Kira']));
+
+        $actual = $this->redis->hgetall('hash');
+        ksort($actual);
+
+        $this->assertEquals(['captain' => 'Kira', 'ship' => 'Rio Grande'], $actual);
+
+        /* Discarding a fieldset that exists returns 1, and 0 once it's gone */
+        $this->assertEquals(1, $this->redis->himport('DISCARD', 'hash', 'crew'));
+        $this->assertEquals(0, $this->redis->himport('DISCARD', 'hash', 'crew'));
+
+        /* DISCARDALL returns how many fieldsets it removed */
+        $this->assertTrue($this->redis->himport('PREPARE', 'hash', 'fs1', ['a']));
+        $this->assertTrue($this->redis->himport('PREPARE', 'hash', 'fs2', ['b']));
+        $this->assertEquals(2, $this->redis->himport('DISCARDALL', 'hash'));
+    }
+
+    public function testHImportSerialization() {
+        if ( ! $this->haveCommand('HIMPORT'))
+            $this->markTestSkipped();
+
+        $fields = ['numbers', 'name'];
+        $values = [[1, 2, 3], 'Sisko'];
+
+        foreach ($this->getSerializers() as $serializer) {
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+
+            $this->assertIsInt($this->redis->del('hash'));
+            $this->assertIsInt($this->redis->himport('DISCARDALL', 'hash'));
+            $this->assertTrue($this->redis->himport('PREPARE', 'hash', 'crew', $fields));
+
+            /* Values are serialized but field names never are */
+            if ($serializer == Redis::SERIALIZER_NONE) {
+                $expected = array_combine($fields, ['Array', 'Sisko']);
+                $res = @$this->redis->himport('SET', 'hash', 'crew', $values);
+            } else {
+                $expected = array_combine($fields, $values);
+                $res = $this->redis->himport('SET', 'hash', 'crew', $values);
+            }
+
+            ksort($expected);
+
+            $actual = $this->redis->hgetall('hash');
+            ksort($actual);
+
+            $this->assertTrue($res);
+            $this->assertEquals($expected, $actual);
+            $this->assertEquals(1, $this->redis->himport('DISCARD', 'hash', 'crew'));
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+    }
+
+    public function testHImportBadArguments() {
+        if ( ! $this->haveCommand('HIMPORT'))
+            $this->markTestSkipped();
+
+        /* Unknown operation */
+        $this->assertFalse(@$this->redis->himport('KAZOO', 'hash', 'crew', ['a']));
+
+        /* PREPARE and SET need a fieldset and at least one field */
+        foreach (['PREPARE', 'SET'] as $op) {
+            $this->assertFalse(@$this->redis->himport($op, 'hash', NULL, ['a']));
+            $this->assertFalse(@$this->redis->himport($op, 'hash', 'crew', []));
+        }
+
+        /* DISCARD needs a fieldset and no fields */
+        $this->assertFalse(@$this->redis->himport('DISCARD', 'hash', NULL));
+        $this->assertFalse(@$this->redis->himport('DISCARD', 'hash', 'crew', ['a']));
+
+        /* DISCARDALL takes neither a fieldset nor fields */
+        $this->assertFalse(@$this->redis->himport('DISCARDALL', 'hash', 'crew'));
+        $this->assertFalse(@$this->redis->himport('DISCARDALL', 'hash', NULL, ['a']));
+    }
+
     public function testHScan() {
         if (version_compare($this->version, '2.8.0') < 0)
             $this->markTestSkipped();

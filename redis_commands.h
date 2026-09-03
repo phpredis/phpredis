@@ -104,6 +104,7 @@ RedisCmd *redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hgetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hsetex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hgetdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_himport_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_mget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);

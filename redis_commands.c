@@ -4974,6 +4974,179 @@ RedisCmd *redis_hgetdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     return cmd;
 }
 
+typedef enum himportOp {
+    HIMPORT_OP_DISCARD,
+    HIMPORT_OP_DISCARDALL,
+    HIMPORT_OP_PREPARE,
+    HIMPORT_OP_SET,
+} himportOp;
+
+static zend_bool get_himport_op(himportOp *dst, zend_string *op) {
+    if (zend_string_equals_literal_ci(op, "DISCARD")) {
+        *dst = HIMPORT_OP_DISCARD;
+    } else if (zend_string_equals_literal_ci(op, "DISCARDALL")) {
+        *dst = HIMPORT_OP_DISCARDALL;
+    } else if (zend_string_equals_literal_ci(op, "PREPARE")) {
+        *dst = HIMPORT_OP_PREPARE;
+    } else if (zend_string_equals_literal_ci(op, "SET")) {
+        *dst = HIMPORT_OP_SET;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Unknown HIMPORT operation '%s'",
+                         ZSTR_VAL(op));
+        return 0;
+    }
+
+    return 1;
+}
+
+static zend_bool
+validate_himport_args(himportOp hop, zend_string *op, zend_string *hash,
+                      zend_string *fieldset, HashTable *fields)
+{
+    switch (hop) {
+        case HIMPORT_OP_PREPARE:
+        case HIMPORT_OP_SET:
+            if (hop == HIMPORT_OP_SET && hash == NULL) {
+                php_error_docref(NULL, E_WARNING,
+                    "hash cannot be null for the SET operation");
+                return 0;
+            }
+            if (fieldset == NULL) {
+                php_error_docref(NULL, E_WARNING,
+                    "fieldset cannot be null for the %s operation", ZSTR_VAL(op));
+                return 0;
+            }
+            if (fields == NULL || zend_hash_num_elements(fields) == 0) {
+                php_error_docref(NULL, E_WARNING,
+                    "Must pass at least one field for the %s operation", ZSTR_VAL(op));
+                return 0;
+            }
+            break;
+        case HIMPORT_OP_DISCARD:
+            if (fieldset == NULL) {
+                php_error_docref(NULL, E_WARNING,
+                    "fieldset cannot be null for the DISCARD operation");
+                return 0;
+            }
+            if (fields != NULL && zend_hash_num_elements(fields) != 0) {
+                php_error_docref(NULL, E_WARNING,
+                    "fields must be empty for the DISCARD operation");
+                return 0;
+            }
+            break;
+        case HIMPORT_OP_DISCARDALL:
+            if (fieldset != NULL) {
+                php_error_docref(NULL, E_WARNING,
+                    "fieldset must be null for the DISCARDALL operation");
+                return 0;
+            }
+            if (fields != NULL && zend_hash_num_elements(fields) != 0) {
+                php_error_docref(NULL, E_WARNING,
+                    "fields must be empty for the DISCARDALL operation");
+                return 0;
+            }
+            break;
+    }
+
+    return 1;
+}
+
+static void redis_cmd_cat_himport_op(RedisCmd *cmd, himportOp hop) {
+    switch (hop) {
+        case HIMPORT_OP_DISCARD:
+            redis_cmd_cat_literal(cmd, "DISCARD");
+            break;
+        case HIMPORT_OP_DISCARDALL:
+            redis_cmd_cat_literal(cmd, "DISCARDALL");
+            break;
+        case HIMPORT_OP_PREPARE:
+            redis_cmd_cat_literal(cmd, "PREPARE");
+            break;
+        case HIMPORT_OP_SET:
+            redis_cmd_cat_literal(cmd, "SET");
+            break;
+    }
+}
+
+/* Every HIMPORT operation but SET is session local and doesn't take a key, so
+ * in cluster we use the hash simply to direct the command to a node. */
+static void redis_cmd_set_slot_zstr(RedisCmd *cmd, zend_string *key) {
+    zend_string *prefixed;
+
+    if (cmd->redis_sock == NULL || cmd->redis_sock->type != REDIS_SOCK_CLUSTER)
+        return;
+
+    prefixed = redis_key_prefix_zstr(cmd->redis_sock, key);
+    cmd->slot = cluster_hash_key(ZSTR_VAL(prefixed), ZSTR_LEN(prefixed));
+    zend_string_release(prefixed);
+}
+
+RedisCmd *redis_himport_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    zend_string *op, *hash = NULL, *fieldset = NULL;
+    HashTable *fields = NULL;
+    zend_bool cluster;
+    himportOp hop;
+    RedisCmd *cmd;
+    zval *zv;
+
+    cluster = redis_sock != NULL && redis_sock->type == REDIS_SOCK_CLUSTER;
+
+    /* RedisCluster always requires the hash, as it is what directs the command */
+    if (cluster) {
+        ZEND_PARSE_PARAMETERS_START(2, 4)
+            Z_PARAM_STR(op)
+            Z_PARAM_STR(hash)
+            Z_PARAM_OPTIONAL
+            Z_PARAM_STR_OR_NULL(fieldset)
+            Z_PARAM_ARRAY_HT(fields)
+        ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+    } else {
+        ZEND_PARSE_PARAMETERS_START(1, 4)
+            Z_PARAM_STR(op)
+            Z_PARAM_OPTIONAL
+            Z_PARAM_STR_OR_NULL(hash)
+            Z_PARAM_STR_OR_NULL(fieldset)
+            Z_PARAM_ARRAY_HT(fields)
+        ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+    }
+
+    if (!get_himport_op(&hop, op))
+        return NULL;
+
+    if (!validate_himport_args(hop, op, hash, fieldset, fields))
+        return NULL;
+
+    cmd = redis_cmd_create_literal(redis_sock, "HIMPORT");
+    redis_cmd_cat_himport_op(cmd, hop);
+
+    if (hop == HIMPORT_OP_SET) {
+        redis_cmd_cat_key_zstr(cmd, hash);
+    } else if (hash != NULL) {
+        redis_cmd_set_slot_zstr(cmd, hash);
+    }
+
+    if (hop != HIMPORT_OP_DISCARDALL)
+        redis_cmd_cat_zstr(cmd, fieldset);
+
+    if (hop == HIMPORT_OP_PREPARE || hop == HIMPORT_OP_SET) {
+        ZEND_HASH_FOREACH_VAL(fields, zv) {
+            /* Field names are sent as-is, whereas values are serialized */
+            if (hop == HIMPORT_OP_SET) {
+                redis_cmd_cat_zval(cmd, zv);
+            } else {
+                redis_cmd_cat_zval_zstr(cmd, zv);
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    /* DISCARD and DISCARDALL reply with the number of fieldsets removed, the
+     * other operations simply reply with +OK */
+    if (hop == HIMPORT_OP_DISCARD || hop == HIMPORT_OP_DISCARDALL)
+        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+
+    return cmd;
+}
+
 RedisCmd *
 redis_hexpire_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, const char *kw, size_t kw_len)
 
