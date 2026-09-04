@@ -796,12 +796,16 @@ class RedisCluster {
      */
     public function msetex(array $key_vals, int|float|array|null $expiry = null): Redis|int|false;
 
-    /* RedisCluster supports MULTI and PIPELINE.  Pipeline commands must target
-       the same hash slot. */
+    /**
+     * Enter MULTI mode, or non-atomic pipeline mode when passed
+     * `Redis::PIPELINE`. Calling `multi()` on an existing pipeline adds a
+     * MULTI block whose commands must target one hash slot.
+     */
     public function multi(int $value = Redis::MULTI): RedisCluster|bool;
 
     /**
-     * Enter pipeline mode.  All queued commands must target the same hash slot.
+     * Enter non-atomic pipeline mode. Commands may target different hash slots
+     * and nodes, and replies are returned in command order.
      */
     public function pipeline(): RedisCluster|bool;
 

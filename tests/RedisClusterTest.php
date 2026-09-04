@@ -2,6 +2,15 @@
 
 require_once __DIR__ . "/RedisTest.php";
 
+class RedisClusterPipelineReentrantValue {
+    public static $redis;
+    public static $key;
+
+    public function __wakeup() {
+        self::$redis->set(self::$key, 'side-effect');
+    }
+}
+
 /**
  * Most RedisCluster tests should work the same as the standard Redis object
  * so we only override specific functions where the prototype is different or
@@ -41,7 +50,6 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSelect()   { $this->markTestSkipped(); }
     public function testReconnectSelect() { $this->markTestSkipped(); }
     public function testMultipleConnect() { $this->markTestSkipped(); }
-    public function testDoublePipeNoOp() { $this->markTestSkipped(); }
     public function testSwapDB() { $this->markTestSkipped(); }
     public function testConnectException() { $this->markTestSkipped(); }
     public function testTlsConnect() { $this->markTestSkipped(); }
@@ -270,6 +278,104 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals([true, 'BEEP'], $this->redis->exec());
     }
 
+    /* Keep the historical immediate-command path independent of pipeline
+     * support.  In particular, distributed commands must still fold replies
+     * in argument order and leave each participating socket reusable. */
+    public function testNonPipelineAtomicUpgradeRegression() {
+        $keys = [
+            '{non-pipeline-a}atomic-one',
+            '{non-pipeline-b}atomic-two',
+        ];
+
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->redis->del($keys);
+
+        $this->assertTrue($this->redis->mset([
+            $keys[0] => 'one',
+            $keys[1] => 'two',
+        ]));
+        $this->assertEquals(['two', 'one'], $this->redis->mget([
+            $keys[1], $keys[0]
+        ]));
+        $this->assertEquals([0, 0], $this->redis->msetnx([
+            $keys[0] => 'changed-one',
+            $keys[1] => 'changed-two',
+        ]));
+        $this->assertEquals(2, $this->redis->del($keys));
+
+        /* A Redis error is a normal false return and must not dirty the socket. */
+        $this->assertTrue($this->redis->set($keys[0], 'not-a-list'));
+        $this->assertFalse($this->redis->lpush($keys[0], 'value'));
+        $this->assertTrue($this->redis->set($keys[0], 'after-error'));
+        $this->assertEquals('after-error', $this->redis->get($keys[0]));
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+    }
+
+    /* Default RedisCluster::multi() remains the historical distributed
+     * transaction implementation.  These commands intentionally span nodes
+     * and exercise the shared distributed-command response context. */
+    public function testNonPipelineMultiUpgradeRegression() {
+        $keys = [
+            '{non-pipeline-a}multi-one',
+            '{non-pipeline-b}multi-two',
+        ];
+
+        $this->redis->del($keys);
+        $tx = $this->redis->multi();
+
+        $this->assertEquals(Redis::MULTI, $this->redis->getMode());
+        $this->assertTrue($tx === $this->redis);
+
+        $tx->mset([$keys[0] => 'one', $keys[1] => 'two'])
+            ->mget([$keys[1], $keys[0]])
+            ->msetnx([$keys[0] => 'changed-one', $keys[1] => 'changed-two'])
+            ->del($keys)
+            ->set($keys[0], 'after')
+            ->get($keys[0]);
+
+        $this->assertEquals([
+            true,
+            ['two', 'one'],
+            [0, 0],
+            2,
+            true,
+            'after',
+        ], $tx->exec());
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertEquals('after', $this->redis->get($keys[0]));
+        $this->assertFalse($this->redis->get($keys[1]));
+    }
+
+    public function testNonPipelineMultiErrorAndDiscardUpgradeRegression() {
+        $wrongType = '{non-pipeline-a}multi-wrong-type';
+        $control = '{non-pipeline-b}multi-control';
+
+        $this->redis->del([$wrongType, $control]);
+        $this->assertTrue($this->redis->set($wrongType, 'not-a-list'));
+
+        $ret = $this->redis->multi()
+            ->lpush($wrongType, 'value')
+            ->set($control, 'committed')
+            ->get($control)
+            ->exec();
+
+        $this->assertEquals([false, true, 'committed'], $ret);
+        $this->assertEquals('committed', $this->redis->get($control));
+
+        $this->redis->multi()
+            ->set($wrongType, 'discarded')
+            ->set($control, 'discarded');
+
+        $this->assertTrue($this->redis->discard());
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertEquals('not-a-list', $this->redis->get($wrongType));
+        $this->assertEquals('committed', $this->redis->get($control));
+
+        /* DISCARD must consume/reset transaction state on every node. */
+        $this->assertTrue($this->redis->set($control, 'after-discard'));
+        $this->assertEquals('after-discard', $this->redis->get($control));
+    }
+
     public function testPipelineSameSlot() {
         $key1 = '{pipe}one';
         $key2 = '{pipe}two';
@@ -285,30 +391,59 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals([true, true, ['1', '2']], $ret);
     }
 
-    public function testPipelineDifferentSlotThrows() {
-        $threw = false;
+    public function testPipelineDifferentSlots() {
         $key1 = '{pipeA}key1';
         $key2 = '{pipeB}key2';
 
         $this->redis->del([$key1, $key2]);
 
-        try {
-            $pipe = $this->redis->pipeline();
-            $pipe->set($key1, '1');
-            $pipe->set($key2, '2');
-        } catch (RedisClusterException $ex) {
-            $threw = true;
-            $this->assertStringContains('hash slot', $ex->getMessage());
-        } catch (Exception $ex) {
-            $this->assert("Unexpected exception: {$ex}");
-            return;
+        $ret = $this->redis->pipeline()
+            ->set($key1, '1')
+            ->set($key2, '2')
+            ->get($key2)
+            ->get($key1)
+            ->exec();
+
+        $this->assertEquals([true, true, '2', '1'], $ret);
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+    }
+
+    public function testPipelineInterleavedNodeResponseOrder() {
+        $pipe = $this->redis->pipeline();
+        $expected = [];
+
+        for ($i = 0; $i < 12; $i++) {
+            $tag = $i % 2 === 0 ? 'pipeA' : 'pipeB';
+            $key = "{{$tag}}order-{$i}";
+            $value = "value-{$i}";
+
+            $pipe->set($key, $value)->get($key);
+            $expected[] = true;
+            $expected[] = $value;
         }
 
-        $this->assertTrue($threw);
-        $this->assertFalse($this->redis->get($key1));
-        $this->assertFalse($this->redis->get($key2));
-        $this->assertTrue($this->redis->set($key1, 'ok'));
-        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertEquals($expected, $pipe->exec());
+    }
+
+    public function testPipelineCrossSlotMgetPreservesResultOrder() {
+        $keys = [
+            '{pipeA}mget-first',
+            '{pipeB}mget-middle',
+            '{pipeA}mget-last',
+        ];
+
+        $this->redis->mset([
+            $keys[0] => 'first',
+            $keys[1] => 'middle',
+            $keys[2] => 'last',
+        ]);
+
+        $ret = $this->redis->pipeline()
+            ->mget($keys)
+            ->get($keys[1])
+            ->exec();
+
+        $this->assertEquals([['first', 'middle', 'last'], 'middle'], $ret);
     }
 
     public function testPipelineEmptyExec() {
@@ -323,6 +458,51 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->pipeline()->set($key, 'value');
         $this->assertTrue($this->redis->discard());
         $this->assertFalse($this->redis->get($key));
+    }
+
+    public function testPipelineDiscardDistributedContexts() {
+        $keys = ['{pipeA}discard-one', '{pipeB}discard-two'];
+
+        $this->redis->del($keys);
+        $this->redis->pipeline()
+            ->mget($keys)
+            ->mset([$keys[0] => 'one', $keys[1] => 'two']);
+
+        $this->assertTrue($this->redis->discard());
+        $this->assertEquals([false, false], $this->redis->mget($keys));
+    }
+
+    public function testPipelineDiscardInsideMultiDiscardsOuterPipeline() {
+        $outer = '{pipeA}discard-outer';
+        $transaction = '{pipeB}discard-transaction';
+
+        $this->redis->del([$outer, $transaction]);
+
+        $pipe = $this->redis->pipeline()->set($outer, 'outer')->multi();
+        $pipe->set($transaction, 'transaction');
+
+        $this->assertTrue($pipe->discard());
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertEquals(
+            [false, false],
+            $this->redis->mget([$outer, $transaction])
+        );
+    }
+
+    public function testPipelineObjectDestructionWithDistributedContexts() {
+        $redis = $this->getNewInstance();
+        $redis->pipeline()
+            ->mget(['{pipeA}destruct-one', '{pipeB}destruct-two'])
+            ->mset([
+                '{pipeA}destruct-one' => 'one',
+                '{pipeB}destruct-two' => 'two',
+            ]);
+
+        unset($redis);
+        gc_collect_cycles();
+
+        /* Destruction must not affect a different live cluster context. */
+        $this->assertTrue($this->redis->set('{pipe}destruct-control', 'ok'));
     }
 
     public function testPipelineSameSlotMultiKeyOps() {
@@ -366,9 +546,25 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
+    public function testPipelineUsesSerializerSelectedAtExec() {
+        $key = '{pipe}serializer-options';
+        $value = ['answer' => 42];
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        $this->redis->set($key, $value);
+
+        $pipe = $this->redis->pipeline()->get($key);
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        $pipe->get($key);
+
+        /* Match Redis: Pipeline replies use the serializer active at exec. */
+        $serialized = serialize($value);
+        $this->assertEquals([$serialized, $serialized], $pipe->exec());
+    }
+
     public function testPipelineViaMulti() {
-        $key1 = '{pipe}multi1';
-        $key2 = '{pipe}multi2';
+        $key1 = '{pipeA}multi1';
+        $key2 = '{pipeB}multi2';
 
         $this->redis->del([$key1, $key2]);
 
@@ -381,25 +577,193 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals([true, true, 'a'], $ret);
     }
 
+    public function testPipelineActivationMethodsAreEquivalent() {
+        $key1 = '{pipeA}equivalent-one';
+        $key2 = '{pipeB}equivalent-two';
+
+        $run = function ($pipe) use ($key1, $key2) {
+            return $pipe
+                ->set($key1, 1)
+                ->incr($key1)
+                ->set($key2, 'two')
+                ->mget([$key1, $key2])
+                ->exec();
+        };
+
+        $this->redis->del([$key1, $key2]);
+        $pipeline = $run($this->redis->pipeline());
+
+        $this->redis->del([$key1, $key2]);
+        $multiPipeline = $run($this->redis->multi(Redis::PIPELINE));
+
+        $this->assertEquals([true, 2, true, ['2', 'two']], $pipeline);
+        $this->assertEquals($pipeline, $multiPipeline);
+    }
+
+    public function testDoublePipeNoOp() {
+        $key = '{pipe}activation-aliases';
+        $this->redis->del($key);
+
+        $pipe = $this->redis->pipeline()->set($key, 'one');
+        $pipe->multi(Redis::PIPELINE)->get($key);
+        $pipe->pipeline()->set($key, 'two')->get($key);
+
+        $this->assertEquals([true, 'one', true, 'two'], $pipe->exec());
+    }
+
+    public function testPipelineMultiSameSlot() {
+        $key1 = '{pipe-tx}one';
+        $key2 = '{pipe-tx}two';
+
+        $this->redis->del([$key1, $key2]);
+
+        $pipe = $this->redis->pipeline();
+        $pipe->multi()
+            ->set($key1, 'one')
+            ->set($key2, 'two')
+            ->mget([$key1, $key2])
+            ->exec();
+
+        $ret = $pipe->exec();
+        $this->assertEquals([[true, true, ['one', 'two']]], $ret);
+    }
+
+    public function testPipelineMultiWithOuterCommands() {
+        $outer = '{pipe-outer}key';
+        $txkey = '{pipe-tx}key';
+
+        $this->redis->del([$outer, $txkey]);
+
+        $ret = $this->redis->pipeline()
+            ->set($outer, 'outer')
+            ->multi()
+                ->set($txkey, 'transaction')
+                ->get($txkey)
+                ->exec()
+            ->get($outer)
+            ->exec();
+
+        $this->assertEquals(
+            [true, [true, 'transaction'], 'outer'],
+            $ret
+        );
+    }
+
+    public function testPipelineMultiReplyFramingOnSameSocket() {
+        $key = '{pipe-frame}key';
+        $this->redis->del($key);
+
+        $ret = $this->redis->pipeline()
+            ->set($key, 0)
+            ->get($key)
+            ->multi()
+                ->incr($key)
+                ->get($key)
+                ->exec()
+            ->get($key)
+            ->multi()
+                ->incr($key)
+                ->get($key)
+                ->exec()
+            ->get($key)
+            ->exec();
+
+        $this->assertEquals(
+            [true, '0', [1, '1'], '1', [2, '2'], '2'],
+            $ret
+        );
+    }
+
+    public function testPipelineMultipleMultiBlocksAcrossSlots() {
+        $key1 = '{pipeA}first-tx';
+        $key2 = '{pipeB}second-tx';
+
+        $this->redis->del([$key1, $key2]);
+
+        $pipe = $this->redis->pipeline();
+        $pipe->multi()->set($key1, 'one')->get($key1)->exec();
+        $pipe->multi()->set($key2, 'two')->get($key2)->exec();
+
+        $this->assertEquals(
+            [[true, 'one'], [true, 'two']],
+            $pipe->exec()
+        );
+    }
+
+    public function testPipelineMultiEmpty() {
+        $ret = $this->redis->pipeline()->multi()->exec()->exec();
+        $this->assertEquals([[]], $ret);
+    }
+
+    public function testPipelineMultiDifferentSlotsThrows() {
+        $key1 = '{pipeA}tx-one';
+        $key2 = '{pipeB}tx-two';
+        $outer = '{pipeC}tx-outer';
+        $threw = false;
+
+        $this->redis->del([$key1, $key2, $outer]);
+
+        try {
+            $this->redis->pipeline()
+                ->set($outer, 'outer')
+                ->multi()
+                    ->set($key1, 'one')
+                    ->set($key2, 'two');
+        } catch (RedisClusterException $ex) {
+            $threw = true;
+            $this->assertStringContains('same hash slot', $ex->getMessage());
+        }
+
+        $this->assertTrue($threw);
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertEquals(
+            [false, false, false],
+            $this->redis->mget([$key1, $key2, $outer])
+        );
+    }
+
+    public function testPipelineMultiRejectsCrossSlotDistributedCommands() {
+        $keys = ['{pipeA}tx-dist-one', '{pipeB}tx-dist-two'];
+        $values = [$keys[0] => 'one', $keys[1] => 'two'];
+        $commands = [
+            ['mget', [$keys]],
+            ['mset', [$values]],
+            ['msetnx', [$values]],
+            ['del', [$keys]],
+            ['unlink', [$keys]],
+        ];
+
+        $this->redis->del($keys);
+
+        foreach ($commands as [$method, $args]) {
+            $threw = false;
+
+            try {
+                $pipe = $this->redis->pipeline()->multi();
+                $pipe->$method(...$args);
+            } catch (RedisClusterException $ex) {
+                $threw = true;
+            }
+
+            $this->assertTrue($threw);
+            $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        }
+
+        $this->assertEquals([false, false], $this->redis->mget($keys));
+    }
+
     public function testPipelineViaMultiEmpty() {
         $ret = $this->redis->multi(Redis::PIPELINE)->exec();
         $this->assertEquals([], $ret);
     }
 
-    public function testPipelineMgetDifferentSlotThrows() {
-        $threw = false;
+    public function testPipelineMgetDifferentSlots() {
+        $keys = ['{pipeA}one', '{pipeB}two'];
 
-        try {
-            $pipe = $this->redis->pipeline();
-            $pipe->mget(['{pipeA}one', '{pipeB}two']);
-        } catch (RedisClusterException $ex) {
-            $threw = true;
-        } catch (Exception $ex) {
-            $this->assert("Unexpected exception: {$ex}");
-            return;
-        }
+        $this->redis->mset([$keys[0] => 'one', $keys[1] => 'two']);
+        $ret = $this->redis->pipeline()->mget($keys)->exec();
 
-        $this->assertTrue($threw);
+        $this->assertEquals([['one', 'two']], $ret);
     }
 
     public function testPipelineDirectedCommandThrows() {
@@ -416,60 +780,39 @@ class Redis_Cluster_Test extends Redis_Test {
         }
 
         $this->assertTrue($threw);
+        $this->assertTrue($this->redis->discard());
     }
 
-    public function testPipelineCrossSlotMsetThrows() {
-        $threw = false;
+    public function testPipelineCrossSlotMset() {
+        $values = ['{pipeA}one' => '1', '{pipeB}two' => '2'];
 
-        try {
-            $pipe = $this->redis->pipeline();
-            $pipe->mset(['{pipeA}one' => '1', '{pipeB}two' => '2']);
-        } catch (RedisClusterException $ex) {
-            $threw = true;
-            $this->assertStringContains('hash slot', $ex->getMessage());
-        } catch (Exception $ex) {
-            $this->assert("Unexpected exception: {$ex}");
-            return;
-        }
+        $this->redis->del(array_keys($values));
+        $ret = $this->redis->pipeline()->mset($values)->exec();
 
-        $this->assertTrue($threw);
-        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertEquals([true], $ret);
+        $this->assertEquals(['1', '2'], $this->redis->mget(array_keys($values)));
     }
 
-    public function testPipelineCrossSlotMsetnxThrows() {
-        $threw = false;
+    public function testPipelineCrossSlotMsetnx() {
+        $values = ['{pipeA}nx-one' => '1', '{pipeB}nx-two' => '2'];
 
-        try {
-            $pipe = $this->redis->pipeline();
-            $pipe->msetnx(['{pipeA}one' => '1', '{pipeB}two' => '2']);
-        } catch (RedisClusterException $ex) {
-            $threw = true;
-            $this->assertStringContains('hash slot', $ex->getMessage());
-        } catch (Exception $ex) {
-            $this->assert("Unexpected exception: {$ex}");
-            return;
-        }
+        $this->redis->del(array_keys($values));
+        $ret = $this->redis->pipeline()->msetnx($values)->exec();
 
-        $this->assertTrue($threw);
-        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertEquals([[1, 1]], $ret);
+        $this->assertEquals(['1', '2'], $this->redis->mget(array_keys($values)));
     }
 
-    public function testPipelineCrossSlotDelThrows() {
-        $threw = false;
+    public function testPipelineCrossSlotDelUnlink() {
+        $keys = ['{pipeA}del-one', '{pipeB}del-two'];
 
-        try {
-            $pipe = $this->redis->pipeline();
-            $pipe->del(['{pipeA}one', '{pipeB}two']);
-        } catch (RedisClusterException $ex) {
-            $threw = true;
-            $this->assertStringContains('hash slot', $ex->getMessage());
-        } catch (Exception $ex) {
-            $this->assert("Unexpected exception: {$ex}");
-            return;
-        }
+        $this->redis->mset([$keys[0] => '1', $keys[1] => '2']);
+        $ret = $this->redis->pipeline()->del($keys)->exec();
+        $this->assertEquals([2], $ret);
 
-        $this->assertTrue($threw);
-        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->redis->mset([$keys[0] => '1', $keys[1] => '2']);
+        $ret = $this->redis->pipeline()->unlink($keys)->exec();
+        $this->assertEquals([2], $ret);
     }
 
     public function testPipelineKeysThrows() {
@@ -590,6 +933,11 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertTrue($this->redis->discard());
         $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
 
+        $this->redis->pipeline()->multi();
+        $this->assertEquals(Redis::PIPELINE, $this->redis->getMode());
+        $this->redis->exec()->exec();
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+
         $this->assertFalse(@$this->redis->multi(12345));
         $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
     }
@@ -603,18 +951,20 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
     }
 
-    public function testPipelineResetAfterErrorAllowsNewPipeline() {
-        $threw = false;
+    public function testPipelineCommandErrorLeavesSocketClean() {
+        $key = '{pipe-error}key';
+        $this->redis->set($key, 'not-a-list');
 
-        try {
-            $pipe = $this->redis->pipeline();
-            $pipe->set('{pipeA}key1', '1');
-            $pipe->set('{pipeB}key2', '2');
-        } catch (RedisClusterException $ex) {
-            $threw = true;
-        }
+        $ret = $this->redis->pipeline()
+            ->lpush($key, 'value')
+            ->set($key, 'ok')
+            ->get($key)
+            ->exec();
 
-        $this->assertTrue($threw);
+        $this->assertEquals([false, true, 'ok'], $ret);
+
+        /* A following command must not consume a stale pipeline response. */
+        $this->assertEquals('ok', $this->redis->get($key));
 
         $ret = $this->redis->pipeline()
             ->set('{pipe}reset', 'ok')
@@ -623,17 +973,179 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals([true, 'ok'], $ret);
     }
 
+    public function testPipelineDistributedCommandErrorsPreserveResults() {
+        if ( ! $this->minVersionCheck('6.0')) {
+            $this->markTestSkipped();
+        }
+
+        $user = 'phpredis-pipeline-' . uniqid();
+        $pass = uniqid('secret-', true);
+        $restricted = NULL;
+        $masters = $this->redis->_masters();
+        $keys = [
+            '{pipeA}acl-mset',
+            '{pipeB}acl-mset',
+            '{pipeA}acl-msetnx',
+            '{pipeB}acl-msetnx',
+            '{pipeA}acl-del',
+            '{pipeB}acl-del',
+            '{pipeA}acl-unlink',
+            '{pipeB}acl-unlink',
+            '{pipeA}acl-control',
+        ];
+
+        try {
+            foreach ($masters as $master) {
+                $this->assertTrue($this->redis->acl(
+                    $master, 'SETUSER', $user, 'reset', 'on', ">$pass", '~*',
+                    '+@all', '-mset', '-msetnx', '-del', '-unlink'
+                ));
+            }
+
+            $this->redis->del($keys);
+            $this->redis->mset([
+                $keys[4] => 'del-one',
+                $keys[5] => 'del-two',
+                $keys[6] => 'unlink-one',
+                $keys[7] => 'unlink-two',
+            ]);
+
+            $restricted = new RedisCluster(
+                NULL, self::$seeds, 1, 1, false, [$user, $pass]
+            );
+
+            $ret = $restricted->pipeline()
+                ->mset([$keys[0] => 'one', $keys[1] => 'two'])
+                ->msetnx([$keys[2] => 'one', $keys[3] => 'two'])
+                ->del([$keys[4], $keys[5]])
+                ->unlink([$keys[6], $keys[7]])
+                ->set($keys[8], 'ok')
+                ->get($keys[8])
+                ->exec();
+
+            $this->assertEquals(
+                [false, [false, false], false, false, true, 'ok'],
+                $ret
+            );
+            $this->assertEquals(
+                ['del-one', 'del-two', 'unlink-one', 'unlink-two'],
+                $this->redis->mget(array_slice($keys, 4, 4))
+            );
+        } finally {
+            if ($restricted) {
+                $restricted->close();
+            }
+            foreach ($masters as $master) {
+                @$this->redis->acl($master, 'DELUSER', $user);
+            }
+            $this->redis->del($keys);
+        }
+    }
+
+    public function testPipelineRejectsReentrantCommandsWhileReading() {
+        $valueKey = '{pipe-reentrant}value';
+        $sideEffectKey = '{pipe-reentrant-side}value';
+        $redis = new RedisCluster(
+            NULL, self::$seeds, 1, .25, false, $this->getAuth()
+        );
+        $exception = NULL;
+
+        $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        $redis->set($valueKey, new RedisClusterPipelineReentrantValue());
+        $redis->del($sideEffectKey);
+
+        RedisClusterPipelineReentrantValue::$redis = $redis;
+        RedisClusterPipelineReentrantValue::$key = $sideEffectKey;
+
+        try {
+            $redis->pipeline()->get($valueKey)->get($valueKey)->exec();
+        } catch (RedisClusterException $e) {
+            $exception = $e;
+        } finally {
+            RedisClusterPipelineReentrantValue::$redis = NULL;
+            RedisClusterPipelineReentrantValue::$key = NULL;
+        }
+
+        $this->assertTrue($exception instanceof RedisClusterException);
+        $this->assertStringContains(
+            'RedisCluster is already executing a pipeline',
+            $exception->getMessage()
+        );
+        $this->assertEquals(Redis::ATOMIC, $redis->getMode());
+        $this->assertFalse($redis->get($sideEffectKey));
+        $this->assertTrue($redis->set($sideEffectKey, 'after'));
+        $this->assertEquals('after', $redis->get($sideEffectKey));
+        $redis->close();
+    }
+
+    public function testPipelineRejectsWaitCommandsWithoutChangingState() {
+        $commands = [
+            ['wait', ['{pipe}wait', 0, 0]],
+            ['waitaof', ['{pipe}waitaof', 0, 0, 0]],
+        ];
+
+        foreach ($commands as [$method, $args]) {
+            $exception = NULL;
+            $this->redis->pipeline();
+
+            try {
+                $this->redis->$method(...$args);
+            } catch (RedisClusterException $e) {
+                $exception = $e;
+            }
+
+            $this->assertTrue($exception instanceof RedisClusterException);
+            $this->assertEquals(Redis::PIPELINE, $this->redis->getMode());
+            $this->assertTrue($this->redis->discard());
+            $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        }
+    }
+
+    public function testPipelineMultiCommandErrorLeavesSocketClean() {
+        $wrongType = '{pipe-tx-error}wrong-type';
+        $valueKey = '{pipe-tx-error}value';
+        $this->redis->set($wrongType, 'not-a-list');
+
+        $pipe = $this->redis->pipeline();
+        $pipe->multi()
+            ->lpush($wrongType, 'value')
+            ->set($valueKey, 'ok')
+            ->get($valueKey)
+            ->exec();
+
+        $this->assertEquals([[false, true, 'ok']], $pipe->exec());
+        $this->assertEquals('ok', $this->redis->get($valueKey));
+    }
+
+    public function testPipelineMultiWatchAbortLeavesSocketClean() {
+        $key = '{pipeA}watch-abort';
+        $other = $this->getNewInstance();
+
+        $this->redis->set($key, 'before');
+        $this->assertTrue($this->redis->watch($key));
+
+        $pipe = $this->redis->pipeline();
+        $pipe->multi()->get($key)->exec();
+
+        $other->set($key, 'changed');
+        $this->assertEquals([[]], $pipe->exec());
+
+        /* EXEC consumed every response and cleared WATCH on the socket. */
+        $this->assertEquals('changed', $this->redis->get($key));
+        $other->close();
+    }
+
     public function testExecOutsideMultiPipeline() {
         $this->assertFalse(@$this->redis->exec());
     }
 
-    public function testExecAfterPipelineErrorIsFalse() {
+    public function testExecAfterPipelineMultiSlotErrorIsFalse() {
         $threw = false;
 
         try {
-            $pipe = $this->redis->pipeline();
-            $pipe->set('{pipeA}key1', '1');
-            $pipe->set('{pipeB}key2', '2');
+            $this->redis->pipeline()->multi()
+                ->set('{pipeA}key1', '1')
+                ->set('{pipeB}key2', '2');
         } catch (RedisClusterException $ex) {
             $threw = true;
         }

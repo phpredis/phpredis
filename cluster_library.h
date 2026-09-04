@@ -169,6 +169,13 @@ typedef struct redisClusterNode {
 /* Forward declarations */
 typedef struct clusterFoldItem clusterFoldItem;
 
+typedef enum {
+    CLUSTER_FOLD_RESPONSE,
+    CLUSTER_FOLD_MULTI,
+    CLUSTER_FOLD_EXEC,
+    CLUSTER_FOLD_EMPTY_MULTI
+} clusterFoldType;
+
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
 
@@ -208,8 +215,12 @@ typedef struct redisCluster {
     /* Variable to store MULTI response */
     zval multi_resp;
 
-    /* Hash slot for an active pipeline */
+    /* Hash slot and socket for a MULTI block inside an active pipeline */
     short pipeline_slot;
+    RedisSock *pipeline_sock;
+
+    /* Whether RedisCluster::exec is currently consuming pipeline replies */
+    zend_bool pipeline_executing;
 
     /* Flag for when we get a CLUSTERDOWN error */
     short clusterdown;
@@ -288,6 +299,7 @@ struct clusterFoldItem {
 
     /* The actual socket where we send this request */
     unsigned short slot;
+    RedisSock *sock;
 
     /* Context and possible context destructor */
     RedisCmdCtx ctx;
@@ -295,6 +307,7 @@ struct clusterFoldItem {
     /* Next item in our list */
     struct clusterFoldItem *next;
 
+    clusterFoldType type;
     uint8_t flags;
 };
 
@@ -324,6 +337,9 @@ typedef struct clusterMultiCtx {
 
     /* Is this the last entry */
     short last;
+
+    /* Whether the aggregate zval was transferred to a result */
+    zend_bool transferred;
 } clusterMultiCtx;
 
 /* Container for things like MGET, MSET, and MSETNX, which split the command
@@ -414,12 +430,13 @@ PHP_REDIS_API short cluster_find_slot(redisCluster *c, const char *host,
     unsigned short port);
 PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, const char *cmd,
     int cmd_len, REDIS_REPLY_TYPE rtype);
-PHP_REDIS_API int cluster_send_pipeline(redisCluster *c, short slot,
-    const char *cmd, int cmd_len);
+PHP_REDIS_API int cluster_send_pipeline(redisCluster *c, RedisSock *sock,
+    const char *cmd, size_t cmd_len);
 
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     int failover, int persistent);
 PHP_REDIS_API void cluster_free(redisCluster *c, int free_ctx);
+PHP_REDIS_API void cluster_free_queue(redisCluster *c);
 PHP_REDIS_API void cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds);
 REDIS_NODISCARD PHP_REDIS_API int cluster_map_keyspace(redisCluster *c);
 PHP_REDIS_API void cluster_free_node(redisClusterNode *node);
