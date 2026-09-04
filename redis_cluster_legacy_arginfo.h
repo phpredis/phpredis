@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 65b0169d3db8c36a27189f63b956c10ba42dfdfb */
+ * Stub hash: fb080078380338af79e77e60c11a443c89d2f8fe */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -562,8 +562,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_multi, 0, 0, 0)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_pipeline, 0, 0, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_pipeline arginfo_class_RedisCluster__masters
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_object, 0, 0, 2)
 	ZEND_ARG_INFO(0, subcommand)
