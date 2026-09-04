@@ -2804,10 +2804,10 @@ class Redis_Test extends TestSuite {
             $this->assertIsInt($this->redis->del($keys));
             $this->redis->msetex($kvals, [$opt => $val]);
             foreach ($keys as $key) {
-                /* Timiing tests on GitHub CI are atrocious so we just
+                /* Timing tests on GitHub CI are atrocious so we just
                    want to verify that >= 1 and <= $val */
                 $ttl = $this->redis->$desc($key);
-                $this->assertBetween($val, 1, $ttl + 1);
+                $this->assertBetween($ttl, 1, $val);
             }
         }
 
