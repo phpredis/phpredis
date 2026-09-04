@@ -121,6 +121,7 @@ RedisCluster pipelines are non-atomic and may contain commands for different
 hash slots and different nodes. PhpRedis groups commands by their mapped master,
 sends each node its pipeline, and returns replies in the original command order.
 Commands sent to different nodes may execute in a different relative order.
+Pipeline reads use mapped masters and do not use replica failover/distribution.
 
 ```php
 $pipe = $obj_cluster->pipeline();
@@ -147,6 +148,8 @@ $result = $pipe->exec(); // Send the outer pipeline.
 
 Every command within an individual MULTI block must resolve to the same hash
 slot. Commands outside the block remain non-atomic and may target any slot.
+If keys were WATCHed before the pipeline, they must all share that transaction
+slot; MULTI and EXEC stay on the exact connection that accepted WATCH.
 
 Connection failures, redirections, or topology changes can result in only part
 of a pipeline being executed. PhpRedis does not retry an interrupted pipeline,

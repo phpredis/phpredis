@@ -11,6 +11,17 @@ class RedisClusterPipelineReentrantValue {
     }
 }
 
+class RedisClusterPipelineSetOptionValue {
+    public static $redis;
+
+    public function __wakeup() {
+        self::$redis->setOption(
+            Redis::OPT_SERIALIZER,
+            Redis::SERIALIZER_NONE
+        );
+    }
+}
+
 /**
  * Most RedisCluster tests should work the same as the standard Redis object
  * so we only override specific functions where the prototype is different or
@@ -1078,6 +1089,38 @@ class Redis_Cluster_Test extends Redis_Test {
         $redis->close();
     }
 
+    public function testPipelineRejectsSetOptionWhileReading() {
+        $key = '{pipe-reentrant-option}value';
+        $redis = new RedisCluster(
+            NULL, self::$seeds, 1, .25, false, $this->getAuth()
+        );
+        $exception = NULL;
+
+        $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        $redis->set($key, new RedisClusterPipelineSetOptionValue());
+        RedisClusterPipelineSetOptionValue::$redis = $redis;
+
+        try {
+            $redis->pipeline()->get($key)->get($key)->exec();
+        } catch (RedisClusterException $e) {
+            $exception = $e;
+        } finally {
+            RedisClusterPipelineSetOptionValue::$redis = NULL;
+        }
+
+        $this->assertTrue($exception instanceof RedisClusterException);
+        $this->assertStringContains(
+            'RedisCluster is already executing a pipeline',
+            $exception->getMessage()
+        );
+        $this->assertEquals(
+            Redis::SERIALIZER_PHP,
+            $redis->getOption(Redis::OPT_SERIALIZER)
+        );
+        $this->assertEquals(Redis::ATOMIC, $redis->getMode());
+        $redis->close();
+    }
+
     public function testPipelineRejectsWaitCommandsWithoutChangingState() {
         $commands = [
             ['wait', ['{pipe}wait', 0, 0]],
@@ -1132,6 +1175,128 @@ class Redis_Cluster_Test extends Redis_Test {
 
         /* EXEC consumed every response and cleared WATCH on the socket. */
         $this->assertEquals('changed', $this->redis->get($key));
+        $other->close();
+    }
+
+    public function testPipelineMultiMustUseWatchedSlot() {
+        $watched = '{pipe-watch-affinity-a}watched';
+        $transaction = '{pipe-watch-affinity-b}transaction';
+        $watchSlot = $this->redis->cluster($watched, 'KEYSLOT', $watched);
+        $transactionSlot = $this->redis->cluster(
+            $transaction, 'KEYSLOT', $transaction
+        );
+        $exception = NULL;
+
+        $this->assertTrue($watchSlot !== $transactionSlot);
+        $this->redis->del([$watched, $transaction]);
+        $this->assertTrue($this->redis->watch($watched));
+
+        try {
+            $this->redis->pipeline()
+                ->multi()
+                ->set($transaction, 'must-not-run');
+        } catch (RedisClusterException $e) {
+            $exception = $e;
+        }
+
+        $this->assertTrue($exception instanceof RedisClusterException);
+        $this->assertStringContains('same hash slot', $exception->getMessage());
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertFalse($this->redis->get($transaction));
+        $this->assertTrue($this->redis->unwatch());
+    }
+
+    public function testPipelineMultiRejectsWatchedSlotsOnSameMaster() {
+        $byMaster = [];
+        $keys = NULL;
+
+        for ($i = 0; $i < 64 && $keys === NULL; $i++) {
+            $key = "{pipe-watch-master-$i}key";
+            $master = $this->redis->cluster($key, 'MYID');
+            $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
+
+            if (isset($byMaster[$master]) && $byMaster[$master][1] !== $slot) {
+                $keys = [$byMaster[$master][0], $key];
+            } else {
+                $byMaster[$master] = [$key, $slot];
+            }
+        }
+
+        $this->assertTrue($keys !== NULL);
+        $this->assertTrue($this->redis->watch(...$keys));
+
+        $exception = NULL;
+        try {
+            $this->redis->pipeline()->multi();
+        } catch (RedisClusterException $e) {
+            $exception = $e;
+        }
+
+        $this->assertTrue($exception instanceof RedisClusterException);
+        $this->assertStringContains('WATCH across hash slots', $exception->getMessage());
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertTrue($this->redis->unwatch());
+    }
+
+    public function testPipelineEmptyMultiClearsWatch() {
+        $watched = '{pipe-watch-empty}watched';
+        $transaction = '{pipe-watch-empty}transaction';
+        $other = $this->getNewInstance();
+
+        $this->redis->del([$watched, $transaction]);
+        $this->redis->set($watched, 'before');
+        $this->assertTrue($this->redis->watch($watched));
+        $this->assertEquals(
+            [[]],
+            $this->redis->pipeline()->multi()->exec()->exec()
+        );
+
+        /* A real empty EXEC must have cleared WATCH on this connection. */
+        $other->set($watched, 'changed');
+        $this->assertEquals(
+            [true],
+            $this->redis->multi()->set($transaction, 'after')->exec()
+        );
+        $this->assertEquals('after', $this->redis->get($transaction));
+        $other->close();
+    }
+
+    public function testPipelineWatchOnlyConstrainsFirstMultiBlock() {
+        $watched = '{pipe-watch-first}watched';
+        $first = '{pipe-watch-first}transaction';
+        $second = '{pipe-watch-second}transaction';
+
+        $this->redis->del([$watched, $first, $second]);
+        $this->assertTrue($this->redis->watch($watched));
+
+        $pipe = $this->redis->pipeline();
+        $pipe->multi()->set($first, 'first')->exec();
+        $pipe->multi()->set($second, 'second')->exec();
+
+        $this->assertEquals([[true], [true]], $pipe->exec());
+        $this->assertEquals(
+            ['first', 'second'],
+            $this->redis->mget([$first, $second])
+        );
+    }
+
+    public function testDiscardedPipelineDoesNotConsumeWatch() {
+        $watched = '{pipe-watch-discard}watched';
+        $transaction = '{pipe-watch-discard}transaction';
+        $other = $this->getNewInstance();
+
+        $this->redis->set($watched, 'before');
+        $this->redis->del($transaction);
+        $this->assertTrue($this->redis->watch($watched));
+        $this->assertTrue(
+            $this->redis->pipeline()->multi()->exec()->discard()
+        );
+
+        $other->set($watched, 'changed');
+        $pipe = $this->redis->pipeline();
+        $pipe->multi()->set($transaction, 'must-abort')->exec();
+        $this->assertEquals([[]], $pipe->exec());
+        $this->assertFalse($this->redis->get($transaction));
         $other->close();
     }
 

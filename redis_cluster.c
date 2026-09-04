@@ -78,6 +78,50 @@ static void cluster_enqueue_response(redisCluster *c, short slot,
     cluster_enqueue_item(c, slot, NULL, cb, ctx, CLUSTER_FOLD_RESPONSE);
 }
 
+static void cluster_pipeline_queue_multi(redisCluster *c, short slot,
+                                         RedisSock *sock)
+{
+    c->pipeline_slot = slot;
+    c->pipeline_sock = sock;
+    smart_string_appendl(&sock->pipeline_cmd, RESP_MULTI_CMD,
+                         sizeof(RESP_MULTI_CMD) - 1);
+    cluster_enqueue_item(c, slot, sock, NULL, redis_empty_ctx,
+                         CLUSTER_FOLD_MULTI);
+}
+
+static zend_bool cluster_pipeline_queued_watch_exec(redisCluster *c)
+{
+    clusterFoldItem *item = c->multi_head;
+
+    while (item) {
+        if (item->type == CLUSTER_FOLD_EXEC && item->sock == c->watch_sock) {
+            return 1;
+        }
+        item = item->next;
+    }
+
+    return 0;
+}
+
+static void cluster_track_watch(redisCluster *c, short slot, RedisSock *sock)
+{
+    if (c->watch_slot >= 0 &&
+        (c->watch_sock == NULL || !c->watch_sock->watching)
+    ) {
+        cluster_clear_watch_state(c);
+    }
+
+    if (c->watch_slot == CLUSTER_WATCH_SLOT_NONE) {
+        c->watch_slot = slot;
+        c->watch_sock = sock;
+    } else if (c->watch_slot != slot || c->watch_sock != sock) {
+        c->watch_slot = CLUSTER_WATCH_SLOT_CROSSSLOT;
+        c->watch_sock = NULL;
+    }
+
+    sock->watching = 1;
+}
+
 static void cluster_reset_multi(redisCluster *c) {
     redisClusterNode *node;
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
@@ -89,6 +133,7 @@ static void cluster_reset_multi(redisCluster *c) {
 
     c->flags->watching = 0;
     c->flags->mode = ATOMIC;
+    cluster_clear_watch_state(c);
 }
 
 static void cluster_pipeline_free_buffers(redisCluster *c)
@@ -105,7 +150,12 @@ static void cluster_pipeline_disconnect(redisCluster *c)
     clusterFoldItem *item = c->multi_head;
 
     while (item) {
-        if (item->sock) redis_sock_disconnect(item->sock, 1, 1);
+        if (item->sock) {
+            if (item->sock == c->watch_sock) {
+                cluster_clear_watch_state(c);
+            }
+            redis_sock_disconnect(item->sock, 1, 1);
+        }
         item = item->next;
     }
 }
@@ -186,15 +236,17 @@ static int cluster_pipeline_enqueue(redisCluster *c, short slot, RedisCmd *cmd,
         return -1;
     }
 
-    sock = cluster_slot_master_sock(c, slot);
-
-    if (redis_sock_is_multi(c->flags) && c->pipeline_slot == -1) {
-        c->pipeline_slot = slot;
-        c->pipeline_sock = sock;
-        smart_string_appendl(&sock->pipeline_cmd, RESP_MULTI_CMD,
-                             sizeof(RESP_MULTI_CMD) - 1);
-        cluster_enqueue_item(c, slot, sock, NULL, redis_empty_ctx,
-                             CLUSTER_FOLD_MULTI);
+    if (redis_sock_is_multi(c->flags)) {
+        if (c->pipeline_slot == -1) {
+            sock = cluster_slot_master_sock(c, slot);
+            cluster_pipeline_queue_multi(c, slot, sock);
+        } else {
+            /* WATCH and MULTI are connection state.  Once a transaction is
+             * bound, never silently follow a changed slot map. */
+            sock = c->pipeline_sock;
+        }
+    } else {
+        sock = cluster_slot_master_sock(c, slot);
     }
 
     smart_string_appendl(&sock->pipeline_cmd, redis_cmd_str(cmd),
@@ -343,6 +395,8 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
     cluster->subscribed_slot = -1;
     cluster->pipeline_slot = -1;
     cluster->pipeline_sock = NULL;
+    cluster->watch_slot = CLUSTER_WATCH_SLOT_NONE;
+    cluster->watch_sock = NULL;
 
     // Allocate our RedisSock we'll use to store prefix/serialization flags
     cluster->flags = ecalloc(1, sizeof(RedisSock));
@@ -2229,6 +2283,11 @@ PHP_METHOD(RedisCluster, getoption) {
 /* {{{ proto bool RedisCluster::setOption(long option, mixed value) */
 PHP_METHOD(RedisCluster, setoption) {
     redisCluster *c = GET_CONTEXT();
+
+    if (cluster_pipeline_check_reentry(c) == FAILURE) {
+        RETURN_FALSE;
+    }
+
     redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, c);
 }
 /* }}} */
@@ -2354,6 +2413,27 @@ PHP_METHOD(RedisCluster, multi) {
         if (redis_sock_is_pipeline(c->flags)) {
             c->pipeline_slot = -1;
             c->pipeline_sock = NULL;
+
+            if (c->watch_slot == CLUSTER_WATCH_SLOT_CROSSSLOT) {
+                CLUSTER_THROW_EXCEPTION(
+                    "Pipelined MULTI cannot follow WATCH across hash slots", 0);
+                cluster_reset_pipeline(c);
+                RETURN_FALSE;
+            }
+
+            /* A disconnected WATCH socket no longer has server-side state. */
+            if (c->watch_slot >= 0 &&
+                (c->watch_sock == NULL || !c->watch_sock->watching)
+            ) {
+                cluster_clear_watch_state(c);
+            }
+
+            if (c->watch_slot >= 0 &&
+                !cluster_pipeline_queued_watch_exec(c)
+            ) {
+                cluster_pipeline_queue_multi(c, c->watch_slot, c->watch_sock);
+            }
+
             c->flags->mode |= MULTI;
             RETURN_ZVAL(getThis(), 1, 0);
         }
@@ -2418,12 +2498,12 @@ PHP_METHOD(RedisCluster, watch) {
     if (!ZEND_NUM_ARGS())
         RETURN_FALSE;
 
-    // Create our distribution HashTable
-    ht_dist = cluster_dist_create();
-
     ZEND_PARSE_PARAMETERS_START(1, -1)
         Z_PARAM_VARIADIC('+', argv, argc)
     ZEND_PARSE_PARAMETERS_END();
+
+    // Create our distribution HashTable
+    ht_dist = cluster_dist_create();
 
     // Loop through arguments, prefixing if needed
     for(int i = 0 ; i < argc; i++) {
@@ -2437,6 +2517,7 @@ PHP_METHOD(RedisCluster, watch) {
             CLUSTER_THROW_EXCEPTION(
                 "Can't issue WATCH command as the keyspace isn't fully mapped", 0);
             zend_string_release(zstr);
+            cluster_dist_free(ht_dist);
             RETURN_FALSE;
         }
 
@@ -2451,13 +2532,16 @@ PHP_METHOD(RedisCluster, watch) {
         }
 
         // If we get a failure from this, we have to abort
-        if (cluster_send_rcmd_ex(c, slot, cmd) < 0)
+        if (cluster_send_rcmd_ex(c, slot, cmd) < 0 || c->err != NULL ||
+            c->reply_type != TYPE_LINE || strcmp(c->line_reply, "OK") != 0)
         {
             redis_cmd_free(cmd);
+            cluster_dist_free(ht_dist);
             RETURN_FALSE;
         }
 
-        cluster_slot_master_sock(c, slot)->watching = 1;
+        /* WATCH state belongs to the exact connection that accepted it. */
+        cluster_track_watch(c, slot, c->cmd_sock);
 
         redis_cmd_free(cmd);
     } ZEND_HASH_FOREACH_END();
@@ -2497,6 +2581,8 @@ PHP_METHOD(RedisCluster, unwatch) {
             cluster_slot_master_sock(c,slot)->watching = 0;
         }
     }
+
+    cluster_clear_watch_state(c);
 
     CLUSTER_RETURN_BOOL(c, 1);
 }

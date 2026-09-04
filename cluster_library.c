@@ -736,6 +736,9 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
     clusterReply *r2, *r3;
     char *host, key[1024];
 
+    /* Rebuilding the node table closes every old connection, invalidating any
+     * WATCH affinity held by this client. */
+    cluster_clear_watch_state(c);
     zend_hash_clean(c->nodes);
 
     for (i = 0; i < r->elements; i++) {
@@ -903,6 +906,8 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->subscribed_slot = -1;
     c->pipeline_slot = -1;
     c->pipeline_sock = NULL;
+    c->watch_slot = CLUSTER_WATCH_SLOT_NONE;
+    c->watch_sock = NULL;
     c->pipeline_executing = 0;
     c->clusterdown = 0;
     c->failover = failover;
@@ -920,6 +925,12 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     zend_hash_init(c->nodes, 0, NULL, ht_free_node, 0);
 
     return c;
+}
+
+PHP_REDIS_API void cluster_clear_watch_state(redisCluster *c)
+{
+    c->watch_slot = CLUSTER_WATCH_SLOT_NONE;
+    c->watch_sock = NULL;
 }
 
 PHP_REDIS_API void cluster_free_queue(redisCluster *c)
@@ -1341,6 +1352,8 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force) {
             } ZEND_HASH_FOREACH_END();
         }
     } ZEND_HASH_FOREACH_END();
+
+    cluster_clear_watch_state(c);
 }
 
 /* This method attempts to write our command at random to the master and any
@@ -2996,6 +3009,9 @@ static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
         array_init(&transaction);
         add_next_index_zval(&c->multi_resp, &transaction);
         multi->sock->watching = 0;
+        if (c->watch_sock == multi->sock) {
+            cluster_clear_watch_state(c);
+        }
         *next = exec->next;
         return SUCCESS;
     }
@@ -3029,6 +3045,9 @@ static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
     add_next_index_zval(&c->multi_resp, &transaction);
     c->flags->flags = flags;
     multi->sock->watching = 0;
+    if (c->watch_sock == multi->sock) {
+        cluster_clear_watch_state(c);
+    }
 
     *next = exec->next;
     return SUCCESS;
