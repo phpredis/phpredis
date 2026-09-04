@@ -47,6 +47,10 @@ class Redis_Cluster_Test extends Redis_Test {
     private static array  $seed_messages = [];
     private static string $seed_source = '';
 
+    protected function havePipeline() {
+        return true;
+    }
+
     public function testServerInfo() { $this->markTestSkipped(); }
     public function testServerInfoOldRedis() { $this->markTestSkipped(); }
 
@@ -54,7 +58,6 @@ class Redis_Cluster_Test extends Redis_Test {
      * RedisCluster class doesn't implement specialized (non-redis) commands
      * such as sortAsc, or sortDesc and other commands such as SELECT are
      * simply invalid in Redis Cluster */
-    public function testPipelinePublish() { $this->markTestSkipped(); }
     public function testSortAsc()  { $this->markTestSkipped(); }
     public function testSortDesc() { $this->markTestSkipped(); }
     public function testWait()     { $this->markTestSkipped(); }
@@ -402,6 +405,30 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals([true, true, ['1', '2']], $ret);
     }
 
+    public function testPipelineMultiExec() {
+        $first = '{pipe-inherited-a}key';
+        $second = '{pipe-inherited-b}key';
+
+        $this->redis->del([$first, $second]);
+        $this->assertEquals(
+            [[]],
+            $this->redis->pipeline()->multi()->exec()->exec()
+        );
+
+        $ret = $this->redis->pipeline()
+            ->get($first)
+            ->multi()->set($first, 42)->incr($first)->exec()
+            ->get($first)
+            ->multi()->set($second, 'value')->get($second)->exec()
+            ->get($second)
+            ->exec();
+
+        $this->assertEquals(
+            [false, [true, 43], '43', [true, 'value'], 'value'],
+            $ret
+        );
+    }
+
     public function testPipelineDifferentSlots() {
         $key1 = '{pipeA}key1';
         $key2 = '{pipeB}key2';
@@ -434,6 +461,97 @@ class Redis_Cluster_Test extends Redis_Test {
         }
 
         $this->assertEquals($expected, $pipe->exec());
+    }
+
+    public function testPipelineStructuredAndKeylessReplies() {
+        $hash = '{pipe-replies-a}hash';
+        $zset = '{pipe-replies-b}zset';
+        $stream = '{pipe-replies-c}stream';
+
+        $this->redis->del([$hash, $zset, $stream]);
+
+        $ret = $this->redis->pipeline()
+            ->hset($hash, 'field', 'value')
+            ->hgetall($hash)
+            ->zadd($zset, 1.5, 'member')
+            ->zrange($zset, 0, -1, true)
+            ->xadd($stream, '1-0', ['field' => 'value'])
+            ->xrange($stream, '-', '+')
+            ->eval('return {1, "ok"}')
+            ->command('COUNT')
+            ->exec();
+
+        $this->assertEquals(1, $ret[0]);
+        $this->assertEquals(['field' => 'value'], $ret[1]);
+        $this->assertEquals(1, $ret[2]);
+        $this->assertEquals(['member' => 1.5], $ret[3]);
+        $this->assertEquals('1-0', $ret[4]);
+        $this->assertEquals(['1-0' => ['field' => 'value']], $ret[5]);
+        $this->assertEquals([1, 'ok'], $ret[6]);
+        $this->assertIsInt($ret[7]);
+
+        /* Every variable-length reply must be fully consumed. */
+        $this->assertTrue($this->redis->set($hash, 'after'));
+        $this->assertEquals('after', $this->redis->get($hash));
+    }
+
+    public function testPipelineBlockingCommandWithReadyData() {
+        $list = '{pipe-blocking-a}list';
+        $control = '{pipe-blocking-b}control';
+
+        $this->redis->del([$list, $control]);
+        $this->assertEquals(1, $this->redis->rpush($list, 'ready'));
+
+        $ret = $this->redis->pipeline()
+            ->blpop([$list], .5)
+            ->set($control, 'ok')
+            ->get($control)
+            ->exec();
+
+        $this->assertEquals([[$list, 'ready'], true, 'ok'], $ret);
+        $this->assertEquals('ok', $this->redis->get($control));
+    }
+
+    public function testRejectedPipelineCommandFamiliesLeaveQueueClean() {
+        $key = '{pipe-rejected}key';
+        $commands = [
+            'raw' => function () use ($key) {
+                return $this->redis->cluster($key, 'KEYSLOT', $key);
+            },
+            'script' => function () use ($key) {
+                return $this->redis->script($key, 'EXISTS', str_repeat('0', 40));
+            },
+            'scan' => function () use ($key) {
+                $iterator = NULL;
+                return $this->redis->scan($iterator, $key);
+            },
+            'key-scan' => function () use ($key) {
+                $iterator = NULL;
+                return $this->redis->hscan($key, $iterator);
+            },
+        ];
+
+        foreach ($commands as $name => $command) {
+            $exception = NULL;
+            $result = NULL;
+            $pipe = $this->redis->pipeline();
+
+            try {
+                $result = @$command();
+            } catch (RedisClusterException $e) {
+                $exception = $e;
+            }
+
+            $this->assertTrue(
+                $result === false || $exception instanceof RedisClusterException
+            );
+            $this->assertEquals(Redis::PIPELINE, $this->redis->getMode());
+            $this->assertEquals(
+                [true, $name],
+                $pipe->set($key, $name)->get($key)->exec()
+            );
+            $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        }
     }
 
     public function testPipelineCrossSlotMgetPreservesResultOrder() {
