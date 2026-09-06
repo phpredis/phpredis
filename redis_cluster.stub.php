@@ -799,13 +799,15 @@ class RedisCluster {
     /**
      * Enter MULTI mode, or non-atomic pipeline mode when passed
      * `Redis::PIPELINE`. Calling `multi()` on an existing pipeline adds a
-     * MULTI block whose commands must target one hash slot.
+     * MULTI block whose commands must target one hash slot. Pipeline mode
+     * cannot be entered while WATCH is active.
      */
     public function multi(int $value = Redis::MULTI): RedisCluster|bool;
 
     /**
      * Enter non-atomic pipeline mode. Commands may target different hash slots
-     * and nodes, and replies are returned in command order.
+     * and nodes, and replies are returned in command order. Pipeline mode
+     * cannot be entered while WATCH is active.
      */
     public function pipeline(): RedisCluster|bool;
 

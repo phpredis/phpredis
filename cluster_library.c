@@ -736,9 +736,6 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
     clusterReply *r2, *r3;
     char *host, key[1024];
 
-    /* Rebuilding the node table closes every old connection, invalidating any
-     * WATCH affinity held by this client. */
-    cluster_clear_watch_state(c);
     zend_hash_clean(c->nodes);
 
     for (i = 0; i < r->elements; i++) {
@@ -906,8 +903,7 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->subscribed_slot = -1;
     c->pipeline_slot = -1;
     c->pipeline_sock = NULL;
-    c->watch_slot = CLUSTER_WATCH_SLOT_NONE;
-    c->watch_sock = NULL;
+    c->pipeline_multi_head = NULL;
     c->pipeline_executing = 0;
     c->clusterdown = 0;
     c->failover = failover;
@@ -925,12 +921,6 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     zend_hash_init(c->nodes, 0, NULL, ht_free_node, 0);
 
     return c;
-}
-
-PHP_REDIS_API void cluster_clear_watch_state(redisCluster *c)
-{
-    c->watch_slot = CLUSTER_WATCH_SLOT_NONE;
-    c->watch_sock = NULL;
 }
 
 PHP_REDIS_API void cluster_free_queue(redisCluster *c)
@@ -951,14 +941,21 @@ PHP_REDIS_API void cluster_free_queue(redisCluster *c)
 PHP_REDIS_API void
 cluster_free(redisCluster *c, int free_ctx)
 {
-    /* Disconnect from each node we're connected to */
-    cluster_disconnect(c, 0);
+    /* A bailout while consuming pipeline replies can bypass the normal error
+     * path.  Never return potentially unread participant streams to the
+     * persistent pool in that state. */
+    cluster_disconnect(c, c->pipeline_executing);
 
     /* Free any allocated prefix */
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
 
-    cluster_free_queue(c);
-    smart_string_free(&c->flags->pipeline_cmd);
+    /* Keep the historical non-pipeline destructor path unchanged.  Pipeline
+     * mode owns client-side callbacks and a deferred MULTI buffer that must be
+     * released if the object dies before exec()/discard(). */
+    if (redis_sock_is_pipeline(c->flags)) {
+        cluster_free_queue(c);
+        smart_string_free(&c->pipeline_multi_cmd);
+    }
     redis_sock_free_auth(c->flags);
     redis_sock_free_context(c->flags);
 
@@ -1352,8 +1349,6 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force) {
             } ZEND_HASH_FOREACH_END();
         }
     } ZEND_HASH_FOREACH_END();
-
-    cluster_clear_watch_state(c);
 }
 
 /* This method attempts to write our command at random to the master and any
@@ -1641,7 +1636,7 @@ cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
 
     /* Enable multi mode on this slot if we've been directed to but haven't
      * send it to this node yet */
-    if (redis_sock_is_multi(c->flags) && c->cmd_sock->mode != MULTI) {
+    if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
         if (cluster_send_multi(c, slot) == -1) {
             CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
             return -1;
@@ -1716,7 +1711,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
      * CLUSTERDOWN state from Redis Cluster. */
     do {
         /* Send MULTI to the socket if we're in MULTI mode but haven't yet */
-        if (redis_sock_is_multi(c->flags) && c->cmd_sock->mode != MULTI) {
+        if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
             /* We have to fail if we can't send MULTI to the node */
             if (cluster_send_multi(c, slot) == -1) {
                 CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
@@ -1742,7 +1737,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         /* Handle MOVED or ASKING redirection */
         if (resp == 1) {
            /* Abort if we're in a transaction as it will be invalid */
-           if (redis_sock_is_multi(c->flags)) {
+           if (c->flags->mode == MULTI) {
                CLUSTER_THROW_EXCEPTION("Can't process MULTI sequence when cluster is resharding", 0);
                return -1;
            }
@@ -2907,18 +2902,6 @@ PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     RETVAL_ZVAL(multi_resp, 0, 1);
 }
 
-static int cluster_pipeline_read_item(redisCluster *c, clusterFoldItem *fi)
-{
-    if (fi == NULL || fi->sock == NULL) {
-        return FAILURE;
-    }
-
-    c->cmd_slot = fi->slot;
-    c->cmd_sock = fi->sock;
-
-    return cluster_check_response(c, &c->reply_type);
-}
-
 static void cluster_pipeline_redirection_error(redisCluster *c)
 {
     if (!EG(exception)) {
@@ -2927,27 +2910,66 @@ static void cluster_pipeline_redirection_error(redisCluster *c)
     }
 }
 
+static int cluster_pipeline_read_item(redisCluster *c, clusterFoldItem *fi)
+{
+    int resp;
+
+    if (fi == NULL || fi->sock == NULL) {
+        return FAILURE;
+    }
+
+    c->cmd_slot = fi->slot;
+    c->cmd_sock = fi->sock;
+
+    resp = cluster_check_response(c, &c->reply_type);
+    if (resp < 0) {
+        return FAILURE;
+    }
+
+    if (c->clusterdown) {
+        cluster_cache_clear(c);
+        if (!EG(exception)) {
+            CLUSTER_THROW_EXCEPTION(
+                "The Redis Cluster is down (CLUSTERDOWN)", 0);
+        }
+        return FAILURE;
+    }
+
+    if (resp == 1) {
+        if (c->redir_type == REDIR_MOVED) {
+            /* Fold items borrow sockets from the current node map, so don't
+             * rebuild it until this aborted pipeline has been torn down. */
+            cluster_cache_clear(c);
+        }
+        cluster_pipeline_redirection_error(c);
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
 static int cluster_pipeline_invoke(INTERNAL_FUNCTION_PARAMETERS,
                                    redisCluster *c, clusterFoldItem *fi)
 {
+    cluster_cb callback;
     uint8_t flags = c->flags->flags;
-    int resp;
 
     if (fi->callback == NULL) {
         return FAILURE;
     }
 
-    resp = cluster_pipeline_read_item(c, fi);
-
-    if (resp < 0) {
-        return FAILURE;
-    } else if (resp == 1) {
-        cluster_pipeline_redirection_error(c);
+    if (cluster_pipeline_read_item(c, fi) == FAILURE) {
         return FAILURE;
     }
 
+    if (c->err != NULL && fi->error_callback == NULL) {
+        add_next_index_bool(&c->multi_resp, 0);
+        return SUCCESS;
+    }
+
+    callback = c->err == NULL ? fi->callback : fi->error_callback;
     c->flags->flags = fi->flags;
-    fi->callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
+    callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
     c->flags->flags = flags;
 
     return EG(exception) ? FAILURE : SUCCESS;
@@ -2959,16 +2981,14 @@ static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
                                              clusterFoldItem **next)
 {
     clusterFoldItem *fi, *first, *exec;
-    int count = 0, invalid = 0, redirected = 0, resp;
+    int count = 0, invalid = 0;
     uint8_t flags = c->flags->flags;
     zval outer, transaction;
 
-    resp = cluster_pipeline_read_item(c, multi);
-    if (resp < 0) {
+    if (cluster_pipeline_read_item(c, multi) == FAILURE) {
         return FAILURE;
     }
-    redirected |= resp == 1;
-    invalid |= resp != 0 || c->reply_type != TYPE_LINE ||
+    invalid |= c->reply_type != TYPE_LINE ||
                strcmp(c->line_reply, "OK") != 0;
 
     first = fi = multi->next;
@@ -2977,12 +2997,10 @@ static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
             return FAILURE;
         }
 
-        resp = cluster_pipeline_read_item(c, fi);
-        if (resp < 0) {
+        if (cluster_pipeline_read_item(c, fi) == FAILURE) {
             return FAILURE;
         }
-        redirected |= resp == 1;
-        invalid |= resp != 0 || c->reply_type != TYPE_LINE ||
+        invalid |= c->reply_type != TYPE_LINE ||
                    strcmp(c->line_reply, "QUEUED") != 0;
         count++;
         fi = fi->next;
@@ -2995,34 +3013,14 @@ static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
         return FAILURE;
     }
 
-    resp = cluster_pipeline_read_item(c, exec);
-    if (resp < 0) {
+    if (cluster_pipeline_read_item(c, exec) == FAILURE) {
         return FAILURE;
     }
-    redirected |= resp == 1;
 
-    /* Redis returns a null multibulk when WATCH aborts the transaction.  The
-     * standalone pipeline parser represents that as an empty transaction. */
-    if (!redirected && !invalid && resp == 0 &&
-        c->reply_type == TYPE_MULTIBULK && c->reply_len == -1
-    ) {
-        array_init(&transaction);
-        add_next_index_zval(&c->multi_resp, &transaction);
-        multi->sock->watching = 0;
-        if (c->watch_sock == multi->sock) {
-            cluster_clear_watch_state(c);
-        }
-        *next = exec->next;
-        return SUCCESS;
-    }
-
-    invalid |= resp != 0 || c->reply_type != TYPE_MULTIBULK ||
+    invalid |= c->reply_type != TYPE_MULTIBULK ||
                c->reply_len != count;
 
-    if (redirected) {
-        cluster_pipeline_redirection_error(c);
-        return FAILURE;
-    } else if (invalid) {
+    if (invalid) {
         if (!EG(exception)) {
             CLUSTER_THROW_EXCEPTION("Error executing pipelined MULTI block", 0);
         }
@@ -3044,10 +3042,6 @@ static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
     ZVAL_COPY_VALUE(&c->multi_resp, &outer);
     add_next_index_zval(&c->multi_resp, &transaction);
     c->flags->flags = flags;
-    multi->sock->watching = 0;
-    if (c->watch_sock == multi->sock) {
-        cluster_clear_watch_state(c);
-    }
 
     *next = exec->next;
     return SUCCESS;
@@ -3141,6 +3135,15 @@ cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     // Protect against an invalid response type
     if (c->reply_type != TYPE_INT) {
+        if (!redis_sock_is_pipeline(c->flags)) {
+            php_error_docref(0, E_WARNING,
+                "Invalid response type for MSETNX");
+            while (real_argc--) {
+                add_next_index_bool(mctx->z_multi, 0);
+            }
+            return;
+        }
+
         if (c->reply_type != TYPE_ERR) {
             php_error_docref(0, E_WARNING,
                 "Invalid response type for MSETNX");
@@ -3174,6 +3177,12 @@ cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
 
     // If we get an invalid reply, inform the client
     if (c->reply_type != TYPE_INT) {
+        if (!redis_sock_is_pipeline(c->flags)) {
+            php_error_docref(0, E_WARNING,
+                "Invalid reply type returned for DEL command");
+            return;
+        }
+
         if (c->reply_type != TYPE_ERR) {
             php_error_docref(0, E_WARNING,
                 "Invalid reply type returned for DEL command");
@@ -3210,6 +3219,13 @@ PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 
     // Any error in a distributed MSET makes the logical command fail.
     if (c->reply_type != TYPE_LINE) {
+        if (!redis_sock_is_pipeline(c->flags)) {
+            php_error_docref(0, E_ERROR,
+                "Invalid reply type returned for MSET command");
+            zval_ptr_dtor_nogc(mctx->z_multi);
+            RETURN_FALSE;
+        }
+
         if (c->reply_type != TYPE_ERR) {
             php_error_docref(0, E_WARNING,
                 "Invalid reply type returned for MSET command");
