@@ -224,6 +224,7 @@ static void cluster_clear_pipeline_state(redisCluster *c)
     c->pipeline_sock = NULL;
     c->pipeline_multi_head = NULL;
     c->pipeline_executing = 0;
+    c->pipeline_decode_error = 0;
     c->redir_type = REDIR_NONE;
 }
 
@@ -231,6 +232,12 @@ static void cluster_reset_pipeline(redisCluster *c)
 {
     cluster_clear_pipeline_state(c);
     c->flags->mode = ATOMIC;
+}
+
+static void cluster_pipeline_abort(redisCluster *c)
+{
+    cluster_pipeline_disconnect(c);
+    cluster_reset_pipeline(c);
 }
 
 static void cluster_start_pipeline(redisCluster *c)
@@ -2504,7 +2511,7 @@ PHP_METHOD(RedisCluster, multi) {
      * but continue by entering regular MULTI mode. */
     if (value != MULTI) {
         php_error_docref(NULL, E_WARNING,
-            "RedisCluster does not support PIPELINING");
+            "Unknown mode, entering MULTI mode");
     }
 
     if (redis_sock_is_multi(c->flags)) {
@@ -2703,8 +2710,7 @@ PHP_METHOD(RedisCluster, exec) {
         c->pipeline_executing = 1;
 
         if (cluster_pipeline_send_buffers(c) < 0) {
-            cluster_pipeline_disconnect(c);
-            cluster_reset_pipeline(c);
+            cluster_pipeline_abort(c);
             if (!EG(exception)) {
                 CLUSTER_THROW_EXCEPTION("Unable to send pipeline to node", 0);
             }
@@ -2712,8 +2718,7 @@ PHP_METHOD(RedisCluster, exec) {
         }
 
         if (cluster_pipeline_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c) == FAILURE) {
-            cluster_pipeline_disconnect(c);
-            cluster_reset_pipeline(c);
+            cluster_pipeline_abort(c);
             if (!EG(exception)) {
                 CLUSTER_THROW_EXCEPTION("Error reading pipeline response", 0);
             }
@@ -3010,7 +3015,13 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
     // Can't be in MULTI mode
     if (!cluster_is_atomic(c)) {
-        CLUSTER_THROW_EXCEPTION("SCAN type commands can't be called in MULTI mode!", 0);
+        if (redis_sock_is_pipeline(c->flags)) {
+            CLUSTER_THROW_EXCEPTION(
+                "SCAN type commands can't be called in PIPELINE mode!", 0);
+        } else {
+            CLUSTER_THROW_EXCEPTION(
+                "SCAN type commands can't be called in MULTI mode!", 0);
+        }
         RETURN_FALSE;
     }
 
@@ -3175,7 +3186,13 @@ PHP_METHOD(RedisCluster, scan) {
 
     /* Can't be in MULTI mode */
     if (!cluster_is_atomic(c)) {
-        CLUSTER_THROW_EXCEPTION("SCAN type commands can't be called in MULTI mode", 0);
+        if (redis_sock_is_pipeline(c->flags)) {
+            CLUSTER_THROW_EXCEPTION(
+                "SCAN type commands can't be called in PIPELINE mode", 0);
+        } else {
+            CLUSTER_THROW_EXCEPTION(
+                "SCAN type commands can't be called in MULTI mode", 0);
+        }
         RETURN_FALSE;
     }
 
