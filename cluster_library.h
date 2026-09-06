@@ -70,6 +70,19 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
         return; \
     }
 
+/* Mark a response decoding/protocol failure after which pipeline stream
+ * alignment can no longer be trusted. */
+#define CLUSTER_MARK_DECODE_ERROR(c) do { \
+    if (redis_sock_is_pipeline((c)->flags)) { \
+        (c)->pipeline_decode_error = 1; \
+    } \
+} while (0)
+
+#define CLUSTER_RETURN_DECODE_ERROR(c) do { \
+    CLUSTER_MARK_DECODE_ERROR(c); \
+    CLUSTER_RETURN_FALSE(c); \
+} while (0)
+
 /* Helper to either return a bool value or add it to MULTI response */
 #define CLUSTER_RETURN_BOOL(c, b) \
     if(cluster_is_atomic(c)) { \
@@ -169,6 +182,13 @@ typedef struct redisClusterNode {
 /* Forward declarations */
 typedef struct clusterFoldItem clusterFoldItem;
 
+typedef enum {
+    CLUSTER_FOLD_RESPONSE,
+    CLUSTER_FOLD_MULTI,
+    CLUSTER_FOLD_EXEC,
+    CLUSTER_FOLD_EMPTY_MULTI
+} clusterFoldType;
+
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
 
@@ -207,6 +227,18 @@ typedef struct redisCluster {
 
     /* Variable to store MULTI response */
     zval multi_resp;
+
+    /* Routing state for the currently open pipelined MULTI block */
+    short pipeline_slot;
+    RedisSock *pipeline_sock;
+    clusterFoldItem *pipeline_multi_head;
+    smart_string pipeline_multi_cmd;
+
+    /* Whether RedisCluster::exec is sending or consuming a pipeline */
+    zend_bool pipeline_executing;
+
+    /* Whether pipeline response decoding left stream alignment untrusted */
+    zend_bool pipeline_decode_error;
 
     /* Flag for when we get a CLUSTERDOWN error */
     short clusterdown;
@@ -272,7 +304,7 @@ cluster_slot_slaves(redisCluster *c, unsigned short slot)
 static zend_always_inline zend_bool
 cluster_is_atomic(const redisCluster *c)
 {
-    return c->flags->mode != MULTI;
+    return c->flags->mode == ATOMIC;
 }
 
 /* RedisCluster response processing callback */
@@ -283,8 +315,12 @@ struct clusterFoldItem {
     /* Response processing callback */
     cluster_cb callback;
 
+    /* Optional error folding callback for distributed logical commands */
+    cluster_cb error_callback;
+
     /* The actual socket where we send this request */
     unsigned short slot;
+    RedisSock *sock;
 
     /* Context and possible context destructor */
     RedisCmdCtx ctx;
@@ -292,6 +328,7 @@ struct clusterFoldItem {
     /* Next item in our list */
     struct clusterFoldItem *next;
 
+    clusterFoldType type;
     uint8_t flags;
 };
 
@@ -321,6 +358,9 @@ typedef struct clusterMultiCtx {
 
     /* Is this the last entry */
     short last;
+
+    /* Whether the aggregate zval was transferred to a result */
+    zend_bool transferred;
 } clusterMultiCtx;
 
 /* Container for things like MGET, MSET, and MSETNX, which split the command
@@ -411,10 +451,13 @@ PHP_REDIS_API short cluster_find_slot(redisCluster *c, const char *host,
     unsigned short port);
 PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, const char *cmd,
     int cmd_len, REDIS_REPLY_TYPE rtype);
+PHP_REDIS_API int cluster_send_pipeline(redisCluster *c, RedisSock *sock,
+    const char *cmd, size_t cmd_len);
 
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     int failover, int persistent);
 PHP_REDIS_API void cluster_free(redisCluster *c, int free_ctx);
+PHP_REDIS_API void cluster_free_queue(redisCluster *c);
 PHP_REDIS_API void cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds);
 REDIS_NODISCARD PHP_REDIS_API int cluster_map_keyspace(redisCluster *c);
 PHP_REDIS_API void cluster_free_node(redisClusterNode *node);
@@ -520,6 +563,8 @@ PHP_REDIS_API void cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, RedisCmdCtx ctx);
+PHP_REDIS_API int cluster_pipeline_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c);
 PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, int pull, mbulk_cb cb, zval *z_ret);
 

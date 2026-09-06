@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: a1e602cc43cf435986b15fbd59fac7b2d31b3cba */
+ * Stub hash: a023f1c076a9251081f76582f7ab1a2ac02e7021 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -659,6 +659,9 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_multi, 0, 0, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, value, IS_LONG, 0, "Redis::MULTI")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_pipeline, 0, 0, RedisCluster, MAY_BE_BOOL)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_object, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_STRING|MAY_BE_FALSE)
@@ -1387,6 +1390,7 @@ ZEND_METHOD(RedisCluster, mset);
 ZEND_METHOD(RedisCluster, msetnx);
 ZEND_METHOD(RedisCluster, msetex);
 ZEND_METHOD(RedisCluster, multi);
+ZEND_METHOD(RedisCluster, pipeline);
 ZEND_METHOD(RedisCluster, object);
 ZEND_METHOD(RedisCluster, persist);
 ZEND_METHOD(RedisCluster, pexpire);
@@ -1656,6 +1660,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, msetnx, arginfo_class_RedisCluster_msetnx, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, msetex, arginfo_class_RedisCluster_msetex, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, multi, arginfo_class_RedisCluster_multi, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pipeline, arginfo_class_RedisCluster_pipeline, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, object, arginfo_class_RedisCluster_object, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, persist, arginfo_class_RedisCluster_persist, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, pexpire, arginfo_class_RedisCluster_pexpire, ZEND_ACC_PUBLIC)

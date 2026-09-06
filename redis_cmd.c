@@ -80,6 +80,7 @@ void redis_cmd_reset(RedisCmd *cmd, const char *kw, size_t kwlen) {
     cmd->argc = 0;
     cmd->head = NULL;
     cmd->slot = -1;
+    cmd->slot_is_random = 0;
 
     smart_string_appendl_ex(&cmd->s, ZEND_STRL(REDIS_MB_HDR), 0);
     redis_cmd_cat_str(cmd, kw, kwlen);
@@ -492,8 +493,10 @@ size_t redis_cmd_len(RedisCmd *cmd) {
 }
 
 void redis_cmd_randslot(RedisCmd *cmd) {
-    if (cmd->redis_sock && cmd->redis_sock->type == REDIS_SOCK_CLUSTER)
+    if (cmd->redis_sock && cmd->redis_sock->type == REDIS_SOCK_CLUSTER) {
         cmd->slot = rand() % REDIS_CLUSTER_MOD;
+        cmd->slot_is_random = 1;
+    }
 }
 
 void resp_str_cat_str(smart_str *s, const char *str, zend_ulong len) {
