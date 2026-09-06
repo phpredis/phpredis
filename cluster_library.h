@@ -176,9 +176,6 @@ typedef enum {
     CLUSTER_FOLD_EMPTY_MULTI
 } clusterFoldType;
 
-#define CLUSTER_WATCH_SLOT_NONE      -1
-#define CLUSTER_WATCH_SLOT_CROSSSLOT -2
-
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
 
@@ -218,15 +215,13 @@ typedef struct redisCluster {
     /* Variable to store MULTI response */
     zval multi_resp;
 
-    /* Hash slot and socket for a MULTI block inside an active pipeline */
+    /* Routing state for the currently open pipelined MULTI block */
     short pipeline_slot;
     RedisSock *pipeline_sock;
+    clusterFoldItem *pipeline_multi_head;
+    smart_string pipeline_multi_cmd;
 
-    /* Exact transaction affinity established by WATCH */
-    short watch_slot;
-    RedisSock *watch_sock;
-
-    /* Whether RedisCluster::exec is currently consuming pipeline replies */
+    /* Whether RedisCluster::exec is sending or consuming a pipeline */
     zend_bool pipeline_executing;
 
     /* Flag for when we get a CLUSTERDOWN error */
@@ -303,6 +298,9 @@ typedef void (*cluster_cb)(INTERNAL_FUNCTION_PARAMETERS, redisCluster*, RedisCmd
 struct clusterFoldItem {
     /* Response processing callback */
     cluster_cb callback;
+
+    /* Optional error folding callback for distributed logical commands */
+    cluster_cb error_callback;
 
     /* The actual socket where we send this request */
     unsigned short slot;
@@ -412,8 +410,6 @@ long long mstime(void);
 
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot,
     const char *cmd, int cmd_len);
-
-PHP_REDIS_API void cluster_clear_watch_state(redisCluster *c);
 
 static zend_always_inline short
 cluster_send_rcmd(redisCluster *c, RedisCmd *cmd)

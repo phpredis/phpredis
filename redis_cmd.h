@@ -9,6 +9,7 @@
 typedef struct RedisCmd {
     RedisSock *redis_sock;
     short slot;
+    zend_bool slot_is_random;
     smart_string s;
     RedisCmdCtx ctx;
     uint32_t argc;
@@ -83,6 +84,11 @@ redis_cmd_set_ctx_u64(RedisCmd *cmd, uint64_t u64) {
 }
 
 void redis_cmd_randslot(RedisCmd *cmd);
+
+static zend_always_inline zend_bool
+redis_cmd_slot_is_random(const RedisCmd *cmd) {
+    return cmd->slot_is_random;
+}
 
 static inline void redis_cmd_ctx_efree(void *ptr) {
     if (ptr) efree(ptr);

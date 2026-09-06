@@ -117,46 +117,45 @@ print_r($obj_cluster->exec());
 ```
 
 ## Pipelining
-RedisCluster pipelines are non-atomic and may contain commands for different
-hash slots and different nodes. PhpRedis groups commands by their mapped master,
-sends each node its pipeline, and returns replies in the original command order.
-Commands sent to different nodes may execute in a different relative order.
-Pipeline reads use mapped masters and do not use replica failover/distribution.
+RedisCluster pipelines are non-atomic and support commands across hash slots and
+nodes. Commands are grouped by their mapped master and replies are returned in
+the original order, although execution order between nodes is not guaranteed.
+Pipeline reads always use mapped masters.
 
 ```php
 $pipe = $obj_cluster->pipeline();
-$pipe->set('{user-a}1', 'a');
-$pipe->set('{user-b}2', 'b');
-$pipe->get('{user-a}1');
-print_r($pipe->exec());
+$result = $pipe
+    ->set('{user-a}1', 'a')
+    ->set('{user-b}2', 'b')
+    ->get('{user-a}1')
+    ->exec();
 ```
 
-`multi(Redis::PIPELINE)` is an alias for `pipeline()`. Use `exec()` to send all
-queued commands and receive their responses, or `discard()` to cancel them.
-
-To add an atomic MULTI ... EXEC block to a pipeline, call `multi()` on it:
+`multi(Redis::PIPELINE)` is equivalent to `pipeline()`. Calling `multi()` on a
+pipeline adds an atomic MULTI ... EXEC block; every command in that block must
+resolve to one hash slot. The inner `exec()` closes the MULTI block and the
+outer `exec()` sends the pipeline:
 
 ```php
 $pipe = $obj_cluster->pipeline();
 $pipe->multi()
     ->set('{account}balance', 100)
     ->get('{account}balance')
-    ->exec(); // Add EXEC to the pipeline.
+    ->exec();
 
-$result = $pipe->exec(); // Send the outer pipeline.
+$result = $pipe->exec();
 ```
 
-Every command within an individual MULTI block must resolve to the same hash
-slot. Commands outside the block remain non-atomic and may target any slot.
-If keys were WATCHed before the pipeline, they must all share that transaction
-slot; MULTI and EXEC stay on the exact connection that accepted WATCH.
+Outside MULTI blocks, existing cross-slot handling for `MGET`, `MSET`,
+`MSETNX`, `DEL`, and `UNLINK` is preserved. `WATCH` is not supported with
+pipelines; existing top-level `WATCH` with `MULTI` is unchanged.
 
-Connection failures, redirections, or topology changes can result in only part
-of a pipeline being executed. PhpRedis does not retry an interrupted pipeline,
-as doing so could execute commands twice, and closes the involved connections.
-
-Directed node commands (those taking `key_or_address`) and SCAN-style commands
-cannot be issued in pipeline mode.
+Pipelines are not retried after connection failures or MOVED/ASK redirections,
+because some commands may already have executed. Involved connections are
+closed instead. Node-directed commands, `WAIT`, `WAITAOF`, `KEYS`, SCAN-style
+commands, and Pub/Sub subscriptions cannot be queued. As with standalone
+pipelines, an ACL rejection of `MULTI` may cause buffered commands to execute
+outside the transaction.
 
 ## Multiple key commands
 Redis cluster does allow commands that operate on multiple keys, but only if all of those keys hash to the same slot.  Note that it is not enough that the keys are all on the same node, but must actually hash to the exact same hash slot.
