@@ -1765,6 +1765,11 @@ PHP_METHOD(RedisCluster, hsetex) {
     CLUSTER_PROCESS_CMD(hsetex, cluster_long_resp, 0);
 }
 
+/* {{{ proto RedisCluster::himport(string op, string hash, ?string fieldset, array fields) */
+PHP_METHOD(RedisCluster, himport) {
+    CLUSTER_PROCESS_CMD(himport, cluster_himport_resp, 0);
+}
+
 PHP_METHOD(RedisCluster, hgetdel) {
     CLUSTER_PROCESS_CMD(hgetdel, cluster_mbulk_assoc_resp, 0);
 }

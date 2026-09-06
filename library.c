@@ -1389,6 +1389,21 @@ redis_object_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 PHP_REDIS_API int
+redis_himport_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                       zval *z_tab, RedisCmdCtx ctx)
+{
+    ZEND_ASSERT(ctx.ptr == NULL || ctx.ptr == PHPREDIS_CTX_PTR);
+
+    if (ctx.ptr == PHPREDIS_CTX_PTR) {
+        return redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                                   z_tab, redis_empty_ctx);
+    } else {
+        return redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                      redis_sock, z_tab, redis_empty_ctx);
+    }
+}
+
+PHP_REDIS_API int
 redis_read_lpos_response(zval *zdst, RedisSock *redis_sock, char reply_type,
                          long long elements, RedisCmdCtx ctx)
 {

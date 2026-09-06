@@ -1760,6 +1760,7 @@ REDIS_METHOD(hSet, redis_hset_cmd, redis_long_response);
 REDIS_METHOD(hSetNx, redis_hsetnx_cmd, redis_1_response);
 REDIS_METHOD(hStrLen, redis_hstrlen_cmd, redis_long_response);
 REDIS_METHOD(hgetdel, redis_hgetdel_cmd, redis_mbulk_reply_assoc);
+REDIS_METHOD(himport, redis_himport_cmd, redis_himport_response);
 REDIS_METHOD(hgetex, redis_hgetex_cmd, redis_mbulk_reply_assoc);
 REDIS_METHOD(hsetex, redis_hsetex_cmd, redis_long_response);
 REDIS_METHOD(incr, redis_incr_cmd, redis_long_response);
