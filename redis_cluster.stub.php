@@ -580,6 +580,15 @@ class RedisCluster {
     public function hgetdel(string $key, array $fields): RedisCluster|array|false;
 
     /**
+     * Note that unlike `\Redis::himport()` the hash is required for every
+     * operation, as it is what directs the command to the correct node.  It is
+     * only sent to Redis for the 'SET' operation.
+     *
+     * @see \Redis::himport()
+     */
+    public function himport(string $op, string $hash, ?string $fieldset = null, array $fields = []): RedisCluster|bool|int;
+
+    /**
      * @see \Redis::hMset()
      */
     public function hmset(string $key, array $key_values): RedisCluster|bool;

@@ -475,6 +475,8 @@ PHP_REDIS_API void cluster_pop_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_object_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
+PHP_REDIS_API void cluster_himport_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_lpos_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_hrandfield_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
