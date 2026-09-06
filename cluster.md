@@ -132,10 +132,11 @@ $result = $pipe
 ```
 
 `multi(Redis::PIPELINE)` is equivalent to `pipeline()`. Calling `multi()` on a
-pipeline queues a MULTI ... EXEC block. When Redis accepts `MULTI`, commands in
-the block execute atomically and must resolve to one hash slot. A slot violation
-discards the entire pending pipeline. The inner `exec()` closes the MULTI block
-and the outer `exec()` sends the pipeline:
+pipeline queues a MULTI ... EXEC block. When Redis accepts `MULTI`, the
+transaction is bound to one hash slot and its commands execute atomically; all
+keyed commands must resolve to that slot. A slot violation discards the entire
+pending pipeline. The inner `exec()` closes the MULTI block and the outer
+`exec()` sends the pipeline:
 
 ```php
 $pipe = $obj_cluster->pipeline();
@@ -149,15 +150,18 @@ $result = $pipe->exec();
 
 Outside MULTI blocks, existing cross-slot handling for `MGET`, `MSET`,
 `MSETNX`, `DEL`, and `UNLINK` is preserved. `WATCH` is not supported with
-pipelines; existing top-level `WATCH` with `MULTI` is unchanged.
+pipelines because this implementation does not track its connection-scoped
+state; support may be considered in a future release. Existing top-level
+`WATCH` with `MULTI` is unchanged.
 
-Pipelines are not retried after connection failures or MOVED/ASK redirections,
-because some commands may already have executed. Involved connections are
-closed instead. Node-directed commands, `WAIT`, `WAITAOF`, `KEYS`, SCAN-style
-commands, and Pub/Sub subscriptions cannot be queued. As with standalone
-pipelines, an ACL rejection of `MULTI` may cause buffered commands to execute
-outside the transaction. Blocking commands may prevent `exec()` from completing
-and should not rely on later commands in the pipeline to unblock them.
+Pipelines are not retried after connection failures, MOVED/ASK redirections, or
+`CLUSTERDOWN` errors because some commands may already have executed. Involved
+connections are closed instead. Node-directed commands, `WAIT`, `WAITAOF`,
+`KEYS`, SCAN-style commands, and Pub/Sub subscriptions cannot be queued. As with
+standalone pipelines, an ACL rejection of `MULTI` may cause buffered commands to
+execute outside the transaction. Blocking commands may prevent `exec()` from
+completing and should not rely on later commands in the pipeline to unblock
+them.
 
 ## Multiple key commands
 Redis cluster does allow commands that operate on multiple keys, but only if all of those keys hash to the same slot.  Note that it is not enough that the keys are all on the same node, but must actually hash to the exact same hash slot.
