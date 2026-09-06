@@ -132,9 +132,10 @@ $result = $pipe
 ```
 
 `multi(Redis::PIPELINE)` is equivalent to `pipeline()`. Calling `multi()` on a
-pipeline adds an atomic MULTI ... EXEC block; every command in that block must
-resolve to one hash slot. The inner `exec()` closes the MULTI block and the
-outer `exec()` sends the pipeline:
+pipeline queues a MULTI ... EXEC block. When Redis accepts `MULTI`, commands in
+the block execute atomically and must resolve to one hash slot. A slot violation
+discards the entire pending pipeline. The inner `exec()` closes the MULTI block
+and the outer `exec()` sends the pipeline:
 
 ```php
 $pipe = $obj_cluster->pipeline();
@@ -155,7 +156,8 @@ because some commands may already have executed. Involved connections are
 closed instead. Node-directed commands, `WAIT`, `WAITAOF`, `KEYS`, SCAN-style
 commands, and Pub/Sub subscriptions cannot be queued. As with standalone
 pipelines, an ACL rejection of `MULTI` may cause buffered commands to execute
-outside the transaction.
+outside the transaction. Blocking commands may prevent `exec()` from completing
+and should not rely on later commands in the pipeline to unblock them.
 
 ## Multiple key commands
 Redis cluster does allow commands that operate on multiple keys, but only if all of those keys hash to the same slot.  Note that it is not enough that the keys are all on the same node, but must actually hash to the exact same hash slot.

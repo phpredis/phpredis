@@ -70,6 +70,19 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
         return; \
     }
 
+/* Mark a response decoding/protocol failure after which pipeline stream
+ * alignment can no longer be trusted. */
+#define CLUSTER_MARK_DECODE_ERROR(c) do { \
+    if (redis_sock_is_pipeline((c)->flags)) { \
+        (c)->pipeline_decode_error = 1; \
+    } \
+} while (0)
+
+#define CLUSTER_RETURN_DECODE_ERROR(c) do { \
+    CLUSTER_MARK_DECODE_ERROR(c); \
+    CLUSTER_RETURN_FALSE(c); \
+} while (0)
+
 /* Helper to either return a bool value or add it to MULTI response */
 #define CLUSTER_RETURN_BOOL(c, b) \
     if(cluster_is_atomic(c)) { \
@@ -223,6 +236,9 @@ typedef struct redisCluster {
 
     /* Whether RedisCluster::exec is sending or consuming a pipeline */
     zend_bool pipeline_executing;
+
+    /* Whether pipeline response decoding left stream alignment untrusted */
+    zend_bool pipeline_decode_error;
 
     /* Flag for when we get a CLUSTERDOWN error */
     short clusterdown;
