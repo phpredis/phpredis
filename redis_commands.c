@@ -795,8 +795,8 @@ static int redis_get_zcmd_flags(const char *kw, size_t kw_len) {
                REDIS_ZCMD_HAS_AGGREGATE;
     }
 
-    /* Reaching this line means a compile-time error */
-    ZEND_ASSERT(0);
+    /* All command keywords supplied by our callers must be handled above. */
+    ZEND_UNREACHABLE();
 }
 
 /* Validate ZLEX* min/max argument strings */
