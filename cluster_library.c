@@ -1875,7 +1875,7 @@ cluster_hrandfield_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                       redis_empty_ctx);
             break;
         default:
-            ZEND_ASSERT(!"Invalid response mode");
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -1887,7 +1887,7 @@ cluster_pop_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
     } else if (ctx.mode == REDIS_CTX_COUNT) {
         cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
+        ZEND_UNREACHABLE();
     }
 }
 
@@ -1941,7 +1941,7 @@ cluster_zdiff_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                                   redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
+        ZEND_UNREACHABLE();
     }
 }
 
@@ -1977,7 +1977,7 @@ cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                       redis_empty_ctx);
             break;
         default:
-            ZEND_ASSERT(!"Invalid response mode");
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -1990,7 +1990,7 @@ cluster_randmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     } else if (ctx.mode == REDIS_CTX_COUNT) {
         cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
+        ZEND_UNREACHABLE();
     }
 }
 

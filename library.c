@@ -536,8 +536,7 @@ redis_pubsub_response(INTERNAL_FUNCTION_PARAMETERS,
             return redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                      redis_sock, z_tab, redis_empty_ctx);
         default:
-            ZEND_ASSERT(!"Invalid response mode");
-            return FAILURE;
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -1306,8 +1305,7 @@ redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                      redis_sock, z_tab, redis_empty_ctx);
         default:
-            ZEND_ASSERT(!"Invalid response mode");
-            return FAILURE;
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -1322,8 +1320,7 @@ redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                  redis_sock, z_tab, redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
-        return FAILURE;
+        ZEND_UNREACHABLE();
     }
 }
 
@@ -1338,8 +1335,7 @@ redis_set_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                      redis_sock, z_tab, redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
-        return FAILURE;
+        ZEND_UNREACHABLE();
     }
 }
 
@@ -1358,8 +1354,7 @@ redis_hrandfield_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             return redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                 redis_sock, z_tab, redis_empty_ctx);
         default:
-            ZEND_ASSERT(!"Invalid response mode");
-            return FAILURE;
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -1374,8 +1369,7 @@ redis_pop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                redis_sock, z_tab, redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
-        return FAILURE;
+        ZEND_UNREACHABLE();
     }
 }
 
@@ -1440,8 +1434,7 @@ redis_read_lpos_response(zval *zdst, RedisSock *redis_sock, char reply_type,
             add_next_index_long(zdst, atol(inbuf + 1));
         }
     } else {
-        ZEND_ASSERT(!"memory corruption?");
-        return FAILURE;
+        ZEND_UNREACHABLE();
     }
 
     return SUCCESS;
@@ -1893,8 +1886,7 @@ redis_client_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             return redis_client_trackinginfo_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                    redis_sock, z_tab, redis_empty_ctx);
         default:
-            ZEND_ASSERT(!"Invalid response mode");
-            return FAILURE;
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -1941,8 +1933,7 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     } else if (ctx.mode == REDIS_CTX_HELLO_VERSION) {
         ZVAL_STR_COPY(&z_ret, redis_sock->hello.version);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
-        return FAILURE;
+        ZEND_UNREACHABLE();
     }
 
     if (redis_sock_is_atomic(redis_sock)) {
@@ -2020,8 +2011,7 @@ redis_function_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             return redis_function_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                         redis_sock, z_tab, redis_empty_ctx);
         default:
-            ZEND_ASSERT(!"Invalid response mode");
-            return FAILURE;
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -2062,8 +2052,7 @@ redis_command_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             return redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                     redis_sock, z_tab, redis_empty_ctx);
         default:
-            ZEND_ASSERT(!"Invalid response mode");
-            return FAILURE;
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -2699,8 +2688,7 @@ redis_acl_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             return redis_acl_log_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                        redis_sock, z_tab, redis_empty_ctx);
         default:
-            ZEND_ASSERT(!"Invalid response mode");
-            return FAILURE;
+            ZEND_UNREACHABLE();
     }
 }
 
