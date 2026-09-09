@@ -878,7 +878,7 @@ RedisCmd *redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
 
     redis_cmd_cat_literal_if(cmd, opt.withscores, "WITHSCORES");
 
-    redis_cmd_set_ctx(cmd, opt.withscores ? PHPREDIS_CTX_PTR : NULL);
+    redis_cmd_set_ctx_mode(cmd, opt.withscores ? REDIS_CTX_WITHSCORES : REDIS_CTX_DEFAULT);
 
     return cmd;
 }
@@ -969,7 +969,7 @@ redis_config_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 {
     zend_string *op = NULL, *arg = NULL;
     RedisCmd *cmd = NULL;
-    void *ctx = NULL;
+    RedisCtxMode mode;
     zval *key = NULL;
 
     ZEND_PARSE_PARAMETERS_START(1, 3)
@@ -984,20 +984,20 @@ redis_config_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     {
         cmd = redis_cmd_create_literal(redis_sock, "CONFIG");
         redis_cmd_cat_zstr(cmd, op);
-        ctx = redis_boolean_response;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "GET")) {
         cmd = redis_build_config_get_cmd(redis_sock, key);
-        ctx = redis_mbulk_reply_zipped_raw;
+        mode = REDIS_CTX_ZIPPED_RAW;
     } else if (zend_string_equals_literal_ci(op, "SET")) {
         cmd = redis_build_config_set_cmd(redis_sock, key, arg);
-        ctx = redis_boolean_response;
+        mode = REDIS_CTX_BOOL;
     } else {
         php_error_docref(NULL, E_WARNING, "Unknown operation '%s'", ZSTR_VAL(op));
         return NULL;
     }
 
     if (cmd)
-        redis_cmd_set_ctx(cmd, ctx);
+        redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -1008,7 +1008,7 @@ redis_function_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_string *op = NULL, *arg;
     zval *argv = NULL;
     RedisCmd *cmd;
-    void *ctx = NULL;
+    RedisCtxMode mode = REDIS_CTX_BOOL;
     int i, argc = 0;
 
     ZEND_PARSE_PARAMETERS_START(1, -1)
@@ -1030,7 +1030,7 @@ redis_function_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
             return NULL;
         }
     } else if (zend_string_equals_literal_ci(op, "DUMP")) {
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_STRING;
     } else if (zend_string_equals_literal_ci(op, "FLUSH")) {
         if (argc > 0 &&
             !zend_string_equals_literal_ci(Z_STR(argv[0]), "SYNC") &&
@@ -1053,7 +1053,7 @@ redis_function_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
                 return NULL;
             }
         }
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_FUNCTION;
     } else if (zend_string_equals_literal_ci(op, "LOAD")) {
         if (argc < 1 || (
             zend_string_equals_literal_ci(Z_STR(argv[0]), "REPLACE") && argc < 2
@@ -1061,7 +1061,7 @@ redis_function_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
             php_error_docref(NULL, E_WARNING, "argument required");
             return NULL;
         }
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_STRING;
     } else if (zend_string_equals_literal_ci(op, "RESTORE")) {
         if (argc < 1 || (
             argc > 1 &&
@@ -1073,7 +1073,7 @@ redis_function_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
             return NULL;
         }
     } else if (zend_string_equals_literal_ci(op, "STATS")) {
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_FUNCTION;
     } else {
         php_error_docref(NULL, E_WARNING, "Unknown operation '%s'", ZSTR_VAL(op));
         return NULL;
@@ -1088,7 +1088,7 @@ redis_function_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         zend_string_release(arg);
     }
 
-    redis_cmd_set_ctx(cmd, ctx);
+    redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -1134,6 +1134,7 @@ redis_zrandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_string *key, *zstr;
     HashTable *opts = NULL;
     RedisCmd *cmd;
+    RedisCtxMode mode = REDIS_CTX_STRING;
     int count = 0;
     zval *z_ele;
 
@@ -1161,13 +1162,15 @@ redis_zrandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 
     if (count != 0) {
         redis_cmd_cat_long(cmd, count);
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        mode = REDIS_CTX_COUNT;
     }
 
     if (withscores) {
         redis_cmd_cat_literal(cmd, "WITHSCORES");
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR + 1);
+        mode = REDIS_CTX_WITHSCORES;
     }
+
+    redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -1203,7 +1206,7 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 
     if (opts.withscores) {
         redis_cmd_cat_literal(cmd, "WITHSCORES");
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_WITHSCORES);
     }
 
     return cmd;
@@ -1364,7 +1367,7 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, const
 
     if (opts.withscores) {
         redis_cmd_cat_literal(cmd, "WITHSCORES");
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_WITHSCORES);
     }
 
     return cmd;
@@ -1471,7 +1474,7 @@ RedisCmd *redis_pubsub_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_string *op, *pattern = NULL;
     zval *arg = NULL, *z_chan;
     RedisCmd *cmd;
-    void *ctx = NULL;
+    RedisCtxMode mode = REDIS_CTX_LONG;
 
     ZEND_PARSE_PARAMETERS_START(1, 2)
         Z_PARAM_STR(op)
@@ -1480,7 +1483,7 @@ RedisCmd *redis_pubsub_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     if (zend_string_equals_literal_ci(op, "NUMPAT")) {
-        ctx = NULL;
+        mode = REDIS_CTX_LONG;
     } else if (zend_string_equals_literal_ci(op, "CHANNELS") ||
         zend_string_equals_literal_ci(op, "SHARDCHANNELS")
     ) {
@@ -1491,7 +1494,7 @@ RedisCmd *redis_pubsub_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
             }
             pattern = zval_get_string(arg);
         }
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_VARIANT;
     } else if (zend_string_equals_literal_ci(op, "NUMSUB") ||
         zend_string_equals_literal_ci(op, "SHARDNUMSUB")
     ) {
@@ -1502,7 +1505,7 @@ RedisCmd *redis_pubsub_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
             }
             channels = Z_ARRVAL_P(arg);
         }
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_ZIPPED_INT;
     } else {
         php_error_docref(NULL, E_WARNING, "Unknown PUBSUB operation '%s'", ZSTR_VAL(op));
         return NULL;
@@ -1521,7 +1524,7 @@ RedisCmd *redis_pubsub_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         } ZEND_HASH_FOREACH_END();
     }
 
-    redis_cmd_set_ctx(cmd, ctx);
+    redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -1990,7 +1993,7 @@ redis_mpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, const char *
         redis_cmd_cat_long(cmd, count);
     }
 
-    redis_cmd_set_ctx(cmd, is_zmpop ? PHPREDIS_CTX_PTR : NULL);
+    redis_cmd_set_ctx_mode(cmd, is_zmpop ? REDIS_CTX_WITHSCORES : REDIS_CTX_DEFAULT);
 
     return cmd;
 }
@@ -2041,7 +2044,7 @@ redis_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, const char *k
     redis_cmd_cat_key_zstr(cmd, key);
     if (count > 0) {
         redis_cmd_cat_long(cmd, count);
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_COUNT);
     }
 
     return cmd;
@@ -2052,7 +2055,7 @@ redis_acl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     zend_string *op, *zstr;
     zval *z_args = NULL;
     RedisCmd *cmd;
-    void *ctx = NULL;
+    RedisCtxMode mode = REDIS_CTX_VARIANT;
     int argc = 0, i;
 
     ZEND_PARSE_PARAMETERS_START(1, -1)
@@ -2065,46 +2068,46 @@ redis_acl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
         zend_string_equals_literal_ci(op, "LIST") ||
         zend_string_equals_literal_ci(op, "USERS")
     ) {
-        ctx = NULL;
+        mode = REDIS_CTX_VARIANT;
     } else if (zend_string_equals_literal_ci(op, "LOAD") ||
         zend_string_equals_literal_ci(op, "SAVE")
     ) {
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "GENPASS") ||
         zend_string_equals_literal_ci(op, "WHOAMI")
     ) {
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_STRING;
     } else if (zend_string_equals_literal_ci(op, "SETUSER")) {
         if (argc < 1) {
             php_error_docref(NULL, E_WARNING, "ACL SETUSER requires at least one argument");
             return NULL;
         }
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "DELUSER")) {
         if (argc < 1) {
             php_error_docref(NULL, E_WARNING, "ACL DELUSER requires at least one argument");
             return NULL;
         }
-        ctx = PHPREDIS_CTX_PTR + 2;
+        mode = REDIS_CTX_LONG;
     } else if (zend_string_equals_literal_ci(op, "GETUSER")) {
         if (argc < 1) {
             php_error_docref(NULL, E_WARNING, "ACL GETUSER requires at least one argument");
             return NULL;
         }
-        ctx = PHPREDIS_CTX_PTR + 3;
+        mode = REDIS_CTX_ACL_GETUSER;
     } else if (zend_string_equals_literal_ci(op, "DRYRUN")) {
         if (argc < 2) {
             php_error_docref(NULL, E_WARNING, "ACL DRYRUN requires at least two arguments");
             return NULL;
         }
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "LOG")) {
         if (argc > 0 && Z_TYPE(z_args[0]) == IS_STRING &&
             zend_string_equals_literal_ci(Z_STR(z_args[0]), "RESET"))
         {
-            ctx = PHPREDIS_CTX_PTR;
+            mode = REDIS_CTX_BOOL;
         } else {
-            ctx = PHPREDIS_CTX_PTR + 4;
+            mode = REDIS_CTX_ACL_LOG;
         }
     } else {
         php_error_docref(NULL, E_WARNING, "Unknown ACL operation '%s'", ZSTR_VAL(op));
@@ -2120,7 +2123,7 @@ redis_acl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
         zend_string_release(zstr);
     }
 
-    redis_cmd_set_ctx(cmd, ctx);
+    redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -2403,7 +2406,7 @@ RedisCmd *redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 
     if (opt.get) {
         redis_cmd_cat_literal(cmd, "GET");
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_STRING);
     }
 
     redis_cmd_cat_expiry(cmd, &opt.expiry);
@@ -3541,7 +3544,7 @@ redis_lpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     if (count >= 0) {
         redis_cmd_cat_literal(cmd, "COUNT");
         redis_cmd_cat_long(cmd, count);
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_COUNT);
     }
 
     if (maxlen >= 0) {
@@ -3737,6 +3740,7 @@ redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     zend_string *zkey;
     zend_string *key;
     RedisCmd *cmd;
+    RedisCtxMode mode = REDIS_CTX_STRING;
     int count = 0;
     zval *z_ele;
 
@@ -3773,13 +3777,15 @@ redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
 
     if (count != 0) {
         redis_cmd_cat_long(cmd, count);
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        mode = REDIS_CTX_COUNT;
     }
 
     if (withvalues) {
         redis_cmd_cat_literal(cmd, "WITHVALUES");
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR + 1);
+        mode = REDIS_CTX_WITHVALUES;
     }
+
+    redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -3825,7 +3831,7 @@ redis_randmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, const 
         redis_cmd_cat_long(cmd, count);
 
     if (argc == 2)
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_COUNT);
 
     return cmd;
 }
@@ -3910,7 +3916,6 @@ RedisCmd *redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
     {
         redis_cmd_cat_literal(cmd, "STORE");
         redis_cmd_try_cat_key_zval(cmd, zv);
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
     }
 
     // GET option
@@ -4097,14 +4102,14 @@ RedisCmd *redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     }
 
     if (incr)
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_INCR);
 
     return cmd;
 }
 
 RedisCmd *redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     zend_string *subcmd = NULL, *key = NULL;
-    void *ctx = NULL;
+    RedisCtxMode mode = REDIS_CTX_DEFAULT;
     RedisCmd *cmd;
 
     ZEND_PARSE_PARAMETERS_START(2, 2)
@@ -4115,9 +4120,9 @@ RedisCmd *redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) 
     if (zend_string_equals_literal_ci(subcmd, "REFCOUNT") ||
         zend_string_equals_literal_ci(subcmd, "IDLETIME"))
     {
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_LONG;
     } else if (zend_string_equals_literal_ci(subcmd, "ENCODING")) {
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_STRING;
     } else {
         php_error_docref(NULL, E_WARNING, "Invalid subcommand sent to OBJECT");
         return NULL;
@@ -4127,7 +4132,7 @@ RedisCmd *redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) 
 
     redis_cmd_cat_zstr(cmd, subcmd);
     redis_cmd_cat_key_zstr(cmd, key);
-    redis_cmd_set_ctx(cmd, ctx);
+    redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -4624,7 +4629,7 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     }
 
     if (gopts.withcoord + gopts.withdist + gopts.withhash > 0) {
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_GEO_WITHMETA);
     }
 
     return cmd;
@@ -5142,7 +5147,7 @@ RedisCmd *redis_himport_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     /* DISCARD and DISCARDALL reply with the number of fieldsets removed, the
      * other operations simply reply with +OK */
     if (hop == HIMPORT_OP_DISCARD || hop == HIMPORT_OP_DISCARDALL)
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_LONG);
 
     return cmd;
 }
@@ -5517,7 +5522,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_string *op = NULL;
     zval *z_args = NULL;
     RedisCmd *cmd = NULL;
-    void *ctx = NULL;
+    RedisCtxMode mode = REDIS_CTX_CLIENT_INFO;
     int argc = 0;
 
     ZEND_PARSE_PARAMETERS_START(1, -1)
@@ -5531,7 +5536,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         redis_cmd_cat_literal(cmd, "INFO");
     } else if (zend_string_equals_literal_ci(op, "LIST")) {
         cmd = redis_build_client_list_command(redis_sock, argc, z_args);
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_CLIENT_LIST;
     } else if (zend_string_equals_literal_ci(op, "CACHING")) {
         if (argc < 1) {
             return NULL;
@@ -5548,18 +5553,18 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         } else {
             redis_cmd_cat_literal(cmd, "NO");
         }
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "GETNAME")) {
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "GETNAME");
-        ctx = PHPREDIS_CTX_PTR + 3;
+        mode = REDIS_CTX_STRING;
     } else if (zend_string_equals_literal_ci(op, "GETREDIR") || zend_string_equals_literal_ci(op, "ID")) {
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_zstr(cmd, op);
-        ctx = PHPREDIS_CTX_PTR + 2;
+        mode = REDIS_CTX_LONG;
     } else if (zend_string_equals_literal_ci(op, "KILL")) {
         cmd = redis_build_client_kill_command(redis_sock, argc, z_args);
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "NO-EVICT")) {
         if (argc < 1) {
             return NULL;
@@ -5576,7 +5581,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         } else {
             redis_cmd_cat_literal(cmd, "OFF");
         }
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "PAUSE")) {
         if (argc < 1 || Z_TYPE(z_args[0]) != IS_LONG || (
             argc > 1 && (
@@ -5594,7 +5599,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         if (argc > 1) {
             redis_cmd_cat_zstr(cmd, Z_STR(z_args[1]));
         }
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "REPLY")) {
         if (argc > 0 && (
             Z_TYPE(z_args[0]) != IS_STRING || (
@@ -5610,7 +5615,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         if (argc > 0) {
             redis_cmd_cat_zstr(cmd, Z_STR(z_args[0]));
         }
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "SETNAME")) {
         if (argc < 1 || Z_TYPE(z_args[0]) != IS_STRING) {
             return NULL;
@@ -5618,14 +5623,14 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "SETNAME");
         redis_cmd_cat_zstr(cmd, Z_STR(z_args[0]));
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "TRACKING")) {
         cmd = redis_build_client_tracking_command(redis_sock, argc, z_args);
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_BOOL;
     } else if (zend_string_equals_literal_ci(op, "TRACKINGINFO")) {
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "TRACKINGINFO");
-        ctx = PHPREDIS_CTX_PTR + 4;
+        mode = REDIS_CTX_CLIENT_TRACKINGINFO;
     } else if (zend_string_equals_literal_ci(op, "UNBLOCK")) {
         if (argc < 1 || Z_TYPE(z_args[0]) != IS_STRING || (
             argc > 1 && (
@@ -5643,11 +5648,11 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         if (argc > 1) {
             redis_cmd_cat_zstr(cmd, Z_STR(z_args[1]));
         }
-        ctx = PHPREDIS_CTX_PTR + 2;
+        mode = REDIS_CTX_LONG;
     } else if (zend_string_equals_literal_ci(op, "UNPAUSE")) {
         cmd = redis_cmd_create_literal(redis_sock, "CLIENT");
         redis_cmd_cat_literal(cmd, "UNPAUSE");
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_BOOL;
     } else {
         return NULL;
     }
@@ -5655,7 +5660,7 @@ redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     if (cmd == NULL)
         return NULL;
 
-    redis_cmd_set_ctx(cmd, ctx);
+    redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -5666,7 +5671,7 @@ RedisCmd *redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_string *op = NULL, *zstr;
     zval *z_args = NULL;
     RedisCmd *cmd;
-    void *ctx = NULL;
+    RedisCtxMode mode = REDIS_CTX_COMMAND_INFO;
     int i, argc = 0;
 
     ZEND_PARSE_PARAMETERS_START(0, -1)
@@ -5676,21 +5681,21 @@ RedisCmd *redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     if (op == NULL) {
-        ctx = NULL;
+        mode = REDIS_CTX_COMMAND_INFO;
         argc = 0;
     } else if (zend_string_equals_literal_ci(op, "COUNT")) {
-        ctx = PHPREDIS_CTX_PTR;
+        mode = REDIS_CTX_LONG;
         argc = 0;
     } else if (zend_string_equals_literal_ci(op, "DOCS") ||
         zend_string_equals_literal_ci(op, "INFO")
     ) {
-        ctx = NULL;
+        mode = REDIS_CTX_COMMAND_INFO;
     } else if (zend_string_equals_literal_ci(op, "GETKEYS") ||
         zend_string_equals_literal_ci(op, "LIST")
     ) {
-        ctx = PHPREDIS_CTX_PTR + 1;
+        mode = REDIS_CTX_MULTIBULK_RAW;
     } else if (zend_string_equals_literal_ci(op, "GETKEYSANDFLAGS")) {
-        ctx = PHPREDIS_CTX_PTR + 2;
+        mode = REDIS_CTX_VARIANT_STRINGS;
     } else {
         php_error_docref(NULL, E_WARNING, "Unknown COMMAND operation '%s'", ZSTR_VAL(op));
         return NULL;
@@ -5707,7 +5712,7 @@ RedisCmd *redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 
     /* Any slot will do */
     redis_cmd_randslot(cmd);
-    redis_cmd_set_ctx(cmd, ctx);
+    redis_cmd_set_ctx_mode(cmd, mode);
 
     return cmd;
 }
@@ -6310,7 +6315,7 @@ redis_xautoclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
 
     redis_cmd_cat_literal_if(cmd, justid, "JUSTID");
 
-    redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+    redis_cmd_set_ctx_mode(cmd, REDIS_CTX_XAUTOCLAIM);
 
     return cmd;
 }
@@ -6937,7 +6942,7 @@ redis_vsim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
 
     if (opts.withscores) {
         redis_cmd_cat_literal(cmd, "WITHSCORES");
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_WITHSCORES);
     }
 
     if (opts.count > 0) {
@@ -7012,7 +7017,7 @@ redis_vlinks_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
 
     if (withscores) {
         redis_cmd_cat_literal(cmd, "WITHSCORES");
-        redis_cmd_set_ctx(cmd, PHPREDIS_CTX_PTR);
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_WITHSCORES);
     }
 
     return cmd;
@@ -7035,7 +7040,7 @@ RedisCmd *redis_vgetattr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
     redis_cmd_cat_key_zstr(cmd, key);
     redis_cmd_cat_zval(cmd, member);
 
-    redis_cmd_set_ctx(cmd, raw ? NULL : PHPREDIS_CTX_PTR);
+    redis_cmd_set_ctx_mode(cmd, raw ? REDIS_CTX_DEFAULT : REDIS_CTX_DECODE_JSON);
 
     return cmd;
 }
