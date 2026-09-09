@@ -3801,6 +3801,64 @@ class Redis_Test extends TestSuite {
         $this->assertTrue(is_numeric($this->redis->object('idletime', 'key')));
     }
 
+    public function testQueuedReplyModes() {
+        if ( ! $this->minVersionCheck('6.2'))
+            $this->markTestSkipped();
+
+        $modes = $this->havePipeline() ? [Redis::MULTI, Redis::PIPELINE] : [Redis::MULTI];
+        $zkey = '{reply-ctx}:zset';
+        $hkey = '{reply-ctx}:hash';
+        $skey = '{reply-ctx}:string';
+        $calls = [
+            ['zRandMember', [$zkey]],
+            ['hMGet', [$hkey, ['field', 'missing']]], // Owned context between modes.
+            ['zRandMember', [$zkey, ['count' => 1]]],
+            ['zRandMember', [$zkey, ['count' => 1, 'withscores' => true]]],
+            ['hRandField', [$hkey]],
+            ['hRandField', [$hkey, ['count' => 1]]],
+            ['hRandField', [$hkey, ['count' => 1, 'withvalues' => true]]],
+            ['zRange', [$zkey, 0, -1]],
+            ['zRange', [$zkey, 0, -1, true]],
+            ['hMGet', [$skey, ['field']]], // Error with an owned context.
+            ['zRange', [$skey, 0, -1, true]], // Error with a mode context.
+            ['zRandMember', [$zkey]], // Verify parsing resumes after errors.
+        ];
+
+        $this->redis->del($zkey, $hkey, $skey);
+        $this->redis->zAdd($zkey, 1.5, 'member');
+        $this->redis->hSet($hkey, 'field', '7');
+        $this->redis->set($skey, 'value');
+
+        $expected = [];
+        foreach ($calls as [$method, $args]) {
+            $expected[] = $this->redis->$method(...$args);
+        }
+
+        foreach ($modes as $mode) {
+            $this->redis->multi($mode);
+            foreach ($calls as [$method, $args]) {
+                $this->redis->$method(...$args);
+            }
+            $this->assertEquals($expected, $this->redis->exec());
+
+            $this->redis->multi($mode);
+            foreach ($calls as [$method, $args]) {
+                $this->redis->$method(...$args);
+            }
+            $this->assertTrue($this->redis->discard());
+        }
+
+        // Aborted transactions must release both modes and owned payloads.
+        $other = $this->newInstance();
+        $this->redis->watch($skey);
+        $this->redis->multi()->hMGet($hkey, ['field'])->zRandMember($zkey);
+        $other->set($skey, 'changed');
+        $aborted = $this->redis instanceof RedisCluster ? [false, false] : false;
+        $this->assertEquals($aborted, $this->redis->exec());
+        $this->assertEquals('member', $this->redis->zRandMember($zkey));
+        $this->redis->del($zkey, $hkey, $skey);
+    }
+
     public function testMultiExec() {
         $this->sequence(Redis::MULTI);
         $this->differentType(Redis::MULTI);
@@ -8557,6 +8615,30 @@ class Redis_Test extends TestSuite {
         /* Test NOPERM exception */
         $this->assertTrue($r2->auth(['noperm', 'noperm']));
         $this->assertThrowsMatch($r2, function($r) { $r->set('foo', 'bar'); }, '/^NOPERM.*$/');
+
+        // Exercise all six ACL reply modes through deferred callbacks.
+        $user = 'phpredis-ctx-' . getmypid();
+        $whoami = $this->redis->acl('WHOAMI');
+        try {
+            foreach ([Redis::MULTI, Redis::PIPELINE] as $mode) {
+                $result = $this->redis->multi($mode)
+                    ->acl('SETUSER', $user, 'off')
+                    ->acl('GETUSER', $user)
+                    ->acl('USERS')
+                    ->acl('WHOAMI')
+                    ->acl('DELUSER', $user)
+                    ->acl('LOG', 0)
+                    ->exec();
+                $this->assertTrue($result[0]);
+                $this->assertInArray('off', $result[1]['flags']);
+                $this->assertInArray($user, $result[2]);
+                $this->assertEquals($whoami, $result[3]);
+                $this->assertEquals(1, $result[4]);
+                $this->assertEquals([], $result[5]);
+            }
+        } finally {
+            $this->redis->acl('DELUSER', $user);
+        }
     }
 
     /* If we detect a unix socket make sure we can connect to it in a variety of ways */

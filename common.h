@@ -6,7 +6,6 @@
 
 #include "php_compat.h"
 
-#define PHPREDIS_CTX_PTR ((char *)0xDEADC0DE)
 #define PHPREDIS_NOTUSED(v) ((void)v)
 
 #include "zend_llist.h"
@@ -305,9 +304,44 @@ static zend_always_inline zend_bool redis_sock_is_pipeline(const RedisSock *redi
     return (redis_sock->mode & PIPELINE) != 0;
 }
 
+/* Reply interpretation shared by Redis and RedisCluster. DEFAULT means the
+ * command's normal reply; multiway dispatchers select an explicit mode. */
+typedef enum RedisCtxMode {
+    REDIS_CTX_DEFAULT = 0,
+    REDIS_CTX_BOOL,
+    REDIS_CTX_STRING,
+    REDIS_CTX_LONG,
+    REDIS_CTX_VARIANT,
+    REDIS_CTX_MULTIBULK_RAW,
+    REDIS_CTX_ZIPPED_RAW,
+    REDIS_CTX_ZIPPED_INT,
+    REDIS_CTX_VARIANT_STRINGS,
+    REDIS_CTX_ACL_GETUSER,
+    REDIS_CTX_ACL_LOG,
+    REDIS_CTX_CLIENT_INFO,
+    REDIS_CTX_CLIENT_LIST,
+    REDIS_CTX_CLIENT_TRACKINGINFO,
+    REDIS_CTX_COMMAND_INFO,
+    REDIS_CTX_FUNCTION,
+    REDIS_CTX_COUNT,
+    REDIS_CTX_WITHSCORES,
+    REDIS_CTX_WITHVALUES,
+    REDIS_CTX_INCR,
+    REDIS_CTX_GEO_WITHMETA,
+    REDIS_CTX_XAUTOCLAIM,
+    REDIS_CTX_DECODE_JSON,
+    REDIS_CTX_HELLO_SERVER,
+    REDIS_CTX_HELLO_VERSION,
+} RedisCtxMode;
+
 typedef void (RedisCmdCtxDtor)(void *ptr);
+/* The command and its reply handler agree on the active union member.
+ * A destructor is valid only with ptr; borrowed pointers may have no destructor. */
 typedef struct RedisCmdCtx {
-    void *ptr;
+    union {
+        void *ptr;
+        RedisCtxMode mode;
+    };
     RedisCmdCtxDtor *dtor;
 } RedisCmdCtx;
 
