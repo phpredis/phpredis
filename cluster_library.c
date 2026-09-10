@@ -2600,6 +2600,12 @@ cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     zval z_msg;
 
+    /* Only array replies have a validated element count.  An integer reply
+     * must not be narrowed to redis_read_xclaim_reply's int count. */
+    if (c->reply_type != TYPE_MULTIBULK) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
     array_init(&z_msg);
 
     ZEND_ASSERT(ctx.ptr == NULL || ctx.ptr == PHPREDIS_CTX_PTR);
