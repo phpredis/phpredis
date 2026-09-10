@@ -74,7 +74,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
-        server: ['redis', 'keydb', 'valkey']
+        server: ['redis', 'valkey']
 
     steps:
       - name: Checkout
@@ -105,18 +105,6 @@ jobs:
                sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/redis.gpg
           sudo apt-get update --allow-releaseinfo-change-label
           sudo apt-get install redis
-
-      - name: Install KeyDB
-        if: matrix.server == 'keydb'
-        env:
-          KEYDB_PPA_URI: "download.keydb.dev/open-source-dist"
-          KEYDB_PPA_KEY: "download.keydb.dev/open-source-dist/keyring.gpg"
-        run: |
-          echo "deb https://$KEYDB_PPA_URI $(lsb_release -sc) main" | \
-               sudo tee /etc/apt/sources.list.d/keydb.list
-          sudo wget -O /etc/apt/trusted.gpg.d/keydb.gpg "https://$KEYDB_PPA_KEY"
-          sudo apt-get update --allow-releaseinfo-change-label
-          sudo apt-get install keydb
 
       - name: Install ValKey
         if: matrix.server == 'valkey'
