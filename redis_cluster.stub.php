@@ -8,7 +8,7 @@
 
 class RedisCluster {
     /**
-     * Used to configure how `PhpRedis` will failover to replica nodes when a
+     * Used to configure how `PhpRedis` will fail over to replica nodes when a
      * primary node fails to respond.
      *
      * @var int
@@ -36,7 +36,7 @@ class RedisCluster {
     public const FAILOVER_ERROR = UNKNOWN;
 
     /**
-     * Distribute readonly commands at random between the primary and
+     * Distribute read-only commands at random between the primary and
      * replica(s).
      *
      * @var int
@@ -46,7 +46,7 @@ class RedisCluster {
     public const FAILOVER_DISTRIBUTE = UNKNOWN;
 
     /**
-     * Distribute readonly commands between the replicas only.
+     * Distribute read-only commands between the replicas only.
      *
      * @var int
      * @cvalue REDIS_FAILOVER_DISTRIBUTE_SLAVES
@@ -57,7 +57,7 @@ class RedisCluster {
     public function __construct(string|null $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = null, ?array $context = null);
 
     /**
-     * {@see \Redis::_compress()}
+     * @see \Redis::_compress()
      */
     public function _compress(string $value): string;
 
@@ -144,14 +144,14 @@ class RedisCluster {
     /**
      * Return the position of the first bit set to 0 or 1 in a string.
      *
-     * @see https://https://redis.io/commands/bitpos/
+     * @see https://redis.io/docs/latest/commands/bitpos/
      *
      * @param string $key   The key to check (must be a string)
      * @param bool   $bit   Whether to look for an unset (0) or set (1) bit.
      * @param int    $start Where in the string to start looking.
      * @param int    $end   Where in the string to stop looking.
      * @param bool   $bybit If true, Redis will treat $start and $end as BIT values and not bytes, so if start
-     *                      was 0 and end was 2, Redis would only search the first two bits.
+     *                      were 0 and end were 2, Redis would search the first three bits.
      */
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): RedisCluster|int|false;
 
@@ -178,7 +178,7 @@ class RedisCluster {
     public function lmove(string $src, string $dst, string $wherefrom, string $whereto): RedisCluster|string|false;
 
     /**
-     * Move one or more element from one list to another.
+     * Move one or more elements from one list to another.
      *
      * @param string $src       The source list
      * @param string $dst       The destination list
@@ -186,13 +186,13 @@ class RedisCluster {
      * @param string $whereto   Where in the destination list to put the element.
      * @param null|array $options  An array of options to modify how the command behaves.
      *
-     * @return Redis|array|false The element(s) removed from the source list.
+     * @return RedisCluster|array|false The element(s) removed from the source list.
      *
      * @see https://redis.io/docs/latest/commands/lmovem/
      *
      * @example
-     * $redis->rPush('numbers', 'one', 'two', 'three');
-     * $redis->lMovem('numbers', 'odds', Redis::LEFT, Redis::LEFT, ['COUNT' => [2, 'BULK']]);
+     * $redis->rPush('{lists}:numbers', 'one', 'two', 'three');
+     * $redis->lMovem('{lists}:numbers', '{lists}:odds', Redis::LEFT, Redis::LEFT, ['COUNT' => [2, 'BULK']]);
      */
     public function lmovem(string $src, string $dst, string $wherefrom, string $whereto, ?array $options = null): RedisCluster|array|false;
 
@@ -255,7 +255,7 @@ class RedisCluster {
     public function close(): bool;
 
     /**
-     * @see \Redis::cluster()
+     * Execute Redis CLUSTER subcommands on the specified node.
      */
     public function cluster(string|array $key_or_address, string $command, mixed ...$extra_args): mixed;
 
@@ -290,7 +290,7 @@ class RedisCluster {
     public function decrby(string $key, int $value): RedisCluster|int|false;
 
     /**
-     * @see \Redis::decrbyfloat()
+     * Send a DECRBYFLOAT command for the given key.
      */
     public function decrbyfloat(string $key, float $value): float;
 
@@ -300,10 +300,10 @@ class RedisCluster {
     public function del(array|string $key, string ...$other_keys): RedisCluster|int|false;
 
     /**
-     * Delete a key conditionally based on its value or hash digest
+     * Delete a key conditionally based on its value or hash digest.
      *
      * @param string $key         The key to delete
-     * @param array|null $options An array with options to modify how DELX works.
+     * @param array|null $options An array with options to modify how DELEX works.
      *
      * @return RedisCluster|int|false Returns 1 if the key was deleted, 0 if it was not.
      */
@@ -311,7 +311,7 @@ class RedisCluster {
 
     /**
      * Delete a key if it's equal to the specified value. This command is
-     * specific to Valkey >= 9.0
+     * specific to Valkey >= 9.0.
      *
      * @param string $key   The key to delete
      * @param mixed  $value The value to compare against the key's value.
@@ -673,7 +673,7 @@ class RedisCluster {
     public function hpexpiretime(string $key, array $fields): RedisCluster|array|false;
 
     /**
-     * @see \Redis::hpexpiretime()
+     * @see \Redis::hpersist()
      */
     public function hpersist(string $key, array $fields): RedisCluster|array|false;
 
@@ -698,8 +698,8 @@ class RedisCluster {
     public function incrbyfloat(string $key, float $value): RedisCluster|float|false;
 
     /**
-     * Retrieve information about the connected redis-server.  If no arguments are passed to
-     * this function, redis will return every info field.  Alternatively you may pass a specific
+     * Retrieve information about a cluster node.  If no sections are passed,
+     * Redis will return the default info fields.  Alternatively you may pass a specific
      * section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
      * to that section.
      *
@@ -709,7 +709,7 @@ class RedisCluster {
      *
      * @param string|array $key_or_address Either a key name or array with host and port indicating
      *                                     which cluster node we want to send the command to.
-     * @param string       $sections       Optional section(s) you wish Redis server to return.
+     * @param string     ...$sections      Optional sections you want the Redis server to return.
      *
      * @return RedisCluster|array|false
      */
@@ -726,7 +726,7 @@ class RedisCluster {
     public function lastsave(string|array $key_or_address): RedisCluster|int|false;
 
     /**
-     * @see \Redis::lget()
+     * @see \Redis::lindex()
      */
     public function lget(string $key, int $index): RedisCluster|string|bool;
 
@@ -847,12 +847,12 @@ class RedisCluster {
     public function pfmerge(string $key, array $keys): RedisCluster|bool;
 
     /**
-     * PING an instance in the redis cluster.
+     * PING an instance in the Redis cluster.
      *
      * @see \Redis::ping()
      *
-     * @param string|array $key_or_address Either a key name or a two element array with host and
-     *                                     address, informing RedisCluster which node to ping.
+     * @param string|array $key_or_address Either a key name or a two-element array with host and
+     *                                     port, informing RedisCluster which node to ping.
      *
      * @param string|null  $message        An optional message to send.
      *
@@ -1172,7 +1172,7 @@ class RedisCluster {
     public function vinfo(string $key): RedisCluster|array|false;
 
     /**
-     * Check if an element is a member of a vectorset
+     * Check if an element is a member of a vector set.
      *
      * @param string $key    The vector set to query.
      * @param mixed  $member The member to check for.
@@ -1192,14 +1192,14 @@ class RedisCluster {
     public function vrandmember(string $key, int $count = 0): RedisCluster|array|string|false;
 
     /**
-     * Retreive a lexographical range of elements from a vector set
+     * Retrieve a lexicographical range of elements from a vector set.
      *
      * @param string $key        The vector set to query.
      * @param string $min        The minimum element to return.
      * @param string $max        The maximum element to return.
      * @param int    $count      An optional maximum number of elements to return.
      *
-     * @return RedisCluster|array|false An array of elements in the specified range.`
+     * @return RedisCluster|array|false An array of elements in the specified range.
      */
     public function vrange(string $key, string $min, string $max, int $count = -1): RedisCluster|array|false;
 
