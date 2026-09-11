@@ -16,7 +16,14 @@
 #include <zend_smart_string.h>
 
 #define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - offsetof(class_entry, std))
-#define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, Z_OBJ_P(z))
+
+static zend_always_inline zend_object *phpredis_zval_to_object(zval *z) {
+    ZEND_ASSERT(z != NULL);
+    ZEND_ASSERT(Z_TYPE_P(z) == IS_OBJECT);
+    return Z_OBJ_P(z);
+}
+
+#define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, phpredis_zval_to_object(z))
 
 /* We'll fallthrough if we want to */
 #ifndef __has_attribute

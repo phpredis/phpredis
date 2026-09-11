@@ -5129,6 +5129,7 @@ RedisCmd *redis_himport_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         redis_cmd_cat_zstr(cmd, fieldset);
 
     if (hop == HIMPORT_OP_PREPARE || hop == HIMPORT_OP_SET) {
+        ZEND_ASSERT(fields != NULL);
         ZEND_HASH_FOREACH_VAL(fields, zv) {
             /* Field names are sent as-is, whereas values are serialized */
             if (hop == HIMPORT_OP_SET) {
@@ -5874,7 +5875,6 @@ RedisCmd *redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     HashTable *fields;
     RedisCmd *cmd;
     zval *value;
-    int fcount;
 
     ZEND_PARSE_PARAMETERS_START(3, 6)
         Z_PARAM_STR(key)
@@ -5887,7 +5887,7 @@ RedisCmd *redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* At least one field and string are required */
-    if ((fcount = zend_hash_num_elements(fields)) == 0) {
+    if (zend_hash_num_elements(fields) == 0) {
         return NULL;
     }
 
@@ -6039,7 +6039,6 @@ RedisCmd *redis_xread_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     zend_long count = -1, block = -1;
     HashTable *streams;
     RedisCmd *cmd;
-    int scount;
 
     ZEND_PARSE_PARAMETERS_START(1, -1)
         Z_PARAM_ARRAY_HT(streams)
@@ -6049,7 +6048,7 @@ RedisCmd *redis_xread_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* At least one stream and ID is required */
-    if ((scount = zend_hash_num_elements(streams)) < 1) {
+    if (zend_hash_num_elements(streams) < 1) {
         return NULL;
     }
 
@@ -6085,7 +6084,6 @@ RedisCmd *redis_xreadgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
     zend_long count, block;
     HashTable *streams;
     RedisCmd *cmd;
-    int scount;
 
     ZEND_PARSE_PARAMETERS_START(3, 5)
         Z_PARAM_STR(group)
@@ -6103,7 +6101,7 @@ RedisCmd *redis_xreadgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
     }
 
     /* Redis requires at least one stream */
-    if ((scount = zend_hash_num_elements(streams)) < 1) {
+    if (zend_hash_num_elements(streams) < 1) {
         return NULL;
     }
 
@@ -6143,7 +6141,6 @@ RedisCmd *redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zval *z_ids, *z_id;
     HashTable *ht_ids;
     RedisCmd *cmd;
-    int idcount;
 
     ZEND_PARSE_PARAMETERS_START(3, 3)
         Z_PARAM_STR(key)
@@ -6152,7 +6149,7 @@ RedisCmd *redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     ht_ids = Z_ARRVAL_P(z_ids);
-    if ((idcount = zend_hash_num_elements(ht_ids)) < 1) {
+    if (zend_hash_num_elements(ht_ids) < 1) {
         return NULL;
     }
 
@@ -6325,7 +6322,6 @@ RedisCmd *redis_xclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_long min_idle;
     xclaimOptions opts;
     RedisCmd *cmd;
-    int id_count;
     zval *zv;
 
     ZEND_PARSE_PARAMETERS_START(5, 6)
@@ -6339,7 +6335,7 @@ RedisCmd *redis_xclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* At least one id is required */
-    if ((id_count = zend_hash_num_elements(ids)) < 1) {
+    if (zend_hash_num_elements(ids) < 1) {
         return NULL;
     }
 
