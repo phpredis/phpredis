@@ -4625,8 +4625,11 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
     char inbuf[4096];
     size_t len;
 
-    /* Attempt to read our single line reply */
+    /* Attempt to read our single line reply.  Make sure z_ret is always
+     * initialized, as callers will copy it into return_value or append it
+     * to an array even on failure. */
     if(redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &len) < 0) {
+        ZVAL_FALSE(z_ret);
         return -1;
     }
 
@@ -4740,6 +4743,7 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_REPLY_TYPE reply_type;
     long reply_info;
     zval z_ret;
+    int res = SUCCESS;
 
     // Attempt to read our header
     if(redis_read_reply_type(redis_sock,&reply_type,&reply_info) < 0) {
@@ -4750,18 +4754,18 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     switch(reply_type) {
         case TYPE_ERR:
         case TYPE_LINE:
-            redis_read_variant_line(redis_sock, reply_type, status_strings, &z_ret);
+            res = redis_read_variant_line(redis_sock, reply_type, status_strings, &z_ret);
             break;
         case TYPE_INT:
             ZVAL_LONG(&z_ret, reply_info);
             break;
         case TYPE_BULK:
-            redis_read_variant_bulk(redis_sock, reply_info, &z_ret);
+            res = redis_read_variant_bulk(redis_sock, reply_info, &z_ret);
             break;
         case TYPE_MULTIBULK:
             if (reply_info > -1) {
                 array_init_size(&z_ret, reply_info);
-                redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_ret);
+                res = redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_ret);
             } else {
                 if (null_mbulk_as_null) {
                     ZVAL_NULL(&z_ret);
@@ -4778,8 +4782,7 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
 
-    /* Success */
-    return 0;
+    return res < 0 ? FAILURE : SUCCESS;
 }
 
 PHP_REDIS_API int
