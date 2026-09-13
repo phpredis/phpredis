@@ -7140,6 +7140,7 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
         case REDIS_OPT_NULL_MBULK_AS_NULL:
             RETURN_LONG(redis_sock->null_mbulk_as_null);
         case REDIS_OPT_FAILOVER:
+            if (c == NULL) RETURN_FALSE;
             RETURN_LONG(c->failover);
         case REDIS_OPT_MAX_RETRIES:
             RETURN_LONG(redis_sock->max_retries);
