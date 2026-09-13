@@ -129,7 +129,7 @@ cluster_parse_reply_len(redisCluster *c, REDIS_REPLY_TYPE reply_type, size_t lin
 
     c->reply_len = n;
     return SUCCESS;
-    
+
 failure:
     zend_throw_exception_ex(redis_cluster_exception_ce, 0,
         "protocol error, invalid reply length");
@@ -2498,8 +2498,7 @@ cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
             return FAILURE;
     }
 
-    // Success
-    return SUCCESS;
+    return Z_TYPE_P(return_value) == IS_ARRAY ? SUCCESS : FAILURE;
 }
 
 /* INFO response */
