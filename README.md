@@ -4372,6 +4372,7 @@ $redis->rawCommand("lrange", "mylist", 0, -1);
 
 1. [multi, exec, discard](#multi-exec-discard) - Enter and exit transactional mode
 2. [watch, unwatch](#watch-unwatch) - Watches a key for modifications by another client.
+3. [Transactions inside a pipeline](#transactions-inside-a-pipeline) - Batch transactions and interpret their replies.
 
 #### multi, exec, discard.
 -----
@@ -4381,7 +4382,7 @@ _**Description**_: Enter and exit transactional mode.
 (optional) `Redis::MULTI` or `Redis::PIPELINE`. Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single transaction; a `Redis::PIPELINE` block is simply transmitted faster to the server, but without any guarantee of atomicity. `discard` cancels a transaction.
 
 ###### *Return value*
-`multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called.
+`multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called. When a transaction is inside a pipeline, the transaction's `exec()` also returns the Redis instance; see [Transactions inside a pipeline](#transactions-inside-a-pipeline).
 
 ###### *Example*
 ~~~php
@@ -4401,7 +4402,7 @@ $ret == [0 => TRUE, 1 => 'val1', 2 => TRUE, 3 => 'val2'];
 -----
 _**Description**_: Watches a key for modifications by another client.
 
-If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction will fail (return `FALSE`). `unwatch` cancels all the watching of all keys by this client.
+If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction will fail (return `FALSE`). For transactions inside a pipeline, see the [reply-format limitations below](#transactions-inside-a-pipeline). `unwatch` cancels all the watching of all keys by this client.
 
 ###### *Parameters*
 *keys*: string for one key or array for a list of keys
@@ -4419,6 +4420,36 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 ~~~
 
 
+
+#### Transactions inside a pipeline
+-----
+_**Description**_: Queue transactions inside a pipeline.
+
+###### *Parameters*
+Call `pipeline()` (or `multi(Redis::PIPELINE)`) before `multi()`.
+
+###### *Return value*
+The transaction's `exec()` returns the Redis instance without sending the pipeline. The final `exec()` sends it and returns the replies, with each transaction nested in its own array.
+
+**Note:** With PhpRedis 6.3.0 and default RESP2 options, some command replies inside pipelined transactions differ from ordinary replies:
+
+| Command and stored data | Standalone or ordinary `MULTI` reply | Reply inside a pipelined transaction |
+| --- | --- | --- |
+| `hGetAll($key)`, containing `field => value` | `['field' => 'value']` | `['field', 'value']` |
+| `zRange($key, 0, -1, true)`, containing `member` with score 3 | `['member' => 3.0]` | `['member', '3']` |
+
+A `WATCH`-aborted transaction also returns `[]` instead of `false` inside the pipeline result; see [issue #1382](https://github.com/phpredis/phpredis/issues/1382).
+
+###### *Example*
+~~~php
+$replies = $redis->pipeline()
+    ->echo('before')
+    ->multi()->echo('one')->echo('two')->exec()
+    ->echo('after')
+    ->exec();
+
+// $replies === ['before', ['one', 'two'], 'after']
+~~~
 
 ### Scripting
 
