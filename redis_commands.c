@@ -7281,7 +7281,8 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             if (val_long == REDIS_FAILOVER_NONE ||
                 val_long == REDIS_FAILOVER_ERROR ||
                 val_long == REDIS_FAILOVER_DISTRIBUTE ||
-                val_long == REDIS_FAILOVER_DISTRIBUTE_SLAVES)
+                val_long == REDIS_FAILOVER_DISTRIBUTE_SLAVES ||
+                val_long == REDIS_FAILOVER_PREFER_REPLICA)
             {
                 c->failover = val_long;
                 RETURN_TRUE;
