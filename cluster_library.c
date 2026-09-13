@@ -3153,6 +3153,7 @@ static int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
 
             efree(line);
             efree(key);
+            key = NULL;
         }
     }
 
@@ -3189,6 +3190,7 @@ static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
 
                 /* Free our key and line */
                 efree(key);
+                key = NULL;
                 efree(line);
             }
         } else if (EG(exception)) {
