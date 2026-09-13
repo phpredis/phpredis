@@ -4596,6 +4596,15 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
                 return -1;
             }
         }
+
+        /* Validate lengths before callers narrow them to int or allocate. */
+        if ((*reply_type == TYPE_BULK && (*reply_info < -1 || *reply_info > INT_MAX - 2)) ||
+            (*reply_type == TYPE_MULTIBULK && (*reply_info < -1 || *reply_info > INT_MAX)))
+        {
+            zend_throw_exception_ex(redis_exception_ce, 0,
+                "protocol error, invalid reply length");
+            return -1;
+        }
     } else {
         /* Always initialize to prevent UB */
         *reply_info = 0;
