@@ -129,7 +129,7 @@ cluster_parse_reply_len(redisCluster *c, REDIS_REPLY_TYPE reply_type, size_t lin
 
     c->reply_len = n;
     return SUCCESS;
-    
+
 failure:
     zend_throw_exception_ex(redis_cluster_exception_ce, 0,
         "protocol error, invalid reply length");
@@ -1925,28 +1925,32 @@ PHP_REDIS_API void
 cluster_hrandfield_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                         RedisCmdCtx ctx)
 {
-    if (ctx.ptr == NULL) {
-        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
-    } else if (ctx.ptr == PHPREDIS_CTX_PTR) {
-        cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-                               redis_empty_ctx);
-    } else if (ctx.ptr == PHPREDIS_CTX_PTR + 1) {
-        return cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-                                         redis_empty_ctx);
-    } else {
-        ZEND_ASSERT(!"memory corruption?");
+    switch (ctx.mode) {
+        case REDIS_CTX_STRING:
+            cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
+            break;
+        case REDIS_CTX_COUNT:
+            cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+                                   redis_empty_ctx);
+            break;
+        case REDIS_CTX_WITHVALUES:
+            cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+                                      redis_empty_ctx);
+            break;
+        default:
+            ZEND_UNREACHABLE();
     }
 }
 
 PHP_REDIS_API void
 cluster_pop_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
 {
-    if (ctx.ptr == NULL) {
+    if (ctx.mode == REDIS_CTX_DEFAULT) {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
-    } else if (ctx.ptr == PHPREDIS_CTX_PTR) {
+    } else if (ctx.mode == REDIS_CTX_COUNT) {
         cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
+        ZEND_UNREACHABLE();
     }
 }
 
@@ -1978,7 +1982,7 @@ cluster_geosearch_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     c->cmd_sock->null_mbulk_as_null = c->flags->null_mbulk_as_null;
     if (c->reply_type != TYPE_MULTIBULK ||
         redis_read_geosearch_response(&zret, c->cmd_sock, c->reply_len,
-                                      ctx.ptr != NULL) < 0)
+                                      ctx.mode == REDIS_CTX_GEO_WITHMETA) < 0)
     {
         CLUSTER_MARK_DECODE_ERROR(c);
         ZVAL_FALSE(&zret);
@@ -1995,14 +1999,14 @@ PHP_REDIS_API void
 cluster_zdiff_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                    RedisCmdCtx ctx)
 {
-    if (ctx.ptr == NULL) {
+    if (ctx.mode == REDIS_CTX_DEFAULT) {
         cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                                redis_empty_ctx);
-    } else if (ctx.ptr == PHPREDIS_CTX_PTR) {
+    } else if (ctx.mode == REDIS_CTX_WITHSCORES) {
         cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                                   redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
+        ZEND_UNREACHABLE();
     }
 }
 
@@ -2010,9 +2014,9 @@ PHP_REDIS_API void
 cluster_zadd_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                   RedisCmdCtx ctx)
 {
-    ZEND_ASSERT(ctx.ptr == NULL || ctx.ptr == PHPREDIS_CTX_PTR);
+    ZEND_ASSERT(ctx.mode == REDIS_CTX_DEFAULT || ctx.mode == REDIS_CTX_INCR);
 
-    if (ctx.ptr == NULL) {
+    if (ctx.mode == REDIS_CTX_DEFAULT) {
         cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_dbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
@@ -2024,17 +2028,21 @@ PHP_REDIS_API void
 cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                          RedisCmdCtx ctx)
 {
-    if (ctx.ptr == NULL) {
-        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-                          redis_empty_ctx);
-    } else if (ctx.ptr == PHPREDIS_CTX_PTR) {
-        cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-                               redis_empty_ctx);
-    } else if (ctx.ptr == PHPREDIS_CTX_PTR + 1) {
-        cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-                                  redis_empty_ctx);
-    } else {
-        ZEND_ASSERT(!"memory corruption?");
+    switch (ctx.mode) {
+        case REDIS_CTX_STRING:
+            cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+                              redis_empty_ctx);
+            break;
+        case REDIS_CTX_COUNT:
+            cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+                                   redis_empty_ctx);
+            break;
+        case REDIS_CTX_WITHSCORES:
+            cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+                                      redis_empty_ctx);
+            break;
+        default:
+            ZEND_UNREACHABLE();
     }
 }
 
@@ -2042,12 +2050,12 @@ PHP_REDIS_API void
 cluster_randmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                         RedisCmdCtx ctx)
 {
-    if (ctx.ptr == NULL) {
+    if (ctx.mode == REDIS_CTX_DEFAULT) {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
-    } else if (ctx.ptr == PHPREDIS_CTX_PTR) {
+    } else if (ctx.mode == REDIS_CTX_COUNT) {
         cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
-        ZEND_ASSERT(!"memory corruption?");
+        ZEND_UNREACHABLE();
     }
 }
 
@@ -2055,9 +2063,9 @@ PHP_REDIS_API void
 cluster_object_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                     RedisCmdCtx ctx)
 {
-    ZEND_ASSERT(ctx.ptr == PHPREDIS_CTX_PTR || ctx.ptr == PHPREDIS_CTX_PTR + 1);
+    ZEND_ASSERT(ctx.mode == REDIS_CTX_LONG || ctx.mode == REDIS_CTX_STRING);
 
-    if (ctx.ptr == PHPREDIS_CTX_PTR) {
+    if (ctx.mode == REDIS_CTX_LONG) {
         cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
@@ -2068,9 +2076,9 @@ PHP_REDIS_API void
 cluster_himport_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                      RedisCmdCtx ctx)
 {
-    ZEND_ASSERT(ctx.ptr == NULL || ctx.ptr == PHPREDIS_CTX_PTR);
+    ZEND_ASSERT(ctx.mode == REDIS_CTX_DEFAULT || ctx.mode == REDIS_CTX_LONG);
 
-    if (ctx.ptr == PHPREDIS_CTX_PTR) {
+    if (ctx.mode == REDIS_CTX_LONG) {
         cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_bool_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
@@ -2080,7 +2088,7 @@ cluster_himport_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 PHP_REDIS_API void
 cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
 {
-    if (ctx.ptr == NULL) {
+    if (ctx.mode == REDIS_CTX_DEFAULT) {
         /* Conditional SET commands return a null bulk when not performed. */
         if (c->reply_type == TYPE_BULK && c->reply_len == -1) {
             CLUSTER_RETURN_FALSE(c);
@@ -2433,9 +2441,10 @@ cluster_zrange_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     cluster_cb cb;
 
-    ZEND_ASSERT(ctx.ptr == NULL || ctx.ptr == PHPREDIS_CTX_PTR);
+    ZEND_ASSERT(ctx.mode == REDIS_CTX_DEFAULT || ctx.mode == REDIS_CTX_WITHSCORES);
 
-    cb = ctx.ptr ? cluster_mbulk_zipdbl_resp : cluster_mbulk_resp;
+    cb = ctx.mode == REDIS_CTX_WITHSCORES ? cluster_mbulk_zipdbl_resp :
+                                         cluster_mbulk_resp;
 
     cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
 }
@@ -2557,8 +2566,7 @@ cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
             return FAILURE;
     }
 
-    // Success
-    return SUCCESS;
+    return Z_TYPE_P(return_value) == IS_ARRAY ? SUCCESS : FAILURE;
 }
 
 /* INFO response */
@@ -2672,13 +2680,18 @@ cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     zval z_msg;
 
+    /* Only array replies have a validated element count.  An integer reply
+     * must not be narrowed to redis_read_xclaim_reply's int count. */
+    if (c->reply_type != TYPE_MULTIBULK) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    }
+
     array_init(&z_msg);
 
-    ZEND_ASSERT(ctx.ptr == NULL || ctx.ptr == PHPREDIS_CTX_PTR);
+    ZEND_ASSERT(ctx.mode == REDIS_CTX_DEFAULT || ctx.mode == REDIS_CTX_XAUTOCLAIM);
 
-    if (c->reply_type != TYPE_MULTIBULK ||
-        redis_read_xclaim_reply(c->cmd_sock, c->reply_len,
-                                ctx.ptr == PHPREDIS_CTX_PTR, &z_msg) < 0)
+    if (redis_read_xclaim_reply(c->cmd_sock, c->reply_len,
+                                ctx.mode == REDIS_CTX_XAUTOCLAIM, &z_msg) < 0)
     {
         zval_ptr_dtor_nogc(&z_msg);
         CLUSTER_RETURN_DECODE_ERROR(c);
@@ -2770,7 +2783,7 @@ cluster_vgetattr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         CLUSTER_RETURN_FALSE(c);
     }
 
-    if (ctx.ptr != PHPREDIS_CTX_PTR ||
+    if (ctx.mode != REDIS_CTX_DECODE_JSON ||
         redis_deserialize_vgetattr_reply(&z_ret, str, c->reply_len) != SUCCESS)
     {
         ZVAL_STRINGL(&z_ret, str, c->reply_len);
@@ -3467,6 +3480,7 @@ static int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
 
             efree(line);
             efree(key);
+            key = NULL;
         }
     }
 
@@ -3503,6 +3517,7 @@ static int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
 
                 /* Free our key and line */
                 efree(key);
+                key = NULL;
                 efree(line);
             }
         } else if (EG(exception)) {
