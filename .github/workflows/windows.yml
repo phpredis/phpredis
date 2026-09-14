@@ -1,0 +1,86 @@
+name: Windows
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+  # Build the selected ref without uploading anything to a release.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        ts: [nts, ts]
+    env:
+      # Branch names can contain slashes, which break the builder's filenames.
+      # Releases must use the tag, since PIE searches for that exact version.
+      EXTENSION_REF: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
+
+      - name: Build phpredis
+        uses: php/php-windows-builder/extension@v1
+        with:
+          arch: x64
+          php-version: ${{ matrix.php }}
+          ts: ${{ matrix.ts }}
+          extension-ref: ${{ env.EXTENSION_REF }}
+          build-directory: build
+          # Keep the initial Windows package independent of optional extensions.
+          args: --enable-redis-session --disable-redis-igbinary
+          # The regular test suite needs a Redis server. Check the packaged DLL below.
+          run-tests: false
+
+      - name: Check the PIE package and load its DLL
+        shell: pwsh
+        env:
+          PHP_VERSION: ${{ matrix.php }}
+          THREAD_SAFETY: ${{ matrix.ts }}
+        run: |
+          $compiler = if ([version]$env:PHP_VERSION -ge [version]'8.4') { 'vs17' } else { 'vs16' }
+          $name = "php_redis-$env:EXTENSION_REF-$env:PHP_VERSION-$env:THREAD_SAFETY-$compiler-x86_64"
+          $archives = @(Get-ChildItem artifacts -Filter '*.zip' -File)
+          if ($archives.Count -ne 1 -or $archives[0].BaseName -cne $name) {
+              throw "Expected exactly one PIE package named $name.zip"
+          }
+          $package = Join-Path $env:RUNNER_TEMP 'redis-package'
+          Expand-Archive -LiteralPath $archives[0].FullName -DestinationPath $package
+          $dll = Join-Path $package "$name.dll"
+          if (-not (Test-Path -LiteralPath $dll -PathType Leaf)) {
+              throw "The PIE package is missing $name.dll"
+          }
+          # Use the PHP runtime downloaded by the builder for this matrix entry.
+          $php = @(Get-ChildItem build -Recurse -Filter php.exe -File |
+              Where-Object { $_.Directory.Name -eq 'php-bin' })
+          if ($php.Count -ne 1) {
+              throw 'Expected exactly one matching PHP runtime from the builder'
+          }
+          & $php[0].FullName -n -d "extension=$dll" tests/windows-smoke.php
+          if ($LASTEXITCODE -ne 0) {
+              throw 'The packaged Redis extension failed its smoke test'
+          }
+
+  release:
+    if: github.event_name == 'release'
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Attach Windows packages to the release
+        uses: php/php-windows-builder/release@v1
+        with:
+          release: ${{ github.event.release.tag_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
