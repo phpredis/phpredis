@@ -49,6 +49,34 @@ class TestSuite
     public function getTlsPort() { return $this->tls_port; }
     public function getAuth() { return $this->auth; }
 
+    /* Test classes that can query INFO may override this. */
+    public function getServerInfo() {
+        return NULL;
+    }
+
+    /* Return a human-readable server/version string when INFO identifies it. */
+    public function getServerVersion() {
+        $info = $this->getServerInfo();
+
+        if ( ! is_array($info))
+            return NULL;
+
+        if (isset($info['dragonfly_version']))
+            return 'Dragonfly version ' . $info['dragonfly_version'];
+
+        if (($info['server_name'] ?? NULL) === 'valkey' ||
+            isset($info['valkey_version']))
+        {
+            $version = $info['valkey_version'] ?? $info['redis_version'] ?? NULL;
+            return $version === NULL ? 'Valkey' : 'Valkey version ' . $version;
+        }
+
+        if (isset($info['redis_version']))
+            return 'Redis version ' . $info['redis_version'];
+
+        return NULL;
+    }
+
     public static function errorMessage(string $fmt, ...$args) {
         $msg = vsprintf($fmt . "\n", $args);
 

@@ -62,8 +62,8 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession_lockKeyCorrect() { $this->markTestSkipped(); }
     public function testSession_lockingDisabledByDefault() { $this->markTestSkipped(); }
     public function testSession_lockReleasedOnClose() { $this->markTestSkipped(); }
-    public function testSession_ttlMaxExecutionTime() { $this->markTestSkipped(); }
-    public function testSession_ttlLockExpire() { $this->markTestSkipped(); }
+    public function testSession_lock_ttlMaxExecutionTime() { $this->markTestSkipped(); }
+    public function testSession_lock_ttlLockExpire() { $this->markTestSkipped(); }
     public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock() { $this->markTestSkipped(); }
     public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock() { $this->markTestSkipped(); }
     public function testSession_correctLockRetryCount() { $this->markTestSkipped(); }
@@ -334,14 +334,8 @@ class Redis_Cluster_Test extends Redis_Test {
         self::$seeds = $this->loadSeeds($host, $port);
     }
 
-    /* Override setUp to get info from a specific node */
-    public function setUp() {
-        $this->redis    = $this->newInstance();
-        $info           = $this->redis->info(uniqid());
-        $this->version  = $info['redis_version'] ?? '0.0.0';
-        $this->is_keydb = $this->detectKeyDB($info);
-        $this->is_valkey = $this->detectValkey($info);
-        $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
+    protected function queryServerInfo($redis) {
+        return $redis->info(uniqid());
     }
 
     private function findCliExe() {
@@ -511,6 +505,30 @@ class Redis_Cluster_Test extends Redis_Test {
         );
     }
 
+    /* Regression test for setting TCP_KEEPALIVE on the hostless cluster flags socket */
+    public function testSetTcpKeepaliveOption() {
+        $this->assertTrue(
+            $this->redis->setOption(Redis::OPT_TCP_KEEPALIVE, true)
+        );
+    }
+
+    /* Regression test for directed commands in MULTI mode */
+    public function testDirectedCommandsInMulti() {
+        $key = __METHOD__;
+
+        $result = $this->redis
+            ->multi()
+            ->flushdb($key)
+            ->dbsize($key)
+            ->flushall($key)
+            ->exec();
+
+        $this->assertIsArray($result, 3);
+        $this->assertTrue($result[0]);
+        $this->assertIsInt($result[1]);
+        $this->assertTrue($result[2]);
+    }
+
     public function testInfo() {
         $fields = [
             "redis_version", "arch_bits", "uptime_in_seconds", "uptime_in_days",
@@ -555,6 +573,17 @@ class Redis_Cluster_Test extends Redis_Test {
         [$sec, $usec] = $this->redis->time(uniqid());
         $this->assertEquals(strval(intval($sec)), strval($sec));
         $this->assertEquals(strval(intval($usec)), strval($usec));
+    }
+
+    public function testExpireAt() {
+        $this->redis->del('key');
+        $this->redis->set('key', 'value');
+
+        $now = $this->redis->time('key');
+        $this->assertTrue($this->redis->expireAt('key', $now[0] + 10));
+        $this->assertLTE(10, $this->redis->ttl('key'));
+
+        $this->redis->del('key');
     }
 
     public function testScan() {
@@ -733,6 +762,15 @@ class Redis_Cluster_Test extends Redis_Test {
         // This should succeed as the watch has been cancelled
         $ret = $this->redis->multi()->get('x')->exec();
         $this->assertEquals(['44'], $ret);
+    }
+
+    /* UNWATCH cannot be issued after entering MULTI mode */
+    public function testUnwatchInMulti() {
+        $key = __METHOD__;
+
+        $this->redis->multi()->set($key, 'value');
+        $this->assertFalse(@$this->redis->unwatch());
+        $this->assertEquals([true], $this->redis->exec());
     }
 
     public function testDiscard() {

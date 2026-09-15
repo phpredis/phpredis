@@ -1486,6 +1486,11 @@ PHP_METHOD(RedisCluster, hsetex) {
     CLUSTER_PROCESS_CMD(hsetex, cluster_long_resp, 0);
 }
 
+/* {{{ proto RedisCluster::himport(string op, string hash, ?string fieldset, array fields) */
+PHP_METHOD(RedisCluster, himport) {
+    CLUSTER_PROCESS_CMD(himport, cluster_himport_resp, 0);
+}
+
 PHP_METHOD(RedisCluster, hgetdel) {
     CLUSTER_PROCESS_CMD(hgetdel, cluster_mbulk_assoc_resp, 0);
 }
@@ -2298,6 +2303,13 @@ PHP_METHOD(RedisCluster, unwatch) {
     redisCluster *c = GET_CONTEXT();
     short slot;
 
+    // Disallow in MULTI mode
+    if (c->flags->mode == MULTI) {
+        php_error_docref(NULL, E_WARNING,
+            "UNWATCH command not allowed in MULTI mode");
+        RETURN_FALSE;
+    }
+
     // Send UNWATCH to nodes that need it
     for(slot = 0; slot < REDIS_CLUSTER_SLOTS; slot++) {
         if (c->master[slot] && cluster_slot_master_sock(c,slot)->watching) {
@@ -2422,6 +2434,18 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg)
     return slot;
 }
 
+static void
+cluster_process_directed_response(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                                  short slot, cluster_cb cb)
+{
+    if (cluster_is_atomic(c)) {
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
+    } else {
+        cluster_enqueue_response(c, slot, cb, redis_empty_ctx);
+        RETVAL_ZVAL(getThis(), 1, 0);
+    }
+}
+
 /* Generic handler for things we want directed at a given node, like SAVE,
  * BGSAVE, FLUSHDB, FLUSHALL, etc */
 static void cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
@@ -2448,14 +2472,16 @@ static void cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     cmd = redis_cmd_create(NULL, kw, kwlen);
 
     // Kick off our command
-    if (cluster_send_slot_cmd(c, slot, cmd, reply_type) < 0) {
+    if (cluster_send_slot_cmd(c, slot, cmd,
+                             cluster_is_atomic(c) ? reply_type : TYPE_LINE) < 0)
+    {
         CLUSTER_THROW_EXCEPTION("Unable to send command at a specific node", 0);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
 
-    // Our response callback
-    cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
+    cluster_process_directed_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+                                      slot, cb);
 
     // Free our command
     redis_cmd_free(cmd);
@@ -2498,8 +2524,8 @@ cluster_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
         RETURN_FALSE;
     }
 
-    // Our response callback
-    cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
+    cluster_process_directed_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+                                      slot, cb);
 
     // Free our command
     redis_cmd_free(cmd);

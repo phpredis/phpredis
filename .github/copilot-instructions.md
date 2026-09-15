@@ -5,7 +5,7 @@
 
 ## What this project is
 
-PhpRedis is a PHP extension (C + PHP test suites) for Redis/Valkey/KeyDB.
+PhpRedis is a PHP extension (C + PHP test suites) for Redis/Valkey.
 Project homepage: https://github.com/phpredis/phpredis
 
 ## Golden rules for Copilot
