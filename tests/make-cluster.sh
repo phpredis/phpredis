@@ -37,17 +37,24 @@ verboseRun() {
     $@
 }
 
-# Spawn a specific redis instance, cluster enabled 
+# Spawn a specific redis instance, cluster enabled
 spawnNode() {
     # ACL file if we have one
     if [ ! -z "$ACLFILE" ]; then
         ACLARG="--aclfile $ACLFILE"
     fi
 
+    # Numbered databases in cluster mode, if requested.  Only pass the option
+    # when it's been asked for, as servers without support refuse to start
+    # when given an unknown argument.
+    if [ ! -z "$DATABASES" ]; then
+        DBARG="--cluster-databases $DATABASES"
+    fi
+
     # Attempt to spawn the node
     verboseRun "$REDIS_BINARY" --cluster-enabled yes --dir $NODEDIR --port $PORT \
         --cluster-config-file node-$PORT.conf --daemonize yes --save \'\' \
-        --bind $HOST --dbfilename node-$PORT.rdb $ACLARG
+        --bind $HOST --dbfilename node-$PORT.rdb $ACLARG $DBARG
 
     # Abort if we can't spin this instance
     if [ $? -ne 0 ]; then 
@@ -163,6 +170,7 @@ printUsage() {
     echo "  -u Redis username to use when spawning cluster"
     echo "  -p Redis password to use when spawning cluster"
     echo "  -a Redis acl filename to use when spawning cluster"
+    echo "  -d Number of databases (requires Valkey >= 9.0)"
     echo "  -y Automatically send 'yes' when starting cluster"
     echo "  -h This message"
     echo
@@ -171,10 +179,13 @@ printUsage() {
 
 checkExe "$REDIS_BINARY"
 
-while getopts "u:p:a:hy" OPT; do
+while getopts "u:p:a:d:hy" OPT; do
     case $OPT in
         h)
             printUsage
+            ;;
+        d)
+            DATABASES=$OPTARG
             ;;
         a)
             if [ ! -f "$OPTARG" ]; then

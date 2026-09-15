@@ -681,6 +681,9 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
 
     redis_sock_set_auth(node->sock, c->flags->user, c->flags->pass);
 
+    /* SELECTed on connect by redis_sock_server_open when nonzero */
+    node->sock->dbNumber = c->flags->dbNumber;
+
     return node;
 }
 
@@ -1078,8 +1081,10 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
                                  c->flags->timeout, c->flags->read_timeout,
                                  c->flags->persistent, NULL, 0);
 
-        /* Stream context */
+        /* Credentials and context */
+        redis_sock_set_auth(sock, c->flags->user, c->flags->pass);
         redis_sock_set_context(sock, c->flags->context);
+        sock->dbNumber = c->flags->dbNumber;
 
         /* Add to seed nodes */
         zend_hash_str_update_ptr(c->seeds, key, keylen, sock);
@@ -1138,6 +1143,7 @@ cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds)
         /* Credentials and context */
         redis_sock_set_auth(sock, c->flags->user, c->flags->pass);
         redis_sock_set_context(sock, c->flags->context);
+        sock->dbNumber = c->flags->dbNumber;
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(sock->host),
@@ -1154,12 +1160,22 @@ cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds)
 PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
     RedisSock *seed;
     clusterReply *slots = NULL;
+    zend_string *select_err = NULL;
     int mapped = 0;
 
     // Iterate over seeds until we can get slots
     ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
         // Attempt to connect to this seed node
         if (seed == NULL || redis_sock_server_open(seed) != SUCCESS) {
+            /* Remember the error if the seed rejected our SELECT (e.g. a
+             * server without database support in cluster mode), so we can
+             * surface it rather than the generic mapping failure. */
+            if (seed != NULL && select_err == NULL && seed->dbNumber &&
+                seed->err != NULL &&
+                seed->status == REDIS_SOCK_STATUS_AUTHENTICATED)
+            {
+                select_err = zend_string_copy(seed->err);
+            }
             continue;
         }
 
@@ -1181,9 +1197,18 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
 
     // Throw an exception if we couldn't map
     if (!mapped) {
-        CLUSTER_THROW_EXCEPTION("Couldn't map cluster keyspace using any provided seed", 0);
+        if (select_err) {
+            zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+                "Couldn't map cluster keyspace: could not select database %ld (%s)",
+                c->flags->dbNumber, ZSTR_VAL(select_err));
+            zend_string_release(select_err);
+        } else {
+            CLUSTER_THROW_EXCEPTION("Couldn't map cluster keyspace using any provided seed", 0);
+        }
         return FAILURE;
     }
+
+    if (select_err) zend_string_release(select_err);
 
     return SUCCESS;
 }
@@ -1321,6 +1346,116 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force) {
             } ZEND_HASH_FOREACH_END();
         }
     } ZEND_HASH_FOREACH_END();
+}
+
+/* Helper for cluster_select_db:  Point a socket at a new database.  Any
+ * socket other than the already SELECTed target is disconnected first, so
+ * its stream is pooled under the database it is actually on, and so the
+ * connect state machine in redis_sock_server_open reselects the database
+ * the next time the socket is used. */
+static void cluster_sock_set_db(RedisSock *sock, RedisSock *target, zend_long db) {
+    if (sock == NULL)
+        return;
+
+    if (sock != target) {
+        if (sock->stream)
+            redis_sock_disconnect(sock, 0, 1);
+
+        /* Replicas need to reissue READONLY once reconnected */
+        sock->readonly = 0;
+    }
+
+    sock->dbNumber = db;
+}
+
+/* Select a database for every connection in the cluster.  We eagerly issue
+ * SELECT on a single master so servers that don't support databases in
+ * cluster mode (Redis, Valkey < 9) fail cleanly, then propagate the database
+ * to every other socket lazily via cluster_sock_set_db.  On failure the
+ * cluster is left exactly as it was. */
+PHP_REDIS_API int cluster_select_db(redisCluster *c, zend_long db) {
+    redisClusterNode *node, *slave;
+    RedisSock *target = NULL, *seed;
+
+    /* SELECT would be queued inside MULTI (breaking the +OK handshake and
+     * straddling per-node transactions across databases), and a subscribed
+     * connection is dedicated to the subscription. */
+    if (c->flags->mode != ATOMIC) {
+        cluster_set_err(c, ZEND_STRL("SELECT is not allowed in MULTI mode"));
+        return FAILURE;
+    } else if (c->subscribed_slot != -1) {
+        cluster_set_err(c, ZEND_STRL("SELECT is not allowed while subscribed"));
+        return FAILURE;
+    }
+
+    /* Prefer a master that is already connected and ready */
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node && !node->slave && node->sock &&
+            node->sock->status == REDIS_SOCK_STATUS_READY)
+        {
+            target = node->sock;
+            break;
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    /* Otherwise, connect to any master we can */
+    if (target == NULL) {
+        ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+            if (node && !node->slave && node->sock &&
+                redis_sock_server_open(node->sock) == SUCCESS)
+            {
+                target = node->sock;
+                break;
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    if (target == NULL) {
+        CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
+        return FAILURE;
+    }
+
+    /* Eagerly SELECT the new database on our target to validate it.  Clear
+     * any previous error first so we can tell a rejected database apart
+     * from a write failure. */
+    redis_sock_clear_err(target);
+
+    if (redis_sock_select_db(target, db) != 0) {
+        if (target->err) {
+            /* Server rejected the database (e.g. "SELECT is not allowed in
+             * cluster mode").  The connection is fine and still on the old
+             * database, so just propagate the error. */
+            cluster_set_err(c, ZSTR_VAL(target->err), ZSTR_LEN(target->err));
+        } else {
+            /* I/O error mid-command, make sure the socket is reset */
+            redis_sock_disconnect(target, 1, 1);
+            CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
+        }
+        return FAILURE;
+    }
+
+    /* Commit:  the target's stream is genuinely on the new database now,
+     * every other socket (masters, replicas, seeds) propagates lazily. */
+    target->dbNumber = db;
+
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node == NULL) continue;
+
+        cluster_sock_set_db(node->sock, target, db);
+        if (node->slaves) {
+            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+                cluster_sock_set_db(slave->sock, target, db);
+            } ZEND_HASH_FOREACH_END();
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
+        cluster_sock_set_db(seed, target, db);
+    } ZEND_HASH_FOREACH_END();
+
+    c->flags->dbNumber = db;
+
+    return SUCCESS;
 }
 
 /* This method attempts to write our command at random to the master and any
@@ -1629,6 +1764,27 @@ cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
     return 0;
 }
 
+/* Throw an exception when we can't deliver a payload to any node.  If the
+ * write failed because a server rejected our SELECT (no database support in
+ * cluster mode), surface that instead of the generic message.  A rejected
+ * SELECT parks the socket at AUTHENTICATED with the server error captured. */
+static void cluster_throw_unreachable(redisCluster *c) {
+    RedisSock *sock = c->cmd_sock;
+
+    if (sock && sock->dbNumber &&
+        sock->status == REDIS_SOCK_STATUS_AUTHENTICATED)
+    {
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+            "Could not select database %ld on %s:%d%s%s%s", sock->dbNumber,
+            ZSTR_VAL(sock->host), (int)sock->port,
+            sock->err ? " (" : "", sock->err ? ZSTR_VAL(sock->err) : "",
+            sock->err ? ")" : "");
+        return;
+    }
+
+    CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
+}
+
 /* Send a command to given slot in our cluster.  If we get a MOVED or ASK error
  * we attempt to send the command to the node as directed. */
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
@@ -1670,7 +1826,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         if (cluster_sock_write(c, cmd, cmd_len, 0) == -1) {
             /* We have to abort, as no nodes are reachable */
             cluster_cache_clear(c);
-            CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
+            cluster_throw_unreachable(c);
             return -1;
         }
 
