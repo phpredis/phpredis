@@ -117,7 +117,51 @@ print_r($obj_cluster->exec());
 ```
 
 ## Pipelining
-The RedisCluster class does not support pipelining as there is no way to detect whether the keys still live where our map indicates that they do and would therefore be inherently unsafe.  It would be possible to implement this support as an option if there is demand for such a feature.
+RedisCluster pipelines are non-atomic and support commands across hash slots and
+nodes. Commands are grouped by their mapped master and replies are returned in
+the original order, although execution order between nodes is not guaranteed.
+Pipeline reads always use mapped masters.
+
+```php
+$pipe = $obj_cluster->pipeline();
+$result = $pipe
+    ->set('{user-a}1', 'a')
+    ->set('{user-b}2', 'b')
+    ->get('{user-a}1')
+    ->exec();
+```
+
+`multi(Redis::PIPELINE)` is equivalent to `pipeline()`. Calling `multi()` on a
+pipeline queues a MULTI ... EXEC block. When Redis accepts `MULTI`, the
+transaction is bound to one hash slot and its commands execute atomically; all
+keyed commands must resolve to that slot. A slot violation discards the entire
+pending pipeline. The inner `exec()` closes the MULTI block and the outer
+`exec()` sends the pipeline:
+
+```php
+$pipe = $obj_cluster->pipeline();
+$pipe->multi()
+    ->set('{account}balance', 100)
+    ->get('{account}balance')
+    ->exec();
+
+$result = $pipe->exec();
+```
+
+Outside MULTI blocks, existing cross-slot handling for `MGET`, `MSET`,
+`MSETNX`, `DEL`, and `UNLINK` is preserved. `WATCH` is not supported with
+pipelines because this implementation does not track its connection-scoped
+state; support may be considered in a future release. Existing top-level
+`WATCH` with `MULTI` is unchanged.
+
+Pipelines are not retried after connection failures, MOVED/ASK redirections, or
+`CLUSTERDOWN` errors because some commands may already have executed. Involved
+connections are closed instead. Node-directed commands, `WAIT`, `WAITAOF`,
+`KEYS`, SCAN-style commands, and Pub/Sub subscriptions cannot be queued. As with
+standalone pipelines, an ACL rejection of `MULTI` may cause buffered commands to
+execute outside the transaction. Blocking commands may prevent `exec()` from
+completing and should not rely on later commands in the pipeline to unblock
+them.
 
 ## Multiple key commands
 Redis cluster does allow commands that operate on multiple keys, but only if all of those keys hash to the same slot.  Note that it is not enough that the keys are all on the same node, but must actually hash to the exact same hash slot.

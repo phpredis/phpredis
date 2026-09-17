@@ -901,6 +901,11 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->flags->read_timeout = read_timeout;
     c->flags->persistent = persistent;
     c->subscribed_slot = -1;
+    c->pipeline_slot = -1;
+    c->pipeline_sock = NULL;
+    c->pipeline_multi_head = NULL;
+    c->pipeline_executing = 0;
+    c->pipeline_decode_error = 0;
     c->clusterdown = 0;
     c->failover = failover;
     c->err = NULL;
@@ -919,15 +924,39 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     return c;
 }
 
+PHP_REDIS_API void cluster_free_queue(redisCluster *c)
+{
+    clusterFoldItem *item = c->multi_head, *next;
+
+    while (item) {
+        next = item->next;
+        redis_cmd_ctx_free(item->ctx);
+        efree(item);
+        item = next;
+    }
+
+    c->multi_head = NULL;
+    c->multi_curr = NULL;
+}
+
 PHP_REDIS_API void
 cluster_free(redisCluster *c, int free_ctx)
 {
-    /* Disconnect from each node we're connected to */
-    cluster_disconnect(c, 0);
+    /* A bailout while consuming pipeline replies can bypass the normal error
+     * path.  Never return potentially unread participant streams to the
+     * persistent pool in that state. */
+    cluster_disconnect(c, c->pipeline_executing);
 
     /* Free any allocated prefix */
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
 
+    /* Keep the historical non-pipeline destructor path unchanged.  Pipeline
+     * mode owns client-side callbacks and a deferred MULTI buffer that must be
+     * released if the object dies before exec()/discard(). */
+    if (redis_sock_is_pipeline(c->flags)) {
+        cluster_free_queue(c);
+        smart_string_free(&c->pipeline_multi_cmd);
+    }
     redis_sock_free_auth(c->flags);
     redis_sock_free_context(c->flags);
 
@@ -1629,6 +1658,32 @@ cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
     return 0;
 }
 
+/* Send a pipeline buffer to an exact socket without reading replies */
+PHP_REDIS_API int cluster_send_pipeline(redisCluster *c, RedisSock *sock,
+                                        const char *cmd, size_t cmd_len)
+{
+    ssize_t written;
+
+    c->cmd_sock = sock;
+    c->readonly = 0;
+
+    if (sock == NULL || redis_sock_server_open(sock) != SUCCESS ||
+        sock->stream == NULL || redis_check_eof(sock, 0, 1) != 0
+    ) {
+        if (sock) redis_sock_disconnect(sock, 1, 1);
+        return -1;
+    }
+
+    written = redis_sock_write_raw(sock, cmd, cmd_len);
+    if (written < 0 || (size_t)written != cmd_len) {
+        redis_sock_disconnect(sock, 1, 1);
+        return -1;
+    }
+
+    c->flags->txBytes += cmd_len;
+    return 0;
+}
+
 /* Send a command to given slot in our cluster.  If we get a MOVED or ASK error
  * we attempt to send the command to the node as directed. */
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
@@ -1754,16 +1809,14 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
 {
     char *resp;
 
-    // Make sure we can read the response
-    if (c->reply_type != TYPE_BULK ||
-       (resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
-    {
-        if (c->flags->mode != MULTI) {
-            RETURN_FALSE;
-        } else {
-            add_next_index_bool(&c->multi_resp, 0);
-            return;
-        }
+    if (c->reply_type != TYPE_BULK) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    }
+    if (c->reply_len == -1) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+    if ((resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     // Return our response raw
@@ -1774,11 +1827,18 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
 static int cluster_bulk_resp_to_zval(redisCluster *c, zval *zdst) {
     char *resp;
 
-    if (c->reply_type != TYPE_BULK ||
-        (resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
-    {
-        if (c->reply_type != TYPE_BULK)
-            c->reply_len = 0;
+    if (c->reply_type != TYPE_BULK) {
+        CLUSTER_MARK_DECODE_ERROR(c);
+        c->reply_len = 0;
+        ZVAL_FALSE(zdst);
+        return FAILURE;
+    }
+    if (c->reply_len == -1) {
+        ZVAL_FALSE(zdst);
+        return SUCCESS;
+    }
+    if ((resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL) {
+        CLUSTER_MARK_DECODE_ERROR(c);
         ZVAL_FALSE(zdst);
         return FAILURE;
     }
@@ -1829,11 +1889,14 @@ PHP_REDIS_API void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     char *resp;
     double dbl;
 
-    // Make sure we can read the response
-    if (c->reply_type != TYPE_BULK ||
-       (resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
-    {
+    if (c->reply_type != TYPE_BULK) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    }
+    if (c->reply_len == -1) {
         CLUSTER_RETURN_FALSE(c);
+    }
+    if ((resp = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     // Convert to double, free response
@@ -1852,7 +1915,7 @@ PHP_REDIS_API void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     if (c->reply_type != TYPE_LINE || c->reply_len != 2 ||
        c->line_reply[0] != 'O' || c->line_reply[1] != 'K')
     {
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     CLUSTER_RETURN_BOOL(c, 1);
@@ -1900,6 +1963,7 @@ cluster_lpos_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx
     if (redis_read_lpos_response(&zret, c->cmd_sock, c->reply_type,
                                  c->reply_len, ctx) < 0)
     {
+        CLUSTER_MARK_DECODE_ERROR(c);
         ZVAL_FALSE(&zret);
     }
 
@@ -1920,6 +1984,7 @@ cluster_geosearch_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         redis_read_geosearch_response(&zret, c->cmd_sock, c->reply_len,
                                       ctx.mode == REDIS_CTX_GEO_WITHMETA) < 0)
     {
+        CLUSTER_MARK_DECODE_ERROR(c);
         ZVAL_FALSE(&zret);
     }
 
@@ -2024,6 +2089,10 @@ PHP_REDIS_API void
 cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
 {
     if (ctx.mode == REDIS_CTX_DEFAULT) {
+        /* Conditional SET commands return a null bulk when not performed. */
+        if (c->reply_type == TYPE_BULK && c->reply_len == -1) {
+            CLUSTER_RETURN_FALSE(c);
+        }
         cluster_bool_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
     } else {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
@@ -2034,12 +2103,11 @@ cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
 PHP_REDIS_API void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                   RedisCmdCtx ctx)
 {
-    // Validate our reply type, and check for a zero
-    if (c->reply_type != TYPE_INT || c->reply_len == 0) {
-        CLUSTER_RETURN_FALSE(c);
+    if (c->reply_type != TYPE_INT) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
-    CLUSTER_RETURN_BOOL(c, 1);
+    CLUSTER_RETURN_BOOL(c, c->reply_len != 0);
 }
 
 /* Generic integer response */
@@ -2048,7 +2116,7 @@ cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                   RedisCmdCtx ctx)
 {
     if (c->reply_type != TYPE_INT) {
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
     CLUSTER_RETURN_LONG(c, c->reply_len);
 }
@@ -2060,7 +2128,7 @@ cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     // Make sure we got the right kind of response
     if (c->reply_type != TYPE_LINE) {
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     // Switch on the type
@@ -2287,7 +2355,7 @@ cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     // Make sure we can read it
     if ((r = cluster_read_resp(c, status_strings)) == NULL) {
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     // Handle ATOMIC vs. MULTI mode in a separate switch
@@ -2411,7 +2479,7 @@ cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     /* Abort if the reply isn't MULTIBULK or has an invalid length */
     if (c->reply_type != TYPE_MULTIBULK || c->reply_len < -1) {
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (c->reply_len == -1 && c->flags->null_mbulk_as_null) {
@@ -2429,7 +2497,7 @@ cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         /* Call our specified callback */
         if (cb(c->cmd_sock, &z_result, c->reply_len, ctx) == FAILURE) {
             zval_ptr_dtor_nogc(&z_result);
-            CLUSTER_RETURN_FALSE(c);
+            CLUSTER_RETURN_DECODE_ERROR(c);
         }
     }
 
@@ -2508,10 +2576,10 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     zval z_result;
     char *info;
 
-    // Read our bulk response
-    if ((info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
+    if (c->reply_type != TYPE_BULK ||
+        (info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
     {
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     /* Parse response, free memory */
@@ -2533,10 +2601,10 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
     char *info;
     zval z_result;
 
-    /* Read the bulk response */
-    info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len);
-    if (info == NULL) {
-        CLUSTER_RETURN_FALSE(c);
+    if (c->reply_type != TYPE_BULK ||
+        (info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
+    {
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     /* Parse it and free the bulk string */
@@ -2562,9 +2630,11 @@ cluster_xrange_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
 
-    if (redis_read_stream_messages(c->cmd_sock, c->reply_len, &z_messages) < 0) {
+    if (c->reply_type != TYPE_MULTIBULK ||
+        redis_read_stream_messages(c->cmd_sock, c->reply_len, &z_messages) < 0)
+    {
         zval_ptr_dtor_nogc(&z_messages);
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (cluster_is_atomic(c)) {
@@ -2584,13 +2654,15 @@ cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
 
-    if (c->reply_len == -1 && c->flags->null_mbulk_as_null) {
+    if (c->reply_type != TYPE_MULTIBULK) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    } else if (c->reply_len == -1 && c->flags->null_mbulk_as_null) {
         ZVAL_NULL(&z_streams);
     } else {
         array_init(&z_streams);
         if (redis_read_stream_messages_multi(c->cmd_sock, c->reply_len, &z_streams) < 0) {
             zval_ptr_dtor_nogc(&z_streams);
-            CLUSTER_RETURN_FALSE(c);
+            CLUSTER_RETURN_DECODE_ERROR(c);
         }
     }
 
@@ -2611,7 +2683,7 @@ cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     /* Only array replies have a validated element count.  An integer reply
      * must not be narrowed to redis_read_xclaim_reply's int count. */
     if (c->reply_type != TYPE_MULTIBULK) {
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     array_init(&z_msg);
@@ -2622,7 +2694,7 @@ cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                 ctx.mode == REDIS_CTX_XAUTOCLAIM, &z_msg) < 0)
     {
         zval_ptr_dtor_nogc(&z_msg);
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (cluster_is_atomic(c)) {
@@ -2639,15 +2711,19 @@ cluster_vemb_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     zval z_ret;
 
-    ZVAL_FALSE(&z_ret);
-
-    if (c->reply_type != TYPE_MULTIBULK || c->reply_len < 0)
-        goto fail;
+    if (c->reply_type == TYPE_BULK && c->reply_len == -1) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+    if (c->reply_type != TYPE_MULTIBULK || c->reply_len < 0) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    }
 
     array_init(&z_ret);
 
-    if (redis_read_vemb_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS)
-        goto fail;
+    if (redis_read_vemb_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    }
 
     if (cluster_is_atomic(c)) {
         RETURN_ZVAL(&z_ret, 0, 1);
@@ -2655,11 +2731,6 @@ cluster_vemb_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         add_next_index_zval(&c->multi_resp, &z_ret);
     }
 
-    return;
-
-fail:
-    zval_ptr_dtor_nogc(&z_ret);
-    CLUSTER_RETURN_FALSE(c);
 }
 
 PHP_REDIS_API void
@@ -2668,14 +2739,20 @@ cluster_vinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     zval z_ret;
 
-    if (c->reply_len < 2 || c->reply_len % 2 != 0) {
+    if (c->reply_type != TYPE_MULTIBULK) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    }
+    if (c->reply_len == -1) {
         CLUSTER_RETURN_FALSE(c);
+    }
+    if (c->reply_len < 2 || c->reply_len % 2 != 0) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     array_init_size(&z_ret, c->reply_len / 2);
     if (redis_read_vinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
         zval_ptr_dtor_nogc(&z_ret);
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (cluster_is_atomic(c)) {
@@ -2692,9 +2769,17 @@ cluster_vgetattr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     zval z_ret;
     char *str;
 
-    if (c->reply_type != TYPE_BULK || c->reply_len <= 0 ||
-        (str = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
-    {
+    if (c->reply_type != TYPE_BULK) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    }
+    if (c->reply_len == -1) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+    if ((str = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
+    }
+    if (c->reply_len == 0) {
+        efree(str);
         CLUSTER_RETURN_FALSE(c);
     }
 
@@ -2719,14 +2804,17 @@ cluster_vlinks_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     zval z_ret;
 
-    if (c->reply_len < 0) {
+    if (c->reply_type == TYPE_BULK && c->reply_len == -1) {
         CLUSTER_RETURN_FALSE(c);
+    }
+    if (c->reply_type != TYPE_MULTIBULK || c->reply_len < 0) {
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (redis_read_vlinks_response(c->cmd_sock, &z_ret, c->reply_len, ctx)
                                    != SUCCESS)
     {
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (cluster_is_atomic(c)) {
@@ -2744,9 +2832,11 @@ cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     zval z_ret;
 
     array_init(&z_ret);
-    if (redis_read_xinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
+    if (c->reply_type != TYPE_MULTIBULK ||
+        redis_read_xinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS)
+    {
         zval_ptr_dtor_nogc(&z_ret);
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (cluster_is_atomic(c)) {
@@ -2762,8 +2852,10 @@ cluster_mpop_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx
     zval z_ret;
 
     c->cmd_sock->null_mbulk_as_null = c->flags->null_mbulk_as_null;
-    if (redis_read_mpop_response(c->cmd_sock, &z_ret, c->reply_len, ctx) == FAILURE) {
-        CLUSTER_RETURN_FALSE(c);
+    if (c->reply_type != TYPE_MULTIBULK ||
+        redis_read_mpop_response(c->cmd_sock, &z_ret, c->reply_len, ctx) == FAILURE)
+    {
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (cluster_is_atomic(c)) {
@@ -2779,9 +2871,11 @@ cluster_acl_custom_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     zval z_ret;
 
     array_init(&z_ret);
-    if (cb(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
+    if (c->reply_type != TYPE_MULTIBULK ||
+        cb(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS)
+    {
         zval_ptr_dtor_nogc(&z_ret);
-        CLUSTER_RETURN_FALSE(c);
+        CLUSTER_RETURN_DECODE_ERROR(c);
     }
 
     if (cluster_is_atomic(c)) {
@@ -2875,12 +2969,206 @@ PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     RETVAL_ZVAL(multi_resp, 0, 1);
 }
 
+static void cluster_pipeline_redirection_error(redisCluster *c)
+{
+    if (!EG(exception)) {
+        CLUSTER_THROW_EXCEPTION(
+            "Pipelined commands were redirected, aborting pipeline", 0);
+    }
+}
+
+static int cluster_pipeline_read_item(redisCluster *c, clusterFoldItem *fi)
+{
+    int resp;
+
+    if (fi == NULL || fi->sock == NULL) {
+        return FAILURE;
+    }
+
+    c->cmd_slot = fi->slot;
+    c->cmd_sock = fi->sock;
+
+    resp = cluster_check_response(c, &c->reply_type);
+    if (resp < 0) {
+        return FAILURE;
+    }
+
+    if (c->clusterdown) {
+        cluster_cache_clear(c);
+        if (!EG(exception)) {
+            CLUSTER_THROW_EXCEPTION(
+                "The Redis Cluster is down (CLUSTERDOWN)", 0);
+        }
+        return FAILURE;
+    }
+
+    if (resp == 1) {
+        if (c->redir_type == REDIR_MOVED) {
+            /* Fold items borrow sockets from the current node map, so don't
+             * rebuild it until this aborted pipeline has been torn down. */
+            cluster_cache_clear(c);
+        }
+        cluster_pipeline_redirection_error(c);
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+static int cluster_pipeline_invoke(INTERNAL_FUNCTION_PARAMETERS,
+                                   redisCluster *c, clusterFoldItem *fi)
+{
+    cluster_cb callback;
+    zend_bool failed;
+    uint8_t flags = c->flags->flags;
+
+    if (fi->callback == NULL) {
+        return FAILURE;
+    }
+
+    if (cluster_pipeline_read_item(c, fi) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (c->err != NULL && fi->error_callback == NULL) {
+        add_next_index_bool(&c->multi_resp, 0);
+        return SUCCESS;
+    }
+
+    callback = c->err == NULL ? fi->callback : fi->error_callback;
+    c->pipeline_decode_error = 0;
+    c->flags->flags = fi->flags;
+    callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
+    c->flags->flags = flags;
+    failed = c->pipeline_decode_error;
+
+    return EG(exception) || failed ? FAILURE : SUCCESS;
+}
+
+static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
+                                             redisCluster *c,
+                                             clusterFoldItem *multi,
+                                             clusterFoldItem **next)
+{
+    clusterFoldItem *fi, *first, *exec;
+    int count = 0, invalid = 0;
+    uint8_t flags = c->flags->flags;
+    zval outer, transaction;
+
+    if (cluster_pipeline_read_item(c, multi) == FAILURE) {
+        return FAILURE;
+    }
+    invalid |= c->reply_type != TYPE_LINE ||
+               strcmp(c->line_reply, "OK") != 0;
+
+    first = fi = multi->next;
+    while (fi && fi->type == CLUSTER_FOLD_RESPONSE) {
+        if (fi->sock != multi->sock) {
+            return FAILURE;
+        }
+
+        if (cluster_pipeline_read_item(c, fi) == FAILURE) {
+            return FAILURE;
+        }
+        invalid |= c->reply_type != TYPE_LINE ||
+                   strcmp(c->line_reply, "QUEUED") != 0;
+        count++;
+        fi = fi->next;
+    }
+
+    exec = fi;
+    if (exec == NULL || exec->type != CLUSTER_FOLD_EXEC ||
+        exec->sock != multi->sock
+    ) {
+        return FAILURE;
+    }
+
+    if (cluster_pipeline_read_item(c, exec) == FAILURE) {
+        return FAILURE;
+    }
+
+    invalid |= c->reply_type != TYPE_MULTIBULK ||
+               c->reply_len != count;
+
+    if (invalid) {
+        if (!EG(exception)) {
+            CLUSTER_THROW_EXCEPTION("Error executing pipelined MULTI block", 0);
+        }
+        return FAILURE;
+    }
+
+    ZVAL_COPY_VALUE(&outer, &c->multi_resp);
+    array_init(&c->multi_resp);
+
+    for (fi = first; fi != exec; fi = fi->next) {
+        if (cluster_pipeline_invoke(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi) == FAILURE) {
+            zval_ptr_dtor_nogc(&c->multi_resp);
+            ZVAL_COPY_VALUE(&c->multi_resp, &outer);
+            return FAILURE;
+        }
+    }
+
+    ZVAL_COPY_VALUE(&transaction, &c->multi_resp);
+    ZVAL_COPY_VALUE(&c->multi_resp, &outer);
+    add_next_index_zval(&c->multi_resp, &transaction);
+    c->flags->flags = flags;
+
+    *next = exec->next;
+    return SUCCESS;
+}
+
+/* Read pipeline responses in the original command order. */
+PHP_REDIS_API int cluster_pipeline_resp(INTERNAL_FUNCTION_PARAMETERS,
+                                        redisCluster *c)
+{
+    clusterFoldItem *fi = c->multi_head;
+
+    array_init(&c->multi_resp);
+
+    while (fi) {
+        switch (fi->type) {
+            case CLUSTER_FOLD_RESPONSE:
+                if (cluster_pipeline_invoke(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                            c, fi) == FAILURE)
+                {
+                    goto fail;
+                }
+                fi = fi->next;
+                break;
+            case CLUSTER_FOLD_MULTI:
+                if (cluster_pipeline_transaction_resp(
+                        INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi, &fi) == FAILURE)
+                {
+                    goto fail;
+                }
+                break;
+            case CLUSTER_FOLD_EMPTY_MULTI: {
+                zval empty;
+
+                array_init(&empty);
+                add_next_index_zval(&c->multi_resp, &empty);
+                fi = fi->next;
+                break;
+            }
+            default:
+                goto fail;
+        }
+    }
+
+    return SUCCESS;
+
+fail:
+    zval_ptr_dtor_nogc(&c->multi_resp);
+    return FAILURE;
+}
+
 /* Generic handler for MGET */
 PHP_REDIS_API void
 cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                         RedisCmdCtx ctx)
 {
     clusterMultiCtx *mctx = ctx.ptr;
+    zend_bool error_reply = c->reply_type == TYPE_ERR;
 
     /* Protect against an invalid response type, -1 response length, and failure
      * to consume the responses. */
@@ -2892,6 +3180,7 @@ cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     // If we had a failure, pad results with FALSE to indicate failure.  Non
     // existent keys (e.g. for MGET will come back as NULL)
     if (fail) {
+        if (!error_reply) CLUSTER_MARK_DECODE_ERROR(c);
         while (mctx->count--) {
             add_next_index_bool(mctx->z_multi, 0);
         }
@@ -2904,7 +3193,7 @@ cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         } else {
             add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
-
+        mctx->transferred = 1;
     }
 }
 
@@ -2918,17 +3207,28 @@ cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     // Protect against an invalid response type
     if (c->reply_type != TYPE_INT) {
-        php_error_docref(0, E_WARNING,
-            "Invalid response type for MSETNX");
+        if (!redis_sock_is_pipeline(c->flags)) {
+            php_error_docref(0, E_WARNING,
+                "Invalid response type for MSETNX");
+            while (real_argc--) {
+                add_next_index_bool(mctx->z_multi, 0);
+            }
+            return;
+        }
+
+        if (c->reply_type != TYPE_ERR) {
+            php_error_docref(0, E_WARNING,
+                "Invalid response type for MSETNX");
+            CLUSTER_MARK_DECODE_ERROR(c);
+        }
         while (real_argc--) {
             add_next_index_bool(mctx->z_multi, 0);
         }
-        return;
-    }
-
-    // Response will be 1/0 per key, so the client can match them up
-    while (real_argc--) {
-        add_next_index_long(mctx->z_multi, c->reply_len);
+    } else {
+        // Response will be 1/0 per key, so the client can match them up
+        while (real_argc--) {
+            add_next_index_long(mctx->z_multi, c->reply_len);
+        }
     }
 
     // Set return value if it's our last response
@@ -2938,6 +3238,7 @@ cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         } else {
             add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
+        mctx->transferred = 1;
     }
 }
 
@@ -2949,20 +3250,38 @@ cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
 
     // If we get an invalid reply, inform the client
     if (c->reply_type != TYPE_INT) {
-        php_error_docref(0, E_WARNING,
-            "Invalid reply type returned for DEL command");
-        return;
-    }
+        if (!redis_sock_is_pipeline(c->flags)) {
+            php_error_docref(0, E_WARNING,
+                "Invalid reply type returned for DEL command");
+            return;
+        }
 
-    // Increment by the number of keys deleted
-    Z_LVAL_P(mctx->z_multi) += c->reply_len;
+        if (c->reply_type != TYPE_ERR) {
+            php_error_docref(0, E_WARNING,
+                "Invalid reply type returned for DEL command");
+            CLUSTER_MARK_DECODE_ERROR(c);
+        }
+        ZVAL_FALSE(mctx->z_multi);
+    } else if (Z_TYPE_P(mctx->z_multi) == IS_LONG) {
+        // Increment by the number of keys deleted
+        Z_LVAL_P(mctx->z_multi) += c->reply_len;
+    }
 
     if (mctx->last) {
         if (cluster_is_atomic(c)) {
-            ZVAL_LONG(return_value, Z_LVAL_P(mctx->z_multi));
+            if (Z_TYPE_P(mctx->z_multi) == IS_LONG) {
+                ZVAL_LONG(return_value, Z_LVAL_P(mctx->z_multi));
+            } else {
+                RETVAL_FALSE;
+            }
         } else {
-            add_next_index_long(&c->multi_resp, Z_LVAL_P(mctx->z_multi));
+            if (Z_TYPE_P(mctx->z_multi) == IS_LONG) {
+                add_next_index_long(&c->multi_resp, Z_LVAL_P(mctx->z_multi));
+            } else {
+                add_next_index_bool(&c->multi_resp, 0);
+            }
         }
+        mctx->transferred = 1;
     }
 }
 
@@ -2972,13 +3291,21 @@ PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 {
     clusterMultiCtx *mctx = ctx.ptr;
 
-    // If we get an invalid reply type something very wrong has happened,
-    // and we have to abort.
+    // Any error in a distributed MSET makes the logical command fail.
     if (c->reply_type != TYPE_LINE) {
-        php_error_docref(0, E_ERROR,
-            "Invalid reply type returned for MSET command");
-        zval_ptr_dtor_nogc(mctx->z_multi);
-        RETURN_FALSE;
+        if (!redis_sock_is_pipeline(c->flags)) {
+            php_error_docref(0, E_ERROR,
+                "Invalid reply type returned for MSET command");
+            zval_ptr_dtor_nogc(mctx->z_multi);
+            RETURN_FALSE;
+        }
+
+        if (c->reply_type != TYPE_ERR) {
+            php_error_docref(0, E_WARNING,
+                "Invalid reply type returned for MSET command");
+            CLUSTER_MARK_DECODE_ERROR(c);
+        }
+        ZVAL_FALSE(mctx->z_multi);
     }
 
     // Set our return if it's the last call
@@ -2988,6 +3315,7 @@ PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
         } else {
             add_next_index_bool(&c->multi_resp, zend_is_true(mctx->z_multi));
         }
+        mctx->transferred = 1;
     }
 }
 
