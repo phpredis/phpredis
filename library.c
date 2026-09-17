@@ -3419,6 +3419,10 @@ redis_sock_server_open(RedisSock *redis_sock)
 {
     if (redis_sock) {
         switch (redis_sock->status) {
+        case REDIS_SOCK_STATUS_FAILED:
+            redis_free_reply_callbacks(redis_sock);
+            smart_string_free(&redis_sock->pipeline_cmd);
+            // fall through
         case REDIS_SOCK_STATUS_DISCONNECTED:
             if (redis_sock_connect(redis_sock) != SUCCESS) {
                 break;
@@ -3912,11 +3916,19 @@ redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 PHP_REDIS_API int
 redis_sock_write(RedisSock *redis_sock, const char *cmd, size_t sz)
 {
-    if (redis_check_eof(redis_sock, 0, 0) == 0 &&
-        redis_sock_write_raw(redis_sock, cmd, sz) == sz)
-    {
+    if (redis_check_eof(redis_sock, 0, 0) != 0) {
+        return -1;
+    }
+
+    if (redis_sock_write_raw(redis_sock, cmd, sz) == sz) {
         return sz;
     }
+
+    /* Buffered replies can hide a dead connection from php_stream_eof().
+     * Discard it on any failed or incomplete write.  Do not replay the command:
+     * some of it may already have been executed by the server. */
+    redis_sock_disconnect(redis_sock, 1, 1);
+    redis_sock->status = REDIS_SOCK_STATUS_FAILED;
 
     return -1;
 }
