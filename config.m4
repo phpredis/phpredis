@@ -8,6 +8,9 @@ dnl Make sure that the comment is aligned:
 PHP_ARG_ENABLE(redis-session, whether to enable sessions,
 [  --disable-redis-session      Disable session support], yes, no)
 
+PHP_ARG_ENABLE(redis-sanitizers, whether to enable address and undefined behavior sanitizers,
+[  --enable-redis-sanitizers    Build with ASan and UBSan], no, no)
+
 PHP_ARG_ENABLE(redis-json, whether to enable json serializer support,
 [  --disable-redis-json         Disable json serializer support], yes, no)
 
@@ -324,6 +327,29 @@ if test "$PHP_REDIS" != "no"; then
     AC_DEFINE_UNQUOTED(GIT_REVISION, ["$(git log -1 --format=%H)"], [ ])
   fi
 
+  if test "$PHP_REDIS_SANITIZERS" != "no"; then
+    dnl ASan includes leak detection; let the compiler select its runtime libraries.
+    redis_sanitizer_flags="-fsanitize=address,undefined -fno-sanitize=object-size -fno-sanitize-recover=undefined -fno-omit-frame-pointer"
+    redis_saved_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS $redis_sanitizer_flags"
+    AC_MSG_CHECKING([whether the compiler can link with ASan and UBSan])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])], [AC_MSG_RESULT([yes])], [
+      AC_MSG_ERROR([Redis sanitizers require a compiler with ASan and UBSan support])
+    ])
+
+    dnl Match PHP's exclusions for zend_function unions and callback casts.
+    AC_MSG_CHECKING([whether the compiler supports -fno-sanitize=function])
+    CFLAGS="$CFLAGS -Werror -fno-sanitize=function"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [
+      AC_MSG_RESULT([yes])
+      redis_sanitizer_flags="$redis_sanitizer_flags -fno-sanitize=function"
+    ], [AC_MSG_RESULT([no])])
+    CFLAGS="$redis_saved_CFLAGS"
+
+    PHP_REDIS_CFLAGS="$PHP_REDIS_CFLAGS $redis_sanitizer_flags"
+    LDFLAGS="$LDFLAGS -fsanitize=address,undefined"
+  fi
+
   PHP_SUBST(REDIS_SHARED_LIBADD)
-  PHP_NEW_EXTENSION(redis, redis.c redis_commands.c library.c redis_session.c redis_array.c redis_array_impl.c redis_cluster.c redis_cmd.c cluster_library.c redis_sentinel.c sentinel_library.c backoff.c $lzf_sources, $ext_shared)
+  PHP_NEW_EXTENSION(redis, redis.c redis_commands.c library.c redis_session.c redis_array.c redis_array_impl.c redis_cluster.c redis_cmd.c cluster_library.c redis_sentinel.c sentinel_library.c backoff.c $lzf_sources, $ext_shared,, $PHP_REDIS_CFLAGS)
 fi
