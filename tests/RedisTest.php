@@ -5501,13 +5501,7 @@ class Redis_Test extends TestSuite {
             foreach ([42, 3.14] as $value) {
                 $this->assertTrue($this->redis->set('key', $value));
 
-                /* There's a known issue in the PHP JSON parser, which
-                   can stringify numbers. Unclear the root cause */
-                if ($serializer == Redis::SERIALIZER_JSON) {
-                    $this->assertEqualsWeak($value, $this->redis->get('key'));
-                } else {
-                    $this->assertEquals($value, $this->redis->get('key'));
-                }
+                $this->assertEquals($value, $this->redis->get('key'));
             }
         }
 
@@ -5786,6 +5780,46 @@ class Redis_Test extends TestSuite {
         // revert
         $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE));     // set ok
         $this->assertEquals(Redis::SERIALIZER_NONE, $this->redis->getOption(Redis::OPT_SERIALIZER));       // get ok
+    }
+
+    public function testCompressedSerialization() {
+        $serializers = [Redis::SERIALIZER_PHP => ['i:42', 'd:3.14']];
+        if (defined('Redis::SERIALIZER_JSON')) {
+            $serializers[Redis::SERIALIZER_JSON] = ['1e', '"unterminated'];
+        }
+
+        foreach ($this->getCompressors() as $name => $compression) {
+            if ($compression === Redis::COMPRESSION_NONE)
+                continue;
+
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compression);
+
+            foreach ($serializers as $serializer => $invalid) {
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+
+                /* PHP's parsers require a terminator beyond the payload, even
+                 * when passed its length. Exercise both scanning and EOF. */
+                foreach ([42, 3.14, true, false, null, 'value', [42]] as $value) {
+                    $this->assertEquals($value, $this->redis->_unpack($this->redis->_pack($value)));
+                }
+
+                /* Malformed serialized data must fall back to the raw value
+                 * without reading beyond the decompression buffer. */
+                foreach ($invalid as $value) {
+                    $this->assertEquals($value, $this->redis->_unpack($this->redis->_compress($value)));
+                }
+            }
+
+            if ($name === 'lzf') {
+                /* A literal '1' followed by a back-reference. Fill the initial
+                 * capacity exactly, then exercise growth to an exact fit. */
+                $this->assertEquals(str_repeat('1', 8), $this->redis->_uncompress("\x001\xa0\x00"));
+                $this->assertEquals(str_repeat('1', 20), $this->redis->_uncompress("\x001\xe0\x0a\x00"));
+            }
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
     }
 
     public function testCompressionLZF() {
