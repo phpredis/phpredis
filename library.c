@@ -4141,6 +4141,8 @@ redis_compress(RedisSock *redis_sock, char **dst, size_t *dstlen, char *buf, siz
     return 0;
 }
 
+/* Successful decompression returns an owned, NUL-terminated buffer.  The
+ * terminator is excluded from *dstlen but required by PHP's unserializers. */
 PHP_REDIS_API int
 redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *src, size_t len) {
     switch (redis_sock->compression) {
@@ -4157,8 +4159,9 @@ redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *
                 /* Grow our buffer until we succeed or get a non E2BIG error */
                 errno = E2BIG;
                 for (i = 2; errno == E2BIG; i *= 2) {
-                    data = erealloc(data, len * i);
+                    data = safe_erealloc(data, len, i, 1);
                     if ((res = lzf_decompress(src, len, data, len * i)) > 0) {
+                        data[res] = '\0';
                         *dst = data;
                         *dstlen = res;
                         return 1;
@@ -4180,13 +4183,14 @@ redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *
                 if (zlen == ZSTD_CONTENTSIZE_ERROR || zlen == ZSTD_CONTENTSIZE_UNKNOWN || zlen > INT_MAX)
                     break;
 
-                data = emalloc(zlen);
+                data = emalloc(zlen + 1);
                 *dstlen = ZSTD_decompress(data, zlen, src, len);
                 if (ZSTD_isError(*dstlen) || *dstlen != zlen) {
                     efree(data);
                     break;
                 }
 
+                data[*dstlen] = '\0';
                 *dst = data;
                 return 1;
             }
@@ -4222,9 +4226,10 @@ redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *
                     break;
 
                 /* Finally attempt decompression */
-                data = emalloc(datalen);
+                data = emalloc((size_t)datalen + 1);
                 res = LZ4_decompress_safe(copy, data, copylen, datalen);
                 if (res == datalen) {
+                    data[res] = '\0';
                     *dst = data;
                     *dstlen = res;
                     return 1;
