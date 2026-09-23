@@ -11,7 +11,7 @@
 #define REDIS_MB_HDR_LEN (sizeof(REDIS_MB_HDR) - 1)
 
 typedef struct RespHeader {
-    char *str;
+    const char *str;
     size_t len;
 } RespHeader;
 
