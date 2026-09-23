@@ -522,7 +522,7 @@ void cluster_multi_free(clusterMultiCmd *mc) {
 }
 
 /* Add an argument to a clusterMultiCmd */
-void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len) {
+void cluster_multi_add(clusterMultiCmd *mc, const char *data, int data_len) {
     if (mc->cmd == NULL) {
         mc->cmd = redis_cmd_create(NULL, mc->kw, mc->kw_len);
     }
@@ -540,7 +540,7 @@ void cluster_multi_fini(clusterMultiCmd *mc) {
 
 /* Set our last error string encountered */
 static void
-cluster_set_err(redisCluster *c, char *err, int err_len)
+cluster_set_err(redisCluster *c, const char *err, int err_len)
 {
     // Free our last error
     if (c->err != NULL) {
@@ -585,7 +585,7 @@ unsigned short cluster_hash_key(const char *key, int len) {
     if (e == len || e == s+1) return crc16(key, len) & REDIS_CLUSTER_MOD;
 
     // Hash just the bit between { and }
-    return crc16((char*)key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
+    return crc16(key + s + 1, e - s - 1) & REDIS_CLUSTER_MOD;
 }
 
 unsigned short cluster_hash_key_zstr(zend_string *key) {
@@ -618,11 +618,11 @@ unsigned short cluster_hash_key_zval(zval *z_key) {
             break;
         case IS_LONG:
             klen = snprintf(buf,sizeof(buf),ZEND_LONG_FMT,Z_LVAL_P(z_key));
-            kptr = (const char *)buf;
+            kptr = buf;
             break;
         case IS_DOUBLE:
             klen = snprintf(buf,sizeof(buf),"%f",Z_DVAL_P(z_key));
-            kptr = (const char *)buf;
+            kptr = buf;
             break;
         case IS_ARRAY:
             kptr = "Array";
@@ -755,7 +755,7 @@ cluster_validate_port(size_t port) {
 }
 
 static zend_always_inline int
-cluster_validate_host(char *host, size_t len) {
+cluster_validate_host(const char *host, size_t len) {
     return len > 0 && len < sizeof(((redisCluster *)0)->redir_host) &&
            memchr(host, '\0', len) == NULL;
 }
@@ -3338,7 +3338,7 @@ cleanup:
  * array of seeds */
 zend_string**
 cluster_validate_args(double timeout, double read_timeout, HashTable *seeds,
-                      uint32_t *nseeds, char **errstr)
+                      uint32_t *nseeds, const char **errstr)
 {
     zend_string **retval;
 
