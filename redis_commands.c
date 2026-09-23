@@ -627,8 +627,8 @@ RedisCmd *redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic to construct SCAN and variant commands */
 RedisCmd *
-redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, char *key,
-                   int key_len, uint64_t it, char *pat, int pat_len,
+redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, const char *key,
+                   int key_len, uint64_t it, const char *pat, int pat_len,
                    long count)
 {
     static const char *const kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};

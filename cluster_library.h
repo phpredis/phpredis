@@ -234,19 +234,19 @@ cluster_clear_reply(redisCluster *c)
 }
 
 static zend_always_inline redisClusterNode *
-cluster_slot(redisCluster *c, unsigned short slot)
+cluster_slot(const redisCluster *c, unsigned short slot)
 {
     return c->master[slot];
 }
 
 static zend_always_inline RedisSock *
-cluster_slot_master_sock(redisCluster *c, unsigned short slot)
+cluster_slot_master_sock(const redisCluster *c, unsigned short slot)
 {
     return cluster_slot(c, slot)->sock;
 }
 
 static zend_always_inline HashTable *
-cluster_slot_slaves(redisCluster *c, unsigned short slot)
+cluster_slot_slaves(const redisCluster *c, unsigned short slot)
 {
     return cluster_slot(c, slot)->slaves;
 }
@@ -360,7 +360,7 @@ cluster_multi_clear(clusterMultiCmd *mc)
 }
 
 void cluster_multi_free(clusterMultiCmd *mc);
-void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len);
+void cluster_multi_add(clusterMultiCmd *mc, const char *data, int data_len);
 void cluster_multi_fini(clusterMultiCmd *mc);
 
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
@@ -370,7 +370,7 @@ unsigned short cluster_hash_key_zstr(zend_string *key);
 
 /* Validate and sanitize cluster construction args */
 zend_string** cluster_validate_args(double timeout, double read_timeout,
-    HashTable *seeds, uint32_t *nseeds, char **errstr);
+    HashTable *seeds, uint32_t *nseeds, const char **errstr);
 
 void free_seed_array(zend_string **seeds, uint32_t nseeds);
 

@@ -249,7 +249,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     zend_string *hash = NULL, **seeds;
     redisCachedCluster *cc;
     uint32_t nseeds;
-    char *err;
+    const char *err;
 
     /* Validate our arguments and get a sanitized seed array */
     seeds = cluster_validate_args(timeout, read_timeout, ht_seeds, &nseeds, &err);
@@ -293,7 +293,7 @@ cleanup:
 
 
 /* Attempt to load a named cluster configured in php.ini */
-static void redis_cluster_load(redisCluster *c, char *name, int name_len) {
+static void redis_cluster_load(redisCluster *c, const char *name, int name_len) {
     zval z_seeds, z_tmp, *z_value;
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0, read_timeout = 0;
@@ -2369,7 +2369,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg)
         Z_TYPE_P(z_host) == IS_STRING && Z_TYPE_P(z_port) == IS_LONG
     ) {
         /* Attempt to find this specific node by host:port */
-        slot = cluster_find_slot(c,(const char *)Z_STRVAL_P(z_host),
+        slot = cluster_find_slot(c, Z_STRVAL_P(z_host),
             (unsigned short)Z_LVAL_P(z_port));
 
         /* Inform the caller if they've passed bad data */
