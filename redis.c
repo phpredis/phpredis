@@ -216,6 +216,8 @@ redis_sock_get_instance(zval *id, int no_throw)
 {
     redis_object *redis;
 
+    ZEND_ASSERT(id != NULL);
+
     if (Z_TYPE_P(id) == IS_OBJECT) {
         redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, id);
         if (redis->sock) {
@@ -1080,7 +1082,7 @@ PHP_METHOD(Redis, exec)
 {
     RedisSock *redis_sock;
     int ret;
-    zval z_ret;
+    zval z_ret = {0};
 
     if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL) {
         RETURN_FALSE;
