@@ -416,7 +416,7 @@ PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot) {
 
 /* Free cluster distribution list inside a HashTable */
 static void cluster_dist_free_ht(zval *p) {
-    clusterDistList *dl = *(clusterDistList**)p;
+    clusterDistList *dl = Z_PTR_P(p);
     int i;
 
     for (i = 0; i < dl->len; i++) {
@@ -559,8 +559,10 @@ cluster_set_err(redisCluster *c, const char *err, int err_len)
 
 /* Destructor for slaves */
 static void ht_free_slave(zval *data) {
-    if (*(redisClusterNode**)data) {
-        cluster_free_node(*(redisClusterNode**)data);
+    redisClusterNode *node = Z_PTR_P(data);
+
+    if (node) {
+        cluster_free_node(node);
     }
 }
 
@@ -891,13 +893,13 @@ static RedisSock *cluster_get_asking_sock(redisCluster *c) {
 
 /* Our context seeds will be a hash table with RedisSock* pointers */
 static void ht_free_seed(zval *data) {
-    RedisSock *redis_sock = *(RedisSock**)data;
+    RedisSock *redis_sock = Z_PTR_P(data);
     if (redis_sock) redis_free_socket(redis_sock);
 }
 
 /* Free redisClusterNode objects we've stored */
 static void ht_free_node(zval *data) {
-    redisClusterNode *node = *(redisClusterNode**)data;
+    redisClusterNode *node = Z_PTR_P(data);
     cluster_free_node(node);
 }
 
