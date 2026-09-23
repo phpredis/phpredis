@@ -33,21 +33,6 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
 /* Initial allocation size for key distribution container */
 #define CLUSTER_KEYDIST_ALLOC 8
 
-/* Compare redirection slot information with the passed node */
-#define CLUSTER_REDIR_CMP(c, sock) \
-    (sock->port != c->redir_port || \
-    ZSTR_LEN(sock->host) != c->redir_host_len || \
-    memcmp(ZSTR_VAL(sock->host),c->redir_host,c->redir_host_len))
-
-/* Clear out our "last error" */
-#define CLUSTER_CLEAR_ERROR(c) do { \
-    if (c->err) { \
-        zend_string_release(c->err); \
-        c->err = NULL; \
-    } \
-    c->clusterdown = 0; \
-} while (0)
-
 /* Protected sending of data down the wire to a RedisSock->stream */
 #define CLUSTER_SEND_PAYLOAD(sock, buf, len) \
     (sock && !redis_sock_server_open(sock) && sock->stream && !redis_check_eof(sock, 0, 1) && \
@@ -56,10 +41,6 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
 /* Macro to read our reply type character */
 #define CLUSTER_VALIDATE_REPLY_TYPE(sock, type) \
     (redis_check_eof(sock, 1, 1) == 0 && redis_sock_getc(sock) == type)
-
-/* Reset our last single line reply buffer and length */
-#define CLUSTER_CLEAR_REPLY(c) \
-    *c->line_reply = '\0'; c->reply_len = 0;
 
 /* Helper that either returns false or adds false in multi mode */
 #define CLUSTER_RETURN_FALSE(c) \
@@ -101,17 +82,6 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
     } else { \
         add_next_index_long(&c->multi_resp, val); \
     }
-
-/* Macro to clear out a clusterMultiCmd structure */
-#define CLUSTER_MULTI_CLEAR(mc) do { \
-    if ((mc)->cmd) redis_cmd_reset((mc)->cmd, (mc)->kw, (mc)->kw_len); \
-    (mc)->argc = 0; \
-} while (0)
-
-/* Initialize a clusterMultiCmd with a keyword and length */
-#define CLUSTER_MULTI_INIT(mc, keyword, keyword_len) \
-    mc.kw     = keyword; \
-    mc.kw_len = keyword_len; \
 
 static zend_always_inline zend_bool cluster_caching_enabled(void) {
     return zend_ini_long_literal("redis.clusters.cache_slots") == 1;
@@ -245,6 +215,33 @@ typedef struct redisCluster {
     zend_object std;
 } redisCluster;
 
+static zend_always_inline zend_bool
+cluster_redir_matches(const redisCluster *c, const RedisSock *sock)
+{
+    return sock->port == c->redir_port &&
+           ZSTR_LEN(sock->host) == c->redir_host_len &&
+           memcmp(ZSTR_VAL(sock->host), c->redir_host, c->redir_host_len) == 0;
+}
+
+/* Clear out our "last error" and cluster-down state. */
+static zend_always_inline void
+cluster_clear_error(redisCluster *c)
+{
+    if (c->err) {
+        zend_string_release(c->err);
+        c->err = NULL;
+    }
+    c->clusterdown = 0;
+}
+
+/* Reset our last single line reply buffer and length. */
+static zend_always_inline void
+cluster_clear_reply(redisCluster *c)
+{
+    *c->line_reply = '\0';
+    c->reply_len = 0;
+}
+
 static zend_always_inline redisClusterNode *
 cluster_slot(redisCluster *c, unsigned short slot)
 {
@@ -327,7 +324,7 @@ typedef struct clusterMultiCtx {
  * into a header and payload while aggregating to a specific slot. */
 typedef struct clusterMultiCmd {
     /* Keyword and keyword length */
-    char *kw;
+    const char *kw;
     int  kw_len;
 
     /* Arguments in our payload */
@@ -362,7 +359,21 @@ int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
     size_t key_len, clusterKeyVal **kv);
 
 /* Aggregation for multi commands like MGET, MSET, and MSETNX */
-void cluster_multi_init(clusterMultiCmd *mc, char *kw, int kw_len);
+static zend_always_inline void
+cluster_multi_init(clusterMultiCmd *mc, const char *kw, int kw_len)
+{
+    mc->kw = kw;
+    mc->kw_len = kw_len;
+}
+
+static zend_always_inline void
+cluster_multi_clear(clusterMultiCmd *mc)
+{
+    if (mc->cmd)
+        redis_cmd_reset(mc->cmd, mc->kw, mc->kw_len);
+    mc->argc = 0;
+}
+
 void cluster_multi_free(clusterMultiCmd *mc);
 void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len);
 void cluster_multi_fini(clusterMultiCmd *mc);

@@ -480,7 +480,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
     }
 
     // Clear out our command but retain allocated memory
-    CLUSTER_MULTI_CLEAR(mc);
+    cluster_multi_clear(mc);
 
     return 0;
 }
@@ -625,7 +625,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     c->readonly = kw_len == 4 && cluster_is_atomic(c);
 
     // Initialize our "multi" command handler with command/len
-    CLUSTER_MULTI_INIT(mc, kw, kw_len);
+    cluster_multi_init(&mc, kw, kw_len);
 
     // Process the first key outside of our loop, so we don't have to check if
     // it's the first iteration every time, needlessly
@@ -745,7 +745,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     c->readonly = 0;
 
     // Set up our multi command handler
-    CLUSTER_MULTI_INIT(mc, kw, kw_len);
+    cluster_multi_init(&mc, kw, kw_len);
 
     // Process the first key/value pair outside of our loop
     zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
