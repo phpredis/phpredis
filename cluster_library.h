@@ -33,15 +33,6 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
 /* Initial allocation size for key distribution container */
 #define CLUSTER_KEYDIST_ALLOC 8
 
-/* Protected sending of data down the wire to a RedisSock->stream */
-#define CLUSTER_SEND_PAYLOAD(sock, buf, len) \
-    (sock && !redis_sock_server_open(sock) && sock->stream && !redis_check_eof(sock, 0, 1) && \
-     redis_sock_write_raw(sock, buf, len) == len)
-
-/* Macro to read our reply type character */
-#define CLUSTER_VALIDATE_REPLY_TYPE(sock, type) \
-    (redis_check_eof(sock, 1, 1) == 0 && redis_sock_getc(sock) == type)
-
 /* Helper that either returns false or adds false in multi mode */
 #define CLUSTER_RETURN_FALSE(c) \
     if(cluster_is_atomic(c)) { \

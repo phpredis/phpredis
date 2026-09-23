@@ -303,20 +303,48 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
     return r;
 }
 
+static zend_always_inline zend_bool
+cluster_send_payload(RedisSock *redis_sock, const char *buf, size_t len)
+{
+    ssize_t nwritten;
+
+    if (redis_sock == NULL)
+        return 0;
+
+    if (redis_sock_server_open(redis_sock) != 0 || redis_sock->stream == NULL)
+        return 0;
+
+    if (redis_check_eof(redis_sock, 0, 1) != 0)
+        return 0;
+
+    /* Require a complete write; leave retry decisions to the caller. */
+    nwritten = redis_sock_write_raw(redis_sock, buf, len);
+    return nwritten >= 0 && (size_t)nwritten == len;
+}
+
+static zend_always_inline zend_bool
+cluster_validate_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE type)
+{
+    if (redis_check_eof(redis_sock, 1, 1) != 0)
+        return 0;
+
+    return redis_sock_getc(redis_sock) == type;
+}
+
 /*
  * Helpers to send various 'control type commands to a specific node, e.g.
  * MULTI, ASKING, READONLY, READWRITE, etc
  */
 
 /* Send a command to the specific socket and validate reply type */
-static int cluster_send_direct(RedisSock *redis_sock, char *cmd, int cmd_len,
+static int cluster_send_direct(RedisSock *redis_sock, const char *cmd, size_t cmd_len,
                                REDIS_REPLY_TYPE type)
 {
     char buf[1024];
 
     /* Connect to the socket if we aren't yet and send our command, validate the reply type, and consume the first line */
-    if (!CLUSTER_SEND_PAYLOAD(redis_sock,cmd,cmd_len) ||
-        !CLUSTER_VALIDATE_REPLY_TYPE(redis_sock, type) ||
+    if (!cluster_send_payload(redis_sock, cmd, cmd_len) ||
+        !cluster_validate_reply_type(redis_sock, type) ||
         !redis_sock_gets_raw(redis_sock, buf, sizeof(buf))) return -1;
 
     /* Success! */
@@ -1367,7 +1395,7 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
          * this slave, and skip it if that fails */
         if (nodes[i] == 0 || cluster_send_readonly(redis_sock) == 0) {
             /* Attempt to send the command */
-            if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz)) {
+            if (cluster_send_payload(redis_sock, cmd, sz)) {
                 c->cmd_sock = redis_sock;
                 if (nodes != stack_nodes) efree(nodes);
                 return 0;
@@ -1434,10 +1462,10 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
      * at random. */
     if (failover == REDIS_FAILOVER_NONE) {
         /* Success if we can send our payload to the master */
-        if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz)) return 0;
+        if (cluster_send_payload(redis_sock, cmd, sz)) return 0;
     } else if (failover == REDIS_FAILOVER_ERROR) {
         /* Try the master, then fall back to any slaves we may have */
-        if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz) ||
+        if (cluster_send_payload(redis_sock, cmd, sz) ||
            !cluster_dist_write(c, cmd, sz, 1)) return 0;
     } else {
         /* Include or exclude master node depending on failover option and
@@ -1458,7 +1486,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         if (seed_node == NULL || seed_node->sock == redis_sock || seed_node->slave) continue;
 
         /* Connect to this node if we haven't already and attempt to write our request to this node */
-        if (CLUSTER_SEND_PAYLOAD(seed_node->sock, cmd, sz)) {
+        if (cluster_send_payload(seed_node->sock, cmd, sz)) {
             c->cmd_slot = seed_node->slot;
             c->cmd_sock = seed_node->sock;
             return 0;
