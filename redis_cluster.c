@@ -191,13 +191,13 @@ PHP_MINIT_FUNCTION(redis_cluster)
 
 /* Our context seeds will be a hash table with RedisSock* pointers */
 static void ht_free_seed(zval *data) {
-    RedisSock *redis_sock = *(RedisSock**)data;
+    RedisSock *redis_sock = Z_PTR_P(data);
     if (redis_sock) redis_free_socket(redis_sock);
 }
 
 /* Free redisClusterNode objects we've stored */
 static void ht_free_node(zval *data) {
-    redisClusterNode *node = *(redisClusterNode**)data;
+    redisClusterNode *node = Z_PTR_P(data);
     cluster_free_node(node);
 }
 
