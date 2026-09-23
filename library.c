@@ -116,7 +116,7 @@ extern zend_class_entry *redis_exception_ce;
 
 extern int le_redis_pconnect;
 
-RedisCmdCtx redis_empty_ctx = {0};
+const RedisCmdCtx redis_empty_ctx = {0};
 
 static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zret, int count);
 

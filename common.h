@@ -345,6 +345,8 @@ typedef struct RedisCmdCtx {
     RedisCmdCtxDtor *dtor;
 } RedisCmdCtx;
 
+extern const RedisCmdCtx redis_empty_ctx;
+
 /* Redis response handler function callback prototype */
 typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock*, zval*, RedisCmdCtx);
