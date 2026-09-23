@@ -631,7 +631,7 @@ redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, char *key,
                    int key_len, uint64_t it, char *pat, int pat_len,
                    long count)
 {
-    static char *kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
+    static const char *const kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
     RedisCmd *cmd;
 
     cmd = redis_cmd_create(redis_sock, kw[type], strlen(kw[type]));
