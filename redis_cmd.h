@@ -48,11 +48,6 @@ static inline void redis_cmd_free(RedisCmd *cmd) {
     redis_cmd_free_ex(cmd, 0);
 }
 
-static inline RedisCmd *
-redis_cmd_create_zstr(RedisSock *redis_sock, zend_string *kw) {
-    return redis_cmd_create(redis_sock, ZSTR_VAL(kw), ZSTR_LEN(kw));
-}
-
 void redis_cmd_cat_zstr(RedisCmd *cmd, zend_string *str);
 void redis_cmd_cat_str(RedisCmd *cmd, const char *str, size_t len);
 void redis_cmd_cat_long(RedisCmd *cmd, zend_long lval);
@@ -81,11 +76,6 @@ static zend_always_inline void
 redis_cmd_set_ctx_mode(RedisCmd *cmd, RedisCtxMode mode) {
     cmd->ctx.mode = mode;
     cmd->ctx.dtor = NULL;
-}
-
-static zend_always_inline void
-redis_cmd_set_ctx_u64(RedisCmd *cmd, uint64_t u64) {
-    redis_cmd_set_ctx(cmd, (void*)(uintptr_t)u64);
 }
 
 void redis_cmd_randslot(RedisCmd *cmd);

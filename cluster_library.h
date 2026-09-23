@@ -245,12 +245,6 @@ cluster_slot_master_sock(redisCluster *c, unsigned short slot)
     return cluster_slot(c, slot)->sock;
 }
 
-static zend_always_inline php_stream *
-cluster_slot_stream(redisCluster *c, unsigned short slot)
-{
-    return cluster_slot_master_sock(c, slot)->stream;
-}
-
 static zend_always_inline HashTable *
 cluster_slot_slaves(redisCluster *c, unsigned short slot)
 {
