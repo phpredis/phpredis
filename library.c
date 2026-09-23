@@ -4497,39 +4497,23 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 
 PHP_REDIS_API int
 redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len) {
-    int ret_len;
+    size_t ret_len;
     char *ret;
 
     if (redis_sock->prefix == NULL) {
         return 0;
     }
 
-    ret_len = ZSTR_LEN(redis_sock->prefix) + *key_len;
-    ret = ecalloc(1 + ret_len, 1);
+    /* A present prefix, even an empty one, returns an owned buffer. */
+    ret_len = redis_concat_length(ZSTR_LEN(redis_sock->prefix), *key_len);
+    ret = emalloc(ret_len + 1);
     memcpy(ret, ZSTR_VAL(redis_sock->prefix), ZSTR_LEN(redis_sock->prefix));
     memcpy(ret + ZSTR_LEN(redis_sock->prefix), *key, *key_len);
+    ret[ret_len] = '\0';
 
     *key = ret;
     *key_len = ret_len;
     return 1;
-}
-
-/* This is very similar to PHP >= 7.4 zend_string_concat2 only we are taking
- * two zend_string arguments rather than two char*, size_t pairs */
-static zend_string *redis_zstr_concat(zend_string *prefix, zend_string *suffix) {
-    zend_string *res;
-    size_t len;
-
-    ZEND_ASSERT(prefix != NULL && suffix != NULL);
-
-    len = ZSTR_LEN(prefix) + ZSTR_LEN(suffix);
-    res = zend_string_alloc(len, 0);
-
-    memcpy(ZSTR_VAL(res), ZSTR_VAL(prefix), ZSTR_LEN(prefix));
-    memcpy(ZSTR_VAL(res) + ZSTR_LEN(prefix), ZSTR_VAL(suffix), ZSTR_LEN(suffix));
-    ZSTR_VAL(res)[len] = '\0';
-
-    return res;
 }
 
 PHP_REDIS_API zend_string *
@@ -4537,7 +4521,9 @@ redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key) {
     if (redis_sock->prefix == NULL)
         return zend_string_copy(key);
 
-    return redis_zstr_concat(redis_sock->prefix, key);
+    return redis_string_concat2(ZSTR_VAL(redis_sock->prefix),
+                                ZSTR_LEN(redis_sock->prefix),
+                                ZSTR_VAL(key), ZSTR_LEN(key));
 }
 
 /*
