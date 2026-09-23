@@ -377,13 +377,13 @@ lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status) {
     generate_lock_key(lock_status);
     generate_lock_secret(lock_status);
 
+    cmd = redis_cmd_create_literal(redis_sock, "SET");
+    redis_cmd_cat_zstr(cmd, lock_status->lock_key);
+    redis_cmd_cat_zstr(cmd, lock_status->lock_secret);
+    redis_cmd_cat_literal(cmd, "NX");
     if (expiry > 0) {
-        cmd = redis_cmd_fmt(redis_sock, "SET", "SSssd", lock_status->lock_key,
-                             lock_status->lock_secret, "NX", 2, "PX", 2,
-                             expiry * 1000);
-    } else {
-        cmd = redis_cmd_fmt(redis_sock, "SET", "SSs", lock_status->lock_key,
-                             lock_status->lock_secret, "NX", 2);
+        redis_cmd_cat_literal(cmd, "PX");
+        redis_cmd_cat_long(cmd, expiry * 1000);
     }
 
     /* Attempt to get our lock */
@@ -434,7 +434,8 @@ write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_status) {
         int replylen;
 
         /* Command to get our lock key value and compare secrets */
-        cmd = redis_cmd_fmt(redis_sock, "GET", "S", lock_status->lock_key);
+        cmd = redis_cmd_create_literal(redis_sock, "GET");
+        redis_cmd_cat_zstr(cmd, lock_status->lock_key);
 
         /* Attempt to refresh the lock */
         redis_simple_cmd(redis_sock, redis_cmd_str(cmd), redis_cmd_len(cmd),
@@ -873,7 +874,8 @@ PS_VALIDATE_SID_FUNC(redis)
 
     /* send EXISTS command */
     zend_string *session = redis_session_key(redis_sock, key);
-    cmd = redis_cmd_fmt(redis_sock, "EXISTS", "S", session);
+    cmd = redis_cmd_create_literal(redis_sock, "EXISTS");
+    redis_cmd_cat_zstr(cmd, session);
     zend_string_release(session);
 
     if (redis_sock_write_cmd(redis_sock, cmd) < 0 ||
@@ -925,7 +927,9 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
 
     /* send EXPIRE command */
     zend_string *session = redis_session_key(redis_sock, key);
-    cmd = redis_cmd_fmt(redis_sock, "EXPIRE", "Sd", session, session_gc_maxlifetime());
+    cmd = redis_cmd_create_literal(redis_sock, "EXPIRE");
+    redis_cmd_cat_zstr(cmd, session);
+    redis_cmd_cat_long(cmd, session_gc_maxlifetime());
     zend_string_release(session);
 
     if (redis_sock_write(redis_sock, redis_cmd_str(cmd), redis_cmd_len(cmd)) < 0 ||
@@ -1060,8 +1064,10 @@ PS_WRITE_FUNC(redis)
     compressed_free = session_compress_data(redis_sock, ZSTR_VAL(val), ZSTR_LEN(val),
                                             &sval, &svallen);
 
-    cmd = redis_cmd_fmt(redis_sock, "SETEX", "Sds", session,
-                        session_gc_maxlifetime(), sval, svallen);
+    cmd = redis_cmd_create_literal(redis_sock, "SETEX");
+    redis_cmd_cat_zstr(cmd, session);
+    redis_cmd_cat_long(cmd, session_gc_maxlifetime());
+    redis_cmd_cat_str(cmd, sval, svallen);
     zend_string_release(session);
     if (compressed_free) {
         efree(sval);
@@ -1115,7 +1121,8 @@ PS_DESTROY_FUNC(redis)
 
     /* send DEL command */
     zend_string *session = redis_session_key(redis_sock, key);
-    cmd = redis_cmd_fmt(redis_sock, "DEL", "S", session);
+    cmd = redis_cmd_create_literal(redis_sock, "DEL");
+    redis_cmd_cat_zstr(cmd, session);
     zend_string_release(session);
     if (redis_sock_write_cmd(redis_sock, cmd) < 0 ||
         (rstr = redis_sock_read(redis_sock, &rlen)) == NULL)
@@ -1308,9 +1315,12 @@ PS_CREATE_SID_FUNC(rediscluster)
 
         /* Create session key if it doesn't already exist */
         key = cluster_session_key(c, sid, &slot);
-        cmd = redis_cmd_fmt(NULL, "SET", "Ssssd", key,
-                            "", 0, "NX", 2, "EX", 2,
-                            session_gc_maxlifetime());
+        cmd = redis_cmd_create_literal(NULL, "SET");
+        redis_cmd_cat_zstr(cmd, key);
+        redis_cmd_cat_literal(cmd, "");
+        redis_cmd_cat_literal(cmd, "NX");
+        redis_cmd_cat_literal(cmd, "EX");
+        redis_cmd_cat_long(cmd, session_gc_maxlifetime());
 
         zend_string_release(key);
 
@@ -1367,7 +1377,8 @@ PS_VALIDATE_SID_FUNC(rediscluster)
     }
 
     key = cluster_session_key(c, key, &slot);
-    cmd = redis_cmd_fmt(NULL, "EXISTS", "S", key);
+    cmd = redis_cmd_create_literal(NULL, "EXISTS");
+    redis_cmd_cat_zstr(cmd, key);
 
     zend_string_release(key);
 
@@ -1417,7 +1428,9 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
 
     /* Set up command and slot info */
     zend_string *session = cluster_session_key(c, key, &slot);
-    cmd = redis_cmd_fmt(NULL, "EXPIRE", "Sd", session, session_gc_maxlifetime());
+    cmd = redis_cmd_create_literal(NULL, "EXPIRE");
+    redis_cmd_cat_zstr(cmd, session);
+    redis_cmd_cat_long(cmd, session_gc_maxlifetime());
 
     zend_string_release(session);
 
@@ -1468,11 +1481,14 @@ PS_READ_FUNC(rediscluster) {
 
     /* Update the session ttl if early refresh is enabled */
     if (zend_ini_long_literal("redis.session.early_refresh")) {
-        cmd = redis_cmd_fmt(NULL, "GETEX", "Ssd", key, "EX", 2,
-                            session_gc_maxlifetime());
+        cmd = redis_cmd_create_literal(NULL, "GETEX");
+        redis_cmd_cat_zstr(cmd, key);
+        redis_cmd_cat_literal(cmd, "EX");
+        redis_cmd_cat_long(cmd, session_gc_maxlifetime());
         c->readonly = 0;
     } else {
-        cmd = redis_cmd_fmt(NULL, "GET", "S", key);
+        cmd = redis_cmd_create_literal(NULL, "GET");
+        redis_cmd_cat_zstr(cmd, key);
         c->readonly = 1;
     }
 
@@ -1530,8 +1546,10 @@ PS_WRITE_FUNC(rediscluster) {
 
     /* Set up command and slot info */
     key = cluster_session_key(c, key, &slot);
-    cmd = redis_cmd_fmt(NULL, "SETEX", "Sds", key, session_gc_maxlifetime(),
-                        sval, svallen);
+    cmd = redis_cmd_create_literal(NULL, "SETEX");
+    redis_cmd_cat_zstr(cmd, key);
+    redis_cmd_cat_long(cmd, session_gc_maxlifetime());
+    redis_cmd_cat_str(cmd, sval, svallen);
 
     zend_string_release(key);
     if (compressed_free) {
@@ -1572,7 +1590,8 @@ PS_DESTROY_FUNC(rediscluster) {
     /* Set up command and slot info */
     key = cluster_session_key(c, key, &slot);
 
-    cmd = redis_cmd_fmt(NULL, "DEL", "S", key);
+    cmd = redis_cmd_create_literal(NULL, "DEL");
+    redis_cmd_cat_zstr(cmd, key);
     zend_string_release(key);
 
     /* Attempt to send command */
