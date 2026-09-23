@@ -51,13 +51,14 @@
 
 typedef struct evalCmd {
     const char *kw;
+    size_t kw_len;
     const char *str;
     size_t len;
 } evalCmd;
 
 static const evalCmd lua_cmd[] = {
-    {"EVALSHA", ZEND_STRL(LOCK_DEL_SHA_STR)},
-    {"EVAL", ZEND_STRL(LOCK_DEL_LUA_STR)}
+    {ZEND_STRL("EVALSHA"), ZEND_STRL(LOCK_DEL_SHA_STR)},
+    {ZEND_STRL("EVAL"), ZEND_STRL(LOCK_DEL_LUA_STR)}
 };
 
 typedef enum lockDelCmd {
@@ -546,7 +547,7 @@ lock_release_lua(RedisSock *redis_sock, redis_session_lock_status *status) {
     /* We first want to try EVALSHA and then fall back to EVAL */
     for (i = 0; status->is_locked && i < sizeof(lua_cmd)/sizeof(*lua_cmd); i++)
     {
-        cmd = redis_cmd_create(redis_sock, lua_cmd[i].kw, strlen(lua_cmd[i].kw));
+        cmd = redis_cmd_create(redis_sock, lua_cmd[i].kw, lua_cmd[i].kw_len);
         redis_cmd_cat_str(cmd, lua_cmd[i].str, lua_cmd[i].len);
         redis_cmd_cat_long(cmd, 1);
         redis_cmd_cat_zstr(cmd, status->lock_key);

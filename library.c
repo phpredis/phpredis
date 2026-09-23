@@ -2203,11 +2203,11 @@ redis_read_xclaim_ids(RedisSock *redis_sock, int count, zval *rv) {
         /* Consume inner reply type */
         if (redis_read_reply_type(redis_sock, &type, &li) < 0 ||
             (type != TYPE_BULK && type != TYPE_MULTIBULK) ||
-            (type == TYPE_BULK && li <= 0)) return -1;
+            (type == TYPE_BULK && (li <= 0 || li > INT_MAX))) return -1;
 
         /* TYPE_BULK is the JUSTID variant, otherwise it's standard xclaim response */
         if (type == TYPE_BULK) {
-            if ((id = redis_sock_read_bulk_reply(redis_sock, (size_t)li)) == NULL)
+            if ((id = redis_sock_read_bulk_reply(redis_sock, li)) == NULL)
                 return -1;
 
             add_next_index_stringl(rv, id, li);
@@ -3688,7 +3688,7 @@ redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
 
     /* Over-allocate by two so the trailing \r\n lands in the same buffer as
      * the body; the reported length is trimmed back to the payload below. */
-    nbytes = (size_t)bytes + 2;
+    nbytes = bytes + 2;
     zstr = zend_string_alloc(nbytes, 0);
 
     while (offset < nbytes) {
@@ -4476,7 +4476,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
                 break;
             }
 
-            ret = !igbinary_unserialize((const uint8_t *)val, (size_t)val_len, z_ret);
+            ret = !igbinary_unserialize((const uint8_t *)val, val_len, z_ret);
 #endif
             break;
         case REDIS_SERIALIZER_JSON:
