@@ -50,12 +50,12 @@
 #define LOCK_DEL_SHA_STR "b70c2384248f88e6b75b9f89241a180f856ad852"
 
 typedef struct evalCmd {
-    char *kw;
-    char *str;
+    const char *kw;
+    const char *str;
     size_t len;
 } evalCmd;
 
-static evalCmd lua_cmd[2] = {
+static const evalCmd lua_cmd[] = {
     {"EVALSHA", ZEND_STRL(LOCK_DEL_SHA_STR)},
     {"EVAL", ZEND_STRL(LOCK_DEL_LUA_STR)}
 };
@@ -545,9 +545,11 @@ lock_release_lua(RedisSock *redis_sock, redis_session_lock_status *status) {
     /* We first want to try EVALSHA and then fall back to EVAL */
     for (i = 0; status->is_locked && i < sizeof(lua_cmd)/sizeof(*lua_cmd); i++)
     {
-        cmd = redis_cmd_fmt(redis_sock, lua_cmd[i].kw, "sdSS", lua_cmd[i].str,
-                             lua_cmd[i].len, 1, status->lock_key,
-                             status->lock_secret);
+        cmd = redis_cmd_create(redis_sock, lua_cmd[i].kw, strlen(lua_cmd[i].kw));
+        redis_cmd_cat_str(cmd, lua_cmd[i].str, lua_cmd[i].len);
+        redis_cmd_cat_long(cmd, 1);
+        redis_cmd_cat_zstr(cmd, status->lock_key);
+        redis_cmd_cat_zstr(cmd, status->lock_secret);
 
         /* Send it off */
         redis_simple_cmd(redis_sock, redis_cmd_str(cmd), redis_cmd_len(cmd),

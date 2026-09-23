@@ -1556,7 +1556,7 @@ redis_build_scan_cmd(REDIS_SCAN_TYPE type, zend_string *key, uint64_t cursor,
                      zend_string *pattern, int count, zend_string *match_type)
 {
     RedisCmd *cmd;
-    char *keyword;
+    const char *keyword;
 
     /* Turn our type into a keyword */
     switch(type) {
