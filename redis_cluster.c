@@ -295,7 +295,7 @@ cleanup:
 
 
 /* Attempt to load a named cluster configured in php.ini */
-void redis_cluster_load(redisCluster *c, char *name, int name_len) {
+static void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     zval z_seeds, z_tmp, *z_value;
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0, read_timeout = 0;

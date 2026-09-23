@@ -662,7 +662,7 @@ redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, char *key,
     return cmd;
 }
 
-void redis_get_zcmd_options(redisZcmdOptions *dst, zval *src, int flags) {
+static void redis_get_zcmd_options(redisZcmdOptions *dst, zval *src, int flags) {
     zval *zv, *zoff, *zcnt;
     zend_string *key;
 
@@ -3580,7 +3580,7 @@ typedef struct sunioncardOptions {
     zend_bool approx;
 } sunioncardOptions;
 
-int fill_sunioncard_options(sunioncardOptions *dst, HashTable *ht) {
+static int fill_sunioncard_options(sunioncardOptions *dst, HashTable *ht) {
     zend_string *key;
     zend_long lval;
     zval *zv;
@@ -5782,7 +5782,7 @@ static xdelExMode zstr_to_xdelex_mode(zend_string *s) {
     return REDIS_XDELEX_NONE;
 }
 
-void redis_cmd_cat_delex_mode(RedisCmd *cmd, xdelExMode mode) {
+static void redis_cmd_cat_delex_mode(RedisCmd *cmd, xdelExMode mode) {
     if (mode == REDIS_XDELEX_KEEPREF) {
         redis_cmd_cat_literal(cmd, "KEEPREF");
     } else if (mode == REDIS_XDELEX_DELREF) {
