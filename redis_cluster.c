@@ -3414,7 +3414,8 @@ PHP_METHOD(RedisCluster, echo) {
     }
 
     /* Construct our command */
-    cmd = redis_cmd_fmt(NULL, "ECHO", "S", msg);
+    cmd = redis_cmd_create_literal(c->flags, "ECHO");
+    redis_cmd_cat_zstr(cmd, msg);
 
     /* Send it off */
     rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;
