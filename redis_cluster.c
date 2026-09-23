@@ -2186,7 +2186,7 @@ PHP_METHOD(RedisCluster, watch) {
     HashTable *ht_dist;
     zend_string *zstr;
     zend_ulong slot;
-    RedisCmd *cmd;
+    RedisCmd *cmd = NULL;
     zval *argv;
     int argc;
 
@@ -2201,26 +2201,29 @@ PHP_METHOD(RedisCluster, watch) {
     if (!ZEND_NUM_ARGS())
         RETURN_FALSE;
 
-    // Create our distribution HashTable
-    ht_dist = cluster_dist_create();
-
     ZEND_PARSE_PARAMETERS_START(1, -1)
         Z_PARAM_VARIADIC('+', argv, argc)
     ZEND_PARSE_PARAMETERS_END();
+
+    ht_dist = cluster_dist_create();
+    RETVAL_FALSE;
 
     // Loop through arguments, prefixing if needed
     for(int i = 0 ; i < argc; i++) {
         // We'll need the key as a string
         zstr = zval_get_string(&argv[i]);
+        if (EG(exception)) {
+            zend_string_release(zstr);
+            goto cleanup;
+        }
 
         // Add this key to our distribution handler
-        if (cluster_dist_add_key(c, ht_dist, ZSTR_VAL(zstr), ZSTR_LEN(zstr),
-                                 NULL) == FAILURE)
+        if (cluster_dist_add_key(c, ht_dist, zstr) == FAILURE)
         {
             CLUSTER_THROW_EXCEPTION(
                 "Can't issue WATCH command as the keyspace isn't fully mapped", 0);
             zend_string_release(zstr);
-            RETURN_FALSE;
+            goto cleanup;
         }
 
         zend_string_release(zstr);
@@ -2229,25 +2232,27 @@ PHP_METHOD(RedisCluster, watch) {
     // Iterate over each node we'll be sending commands to
     ZEND_HASH_FOREACH_NUM_KEY_PTR(ht_dist, slot, dl) {
         cmd = redis_cmd_create_literal(NULL, "WATCH");
-        for (int i = 0; i < dl->len; i++) {
-            redis_cmd_cat_str(cmd, dl->entry[i].key, dl->entry[i].key_len);
+        for (size_t i = 0; i < dl->len; i++) {
+            redis_cmd_cat_zstr(cmd, dl->keys[i]);
         }
 
         // If we get a failure from this, we have to abort
         if (cluster_send_rcmd_ex(c, slot, cmd) < 0)
         {
-            redis_cmd_free(cmd);
-            RETURN_FALSE;
+            goto cleanup;
         }
 
         cluster_slot_master_sock(c, slot)->watching = 1;
 
         redis_cmd_free(cmd);
+        cmd = NULL;
     } ZEND_HASH_FOREACH_END();
 
-    cluster_dist_free(ht_dist);
+    RETVAL_TRUE;
 
-    RETURN_TRUE;
+cleanup:
+    redis_cmd_free(cmd);
+    cluster_dist_free(ht_dist);
 }
 
 /* {{{ proto bool RedisCluster::unwatch() */
