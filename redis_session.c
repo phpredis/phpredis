@@ -247,6 +247,7 @@ static int redis_simple_cmd(RedisSock *redis_sock, const char *cmd, int cmdlen,
                             char **reply, int *replylen)
 {
     *reply = NULL;
+    *replylen = 0;
     int len_written = redis_sock_write(redis_sock, cmd, cmdlen);
 
     if (len_written >= 0) {
@@ -625,7 +626,7 @@ PS_OPEN_FUNC(redis)
 
     redis_pool *pool = ecalloc(1, sizeof(*pool));
 
-    for (i = 0, j = 0, path_len = save_path_len; i < path_len; i = j + 1) {
+    for (i = 0, path_len = save_path_len; i < path_len; i = j + 1) {
         /* find beginning of url */
         while ( i< path_len && (isspace(save_path_str[i]) || save_path_str[i] == ','))
             i++;

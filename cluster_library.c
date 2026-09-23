@@ -1794,7 +1794,7 @@ static int cluster_bulk_resp_to_zval(redisCluster *c, zval *zdst) {
 PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                      RedisCmdCtx ctx)
 {
-    zval zret;
+    zval zret = {0};
 
     cluster_bulk_resp_to_zval(c, &zret);
 
@@ -2089,8 +2089,10 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
                                     RedisCmdCtx ctx)
 {
     subscribeContext *sctx = ctx.ptr;
-    zval z_tab, *z_tmp;
+    zval z_tab = {0}, *z_tmp, *object = getThis();
     int pull = 0;
+
+    ZEND_ASSERT(object != NULL);
 
     // Consume each MULTI BULK response (one per channel/pattern)
     while (sctx->argc--) {
@@ -2154,7 +2156,7 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         }
 
         // Always pass our object through
-        z_args[0] = *getThis();
+        z_args[0] = *object;
 
         // Set up calbacks depending on type
         if (is_pmsg) {
@@ -2579,7 +2581,7 @@ PHP_REDIS_API void
 cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                    RedisCmdCtx ctx)
 {
-    zval z_streams;
+    zval z_streams = {0};
 
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
@@ -2637,7 +2639,7 @@ PHP_REDIS_API void
 cluster_vemb_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                   RedisCmdCtx ctx)
 {
-    zval z_ret;
+    zval z_ret = {0};
 
     ZVAL_FALSE(&z_ret);
 
@@ -2831,6 +2833,8 @@ PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     // Call our callback
     if (cb(c->cmd_sock, z_ret, c->reply_len, redis_empty_ctx) == FAILURE) {
         zval_ptr_dtor_nogc(z_ret);
+        /* Callers may also destroy the result when reading fails. */
+        ZVAL_NULL(z_ret);
         return NULL;
     }
 
@@ -3206,7 +3210,7 @@ static int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
                                  long long count, RedisCmdCtx ctx)
 {
     HashTable *htctx = ctx.ptr;
-    zval *zfield, z_unpacked;
+    zval *zfield, z_unpacked = {0};
     int line_len;
     char *line;
 

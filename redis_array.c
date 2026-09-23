@@ -146,6 +146,8 @@ redis_array_get(zval *id)
 {
     redis_array_object *obj;
 
+    ZEND_ASSERT(id != NULL);
+
     if (Z_TYPE_P(id) == IS_OBJECT) {
         obj = PHPREDIS_ZVAL_GET_OBJECT(redis_array_object, id);
         return obj->ra;
