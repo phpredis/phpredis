@@ -322,9 +322,9 @@ static void generate_lock_key(redis_session_lock_status *status) {
     if (status->lock_key)
         zend_string_release(status->lock_key);
 
-    status->lock_key = zend_string_concat2(ZSTR_VAL(status->session_key),
-                                           ZSTR_LEN(status->session_key),
-                                           ZEND_STRL(suffix));
+    status->lock_key = redis_string_concat2(ZSTR_VAL(status->session_key),
+                                            ZSTR_LEN(status->session_key),
+                                            ZEND_STRL(suffix));
 }
 
 static void generate_lock_secret(redis_session_lock_status *status) {
@@ -799,13 +799,13 @@ PS_CLOSE_FUNC(redis)
 static zend_string *
 redis_session_key(RedisSock *redis_sock, zend_string *key) {
     if (redis_sock->prefix == NULL) {
-        return zend_string_concat2(ZEND_STRL(REDIS_SESSION_PREFIX),
-                                   ZSTR_VAL(key), ZSTR_LEN(key));
+        return redis_string_concat2(ZEND_STRL(REDIS_SESSION_PREFIX),
+                                    ZSTR_VAL(key), ZSTR_LEN(key));
     }
 
-    return zend_string_concat2(ZSTR_VAL(redis_sock->prefix),
-                               ZSTR_LEN(redis_sock->prefix),
-                               ZSTR_VAL(key), ZSTR_LEN(key));
+    return redis_string_concat2(ZSTR_VAL(redis_sock->prefix),
+                                ZSTR_LEN(redis_sock->prefix),
+                                ZSTR_VAL(key), ZSTR_LEN(key));
 }
 
 /* {{{ PS_CREATE_SID_FUNC
@@ -1149,15 +1149,10 @@ PS_GC_FUNC(redis)
 
 static zend_string *
 cluster_session_key(redisCluster *c, zend_string *key, short *slot) {
-    if (ZSTR_LEN(c->flags->prefix) > ZSTR_MAX_LEN - ZSTR_LEN(key)) {
-        zend_error_noreturn(E_ERROR,
-            "Prefixing overflows the maximum allowed key length");
-    }
-
     if (ZSTR_LEN(c->flags->prefix) > 0) {
-        key = zend_string_concat2(ZSTR_VAL(c->flags->prefix),
-                                  ZSTR_LEN(c->flags->prefix),
-                                  ZSTR_VAL(key), ZSTR_LEN(key));
+        key = redis_string_concat2(ZSTR_VAL(c->flags->prefix),
+                                   ZSTR_LEN(c->flags->prefix),
+                                   ZSTR_VAL(key), ZSTR_LEN(key));
     } else {
         key = zend_string_copy(key);
     }
