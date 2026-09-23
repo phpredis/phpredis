@@ -54,8 +54,6 @@ extern ps_module ps_mod_redis_cluster;
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 
-extern RedisCmdCtx redis_empty_ctx;
-
 #if PHP_VERSION_ID < 80000
 #include "redis_legacy_arginfo.h"
 #else

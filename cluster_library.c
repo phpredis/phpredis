@@ -10,8 +10,6 @@
 extern zend_class_entry *redis_cluster_exception_ce;
 int le_cluster_slot_cache;
 
-extern RedisCmdCtx redis_empty_ctx;
-
 /* Debugging methods/
 static void cluster_dump_nodes(redisCluster *c) {
     redisClusterNode *p;
