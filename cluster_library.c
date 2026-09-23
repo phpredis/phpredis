@@ -317,7 +317,7 @@ cluster_send_payload(RedisSock *redis_sock, const char *buf, size_t len)
 
     /* Require a complete write; leave retry decisions to the caller. */
     nwritten = redis_sock_write_raw(redis_sock, buf, len);
-    return nwritten >= 0 && (size_t)nwritten == len;
+    return nwritten >= 0 && nwritten == len;
 }
 
 static zend_always_inline zend_bool

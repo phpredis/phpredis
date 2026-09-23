@@ -635,7 +635,7 @@ RedisCmd *redis_scan_cmd_create(RedisSock *redis_sock, REDIS_SCAN_TYPE type)
         {ZEND_STRL("HSCAN")}, {ZEND_STRL("ZSCAN")}
     };
 
-    ZEND_ASSERT(type >= TYPE_SCAN && type <= TYPE_ZSCAN);
+    ZEND_ASSERT(type <= TYPE_ZSCAN);
     return redis_cmd_create(redis_sock, keywords[type].str, keywords[type].len);
 }
 
