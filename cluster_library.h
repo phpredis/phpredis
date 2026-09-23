@@ -277,17 +277,9 @@ struct clusterFoldItem {
     uint8_t flags;
 };
 
-/* Key and value container, with info if they need freeing */
-typedef struct clusterKeyVal {
-    char *key, *val;
-    int  key_len,  val_len;
-    int  key_free, val_free;
-} clusterKeyVal;
-
-/* Container to hold keys (and possibly values) for when we need to distribute
- * commands across more than 1 node (e.g. WATCH, MGET, MSET, etc) */
+/* Owned, prefixed WATCH keys for one hash slot. */
 typedef struct clusterDistList {
-    clusterKeyVal *entry;
+    zend_string **keys;
     size_t len, size;
 } clusterDistList;
 
@@ -340,8 +332,7 @@ void cluster_free_reply(clusterReply *reply, int free_data);
 /* Cluster distribution helpers for WATCH */
 HashTable *cluster_dist_create(void);
 void cluster_dist_free(HashTable *ht);
-int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
-    size_t key_len, clusterKeyVal **kv);
+int cluster_dist_add_key(redisCluster *c, HashTable *ht, zend_string *key);
 
 /* Aggregation for multi commands like MGET, MSET, and MSETNX */
 static zend_always_inline void
