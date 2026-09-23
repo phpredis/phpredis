@@ -39,13 +39,27 @@
 
 #endif
 
-#if PHP_VERSION_ID < 80000
+/* Check before adding: even individually valid lengths can overflow the sum. */
+static zend_always_inline size_t
+redis_concat_length(size_t len1, size_t len2)
+{
+    if (len1 > ZSTR_MAX_LEN || len2 > ZSTR_MAX_LEN - len1) {
+        zend_error_noreturn(E_ERROR,
+            "Prefixing overflows the maximum allowed key length");
+    }
+
+    return len1 + len2;
+}
 
 static zend_always_inline zend_string *
-zend_string_concat2(const char *str1, size_t len1, const char *str2,
-                    size_t len2)
+redis_string_concat2(const char *str1, size_t len1, const char *str2,
+                     size_t len2)
 {
-    size_t len = len1 + len2;
+#if PHP_VERSION_ID >= 80000
+    redis_concat_length(len1, len2);
+    return zend_string_concat2(str1, len1, str2, len2);
+#else
+    size_t len = redis_concat_length(len1, len2);
     zend_string *res = zend_string_alloc(len, 0);
 
     memcpy(ZSTR_VAL(res), str1, len1);
@@ -53,8 +67,10 @@ zend_string_concat2(const char *str1, size_t len1, const char *str2,
     ZSTR_VAL(res)[len] = '\0';
 
     return res;
+#endif
 }
 
+#if PHP_VERSION_ID < 80000
 
 static zend_always_inline const php_hash_ops *
 redis_hash_fetch_ops(zend_string *zstr)
