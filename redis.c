@@ -1548,48 +1548,17 @@ redis_rawcommand_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     return redis_build_raw_cmd(argv, argc);
 }
 
-/* Helper to format any combination of SCAN arguments */
+/* Standalone keys and patterns have already been prefixed by the caller. */
 static RedisCmd *
 redis_build_scan_cmd(REDIS_SCAN_TYPE type, zend_string *key, uint64_t cursor,
                      zend_string *pattern, int count, zend_string *match_type)
 {
-    RedisCmd *cmd;
-    const char *keyword;
+    RedisCmd *cmd = redis_scan_cmd_create(NULL, type);
 
-    /* Turn our type into a keyword */
-    switch(type) {
-        case TYPE_SCAN:
-            keyword = "SCAN";
-            break;
-        case TYPE_SSCAN:
-            keyword = "SSCAN";
-            break;
-        case TYPE_HSCAN:
-            keyword = "HSCAN";
-            break;
-        case TYPE_ZSCAN:
-        default:
-            keyword = "ZSCAN";
-            break;
-    }
-
-
-    /* Start the command */
-    cmd = redis_cmd_create(NULL, keyword, strlen(keyword));
+    /* Preserve omission of an absent or empty key on the standalone path. */
     if (key && ZSTR_LEN(key) > 0) redis_cmd_cat_zstr(cmd, key);
-    redis_cmd_cat_u64(cmd, cursor);
-
-    /* Append COUNT if we've got it */
-    if(count) {
-        redis_cmd_cat_literal(cmd, "COUNT");
-        redis_cmd_cat_long(cmd, count);
-    }
-
-    /* Append MATCH if we've got it */
-    if(pattern && ZSTR_LEN(pattern) > 0) {
-        redis_cmd_cat_literal(cmd, "MATCH");
-        redis_cmd_cat_zstr(cmd, pattern);
-    }
+    redis_scan_cmd_append(cmd, cursor, pattern ? ZSTR_VAL(pattern) : NULL,
+                          pattern ? ZSTR_LEN(pattern) : 0, count);
 
     if (match_type) {
         redis_cmd_cat_literal(cmd, "TYPE");

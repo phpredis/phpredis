@@ -625,39 +625,51 @@ RedisCmd *redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return redis_cmd_fmt_ex(redis_sock, kw, kw_len, "Kf", key, val);
 }
 
-/* Generic to construct SCAN and variant commands */
-RedisCmd *
-redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, const char *key,
-                   int key_len, uint64_t it, const char *pat, int pat_len,
-                   long count)
+RedisCmd *redis_scan_cmd_create(RedisSock *redis_sock, REDIS_SCAN_TYPE type)
 {
-    static const char *const kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
-    RedisCmd *cmd;
+    static const struct {
+        const char *str;
+        size_t len;
+    } keywords[] = {
+        {ZEND_STRL("SCAN")}, {ZEND_STRL("SSCAN")},
+        {ZEND_STRL("HSCAN")}, {ZEND_STRL("ZSCAN")}
+    };
 
-    cmd = redis_cmd_create(redis_sock, kw[type], strlen(kw[type]));
+    ZEND_ASSERT(type >= TYPE_SCAN && type <= TYPE_ZSCAN);
+    return redis_cmd_create(redis_sock, keywords[type].str, keywords[type].len);
+}
 
-    // Append our key if it's not a regular SCAN command
-    if (type != TYPE_SCAN) {
-        if (!redis_cmd_cat_key_str(cmd, key, key_len)) {
-            redis_cmd_free(cmd);
-            return NULL;
-        }
-    }
+/* The caller supplies an already-prefixed pattern, if prefixing is enabled. */
+void redis_scan_cmd_append(RedisCmd *cmd, uint64_t cursor, const char *pat,
+                           size_t pat_len, zend_long count)
+{
+    redis_cmd_cat_u64(cmd, cursor);
 
-    // Append cursor
-    redis_cmd_cat_u64(cmd, it);
-
-    // Append count if we've got one
     if (count) {
         redis_cmd_cat_literal(cmd, "COUNT");
         redis_cmd_cat_long(cmd, count);
     }
 
-    // Append pattern if we've got one
     if (pat_len) {
         redis_cmd_cat_literal(cmd, "MATCH");
         redis_cmd_cat_str(cmd, pat, pat_len);
     }
+}
+
+/* Cluster key scans prefix and hash the key, including an empty key. */
+RedisCmd *
+redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, const char *key,
+                   int key_len, uint64_t it, const char *pat, int pat_len,
+                   long count)
+{
+    RedisCmd *cmd = redis_scan_cmd_create(redis_sock, type);
+
+    if (type != TYPE_SCAN && !redis_cmd_cat_key_str(cmd, key, key_len)) {
+        redis_cmd_free(cmd);
+        return NULL;
+    }
+
+    redis_scan_cmd_append(cmd, it, pat, pat_len, count);
 
     return cmd;
 }
