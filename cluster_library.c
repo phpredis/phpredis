@@ -408,25 +408,18 @@ PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot) {
     return -1;
 }
 
-/*
- * Cluster key distribution helpers.  For a small handlful of commands, we want
- * to distribute them across 1-N nodes.  These methods provide simple containers
- * for the purposes of splitting keys/values in this way
- * */
+/* Group owned WATCH keys by hash slot. */
 
 /* Free cluster distribution list inside a HashTable */
 static void cluster_dist_free_ht(zval *p) {
     clusterDistList *dl = Z_PTR_P(p);
-    int i;
+    size_t i;
 
     for (i = 0; i < dl->len; i++) {
-        if (dl->entry[i].key_free)
-            efree(dl->entry[i].key);
-        if (dl->entry[i].val_free)
-            efree(dl->entry[i].val);
+        zend_string_release(dl->keys[i]);
     }
 
-    efree(dl->entry);
+    efree(dl->keys);
     efree(dl);
 }
 
@@ -451,53 +444,38 @@ static clusterDistList *cluster_dl_create(void) {
     clusterDistList *dl;
 
     dl        = emalloc(sizeof(clusterDistList));
-    dl->entry = emalloc(CLUSTER_KEYDIST_ALLOC * sizeof(clusterKeyVal));
+    dl->keys  = emalloc(CLUSTER_KEYDIST_ALLOC * sizeof(*dl->keys));
     dl->size  = CLUSTER_KEYDIST_ALLOC;
     dl->len   = 0;
 
     return dl;
 }
 
-/* Add a key to a dist list, returning the keval entry */
-static clusterKeyVal *cluster_dl_add_key(clusterDistList *dl, char *key,
-                                         int key_len, int key_free)
+/* Transfer ownership of a prefixed key to the list. */
+static void cluster_dl_add_key(clusterDistList *dl, zend_string *key)
 {
     // Reallocate if required
     if (dl->len == dl->size) {
-        dl->entry = erealloc(dl->entry, sizeof(clusterKeyVal) * dl->size * 2);
+        dl->keys = safe_erealloc(dl->keys, dl->size, 2 * sizeof(*dl->keys), 0);
         dl->size *= 2;
     }
 
-    // Set key info
-    dl->entry[dl->len].key = key;
-    dl->entry[dl->len].key_len = key_len;
-    dl->entry[dl->len].key_free = key_free;
-
-    // NULL out any values
-    dl->entry[dl->len].val = NULL;
-    dl->entry[dl->len].val_len = 0;
-    dl->entry[dl->len].val_free = 0;
-
-    return &(dl->entry[dl->len++]);
+    dl->keys[dl->len++] = key;
 }
 
-/* Add a key, returning a pointer to the entry where passed for easy adding
- * of values to match this key */
-int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
-                          size_t key_len, clusterKeyVal **kv)
+/* Borrow key, retaining an owned prefixed string on success. */
+int cluster_dist_add_key(redisCluster *c, HashTable *ht, zend_string *key)
 {
-    int key_free;
     short slot;
     clusterDistList *dl;
-    clusterKeyVal *retptr;
 
     // Prefix our key and hash it
-    key_free = redis_key_prefix(c->flags, &key, &key_len);
-    slot = cluster_hash_key(key, key_len);
+    key = redis_key_prefix_zstr(c->flags, key);
+    slot = cluster_hash_key_zstr(key);
 
     // We can't do this if we don't fully understand the keyspace
     if (c->master[slot] == NULL) {
-        if (key_free) efree(key);
+        zend_string_release(key);
         return FAILURE;
     }
 
@@ -508,10 +486,7 @@ int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
     }
 
     // Now actually add this key
-    retptr = cluster_dl_add_key(dl, key, key_len, key_free);
-
-    // Push our return pointer if requested
-    if (kv) *kv = retptr;
+    cluster_dl_add_key(dl, key);
 
     return SUCCESS;
 }
