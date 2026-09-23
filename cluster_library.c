@@ -703,13 +703,20 @@ cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
 }
 
 /* Sanity check/validation for CLUSTER SLOTS command */
-#define VALIDATE_SLOTS_OUTER(r) \
-    ((r)->type == TYPE_MULTIBULK && (r)->elements >= 3 && \
-     (r)->element[0]->type == TYPE_INT && (r)->element[1]->type == TYPE_INT)
-#define VALIDATE_SLOTS_INNER(r) \
-    ((r)->type == TYPE_MULTIBULK && (r)->elements >= 2 && \
-     (r)->element[0]->type == TYPE_BULK && (r)->element[0]->str != NULL && \
-     (r)->element[0]->len > 0 && (r)->element[1]->type == TYPE_INT)
+static zend_always_inline zend_bool
+cluster_validate_slots_outer(const clusterReply *r)
+{
+    return r->type == TYPE_MULTIBULK && r->elements >= 3 &&
+           r->element[0]->type == TYPE_INT && r->element[1]->type == TYPE_INT;
+}
+
+static zend_always_inline zend_bool
+cluster_validate_slots_inner(const clusterReply *r)
+{
+    return r->type == TYPE_MULTIBULK && r->elements >= 2 &&
+           r->element[0]->type == TYPE_BULK && r->element[0]->str != NULL &&
+           r->element[0]->len > 0 && r->element[1]->type == TYPE_INT;
+}
 
 static zend_always_inline int
 cluster_validate_slot_range(size_t low, size_t high) {
@@ -743,7 +750,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
         r2 = r->element[i];
 
         // Validate outer and master slot structure
-        if (!VALIDATE_SLOTS_OUTER(r2) || !VALIDATE_SLOTS_INNER(r2->element[2])) {
+        if (!cluster_validate_slots_outer(r2) || !cluster_validate_slots_inner(r2->element[2])) {
             return -1;
         }
 
@@ -781,7 +788,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
                 r3 = r2->element[j];
 
                 // Skip slaves whose host bulk is missing or empty
-                if (!VALIDATE_SLOTS_INNER(r3)) {
+                if (!cluster_validate_slots_inner(r3)) {
                     continue;
                 }
 
@@ -1257,8 +1264,8 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
     size_t sz;
 
     // Clear out any prior error state and our last line response
-    CLUSTER_CLEAR_ERROR(c);
-    CLUSTER_CLEAR_REPLY(c);
+    cluster_clear_error(c);
+    cluster_clear_reply(c);
 
     if (-1 == redis_check_eof(c->cmd_sock, 1, 1) ||
        EOF == (*reply_type = redis_sock_getc(c->cmd_sock)))
@@ -1299,7 +1306,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
     }
 
     // Clear out any previous error, and return that the data is here
-    CLUSTER_CLEAR_ERROR(c);
+    cluster_clear_error(c);
     return 0;
 }
 
@@ -1484,7 +1491,7 @@ static int cluster_update_slot(redisCluster *c) {
     /* Do we already have the new slot mapped */
     if (c->master[c->redir_slot]) {
         /* No need to do anything if it's the same node */
-        if (!CLUSTER_REDIR_CMP(c, cluster_slot_master_sock(c,c->redir_slot))) {
+        if (cluster_redir_matches(c, cluster_slot_master_sock(c, c->redir_slot))) {
             return SUCCESS;
         }
 
@@ -1507,7 +1514,7 @@ static int cluster_update_slot(redisCluster *c) {
                 if (slave == NULL) {
                     continue;
                 }
-                if (!CLUSTER_REDIR_CMP(c, slave->sock)) {
+                if (cluster_redir_matches(c, slave->sock)) {
                     // Detected a failover, the redirected node was a replica
                     // Remap the cluster's keyspace
                     if (cluster_map_keyspace(c) == FAILURE) {
