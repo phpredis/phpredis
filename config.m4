@@ -11,6 +11,9 @@ PHP_ARG_ENABLE(redis-session, whether to enable sessions,
 PHP_ARG_ENABLE(redis-sanitizers, whether to enable address and undefined behavior sanitizers,
 [  --enable-redis-sanitizers    Build with ASan and UBSan], no, no)
 
+PHP_ARG_ENABLE(redis-analyzer, whether to enable GCC's static analyzer,
+[  --enable-redis-analyzer      Build with GCC's static analyzer (development only)], no, no)
+
 PHP_ARG_ENABLE(redis-json, whether to enable json serializer support,
 [  --disable-redis-json         Disable json serializer support], yes, no)
 
@@ -353,6 +356,17 @@ if test "$PHP_REDIS" != "no"; then
 
     PHP_REDIS_CFLAGS="$PHP_REDIS_CFLAGS $redis_sanitizer_flags"
     LDFLAGS="$LDFLAGS -fsanitize=address,undefined"
+  fi
+
+  if test "$PHP_REDIS_ANALYZER" != "no"; then
+    redis_saved_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS -Werror -fanalyzer"
+    AC_MSG_CHECKING([whether the compiler supports -fanalyzer])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [AC_MSG_RESULT([yes])], [
+      AC_MSG_ERROR([Redis static analysis requires a compiler with -fanalyzer support])
+    ])
+    CFLAGS="$redis_saved_CFLAGS"
+    PHP_REDIS_CFLAGS="$PHP_REDIS_CFLAGS -fanalyzer"
   fi
 
   PHP_SUBST(REDIS_SHARED_LIBADD)
