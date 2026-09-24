@@ -7065,7 +7065,7 @@ RedisCmd *redis_vsetattr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
     } ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     attr = zval_to_vattr(zattr);
-    if (zattr == NULL)
+    if (attr == NULL)
         return NULL;
 
     cmd = redis_cmd_create_literal(redis_sock, "VSETATTR");

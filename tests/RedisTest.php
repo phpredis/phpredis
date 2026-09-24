@@ -8495,6 +8495,14 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testVSetAttrInvalidType() {
+        $invalid = [null, false, true, 42, 1.5, new stdClass()];
+
+        foreach ($invalid as $attr) {
+            $this->assertFalse(@$this->redis->vsetattr('v', 'e', $attr));
+        }
+    }
+
     public function testVRandMember() {
         if ( ! $this->minVersionCheck('8.0'))
             $this->markTestSkipped();
