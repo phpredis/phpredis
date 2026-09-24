@@ -3162,6 +3162,7 @@ static int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
             /* Attempt unpacking */
             zval z_unpacked;
             redis_unpack(redis_sock, line, line_len, &z_unpacked);
+            ZEND_ASSERT(key != NULL);
             add_assoc_zval(z_result, key, &z_unpacked);
 
             efree(line);
