@@ -3934,6 +3934,52 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(5, count($ret)); // should be 5 atomic operations
     }
 
+    /* A pipeline that reconnects inside exec() must still deliver its replies,
+       and must not leave the reply stream shifted for later commands. */
+    public function testPipelineRepliesSurviveReconnect() {
+        $this->repliesSurviveReconnect(false);
+    }
+
+    /* Same, for a MULTI nested inside a PIPELINE, which takes the same
+       reconnect path because redis_check_eof() tests `mode == MULTI`. */
+    public function testMultiPipelineRepliesSurviveReconnect() {
+        $this->repliesSurviveReconnect(true);
+    }
+
+    private function repliesSurviveReconnect(bool $multi) {
+        if ( ! $this->havePipeline())
+            $this->markTestSkipped();
+
+        $redis = new Redis([
+            'host' => $this->getHost(),
+            'port' => $this->getPort(),
+            'persistent' => true,
+        ]);
+
+        if ($this->getAuth())
+            $this->assertTrue($redis->auth($this->getAuth()));
+
+        $redis->set('pipeline-reconnect', 'value');
+        $id = $redis->client('id');
+
+        $pipe = $redis->pipeline();
+        if ($multi) $pipe->multi();
+        $pipe->get('pipeline-reconnect');
+        if ($multi) $pipe->exec();
+
+        /* Close the connection server side while the pipeline is still buffered
+           client side, so phpredis reconnects inside exec() and replays it. */
+        $killer = $this->newInstance();
+        $killer->rawCommand('CLIENT', 'KILL', 'ID', (string)$id);
+        $killer->close();
+
+        $this->assertEquals($multi ? [['value']] : ['value'], $pipe->exec());
+        $this->assertTrue($redis->ping());
+
+        $redis->del('pipeline-reconnect');
+        $redis->close();
+    }
+
     public function testMultiEmpty()
     {
         $ret = $this->redis->multi()->exec();

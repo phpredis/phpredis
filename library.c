@@ -3470,7 +3470,11 @@ redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
             }
             if (force || !redis_sock_is_atomic(redis_sock)) {
                 php_stream_pclose(redis_sock->stream);
-                redis_free_reply_callbacks(redis_sock);
+                /* An in-place reconnect (is_reset_mode == 0) keeps the buffered
+                 * pipeline, so it must keep its reply callbacks too. */
+                if (is_reset_mode) {
+                    redis_free_reply_callbacks(redis_sock);
+                }
                 if (p) p->nb_active--;
             } else if (p) {
                 zend_llist_prepend_element(&p->list, &redis_sock->stream);
