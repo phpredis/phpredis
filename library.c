@@ -1318,6 +1318,20 @@ redis_zadd_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, redis_empty_ctx);
 }
 
+/* INCREX replies with [new, applied], as doubles when called with BYFLOAT */
+PHP_REDIS_API int
+redis_increx_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      zval *z_tab, RedisCmdCtx ctx)
+{
+    FailableResultCallback cb;
+
+    ZEND_ASSERT(ctx.mode == REDIS_CTX_DEFAULT || ctx.mode == REDIS_CTX_INCR);
+
+    cb = ctx.mode == REDIS_CTX_INCR ? redis_mbulk_reply_double : redis_read_variant_reply;
+
+    return cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, redis_empty_ctx);
+}
+
 PHP_REDIS_API int
 redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            zval *z_tab, RedisCmdCtx ctx)
