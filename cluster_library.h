@@ -33,34 +33,6 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
 /* Initial allocation size for key distribution container */
 #define CLUSTER_KEYDIST_ALLOC 8
 
-/* Compare redirection slot information with the passed node */
-#define CLUSTER_REDIR_CMP(c, sock) \
-    (sock->port != c->redir_port || \
-    ZSTR_LEN(sock->host) != c->redir_host_len || \
-    memcmp(ZSTR_VAL(sock->host),c->redir_host,c->redir_host_len))
-
-/* Clear out our "last error" */
-#define CLUSTER_CLEAR_ERROR(c) do { \
-    if (c->err) { \
-        zend_string_release(c->err); \
-        c->err = NULL; \
-    } \
-    c->clusterdown = 0; \
-} while (0)
-
-/* Protected sending of data down the wire to a RedisSock->stream */
-#define CLUSTER_SEND_PAYLOAD(sock, buf, len) \
-    (sock && !redis_sock_server_open(sock) && sock->stream && !redis_check_eof(sock, 0, 1) && \
-     redis_sock_write_raw(sock, buf, len) == len)
-
-/* Macro to read our reply type character */
-#define CLUSTER_VALIDATE_REPLY_TYPE(sock, type) \
-    (redis_check_eof(sock, 1, 1) == 0 && redis_sock_getc(sock) == type)
-
-/* Reset our last single line reply buffer and length */
-#define CLUSTER_CLEAR_REPLY(c) \
-    *c->line_reply = '\0'; c->reply_len = 0;
-
 /* Helper that either returns false or adds false in multi mode */
 #define CLUSTER_RETURN_FALSE(c) \
     if(cluster_is_atomic(c)) { \
@@ -101,17 +73,6 @@ static zend_always_inline zend_bool cluster_is_ask(const char *p, size_t len) {
     } else { \
         add_next_index_long(&c->multi_resp, val); \
     }
-
-/* Macro to clear out a clusterMultiCmd structure */
-#define CLUSTER_MULTI_CLEAR(mc) do { \
-    if ((mc)->cmd) redis_cmd_reset((mc)->cmd, (mc)->kw, (mc)->kw_len); \
-    (mc)->argc = 0; \
-} while (0)
-
-/* Initialize a clusterMultiCmd with a keyword and length */
-#define CLUSTER_MULTI_INIT(mc, keyword, keyword_len) \
-    mc.kw     = keyword; \
-    mc.kw_len = keyword_len; \
 
 static zend_always_inline zend_bool cluster_caching_enabled(void) {
     return zend_ini_long_literal("redis.clusters.cache_slots") == 1;
@@ -245,26 +206,47 @@ typedef struct redisCluster {
     zend_object std;
 } redisCluster;
 
+static zend_always_inline zend_bool
+cluster_redir_matches(const redisCluster *c, const RedisSock *sock)
+{
+    return sock->port == c->redir_port &&
+           ZSTR_LEN(sock->host) == c->redir_host_len &&
+           memcmp(ZSTR_VAL(sock->host), c->redir_host, c->redir_host_len) == 0;
+}
+
+/* Clear out our "last error" and cluster-down state. */
+static zend_always_inline void
+cluster_clear_error(redisCluster *c)
+{
+    if (c->err) {
+        zend_string_release(c->err);
+        c->err = NULL;
+    }
+    c->clusterdown = 0;
+}
+
+/* Reset our last single line reply buffer and length. */
+static zend_always_inline void
+cluster_clear_reply(redisCluster *c)
+{
+    *c->line_reply = '\0';
+    c->reply_len = 0;
+}
+
 static zend_always_inline redisClusterNode *
-cluster_slot(redisCluster *c, unsigned short slot)
+cluster_slot(const redisCluster *c, unsigned short slot)
 {
     return c->master[slot];
 }
 
 static zend_always_inline RedisSock *
-cluster_slot_master_sock(redisCluster *c, unsigned short slot)
+cluster_slot_master_sock(const redisCluster *c, unsigned short slot)
 {
     return cluster_slot(c, slot)->sock;
 }
 
-static zend_always_inline php_stream *
-cluster_slot_stream(redisCluster *c, unsigned short slot)
-{
-    return cluster_slot_master_sock(c, slot)->stream;
-}
-
 static zend_always_inline HashTable *
-cluster_slot_slaves(redisCluster *c, unsigned short slot)
+cluster_slot_slaves(const redisCluster *c, unsigned short slot)
 {
     return cluster_slot(c, slot)->slaves;
 }
@@ -295,17 +277,9 @@ struct clusterFoldItem {
     uint8_t flags;
 };
 
-/* Key and value container, with info if they need freeing */
-typedef struct clusterKeyVal {
-    char *key, *val;
-    int  key_len,  val_len;
-    int  key_free, val_free;
-} clusterKeyVal;
-
-/* Container to hold keys (and possibly values) for when we need to distribute
- * commands across more than 1 node (e.g. WATCH, MGET, MSET, etc) */
+/* Owned, prefixed WATCH keys for one hash slot. */
 typedef struct clusterDistList {
-    clusterKeyVal *entry;
+    zend_string **keys;
     size_t len, size;
 } clusterDistList;
 
@@ -327,7 +301,7 @@ typedef struct clusterMultiCtx {
  * into a header and payload while aggregating to a specific slot. */
 typedef struct clusterMultiCmd {
     /* Keyword and keyword length */
-    char *kw;
+    const char *kw;
     int  kw_len;
 
     /* Arguments in our payload */
@@ -358,13 +332,26 @@ void cluster_free_reply(clusterReply *reply, int free_data);
 /* Cluster distribution helpers for WATCH */
 HashTable *cluster_dist_create(void);
 void cluster_dist_free(HashTable *ht);
-int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
-    size_t key_len, clusterKeyVal **kv);
+int cluster_dist_add_key(redisCluster *c, HashTable *ht, zend_string *key);
 
 /* Aggregation for multi commands like MGET, MSET, and MSETNX */
-void cluster_multi_init(clusterMultiCmd *mc, char *kw, int kw_len);
+static zend_always_inline void
+cluster_multi_init(clusterMultiCmd *mc, const char *kw, int kw_len)
+{
+    mc->kw = kw;
+    mc->kw_len = kw_len;
+}
+
+static zend_always_inline void
+cluster_multi_clear(clusterMultiCmd *mc)
+{
+    if (mc->cmd)
+        redis_cmd_reset(mc->cmd, mc->kw, mc->kw_len);
+    mc->argc = 0;
+}
+
 void cluster_multi_free(clusterMultiCmd *mc);
-void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len);
+void cluster_multi_add(clusterMultiCmd *mc, const char *data, int data_len);
 void cluster_multi_fini(clusterMultiCmd *mc);
 
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
@@ -374,7 +361,7 @@ unsigned short cluster_hash_key_zstr(zend_string *key);
 
 /* Validate and sanitize cluster construction args */
 zend_string** cluster_validate_args(double timeout, double read_timeout,
-    HashTable *seeds, uint32_t *nseeds, char **errstr);
+    HashTable *seeds, uint32_t *nseeds, const char **errstr);
 
 void free_seed_array(zend_string **seeds, uint32_t nseeds);
 
@@ -427,8 +414,6 @@ PHP_REDIS_API void cluster_cache_free(redisCachedCluster *rcc);
 PHP_REDIS_API void cluster_init_cache(redisCluster *c, redisCachedCluster *rcc);
 
 /* Functions to facilitate cluster slot caching */
-
-PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, int *len);
 
 PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes);
 PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash);

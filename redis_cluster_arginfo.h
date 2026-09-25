@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: e1dd759f8e53060e4cb7f06512396fccf40fd82c */
+ * Stub hash: 097f539fffdd7fbfd13b82b501badc3009568757 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -1207,7 +1207,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zrevrange
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_zrevrangebylex arginfo_class_RedisCluster_zrevrange
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zrevrangebylex, 0, 3, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, max, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, min, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, offset, IS_LONG, 0, "-1")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zrevrangebyscore arginfo_class_RedisCluster_zrevrange
 

@@ -625,44 +625,56 @@ RedisCmd *redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return redis_cmd_fmt_ex(redis_sock, kw, kw_len, "Kf", key, val);
 }
 
-/* Generic to construct SCAN and variant commands */
-RedisCmd *
-redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, char *key,
-                   int key_len, uint64_t it, char *pat, int pat_len,
-                   long count)
+RedisCmd *redis_scan_cmd_create(RedisSock *redis_sock, REDIS_SCAN_TYPE type)
 {
-    static char *kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
-    RedisCmd *cmd;
+    static const struct {
+        const char *str;
+        size_t len;
+    } keywords[] = {
+        {ZEND_STRL("SCAN")}, {ZEND_STRL("SSCAN")},
+        {ZEND_STRL("HSCAN")}, {ZEND_STRL("ZSCAN")}
+    };
 
-    cmd = redis_cmd_create(redis_sock, kw[type], strlen(kw[type]));
+    ZEND_ASSERT(type <= TYPE_ZSCAN);
+    return redis_cmd_create(redis_sock, keywords[type].str, keywords[type].len);
+}
 
-    // Append our key if it's not a regular SCAN command
-    if (type != TYPE_SCAN) {
-        if (!redis_cmd_cat_key_str(cmd, key, key_len)) {
-            redis_cmd_free(cmd);
-            return NULL;
-        }
-    }
+/* The caller supplies an already-prefixed pattern, if prefixing is enabled. */
+void redis_scan_cmd_append(RedisCmd *cmd, uint64_t cursor, const char *pat,
+                           size_t pat_len, zend_long count)
+{
+    redis_cmd_cat_u64(cmd, cursor);
 
-    // Append cursor
-    redis_cmd_cat_u64(cmd, it);
-
-    // Append count if we've got one
     if (count) {
         redis_cmd_cat_literal(cmd, "COUNT");
         redis_cmd_cat_long(cmd, count);
     }
 
-    // Append pattern if we've got one
     if (pat_len) {
         redis_cmd_cat_literal(cmd, "MATCH");
         redis_cmd_cat_str(cmd, pat, pat_len);
     }
+}
+
+/* Cluster key scans prefix and hash the key, including an empty key. */
+RedisCmd *
+redis_fmt_scan_cmd(RedisSock *redis_sock, REDIS_SCAN_TYPE type, const char *key,
+                   int key_len, uint64_t it, const char *pat, int pat_len,
+                   long count)
+{
+    RedisCmd *cmd = redis_scan_cmd_create(redis_sock, type);
+
+    if (type != TYPE_SCAN && !redis_cmd_cat_key_str(cmd, key, key_len)) {
+        redis_cmd_free(cmd);
+        return NULL;
+    }
+
+    redis_scan_cmd_append(cmd, it, pat, pat_len, count);
 
     return cmd;
 }
 
-void redis_get_zcmd_options(redisZcmdOptions *dst, zval *src, int flags) {
+static void redis_get_zcmd_options(redisZcmdOptions *dst, zval *src, int flags) {
     zval *zv, *zoff, *zcnt;
     zend_string *key;
 
@@ -3580,7 +3592,7 @@ typedef struct sunioncardOptions {
     zend_bool approx;
 } sunioncardOptions;
 
-int fill_sunioncard_options(sunioncardOptions *dst, HashTable *ht) {
+static int fill_sunioncard_options(sunioncardOptions *dst, HashTable *ht) {
     zend_string *key;
     zend_long lval;
     zval *zv;
@@ -5134,6 +5146,7 @@ RedisCmd *redis_himport_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         redis_cmd_cat_zstr(cmd, fieldset);
 
     if (hop == HIMPORT_OP_PREPARE || hop == HIMPORT_OP_SET) {
+        ZEND_ASSERT(fields != NULL);
         ZEND_HASH_FOREACH_VAL(fields, zv) {
             /* Field names are sent as-is, whereas values are serialized */
             if (hop == HIMPORT_OP_SET) {
@@ -5782,7 +5795,7 @@ static xdelExMode zstr_to_xdelex_mode(zend_string *s) {
     return REDIS_XDELEX_NONE;
 }
 
-void redis_cmd_cat_delex_mode(RedisCmd *cmd, xdelExMode mode) {
+static void redis_cmd_cat_delex_mode(RedisCmd *cmd, xdelExMode mode) {
     if (mode == REDIS_XDELEX_KEEPREF) {
         redis_cmd_cat_literal(cmd, "KEEPREF");
     } else if (mode == REDIS_XDELEX_DELREF) {
@@ -5879,7 +5892,6 @@ RedisCmd *redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     HashTable *fields;
     RedisCmd *cmd;
     zval *value;
-    int fcount;
 
     ZEND_PARSE_PARAMETERS_START(3, 6)
         Z_PARAM_STR(key)
@@ -5892,7 +5904,7 @@ RedisCmd *redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* At least one field and string are required */
-    if ((fcount = zend_hash_num_elements(fields)) == 0) {
+    if (zend_hash_num_elements(fields) == 0) {
         return NULL;
     }
 
@@ -6044,7 +6056,6 @@ RedisCmd *redis_xread_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     zend_long count = -1, block = -1;
     HashTable *streams;
     RedisCmd *cmd;
-    int scount;
 
     ZEND_PARSE_PARAMETERS_START(1, -1)
         Z_PARAM_ARRAY_HT(streams)
@@ -6054,7 +6065,7 @@ RedisCmd *redis_xread_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* At least one stream and ID is required */
-    if ((scount = zend_hash_num_elements(streams)) < 1) {
+    if (zend_hash_num_elements(streams) < 1) {
         return NULL;
     }
 
@@ -6090,7 +6101,6 @@ RedisCmd *redis_xreadgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
     zend_long count, block;
     HashTable *streams;
     RedisCmd *cmd;
-    int scount;
 
     ZEND_PARSE_PARAMETERS_START(3, 5)
         Z_PARAM_STR(group)
@@ -6108,7 +6118,7 @@ RedisCmd *redis_xreadgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
     }
 
     /* Redis requires at least one stream */
-    if ((scount = zend_hash_num_elements(streams)) < 1) {
+    if (zend_hash_num_elements(streams) < 1) {
         return NULL;
     }
 
@@ -6148,7 +6158,6 @@ RedisCmd *redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zval *z_ids, *z_id;
     HashTable *ht_ids;
     RedisCmd *cmd;
-    int idcount;
 
     ZEND_PARSE_PARAMETERS_START(3, 3)
         Z_PARAM_STR(key)
@@ -6157,7 +6166,7 @@ RedisCmd *redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     ht_ids = Z_ARRVAL_P(z_ids);
-    if ((idcount = zend_hash_num_elements(ht_ids)) < 1) {
+    if (zend_hash_num_elements(ht_ids) < 1) {
         return NULL;
     }
 
@@ -6330,7 +6339,6 @@ RedisCmd *redis_xclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     zend_long min_idle;
     xclaimOptions opts;
     RedisCmd *cmd;
-    int id_count;
     zval *zv;
 
     ZEND_PARSE_PARAMETERS_START(5, 6)
@@ -6344,7 +6352,7 @@ RedisCmd *redis_xclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     /* At least one id is required */
-    if ((id_count = zend_hash_num_elements(ids)) < 1) {
+    if (zend_hash_num_elements(ids) < 1) {
         return NULL;
     }
 
@@ -7057,7 +7065,7 @@ RedisCmd *redis_vsetattr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
     } ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     attr = zval_to_vattr(zattr);
-    if (zattr == NULL)
+    if (attr == NULL)
         return NULL;
 
     cmd = redis_cmd_create_literal(redis_sock, "VSETATTR");

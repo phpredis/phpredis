@@ -52,7 +52,7 @@ static zend_ulong redis_decorrelated_jitter_backoff(struct RedisBackoff *self, u
 
 typedef zend_ulong (*redis_backoff_algorithm)(struct RedisBackoff *self, unsigned int retry_index);
 
-static redis_backoff_algorithm redis_backoff_algorithms[REDIS_BACKOFF_ALGORITHMS] = {
+static const redis_backoff_algorithm redis_backoff_algorithms[REDIS_BACKOFF_ALGORITHMS] = {
     redis_default_backoff,
     redis_decorrelated_jitter_backoff,
     redis_full_jitter_backoff,

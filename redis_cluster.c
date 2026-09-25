@@ -39,8 +39,6 @@ zend_class_entry *redis_cluster_exception_ce;
 /* Handlers for RedisCluster */
 zend_object_handlers RedisCluster_handlers;
 
-extern RedisCmdCtx redis_empty_ctx;
-
 #if PHP_VERSION_ID < 80000
 #include "redis_cluster_legacy_arginfo.h"
 #else
@@ -193,13 +191,13 @@ PHP_MINIT_FUNCTION(redis_cluster)
 
 /* Our context seeds will be a hash table with RedisSock* pointers */
 static void ht_free_seed(zval *data) {
-    RedisSock *redis_sock = *(RedisSock**)data;
+    RedisSock *redis_sock = Z_PTR_P(data);
     if (redis_sock) redis_free_socket(redis_sock);
 }
 
 /* Free redisClusterNode objects we've stored */
 static void ht_free_node(zval *data) {
-    redisClusterNode *node = *(redisClusterNode**)data;
+    redisClusterNode *node = Z_PTR_P(data);
     cluster_free_node(node);
 }
 
@@ -251,7 +249,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     zend_string *hash = NULL, **seeds;
     redisCachedCluster *cc;
     uint32_t nseeds;
-    char *err;
+    const char *err;
 
     if (database < 0 || database > INT_MAX) {
         REDIS_VALUE_EXCEPTION("Invalid database number");
@@ -301,7 +299,7 @@ cleanup:
 
 
 /* Attempt to load a named cluster configured in php.ini */
-void redis_cluster_load(redisCluster *c, char *name, int name_len) {
+static void redis_cluster_load(redisCluster *c, const char *name, int name_len) {
     zval z_seeds, z_tmp, *z_value;
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0, read_timeout = 0;
@@ -497,7 +495,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
     }
 
     // Clear out our command but retain allocated memory
-    CLUSTER_MULTI_CLEAR(mc);
+    cluster_multi_clear(mc);
 
     return 0;
 }
@@ -642,7 +640,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     c->readonly = kw_len == 4 && cluster_is_atomic(c);
 
     // Initialize our "multi" command handler with command/len
-    CLUSTER_MULTI_INIT(mc, kw, kw_len);
+    cluster_multi_init(&mc, kw, kw_len);
 
     // Process the first key outside of our loop, so we don't have to check if
     // it's the first iteration every time, needlessly
@@ -762,7 +760,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     c->readonly = 0;
 
     // Set up our multi command handler
-    CLUSTER_MULTI_INIT(mc, kw, kw_len);
+    cluster_multi_init(&mc, kw, kw_len);
 
     // Process the first key/value pair outside of our loop
     zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
@@ -2234,7 +2232,7 @@ PHP_METHOD(RedisCluster, watch) {
     HashTable *ht_dist;
     zend_string *zstr;
     zend_ulong slot;
-    RedisCmd *cmd;
+    RedisCmd *cmd = NULL;
     zval *argv;
     int argc;
 
@@ -2249,26 +2247,29 @@ PHP_METHOD(RedisCluster, watch) {
     if (!ZEND_NUM_ARGS())
         RETURN_FALSE;
 
-    // Create our distribution HashTable
-    ht_dist = cluster_dist_create();
-
     ZEND_PARSE_PARAMETERS_START(1, -1)
         Z_PARAM_VARIADIC('+', argv, argc)
     ZEND_PARSE_PARAMETERS_END();
+
+    ht_dist = cluster_dist_create();
+    RETVAL_FALSE;
 
     // Loop through arguments, prefixing if needed
     for(int i = 0 ; i < argc; i++) {
         // We'll need the key as a string
         zstr = zval_get_string(&argv[i]);
+        if (EG(exception)) {
+            zend_string_release(zstr);
+            goto cleanup;
+        }
 
         // Add this key to our distribution handler
-        if (cluster_dist_add_key(c, ht_dist, ZSTR_VAL(zstr), ZSTR_LEN(zstr),
-                                 NULL) == FAILURE)
+        if (cluster_dist_add_key(c, ht_dist, zstr) == FAILURE)
         {
             CLUSTER_THROW_EXCEPTION(
                 "Can't issue WATCH command as the keyspace isn't fully mapped", 0);
             zend_string_release(zstr);
-            RETURN_FALSE;
+            goto cleanup;
         }
 
         zend_string_release(zstr);
@@ -2277,25 +2278,27 @@ PHP_METHOD(RedisCluster, watch) {
     // Iterate over each node we'll be sending commands to
     ZEND_HASH_FOREACH_NUM_KEY_PTR(ht_dist, slot, dl) {
         cmd = redis_cmd_create_literal(NULL, "WATCH");
-        for (int i = 0; i < dl->len; i++) {
-            redis_cmd_cat_str(cmd, dl->entry[i].key, dl->entry[i].key_len);
+        for (size_t i = 0; i < dl->len; i++) {
+            redis_cmd_cat_zstr(cmd, dl->keys[i]);
         }
 
         // If we get a failure from this, we have to abort
         if (cluster_send_rcmd_ex(c, slot, cmd) < 0)
         {
-            redis_cmd_free(cmd);
-            RETURN_FALSE;
+            goto cleanup;
         }
 
         cluster_slot_master_sock(c, slot)->watching = 1;
 
         redis_cmd_free(cmd);
+        cmd = NULL;
     } ZEND_HASH_FOREACH_END();
 
-    cluster_dist_free(ht_dist);
+    RETVAL_TRUE;
 
-    RETURN_TRUE;
+cleanup:
+    redis_cmd_free(cmd);
+    cluster_dist_free(ht_dist);
 }
 
 /* {{{ proto bool RedisCluster::unwatch() */
@@ -2417,7 +2420,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg)
         Z_TYPE_P(z_host) == IS_STRING && Z_TYPE_P(z_port) == IS_LONG
     ) {
         /* Attempt to find this specific node by host:port */
-        slot = cluster_find_slot(c,(const char *)Z_STRVAL_P(z_host),
+        slot = cluster_find_slot(c, Z_STRVAL_P(z_host),
             (unsigned short)Z_LVAL_P(z_port));
 
         /* Inform the caller if they've passed bad data */
@@ -3457,7 +3460,8 @@ PHP_METHOD(RedisCluster, echo) {
     }
 
     /* Construct our command */
-    cmd = redis_cmd_fmt(NULL, "ECHO", "S", msg);
+    cmd = redis_cmd_create_literal(c->flags, "ECHO");
+    redis_cmd_cat_zstr(cmd, msg);
 
     /* Send it off */
     rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;

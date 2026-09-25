@@ -1429,7 +1429,7 @@ class RedisCluster {
     /**
      * @see \Redis::zRevRangeByLex()
      */
-    public function zrevrangebylex(string $key, string $min, string $max, ?array $options = null): RedisCluster|bool|array;
+    public function zrevrangebylex(string $key, string $max, string $min, int $offset = -1, int $count = -1): RedisCluster|array|false;
 
     /**
      * @see \Redis::zRevRangeByScore()
