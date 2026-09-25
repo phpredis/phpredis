@@ -2032,6 +2032,20 @@ cluster_zadd_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     }
 }
 
+/* INCREX replies with [new, applied], as doubles when called with BYFLOAT */
+PHP_REDIS_API void
+cluster_increx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                    RedisCmdCtx ctx)
+{
+    ZEND_ASSERT(ctx.mode == REDIS_CTX_DEFAULT || ctx.mode == REDIS_CTX_INCR);
+
+    if (ctx.mode == REDIS_CTX_DEFAULT) {
+        cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
+    } else {
+        cluster_mbulk_dbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, redis_empty_ctx);
+    }
+}
+
 
 PHP_REDIS_API void
 cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,

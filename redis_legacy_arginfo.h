@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 7f74eb418e5979bdcad96d4b8911110c63b9b26a */
+ * Stub hash: c7f676a846097f81e513ae351333749c082e3642 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -504,6 +504,12 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Redis_incrBy arginfo_class_Redis_append
 
 #define arginfo_class_Redis_incrByFloat arginfo_class_Redis_append
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_incrEx, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_info, 0, 0, 0)
 	ZEND_ARG_VARIADIC_INFO(0, sections)
@@ -1318,6 +1324,7 @@ ZEND_METHOD(Redis, expirememberat);
 ZEND_METHOD(Redis, incr);
 ZEND_METHOD(Redis, incrBy);
 ZEND_METHOD(Redis, incrByFloat);
+ZEND_METHOD(Redis, incrEx);
 ZEND_METHOD(Redis, info);
 ZEND_METHOD(Redis, isConnected);
 ZEND_METHOD(Redis, keys);
@@ -1622,6 +1629,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, incr, arginfo_class_Redis_incr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrBy, arginfo_class_Redis_incrBy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrByFloat, arginfo_class_Redis_incrByFloat, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, incrEx, arginfo_class_Redis_incrEx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, info, arginfo_class_Redis_info, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, isConnected, arginfo_class_Redis_isConnected, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, keys, arginfo_class_Redis_keys, ZEND_ACC_PUBLIC)
