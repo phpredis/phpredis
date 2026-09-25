@@ -2753,16 +2753,19 @@ class Redis {
     public function incrByFloat(string $key, float $value): Redis|float|false;
 
     /**
-     * Increments the numeric value of a key by a number and sets its expiration time.
+     * Increments the numeric value of a key by a number and optionally sets its expiration time.
      *
      * This is an atomic operation combining incrementing with optional upper/lower bounds,
      * saturation, and expiration control. Returns an array with the new value and the
      * actual increment applied.
      *
-     * @param string          $key        The key to increment.
-     * @param int|float       $increment  The amount to increment (defaults to 1, uses BYINT for int, BYFLOAT for float).
-     * @param null|array      $options    An optional associative array of options: 'EX'|'PX'|'EXAT'|'PXAT' => int,
-     *                                     'PERSIST', 'SATURATE', 'ENX' => bool, 'LBOUND'|'UBOUND' => int|float.
+     * @param string          $key     The key to increment.
+     * @param int|float|null  $value   The amount to increment by. An int sends BYINT, a float
+     *                                 sends BYFLOAT, and null lets Redis use its default of 1.
+     * @param null|array      $options An optional array of options:
+     *                                 'EX'|'PX'|'EXAT'|'PXAT' => int,
+     *                                 'PERSIST', 'SATURATE', 'ENX' (or as keys => bool),
+     *                                 'LBOUND'|'UBOUND' => int (or int|float when $value is a float).
      *
      * @return Redis|array|false  Returns an array of [new_value, actual_increment] or false on error.
      *
@@ -2775,7 +2778,7 @@ class Redis {
      * $redis->incrEx('mycounter', 1, ['EX' => 100]);
      * $redis->incrEx('mycounter', 1, ['UBOUND' => 100, 'SATURATE', 'EX' => 60, 'ENX']);
      */
-    public function incrEx(string $key, int|float $increment = 1, ?array $options = null): Redis|array|false;
+    public function incrEx(string $key, int|float|null $value = null, ?array $options = null): Redis|array|false;
 
     /**
      * Retrieve information about the connected redis-server.  If no arguments are passed to

@@ -1150,8 +1150,12 @@ class Redis_Test extends TestSuite {
 
         /* BYFLOAT increment */
         [$newValue, $applied] = $this->redis->incrEx('increx_key', 1.5);
-        $this->assertEquals('5.5', $newValue);
-        $this->assertEquals('1.5', $applied);
+        $this->assertEquals(5.5, $newValue);
+        $this->assertEquals(1.5, $applied);
+
+        /* BYFLOAT replies are also doubles inside MULTI */
+        $res = $this->redis->multi()->incrEx('increx_key', 0.5)->incrEx('increx_key', -0.5)->exec();
+        $this->assertEquals([[6.0, 0.5], [5.5, -0.5]], $res);
 
         /* BYINT with UBOUND -- within bounds */
         $this->redis->set('increx_key', 10);
@@ -1217,9 +1221,30 @@ class Redis_Test extends TestSuite {
 
         /* Default increment with options */
         $this->redis->del('increx_key');
-        [$newValue, $applied] = $this->redis->incrEx('increx_key', 1, ['EX' => 60]);
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', null, ['EX' => 60]);
         $this->assertEquals(1, $newValue);
         $this->assertGT(0, $this->redis->ttl('increx_key'));
+
+        /* Integer bounds are accepted with a float increment */
+        $this->redis->set('increx_key', 9);
+        [$newValue, $applied] = $this->redis->incrEx('increx_key', 1.5, ['UBOUND' => 10, 'SATURATE' => true]);
+        $this->assertEquals(10.0, $newValue);
+        $this->assertEquals(1.0, $applied);
+
+        /* PERSIST => false is a no-op, and a later expiry wins over PERSIST */
+        $this->redis->set('increx_key', 1);
+        $this->redis->expire('increx_key', 100);
+        $this->redis->incrEx('increx_key', 1, ['PERSIST' => false]);
+        $this->assertGT(0, $this->redis->ttl('increx_key'));
+        $this->redis->incrEx('increx_key', 1, ['PERSIST', 'EX' => 50]);
+        $this->assertLTE(50, $this->redis->ttl('increx_key'));
+
+        /* Invalid option combinations fail client-side */
+        $this->assertFalse(@$this->redis->incrEx('increx_key', 1, ['LBOUND' => 1.5]));
+        $this->assertFalse(@$this->redis->incrEx('increx_key', 1, ['UBOUND' => 'nope']));
+        $this->assertFalse(@$this->redis->incrEx('increx_key', 1, ['ENX']));
+        $this->assertFalse(@$this->redis->incrEx('increx_key', 1, ['PERSIST', 'ENX']));
+        $this->assertFalse(@$this->redis->incrEx('increx_key', 1, ['EX' => 0]));
 
         $this->redis->del('increx_key');
     }

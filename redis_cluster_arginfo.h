@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: bb39ae8c77a57b9585e30045e532abd4e8f06df5 */
+ * Stub hash: 66fec98a34dd0090e5c2fb7664fe3de763c209e3 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -567,6 +567,12 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_incrbyfloat, 0, 2, RedisCluster, MAY_BE_DOUBLE|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_DOUBLE, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_increx, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_MASK(0, value, MAY_BE_LONG|MAY_BE_DOUBLE|MAY_BE_NULL, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_info, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
@@ -1378,6 +1384,7 @@ ZEND_METHOD(RedisCluster, hvals);
 ZEND_METHOD(RedisCluster, incr);
 ZEND_METHOD(RedisCluster, incrby);
 ZEND_METHOD(RedisCluster, incrbyfloat);
+ZEND_METHOD(RedisCluster, increx);
 ZEND_METHOD(RedisCluster, info);
 ZEND_METHOD(RedisCluster, keys);
 ZEND_METHOD(RedisCluster, lastsave);
@@ -1649,6 +1656,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, incr, arginfo_class_RedisCluster_incr, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, incrby, arginfo_class_RedisCluster_incrby, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, incrbyfloat, arginfo_class_RedisCluster_incrbyfloat, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, increx, arginfo_class_RedisCluster_increx, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, info, arginfo_class_RedisCluster_info, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, keys, arginfo_class_RedisCluster_keys, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, lastsave, arginfo_class_RedisCluster_lastsave, ZEND_ACC_PUBLIC)

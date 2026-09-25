@@ -443,6 +443,8 @@ PHP_REDIS_API void cluster_zdiff_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_zadd_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
+PHP_REDIS_API void cluster_increx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_randmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,

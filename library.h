@@ -74,6 +74,7 @@ PHP_REDIS_API int redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAMETERS, Re
 PHP_REDIS_API int redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
+PHP_REDIS_API int redis_increx_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 
 void redisSetScanCursor(zval *zv, uint64_t cursor);

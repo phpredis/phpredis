@@ -131,6 +131,7 @@ typedef struct redisExpiryOptions {
     redisExpiryType type;
     zend_long ttl;
     zend_bool keepttl;
+    zend_bool persist;
 } redisExpiryOptions;
 
 typedef struct redisSetOptions {
@@ -2283,11 +2284,14 @@ fill_set_options_zval(redisSetOptions *dst, zval *zv, zend_bool legacy_set) {
 static void
 redis_cmd_cat_expiry(RedisCmd *cmd, const redisExpiryOptions *e)
 {
-    if (e->type == REDIS_EXPIRY_NONE && !e->keepttl)
+    if (e->type == REDIS_EXPIRY_NONE && !e->keepttl && !e->persist)
         return;
 
     if (e->keepttl) {
         redis_cmd_cat_literal(cmd, "KEEPTTL");
+        return;
+    } else if (e->persist) {
+        redis_cmd_cat_literal(cmd, "PERSIST");
         return;
     } else if (e->type == REDIS_EXPIRY_EX) {
         redis_cmd_cat_literal(cmd, "EX");
@@ -2593,156 +2597,182 @@ RedisCmd *redis_decr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         TYPE_DECR, redis_sock);
 }
 
-/* INCREX - atomic increment with optional bounds, saturation, and expiration */
+typedef struct redisIncrExNumber {
+    zend_bool set;
+    union {
+        zend_long lval;
+        double dval;
+    } v;
+} redisIncrExNumber;
+
+/* INCREX options.  Every numeric argument (BYINT/BYFLOAT, LBOUND, UBOUND)
+ * shares the type of the increment, so `byfloat` applies to all three. */
+typedef struct redisIncrExOptions {
+    zend_bool byfloat;
+    redisIncrExNumber by;
+    redisIncrExNumber lbound;
+    redisIncrExNumber ubound;
+    redisExpiryOptions expiry;
+    zend_bool saturate;
+    zend_bool enx;
+} redisIncrExOptions;
+
+/* LBOUND and UBOUND must match the increment type, except that integer
+ * bounds are accepted (and widened) when incrementing by a float. */
+static int
+get_increx_bound(redisIncrExNumber *dst, zend_bool byfloat, const char *name,
+                 zval *zv)
+{
+    if (Z_TYPE_P(zv) == IS_LONG) {
+        if (byfloat) {
+            dst->v.dval = Z_LVAL_P(zv);
+        } else {
+            dst->v.lval = Z_LVAL_P(zv);
+        }
+    } else if (Z_TYPE_P(zv) == IS_DOUBLE && byfloat) {
+        dst->v.dval = Z_DVAL_P(zv);
+    } else {
+        php_error_docref(NULL, E_WARNING, "%s must be %s", name,
+                         byfloat ? "an int or float" : "an int");
+        return FAILURE;
+    }
+
+    dst->set = 1;
+
+    return SUCCESS;
+}
+
+static int get_increx_options(redisIncrExOptions *dst, HashTable *ht) {
+    redisExpiryType exptype;
+    zend_string *key;
+    zval *zv;
+
+    if (ht == NULL)
+        return SUCCESS;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        ZVAL_DEREF(zv);
+
+        if (key == NULL) {
+            if (Z_TYPE_P(zv) != IS_STRING)
+                continue;
+
+            key = Z_STR_P(zv);
+            if (zend_string_equals_literal_ci(key, "PERSIST")) {
+                dst->expiry.type = REDIS_EXPIRY_NONE;
+                dst->expiry.persist = 1;
+            } else if (zend_string_equals_literal_ci(key, "SATURATE")) {
+                dst->saturate = 1;
+            } else if (zend_string_equals_literal_ci(key, "ENX")) {
+                dst->enx = 1;
+            }
+        } else if (zstr_to_expiry_type(&exptype, key)) {
+            dst->expiry.type = exptype;
+            dst->expiry.ttl = zval_get_long(zv);
+            dst->expiry.persist = 0;
+        } else if (zend_string_equals_literal_ci(key, "PERSIST")) {
+            dst->expiry.persist = zend_is_true(zv);
+            if (dst->expiry.persist)
+                dst->expiry.type = REDIS_EXPIRY_NONE;
+        } else if (zend_string_equals_literal_ci(key, "SATURATE")) {
+            dst->saturate = zend_is_true(zv);
+        } else if (zend_string_equals_literal_ci(key, "ENX")) {
+            dst->enx = zend_is_true(zv);
+        } else if (zend_string_equals_literal_ci(key, "LBOUND")) {
+            if (get_increx_bound(&dst->lbound, dst->byfloat, "LBOUND", zv) != SUCCESS)
+                return FAILURE;
+        } else if (zend_string_equals_literal_ci(key, "UBOUND")) {
+            if (get_increx_bound(&dst->ubound, dst->byfloat, "UBOUND", zv) != SUCCESS)
+                return FAILURE;
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    if (dst->expiry.type != REDIS_EXPIRY_NONE && dst->expiry.ttl < 1) {
+        php_error_docref(NULL, E_WARNING, "EXPIRE can't be < 1");
+        return FAILURE;
+    } else if (dst->enx && dst->expiry.type == REDIS_EXPIRY_NONE) {
+        php_error_docref(NULL, E_WARNING,
+            "ENX requires one of EX, PX, EXAT, or PXAT");
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+static void
+redis_cmd_cat_increx_arg(RedisCmd *cmd, const char *kw, size_t kwlen,
+                         zend_bool byfloat, const redisIncrExNumber *num)
+{
+    if (!num->set)
+        return;
+
+    redis_cmd_cat_str(cmd, kw, kwlen);
+    if (byfloat) {
+        redis_cmd_cat_double(cmd, num->v.dval);
+    } else {
+        redis_cmd_cat_long(cmd, num->v.lval);
+    }
+}
+
+#define redis_cmd_cat_increx_arg_literal(cmd, kw, byfloat, num) \
+    redis_cmd_cat_increx_arg(cmd, kw, sizeof(kw) - 1, byfloat, num)
+
+/* INCREX key [BYINT n | BYFLOAT f] [LBOUND l] [UBOUND u] [SATURATE]
+ *            [EX s | PX ms | EXAT ts | PXAT ms-ts | PERSIST] [ENX] */
 RedisCmd *redis_increx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 {
-    zval *z_increment = NULL, *z_opts = NULL;
-    zend_bool byfloat = 0, saturate = 0, enx = 0, persist = 0;
-    zend_long expire = -1;
-    char *exp_type = NULL;
-    zend_bool has_lbound = 0, has_ubound = 0;
-    zend_long lbound_l = 0, ubound_l = 0;
-    double lbound_d = 0, ubound_d = 0;
-    zend_string *key, *zkey_opt;
-    zval *z_ele;
+    redisIncrExOptions opts = {0};
+    HashTable *ht = NULL;
+    zval *zby = NULL;
+    zend_string *key;
     RedisCmd *cmd;
 
     ZEND_PARSE_PARAMETERS_START(1, 3)
         Z_PARAM_STR(key)
         Z_PARAM_OPTIONAL
-        Z_PARAM_ZVAL(z_increment)
-        Z_PARAM_OPTIONAL
-        Z_PARAM_ZVAL_OR_NULL(z_opts)
+#if PHP_VERSION_ID >= 80000
+        Z_PARAM_NUMBER_OR_NULL(zby)
+#else
+        Z_PARAM_ZVAL_OR_NULL(zby)
+#endif
+        Z_PARAM_ARRAY_HT_OR_NULL(ht)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
-    /* Determine increment type */
-    if (z_increment != NULL && Z_TYPE_P(z_increment) == IS_DOUBLE) {
-        byfloat = 1;
+    /* A NULL increment omits BYINT/BYFLOAT entirely (Redis defaults to 1) */
+    if (zby != NULL) {
+        if (Z_TYPE_P(zby) == IS_LONG) {
+            opts.by.v.lval = Z_LVAL_P(zby);
+        } else if (Z_TYPE_P(zby) == IS_DOUBLE) {
+            opts.byfloat = 1;
+            opts.by.v.dval = Z_DVAL_P(zby);
+        } else {
+            php_error_docref(NULL, E_WARNING, "Increment must be an int or float");
+            return NULL;
+        }
+        opts.by.set = 1;
     }
 
-    /* Parse options */
-    if (z_opts != NULL && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey_opt, z_ele) {
-            if (zkey_opt != NULL) {
-                ZVAL_DEREF(z_ele);
-                if (zend_string_equals_literal_ci(zkey_opt, "EX") ||
-                    zend_string_equals_literal_ci(zkey_opt, "PX") ||
-                    zend_string_equals_literal_ci(zkey_opt, "EXAT") ||
-                    zend_string_equals_literal_ci(zkey_opt, "PXAT")
-                ) {
-                    exp_type = ZSTR_VAL(zkey_opt);
-                    expire = zval_get_long(z_ele);
-                    persist = 0;
-                } else if (zend_string_equals_literal_ci(zkey_opt, "PERSIST")) {
-                    persist = zend_is_true(z_ele);
-                    exp_type = NULL;
-                } else if (zend_string_equals_literal_ci(zkey_opt, "SATURATE")) {
-                    saturate = zend_is_true(z_ele);
-                } else if (zend_string_equals_literal_ci(zkey_opt, "ENX")) {
-                    enx = zend_is_true(z_ele);
-                } else if (zend_string_equals_literal_ci(zkey_opt, "LBOUND")) {
-                    has_lbound = 1;
-                    if (Z_TYPE_P(z_ele) == IS_DOUBLE) {
-                        lbound_d = Z_DVAL_P(z_ele);
-                        lbound_l = (zend_long)lbound_d;
-                    } else {
-                        lbound_l = zval_get_long(z_ele);
-                        lbound_d = (double)lbound_l;
-                    }
-                } else if (zend_string_equals_literal_ci(zkey_opt, "UBOUND")) {
-                    has_ubound = 1;
-                    if (Z_TYPE_P(z_ele) == IS_DOUBLE) {
-                        ubound_d = Z_DVAL_P(z_ele);
-                        ubound_l = (zend_long)ubound_d;
-                    } else {
-                        ubound_l = zval_get_long(z_ele);
-                        ubound_d = (double)ubound_l;
-                    }
-                }
-            } else {
-                ZVAL_DEREF(z_ele);
-                if (Z_TYPE_P(z_ele) == IS_STRING) {
-                    if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "PERSIST")) {
-                        persist = 1;
-                        exp_type = NULL;
-                    } else if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "SATURATE")) {
-                        saturate = 1;
-                    } else if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "ENX")) {
-                        enx = 1;
-                    }
-                }
-            }
-        } ZEND_HASH_FOREACH_END();
-    }
-
-    /* Validate */
-    if (exp_type != NULL && expire < 1) {
-        php_error_docref(NULL, E_WARNING, "EXPIRE can't be < 1");
+    if (get_increx_options(&opts, ht) != SUCCESS)
         return NULL;
-    }
 
-    if (enx && exp_type == NULL) {
-        php_error_docref(NULL, E_WARNING,
-            "ENX requires one of EX, PX, EXAT, or PXAT");
-        return NULL;
-    }
-
-    /* Build INCREX command */
     cmd = redis_cmd_create_literal(redis_sock, "INCREX");
     redis_cmd_cat_key_zstr(cmd, key);
 
-    /* BYFLOAT / BYINT */
-    if (z_increment != NULL) {
-        if (byfloat) {
-            redis_cmd_cat_literal(cmd, "BYFLOAT");
-            if (Z_TYPE_P(z_increment) == IS_LONG) {
-                redis_cmd_cat_double(cmd, (double)Z_LVAL_P(z_increment));
-            } else {
-                redis_cmd_cat_double(cmd, Z_DVAL_P(z_increment));
-            }
-        } else {
-            redis_cmd_cat_literal(cmd, "BYINT");
-            redis_cmd_cat_long(cmd, zval_get_long(z_increment));
-        }
+    if (opts.byfloat) {
+        redis_cmd_cat_increx_arg_literal(cmd, "BYFLOAT", 1, &opts.by);
+    } else {
+        redis_cmd_cat_increx_arg_literal(cmd, "BYINT", 0, &opts.by);
     }
 
-    /* LBOUND */
-    if (has_lbound) {
-        redis_cmd_cat_literal(cmd, "LBOUND");
-        if (byfloat) {
-            redis_cmd_cat_double(cmd, lbound_d);
-        } else {
-            redis_cmd_cat_long(cmd, lbound_l);
-        }
-    }
+    redis_cmd_cat_increx_arg_literal(cmd, "LBOUND", opts.byfloat, &opts.lbound);
+    redis_cmd_cat_increx_arg_literal(cmd, "UBOUND", opts.byfloat, &opts.ubound);
+    redis_cmd_cat_literal_if(cmd, opts.saturate, "SATURATE");
+    redis_cmd_cat_expiry(cmd, &opts.expiry);
+    redis_cmd_cat_literal_if(cmd, opts.enx, "ENX");
 
-    /* UBOUND */
-    if (has_ubound) {
-        redis_cmd_cat_literal(cmd, "UBOUND");
-        if (byfloat) {
-            redis_cmd_cat_double(cmd, ubound_d);
-        } else {
-            redis_cmd_cat_long(cmd, ubound_l);
-        }
-    }
-
-    /* SATURATE */
-    if (saturate) {
-        redis_cmd_cat_literal(cmd, "SATURATE");
-    }
-
-    /* Expiration */
-    if (exp_type != NULL) {
-        redis_cmd_cat_str(cmd, exp_type, strlen(exp_type));
-        redis_cmd_cat_long(cmd, expire);
-    } else if (persist) {
-        redis_cmd_cat_literal(cmd, "PERSIST");
-    }
-
-    /* ENX */
-    if (enx) {
-        redis_cmd_cat_literal(cmd, "ENX");
-    }
+    /* RESP2 sends BYFLOAT results as bulk strings */
+    if (opts.byfloat)
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_INCR);
 
     return cmd;
 }

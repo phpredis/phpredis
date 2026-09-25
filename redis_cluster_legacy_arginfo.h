@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: bb39ae8c77a57b9585e30045e532abd4e8f06df5 */
+ * Stub hash: 66fec98a34dd0090e5c2fb7664fe3de763c209e3 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -496,6 +496,12 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_incrby arginfo_class_RedisCluster_append
 
 #define arginfo_class_RedisCluster_incrbyfloat arginfo_class_RedisCluster_append
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_increx, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_info, 0, 0, 1)
 	ZEND_ARG_INFO(0, key_or_address)
@@ -1196,6 +1202,7 @@ ZEND_METHOD(RedisCluster, hvals);
 ZEND_METHOD(RedisCluster, incr);
 ZEND_METHOD(RedisCluster, incrby);
 ZEND_METHOD(RedisCluster, incrbyfloat);
+ZEND_METHOD(RedisCluster, increx);
 ZEND_METHOD(RedisCluster, info);
 ZEND_METHOD(RedisCluster, keys);
 ZEND_METHOD(RedisCluster, lastsave);
@@ -1467,6 +1474,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, incr, arginfo_class_RedisCluster_incr, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, incrby, arginfo_class_RedisCluster_incrby, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, incrbyfloat, arginfo_class_RedisCluster_incrbyfloat, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, increx, arginfo_class_RedisCluster_increx, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, info, arginfo_class_RedisCluster_info, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, keys, arginfo_class_RedisCluster_keys, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, lastsave, arginfo_class_RedisCluster_lastsave, ZEND_ACC_PUBLIC)

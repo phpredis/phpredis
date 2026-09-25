@@ -1513,6 +1513,12 @@ PHP_METHOD(RedisCluster, incrby) {
 }
 /* }}} */
 
+/* {{{ proto array RedisCluster::increx(string key, int|float|null val, ?array opts) */
+PHP_METHOD(RedisCluster, increx) {
+    CLUSTER_PROCESS_CMD(increx, cluster_increx_resp, 0);
+}
+/* }}} */
+
 /* {{{ proto long RedisCluster::decr(string key) */
 PHP_METHOD(RedisCluster, decr) {
     CLUSTER_PROCESS_CMD(decr, cluster_long_resp, 0);

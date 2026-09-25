@@ -713,6 +713,11 @@ class RedisCluster {
     public function incrbyfloat(string $key, float $value): RedisCluster|float|false;
 
     /**
+     * @see \Redis::incrEx()
+     */
+    public function increx(string $key, int|float|null $value = null, ?array $options = null): RedisCluster|array|false;
+
+    /**
      * Retrieve information about a cluster node.  If no sections are passed,
      * Redis will return the default info fields.  Alternatively you may pass a specific
      * section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
