@@ -32,13 +32,12 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Tests we'll skip all together in the context of RedisCluster.  The
      * RedisCluster class doesn't implement specialized (non-redis) commands
-     * such as sortAsc, or sortDesc and other commands such as SELECT are
+     * such as sortAsc, or sortDesc and other commands such as SWAPDB are
      * simply invalid in Redis Cluster */
     public function testPipelinePublish() { $this->markTestSkipped(); }
     public function testSortAsc()  { $this->markTestSkipped(); }
     public function testSortDesc() { $this->markTestSkipped(); }
     public function testWait()     { $this->markTestSkipped(); }
-    public function testSelect()   { $this->markTestSkipped(); }
     public function testReconnectSelect() { $this->markTestSkipped(); }
     public function testMultipleConnect() { $this->markTestSkipped(); }
     public function testDoublePipeNoOp() { $this->markTestSkipped(); }
@@ -49,7 +48,9 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testReset() { $this->markTestSkipped(); }
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
-    public function testConnectDatabaseSelect() { $this->markTestSkipped(); }
+    /* Tests standalone-specific pooling; RedisCluster has its own test
+     * (testPersistentPoolDatabaseIsolation) */
+    public function testPersistentDatabasePoolIsolation() { $this->markTestSkipped(); }
 
     /* These 'directed node' commands work differently in RedisCluster */
     public function testConfig() { $this->markTestSkipped(); }
@@ -102,6 +103,174 @@ class Redis_Cluster_Test extends Redis_Test {
         catch (\Throwable $e) { $ex2 = get_class($e); }
         $this->assertTrue($ex1 !== null);
         $this->assertEquals($ex1, $ex2);
+    }
+
+    /* Whether the cluster supports numbered databases (Valkey >= 9.0 started
+     * with cluster-databases > 1). */
+    protected function clusterSupportsDatabases() {
+        if ( ! $this->minValkeyVersionCheck('9.0.0'))
+            return false;
+
+        $conf = $this->redis->config($this->redis->_masters()[0], 'GET',
+                                     'cluster-databases');
+
+        /* Depending on the reply mode this is either an associative array or
+         * a flat [name, value] list */
+        $databases = is_array($conf)
+            ? ($conf['cluster-databases'] ?? ($conf[1] ?? 1))
+            : 1;
+
+        return (int)$databases > 1;
+    }
+
+    protected function newInstanceWithDatabase(int $database) {
+        return new RedisCluster(NULL, self::$seeds, 30, 30, true,
+                                $this->getAuth(), NULL, $database);
+    }
+
+    public function testSelect() {
+        /* Valid on every backend:  SELECT 0 is legal in cluster mode and
+         * negative databases are rejected client side */
+        $this->assertFalse(@$this->redis->select(-1));
+        $this->assertTrue($this->redis->select(0));
+        $this->assertEquals(0, $this->redis->getDBNum());
+
+        if ( ! $this->clusterSupportsDatabases())
+            $this->markTestSkipped('Cluster does not support databases');
+
+        $this->assertTrue($this->redis->select(2));
+        $this->assertEquals(2, $this->redis->getDBNum());
+
+        /* Exercise many nodes, not just the one SELECT was validated on */
+        for ($i = 0; $i < 10; $i++) {
+            $this->assertTrue($this->redis->set("select:$i", "db2:$i"));
+        }
+
+        $this->assertTrue($this->redis->select(0));
+        $this->assertEquals(0, $this->redis->getDBNum());
+        for ($i = 0; $i < 10; $i++) {
+            $this->assertKeyMissing("select:$i");
+        }
+
+        $this->assertTrue($this->redis->select(2));
+        for ($i = 0; $i < 10; $i++) {
+            $this->assertEquals("db2:$i", $this->redis->get("select:$i"));
+            $this->redis->del("select:$i");
+        }
+
+        $this->assertTrue($this->redis->select(0));
+    }
+
+    public function testGetDBNumDefault() {
+        $this->assertEquals(0, $this->redis->getDBNum());
+    }
+
+    /* Compatibility guardrail:  on servers without database support in
+     * cluster mode (Redis, KeyDB, Valkey < 9) selecting a nonzero database
+     * must fail cleanly and leave the connection usable. */
+    public function testSelectUnsupported() {
+        if ($this->clusterSupportsDatabases())
+            $this->markTestSkipped('Cluster supports databases');
+
+        $this->assertFalse($this->redis->select(1));
+        $this->assertPatternMatch('/SELECT|DB index/i', $this->redis->getLastError());
+        $this->redis->clearLastError();
+
+        $this->assertTrue($this->redis->select(0));
+        $this->assertTrue($this->redis->set('{selunsup}key', 'value'));
+        $this->assertEquals('value', $this->redis->get('{selunsup}key'));
+        $this->redis->del('{selunsup}key');
+    }
+
+    public function testConstructDatabaseUnsupported() {
+        if ($this->clusterSupportsDatabases())
+            $this->markTestSkipped('Cluster supports databases');
+
+        $thrown = false;
+        try {
+            $rc = $this->newInstanceWithDatabase(2);
+            /* With slot caching enabled construction can succeed without
+             * connecting, so force a command */
+            $rc->ping(uniqid());
+        } catch (RedisClusterException $ex) {
+            $thrown = true;
+            $this->assertPatternMatch('/select|database/i', $ex->getMessage());
+        }
+        $this->assertTrue($thrown);
+    }
+
+    public function testConnectDatabaseSelect() {
+        if ( ! $this->clusterSupportsDatabases())
+            $this->markTestSkipped('Cluster does not support databases');
+
+        $key = '{condbsel}key';
+
+        $db2 = $this->newInstanceWithDatabase(2);
+        $this->assertEquals(2, $db2->getDBNum());
+        $this->assertTrue($db2->set($key, 'in-db2'));
+
+        /* A default connection must not see the key, another database 2
+         * connection must */
+        $this->assertKeyMissing($key);
+        $this->assertEquals('in-db2', $this->newInstanceWithDatabase(2)->get($key));
+
+        $db2->del($key);
+
+        $this->assertTrue($db2->select(1));
+        $this->assertEquals(1, $db2->getDBNum());
+    }
+
+    /* A persistent stream left on a nonzero database must never be handed
+     * to a client expecting another database. */
+    public function testPersistentPoolDatabaseIsolation() {
+        if ( ! $this->clusterSupportsDatabases())
+            $this->markTestSkipped('Cluster does not support databases');
+
+        $key = '{pooliso}key';
+
+        $db2 = $this->newInstanceWithDatabase(2);
+        $this->assertTrue($db2->set($key, 'db2-data'));
+
+        /* Return the streams to the pool (close() would force-close them) */
+        unset($db2);
+
+        $this->assertKeyMissing($key, $this->newInstance());
+        $this->assertEquals('db2-data', $this->newInstanceWithDatabase(2)->get($key));
+
+        $this->newInstanceWithDatabase(2)->del($key);
+    }
+
+    public function testReconnectDatabase() {
+        if ( ! $this->clusterSupportsDatabases())
+            $this->markTestSkipped('Cluster does not support databases');
+
+        $key = '{recondb}key';
+
+        $db2 = $this->newInstanceWithDatabase(2);
+        $this->assertTrue($db2->set($key, 'value'));
+
+        /* Force disconnect of every node.  The next command must reconnect
+         * and reselect the database. */
+        $db2->close();
+
+        $this->assertEquals('value', $db2->get($key));
+        $db2->del($key);
+    }
+
+    public function testSession_savePathDatabase() {
+        $this->testRequiresMode('cli');
+
+        if ( ! $this->clusterSupportsDatabases())
+            $this->markTestSkipped('Cluster does not support databases');
+
+        $runner = $this->sessionRunner()
+            ->savePath($this->sessionSavePath() . '&database=2');
+
+        $this->assertSessionRunnerResult($runner);
+
+        /* The session must exist in database 2 but not database 0 */
+        $this->assertKeyExists($runner->getSessionKey(), $this->newInstanceWithDatabase(2));
+        $this->assertKeyMissing($runner->getSessionKey());
     }
 
     private function loadSeedsFromHostPort($host, $port) {
