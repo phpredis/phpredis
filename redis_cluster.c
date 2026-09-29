@@ -180,6 +180,7 @@ PHP_MINIT_FUNCTION(redis_cluster)
 {
     redis_cluster_ce = register_class_RedisCluster();
     redis_cluster_ce->create_object = create_cluster_context;
+    redis_class_deny_serialization(redis_cluster_ce);
 
     redis_cluster_exception_ce = register_class_RedisClusterException(spl_ce_RuntimeException);
 

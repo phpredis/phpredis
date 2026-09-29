@@ -9470,16 +9470,16 @@ class Redis_Test extends TestSuite {
     }
 
     public function testNotSerializable() {
-        if (PHP_VERSION_ID < 80100)
-            $this->markTestSkipped();
-
         $this->assertThrowsMatch($this->redis, function ($redis) {
             serialize($redis);
         }, "/^Serialization of '" . get_class($this->redis) . "' is not allowed$/");
 
+        /* Before PHP 8.1, only the C: format reaches the handler that throws */
+        $format = PHP_VERSION_ID < 80100 ? 'C' : 'O';
+
         foreach (['Redis', 'RedisArray', 'RedisCluster', 'RedisSentinel'] as $class) {
-            $this->assertThrowsMatch($class, function ($class) {
-                unserialize('O:' . strlen($class) . ':"' . $class . '":0:{}');
+            $this->assertThrowsMatch($class, function ($class) use ($format) {
+                unserialize($format . ':' . strlen($class) . ':"' . $class . '":0:{}');
             }, "/^Unserialization of '$class' is not allowed$/");
         }
     }
