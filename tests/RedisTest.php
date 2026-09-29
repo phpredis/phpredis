@@ -9468,5 +9468,20 @@ class Redis_Test extends TestSuite {
         $this->assertTrue($this->redis->set('after_failure', 'ok'));
         $this->assertEquals('ok', $this->redis->get('after_failure'));
     }
+
+    public function testNotSerializable() {
+        if (PHP_VERSION_ID < 80100)
+            $this->markTestSkipped();
+
+        $this->assertThrowsMatch($this->redis, function ($redis) {
+            serialize($redis);
+        }, "/^Serialization of '" . get_class($this->redis) . "' is not allowed$/");
+
+        foreach (['Redis', 'RedisArray', 'RedisCluster', 'RedisSentinel'] as $class) {
+            $this->assertThrowsMatch($class, function ($class) {
+                unserialize('O:' . strlen($class) . ':"' . $class . '":0:{}');
+            }, "/^Unserialization of '$class' is not allowed$/");
+        }
+    }
 }
 ?>

@@ -6,6 +6,7 @@
  * @generate-class-entries
  */
 
+/** @not-serializable */
 class RedisSentinel {
 
     public function __construct(?array $options = null);
