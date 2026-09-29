@@ -131,6 +131,7 @@ PHP_MINIT_FUNCTION(redis_array)
     /* RedisArray class */
     redis_array_ce = register_class_RedisArray();
     redis_array_ce->create_object = create_redis_array_object;
+    redis_class_deny_serialization(redis_array_ce);
 
     /* RedisArray object handler initialization */
     redis_array_init_object_handlers();
