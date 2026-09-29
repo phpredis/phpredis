@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: ca40579af888c5bb0661cd0201d840297474479a */
+ * Stub hash: 5b7b25a02bdb32016fb94ca6029dc0d871f32996 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -68,9 +68,12 @@ static zend_class_entry *register_class_RedisSentinel(void)
 
 	INIT_CLASS_ENTRY(ce, "RedisSentinel", class_RedisSentinel_methods);
 #if (PHP_VERSION_ID >= 80400)
-	class_entry = zend_register_internal_class_with_flags(&ce, NULL, 0);
+	class_entry = zend_register_internal_class_with_flags(&ce, NULL, ZEND_ACC_NOT_SERIALIZABLE);
 #else
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#if (PHP_VERSION_ID >= 80100)
+	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#endif
 #endif
 
 	return class_entry;

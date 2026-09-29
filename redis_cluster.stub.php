@@ -6,6 +6,7 @@
  * @generate-class-entries
  */
 
+/** @not-serializable */
 class RedisCluster {
     /**
      * Used to configure how `PhpRedis` will fail over to replica nodes when a

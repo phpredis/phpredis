@@ -6,6 +6,7 @@
  * @generate-class-entries
  */
 
+/** @not-serializable */
 class Redis {
     /**
      * Returned by `\Redis::type()` when the key does not exist or has a type
