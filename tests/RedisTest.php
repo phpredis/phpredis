@@ -9470,18 +9470,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testNotSerializable() {
-        $this->assertThrowsMatch($this->redis, function ($redis) {
-            serialize($redis);
-        });
-
-        /* Before PHP 8.1, only the C: format reaches the handler that throws */
-        $format = PHP_VERSION_ID < 80100 ? 'C' : 'O';
-
-        foreach (['Redis', 'RedisArray', 'RedisCluster', 'RedisSentinel'] as $class) {
-            $this->assertThrowsMatch($class, function ($class) use ($format) {
-                unserialize($format . ':' . strlen($class) . ':"' . $class . '":0:{}');
-            });
-        }
+        $this->assertNotSerializable($this->redis);
     }
 }
 ?>
