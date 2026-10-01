@@ -4588,8 +4588,9 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         // Buffer to hold size information
         char inbuf[255];
 
-        /* Read up to our newline */
-        if (redis_sock_get_line(redis_sock, inbuf, sizeof(inbuf), &nread) == NULL) {
+        /* Read up to our newline, failing if the line isn't terminated
+         * with \r\n (e.g. a read timeout in the middle of the line) */
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &nread) < 0) {
             return -1;
         }
 
