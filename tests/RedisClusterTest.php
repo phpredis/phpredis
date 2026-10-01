@@ -400,11 +400,19 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $nodes = array_map([$this, 'connectToNode'], $replicas);
 
-        $client = $this->newInstance();
+        /* Without READONLY every read bounces on MOVED until the redirection
+         * loop gives up after timeout + read_timeout, so keep those short or a
+         * regression takes the default 60 seconds per read to surface. */
+        $client = new RedisCluster(NULL, self::$seeds, 1, 1, false, $this->getAuth());
         $client->setOption(RedisCluster::OPT_SLAVE_FAILOVER,
                            RedisCluster::FAILOVER_DISTRIBUTE_SLAVES);
 
         $this->assertTrue($client->set($key, 'bar'));
+
+        /* Replication is asynchronous, so make sure every replica has the
+         * value before we start reading from them */
+        $this->assertEquals(count($nodes),
+                            $client->rawCommand($key, 'wait', count($nodes), 1000));
 
         /* Reads are distributed at random, so make enough of them that we're
          * almost certainly connected to every replica */
@@ -428,6 +436,8 @@ class Redis_Cluster_Test extends Redis_Test {
 
         /* Reconnecting cost us nothing if we sent READONLY again */
         $this->assertEquals($moved, $this->movedCount($nodes));
+
+        $client->del($key);
     }
 
     /* Regression test for directed commands in MULTI mode */
