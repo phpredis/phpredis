@@ -66,6 +66,10 @@ class Redis_Array_Test extends TestSuite
         $this->min_version = getMinVersion($this->ra);
     }
 
+    public function testNotSerializable() {
+        $this->assertNotSerializable($this->ra);
+    }
+
     public function testMSet() {
         // run mset
         $this->assertTrue($this->ra->mset($this->strings));

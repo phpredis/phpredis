@@ -38,6 +38,11 @@ class Redis_Sentinel_Test extends TestSuite
         $this->sentinel = $this->newInstance();
     }
 
+    public function testNotSerializable()
+    {
+        $this->assertNotSerializable($this->sentinel);
+    }
+
     public function testCkquorum()
     {
         $this->assertTrue($this->sentinel->ckquorum(self::NAME));
