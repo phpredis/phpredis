@@ -495,6 +495,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
         /* Kill our own client! */
         $this->assertTrue($this->redis->client($key, 'kill', $addr));
+
+        /* Do not return a connection awaiting the server's close to the pool. */
+        $this->redis->close();
     }
 
     public function testTime() {
