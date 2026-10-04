@@ -136,8 +136,11 @@ PHP_REDIS_API int redis_sock_set_backoff(RedisSock *redis_sock, zval *options);
 
 PHP_REDIS_API int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
+/* No prefix: leave the borrowed key unchanged and return 0.
+ * Any prefix (including empty): replace it with an owned buffer and return 1. */
 PHP_REDIS_API int
 redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
+/* Return an owned reference; a NULL prefix retains key without concatenating. */
 PHP_REDIS_API zend_string *
 redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key);
 

@@ -6,6 +6,7 @@
  * @generate-class-entries
  */
 
+/** @not-serializable */
 class RedisCluster {
     /**
      * Used to configure how `PhpRedis` will fail over to replica nodes when a
@@ -1421,7 +1422,7 @@ class RedisCluster {
     /**
      * @see \Redis::zRevRangeByLex()
      */
-    public function zrevrangebylex(string $key, string $min, string $max, ?array $options = null): RedisCluster|bool|array;
+    public function zrevrangebylex(string $key, string $max, string $min, int $offset = -1, int $count = -1): RedisCluster|array|false;
 
     /**
      * @see \Redis::zRevRangeByScore()

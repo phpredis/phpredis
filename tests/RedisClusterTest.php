@@ -2366,6 +2366,103 @@ class Redis_Cluster_Test extends Redis_Test {
         );
     }
 
+    /* The replicas serving $key, as [host, port] pairs */
+    private function replicasForKey(string $key): array {
+        $master = $this->redis->_masters()[0];
+        $slot = $this->redis->rawCommand($master, 'cluster', 'keyslot', $key);
+
+        foreach ($this->redis->rawCommand($master, 'cluster', 'slots') as $entry) {
+            if ($slot < $entry[0] || $slot > $entry[1])
+                continue;
+
+            /* [start, end, master, replica, ...], each node [host, port, ...] */
+            return array_map(function ($node) {
+                return [$node[0], $node[1]];
+            }, array_slice($entry, 3));
+        }
+
+        return [];
+    }
+
+    /* Directed RedisCluster commands can only address a node that owns slots,
+     * so talk to a replica over a plain Redis connection instead. */
+    private function connectToNode(array $node) {
+        $redis = new Redis(['host' => $node[0], 'port' => $node[1]]);
+
+        if ($this->getAuth())
+            $this->assertTrue($redis->auth($this->getAuth()));
+
+        return $redis;
+    }
+
+    /* The number of MOVED replies the passed nodes have sent */
+    private function movedCount(array $nodes): int {
+        $count = 0;
+
+        foreach ($nodes as $node) {
+            $info = $node->info('errorstats');
+
+            if (preg_match('/count=(\d+)/', $info['errorstat_MOVED'] ?? '', $match))
+                $count += (int)$match[1];
+        }
+
+        return $count;
+    }
+
+    /* A replica that hangs up on us is reconnected transparently, but the
+     * READONLY we sent doesn't survive the new connection, so we have to send
+     * it again or the replica answers MOVED to every read we send it. */
+    public function testReplicaReadonlyResentAfterReconnect() {
+        if ( ! $this->minVersionCheck('6.2.0'))
+            $this->markTestSkipped('INFO ERRORSTATS requires Redis >= 6.2.0');
+
+        $key = 'readonly-reconnect';
+
+        if ( ! ($replicas = $this->replicasForKey($key)))
+            $this->markTestSkipped("No replicas serving '$key'");
+
+        $nodes = array_map([$this, 'connectToNode'], $replicas);
+
+        /* Without READONLY every read bounces on MOVED until the redirection
+         * loop gives up after timeout + read_timeout, so keep those short or a
+         * regression takes the default 60 seconds per read to surface. */
+        $client = new RedisCluster(NULL, self::$seeds, 1, 1, false, $this->getAuth());
+        $client->setOption(RedisCluster::OPT_SLAVE_FAILOVER,
+                           RedisCluster::FAILOVER_DISTRIBUTE_SLAVES);
+
+        $this->assertTrue($client->set($key, 'bar'));
+
+        /* Replication is asynchronous, so make sure every replica has the
+         * value before we start reading from them */
+        $this->assertEquals(count($nodes),
+                            $client->rawCommand($key, 'wait', count($nodes), 1000));
+
+        /* Reads are distributed at random, so make enough of them that we're
+         * almost certainly connected to every replica */
+        $reads = 10 * count($nodes);
+
+        for ($i = 0; $i < $reads; $i++)
+            $this->assertEquals('bar', $client->get($key));
+
+        $moved = $this->movedCount($nodes);
+
+        /* CLIENT KILL skips the connection it's issued on, which is ours */
+        foreach ($nodes as $node)
+            $this->assertGT(0, $node->rawCommand('client', 'kill', 'type', 'normal'));
+
+        /* Give the close time to reach us, so we detect it before we send
+         * rather than while waiting for a reply */
+        usleep(100000);
+
+        for ($i = 0; $i < $reads; $i++)
+            $this->assertEquals('bar', $client->get($key));
+
+        /* Reconnecting cost us nothing if we sent READONLY again */
+        $this->assertEquals($moved, $this->movedCount($nodes));
+
+        $client->del($key);
+    }
+
     /* Regression test for directed commands in MULTI mode */
     public function testDirectedCommandsInMulti() {
         $key = __METHOD__;
@@ -2421,6 +2518,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
         /* Kill our own client! */
         $this->assertTrue($this->redis->client($key, 'kill', $addr));
+
+        /* Do not return a connection awaiting the server's close to the pool. */
+        $this->redis->close();
     }
 
     public function testTime() {

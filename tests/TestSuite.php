@@ -363,6 +363,19 @@ class TestSuite
         return false;
     }
 
+    protected function assertNotSerializable(object $object): void {
+        $this->assertThrowsMatch($object, function ($object) {
+            serialize($object);
+        });
+
+        /* Before PHP 8.1, only the C: format reaches the handler that throws */
+        $format = PHP_VERSION_ID < 80100 ? 'C' : 'O';
+
+        $this->assertThrowsMatch(get_class($object), function ($class) use ($format) {
+            unserialize($format . ':' . strlen($class) . ':"' . $class . '":0:{}');
+        });
+    }
+
     protected function assertThrowsMatch($arg, callable $cb, $regex = NULL): bool {
         $threw = $match = false;
 

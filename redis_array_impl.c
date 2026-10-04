@@ -414,7 +414,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 
 
 /* call userland key extraction function */
-zend_string *
+static zend_string *
 ra_call_extractor(RedisArray *ra, const char *key, int key_len)
 {
     zend_string *out = NULL;
@@ -455,7 +455,7 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len)
 }
 
 /* call userland key distributor function */
-int
+static int
 ra_call_distributor(RedisArray *ra, const char *key, int key_len)
 {
     int ret;
