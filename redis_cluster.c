@@ -265,6 +265,7 @@ static int cluster_enter_pipeline(redisCluster *c)
             /* The previous pipeline has released every borrowed node socket.
              * Refresh before new commands bind themselves to the slot map. */
             c->cmd_sock = NULL;
+            cluster_disconnect(c, 0);
             if (cluster_map_keyspace(c) == FAILURE) return FAILURE;
             c->pipeline_refresh_slots = 0;
         }

@@ -1934,7 +1934,7 @@ class Redis_Cluster_Test extends Redis_Test {
         if (!$this->minVersionCheck('6.0')) $this->markTestSkipped();
 
         $cacheSlots = ini_get('redis.clusters.cache_slots');
-        /* Authenticated cache-loaded seed remapping is a legacy limitation. */
+        /* Exercise refresh failures using the configured seed list. */
         ini_set('redis.clusters.cache_slots', 0);
         $user = 'phpredis-pipeline-refresh-' . uniqid();
         $pass = uniqid('secret-', true);
@@ -1995,6 +1995,122 @@ class Redis_Cluster_Test extends Redis_Test {
                 $this->redis->acl($master, 'DELUSER', $user);
             }
             $this->redis->del($key);
+        }
+    }
+
+    public function testPipelineRefreshRejectsUncoveredSlot() {
+        [$process, $pipes, $port] = $this->startMalformedReplyServer('partial-slots');
+        $redis = null;
+
+        try {
+            $redis = new RedisCluster(null, ["127.0.0.1:$port"], 1, 1, false);
+            $key = '{malformed}hole';
+            $exception = null;
+            try {
+                $redis->pipeline()->eval('return 1', [$key], 1)->exec();
+            } catch (RedisClusterException $e) {
+                $exception = $e;
+            }
+            $this->assertTrue($exception instanceof RedisClusterException);
+            $this->assertStringContains('CLUSTERDOWN', $exception->getMessage());
+
+            $exception = null;
+            try {
+                $redis->pipeline()->get($key);
+            } catch (RedisClusterException $e) {
+                $exception = $e;
+            }
+            $this->assertTrue($exception instanceof RedisClusterException);
+            $this->assertStringContains('Pipeline slot is not covered', $exception->getMessage());
+            $this->assertEquals(Redis::ATOMIC, $redis->getMode());
+        } finally {
+            if ($redis) $redis->close();
+            $this->stopMalformedReplyServer($process, $pipes);
+        }
+    }
+
+    public function testPipelineRefreshAuthenticatesCacheLoadedSeeds() {
+        $cacheSlots = ini_get('redis.clusters.cache_slots');
+        ini_set('redis.clusters.cache_slots', 1);
+
+        try {
+            foreach ([false, true] as $persistent) {
+                [$process, $pipes, $port] = $this->startMalformedReplyServer('cache-auth');
+                $populator = $cached = null;
+
+                try {
+                    $seeds = ["127.0.0.1:$port"];
+                    $auth = ['pipeline-user', 'secret'];
+                    $populator = new RedisCluster(null, $seeds, 1, 1, false, $auth);
+                    $cached = new RedisCluster(null, $seeds, 1, 1, $persistent, $auth);
+                    $key = '{cache-auth}key';
+                    $this->assertEquals(['actual'], $cached->pipeline()->get($key)->exec());
+
+                    $exception = null;
+                    try {
+                        $cached->pipeline()->eval('return 1', [$key], 1)->exec();
+                    } catch (RedisClusterException $e) {
+                        $exception = $e;
+                    }
+                    $this->assertTrue($exception instanceof RedisClusterException);
+                    $this->assertStringContains('CLUSTERDOWN', $exception->getMessage());
+
+                    for ($attempt = 0; $attempt < 3; $attempt++) {
+                        $this->assertEquals(['actual'], $cached->pipeline()->get($key)->exec());
+                    }
+                } finally {
+                    if ($cached) $cached->close();
+                    if ($populator) $populator->close();
+                    $this->stopMalformedReplyServer($process, $pipes);
+                }
+            }
+        } finally {
+            ini_set('redis.clusters.cache_slots', $cacheSlots);
+        }
+    }
+
+    public function testPipelineRefreshDoesNotLeakNonParticipantConnections() {
+        [$key] = $this->keysOnDistinctMasters('pipe-remap-connections', 3);
+        $masters = $this->redis->_masters();
+        $pooling = ini_get('redis.pconnect.pooling_enabled');
+        ini_set('redis.pconnect.pooling_enabled', 1);
+
+        try {
+            foreach ([false, true] as $persistent) {
+                $redis = new RedisCluster(null, self::$seeds, 1, 1, $persistent, $this->getAuth());
+                $name = 'phpredis-pipeline-remap-' . uniqid();
+
+                try {
+                    for ($attempt = 0; $attempt < 3; $attempt++) {
+                        foreach ($masters as $master) {
+                            $this->assertTrue($redis->client($master, 'SETNAME', $name));
+                        }
+                        $connections = 0;
+                        foreach ($masters as $master) {
+                            foreach ($this->redis->client($master, 'LIST') as $client) {
+                                if (($client['name'] ?? '') === $name) $connections++;
+                            }
+                        }
+                        $this->assertEquals(count($masters), $connections);
+
+                        $exception = null;
+                        try {
+                            $redis->pipeline()
+                                ->eval("return redis.error_reply('CLUSTERDOWN simulated failure')", [$key], 1)
+                                ->exec();
+                        } catch (RedisClusterException $e) {
+                            $exception = $e;
+                        }
+                        $this->assertTrue($exception instanceof RedisClusterException);
+                        $redis->pipeline()->get($key)->exec();
+                    }
+                } finally {
+                    foreach ($masters as $master) $redis->client($master, 'SETNAME', '');
+                    $redis->close();
+                }
+            }
+        } finally {
+            ini_set('redis.pconnect.pooling_enabled', $pooling);
         }
     }
 

@@ -166,10 +166,8 @@ execute outside the transaction. Blocking commands may prevent `exec()` from
 completing and should not rely on later commands in the pipeline to unblock
 them.
 
-Existing slot-cache limitations are unchanged: the client that populates a
-cache entry cannot invalidate it, and cache-loaded clients cannot remap when
-authentication is required. For authenticated topology recovery, construct the
-client with `redis.clusters.cache_slots=0`.
+Existing slot-cache limitation: the client that populates a cache entry
+cannot invalidate it.
 
 ## Multiple key commands
 Redis cluster does allow commands that operate on multiple keys, but only if all of those keys hash to the same slot.  Note that it is not enough that the keys are all on the same node, but must actually hash to the exact same hash slot.

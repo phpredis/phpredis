@@ -769,6 +769,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
     char *host, key[1024];
 
     zend_hash_clean(c->nodes);
+    memset(c->master, 0, sizeof(c->master));
 
     for (i = 0; i < r->elements; i++) {
         // Inner response
@@ -1139,7 +1140,8 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
                                  c->flags->timeout, c->flags->read_timeout,
                                  c->flags->persistent, NULL, 0);
 
-        /* Stream context */
+        /* Credentials and context, as for seeds mapped without the cache. */
+        redis_sock_set_auth(sock, c->flags->user, c->flags->pass);
         redis_sock_set_context(sock, c->flags->context);
 
         /* Add to seed nodes */

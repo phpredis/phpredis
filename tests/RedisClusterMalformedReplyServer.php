@@ -1,6 +1,6 @@
 <?php
 
-/* Emit intentionally malformed RESP to test pipeline socket invalidation. */
+/* Emit malformed RESP and routing failures to test pipeline recovery. */
 
 function readLineFromClient($client) {
     $line = @fgets($client);
@@ -61,7 +61,7 @@ function writeToClient($client, $response) {
 }
 
 $scenario = $argv[1] ?? '';
-if (!in_array($scenario, ['pipeline', 'multi', 'multi-framing'], true)) {
+if (!in_array($scenario, ['pipeline', 'multi', 'multi-framing', 'partial-slots', 'cache-auth'], true)) {
     exit(1);
 }
 
@@ -82,6 +82,7 @@ $slots = "*1\r\n*3\r\n:0\r\n:16383\r\n*2\r\n" .
 $malformed = "*3\r\n$3\r\none\r\n$3\r\ntwo\r\n$5\r\nthree\r\n";
 $pipelineConnection = null;
 $pipelineQueuedGetPending = false;
+$refreshPending = false;
 $connectionId = 0;
 $deadline = microtime(true) + 15;
 
@@ -93,18 +94,30 @@ while (microtime(true) < $deadline) {
 
     $connectionId++;
     $inMulti = false;
+    $authenticated = false;
     stream_set_timeout($client, 5);
 
     while (($command = readCommandFromClient($client)) !== false) {
         $verb = strtoupper($command[0] ?? '');
 
-        if ($verb === 'CLUSTER') {
-            writeToClient($client, $slots);
+        if ($scenario === 'cache-auth' && $verb === 'AUTH') {
+            $authenticated = $command === ['AUTH', 'pipeline-user', 'secret'];
+            writeToClient($client, $authenticated ? "+OK\r\n" : "-WRONGPASS invalid credentials\r\n");
+        } else if ($scenario === 'cache-auth' && !$authenticated) {
+            writeToClient($client, "-NOAUTH Authentication required\r\n");
+        } else if ($verb === 'CLUSTER') {
+            /* A valid but incomplete map must not retain freed node pointers. */
+            writeToClient($client, $scenario === 'partial-slots' && $refreshPending
+                ? "*1\r\n*3\r\n:0\r\n:0\r\n*2\r\n$9\r\n127.0.0.1\r\n:$port\r\n"
+                : $slots);
+        } else if (in_array($scenario, ['partial-slots', 'cache-auth'], true) && $verb === 'EVAL') {
+            $refreshPending = true;
+            writeToClient($client, "-CLUSTERDOWN simulated failure\r\n");
         } else if ($scenario === 'pipeline' && $verb === 'LMPOP') {
             $pipelineConnection = $connectionId;
             $pipelineQueuedGetPending = true;
             writeToClient($client, $malformed);
-        } else if ($scenario !== 'pipeline' && $verb === 'MULTI') {
+        } else if (in_array($scenario, ['multi', 'multi-framing'], true) && $verb === 'MULTI') {
             $pipelineConnection = $connectionId;
             $inMulti = true;
             writeToClient($client, "+OK\r\n");
