@@ -201,6 +201,9 @@ typedef struct redisCluster {
     /* Whether pipeline response decoding left stream alignment untrusted */
     zend_bool pipeline_decode_error;
 
+    /* Refresh routing before another pipeline after a topology/transport failure. */
+    zend_bool pipeline_refresh_slots;
+
     /* Flag for when we get a CLUSTERDOWN error */
     short clusterdown;
 

@@ -1856,6 +1856,11 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
 static int cluster_bulk_resp_to_zval(redisCluster *c, zval *zdst) {
     char *resp;
 
+    /* Blocking list moves return a null array on timeout in RESP2. */
+    if (c->reply_type == TYPE_MULTIBULK && c->reply_len == -1) {
+        ZVAL_FALSE(zdst);
+        return SUCCESS;
+    }
     if (c->reply_type != TYPE_BULK) {
         CLUSTER_MARK_DECODE_ERROR(c);
         c->reply_len = 0;
@@ -2144,6 +2149,10 @@ PHP_REDIS_API void
 cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                   RedisCmdCtx ctx)
 {
+    /* Rank and OBJECT integer replies are null bulk for missing data. */
+    if (c->reply_type == TYPE_BULK && c->reply_len == -1) {
+        CLUSTER_RETURN_FALSE(c);
+    }
     if (c->reply_type != TYPE_INT) {
         CLUSTER_RETURN_DECODE_ERROR(c);
     }
@@ -2661,7 +2670,7 @@ cluster_xrange_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
 
-    if (c->reply_type != TYPE_MULTIBULK ||
+    if ((redis_sock_is_pipeline(c->flags) && c->reply_type != TYPE_MULTIBULK) ||
         redis_read_stream_messages(c->cmd_sock, c->reply_len, &z_messages) < 0)
     {
         zval_ptr_dtor_nogc(&z_messages);
@@ -2685,7 +2694,7 @@ cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
 
-    if (c->reply_type != TYPE_MULTIBULK) {
+    if (redis_sock_is_pipeline(c->flags) && c->reply_type != TYPE_MULTIBULK) {
         CLUSTER_RETURN_DECODE_ERROR(c);
     } else if (c->reply_len == -1 && c->flags->null_mbulk_as_null) {
         ZVAL_NULL(&z_streams);
@@ -2863,7 +2872,7 @@ cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     zval z_ret;
 
     array_init(&z_ret);
-    if (c->reply_type != TYPE_MULTIBULK ||
+    if ((redis_sock_is_pipeline(c->flags) && c->reply_type != TYPE_MULTIBULK) ||
         redis_read_xinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS)
     {
         zval_ptr_dtor_nogc(&z_ret);
@@ -2902,7 +2911,7 @@ cluster_acl_custom_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     zval z_ret;
 
     array_init(&z_ret);
-    if (c->reply_type != TYPE_MULTIBULK ||
+    if ((redis_sock_is_pipeline(c->flags) && c->reply_type != TYPE_MULTIBULK) ||
         cb(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS)
     {
         zval_ptr_dtor_nogc(&z_ret);
@@ -3023,10 +3032,13 @@ static int cluster_pipeline_read_item(redisCluster *c, clusterFoldItem *fi)
 
     resp = cluster_check_response(c, &c->reply_type);
     if (resp < 0) {
+        c->pipeline_refresh_slots = 1;
+        cluster_cache_clear(c);
         return FAILURE;
     }
 
     if (c->clusterdown) {
+        c->pipeline_refresh_slots = 1;
         cluster_cache_clear(c);
         if (!EG(exception)) {
             CLUSTER_THROW_EXCEPTION(
@@ -3037,8 +3049,9 @@ static int cluster_pipeline_read_item(redisCluster *c, clusterFoldItem *fi)
 
     if (resp == 1) {
         if (c->redir_type == REDIR_MOVED) {
-            /* Fold items borrow sockets from the current node map, so don't
-             * rebuild it until this aborted pipeline has been torn down. */
+            /* Rebuild only when the next pipeline starts, after this queue
+             * has released its borrowed sockets.  ASK must not change routing. */
+            c->pipeline_refresh_slots = 1;
             cluster_cache_clear(c);
         }
         cluster_pipeline_redirection_error(c);
@@ -3074,6 +3087,12 @@ static int cluster_pipeline_invoke(INTERNAL_FUNCTION_PARAMETERS,
     callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
     c->flags->flags = flags;
     failed = c->pipeline_decode_error;
+
+    if (failed) {
+        /* A node can disconnect after its reply header was already read. */
+        c->pipeline_refresh_slots = 1;
+        cluster_cache_clear(c);
+    }
 
     return EG(exception) || failed ? FAILURE : SUCCESS;
 }
@@ -3202,20 +3221,35 @@ cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     clusterMultiCtx *mctx = ctx.ptr;
     zend_bool error_reply = c->reply_type == TYPE_ERR;
+    zval ignored, *result = mctx->z_multi;
+
+    /* A failed pipeline chunk makes the logical MGET false.  Later successful
+     * chunks still need an array in which to consume their replies. */
+    if (Z_TYPE_P(result) == IS_FALSE) {
+        array_init(&ignored);
+        result = &ignored;
+    }
 
     /* Protect against an invalid response type, -1 response length, and failure
      * to consume the responses. */
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
     short fail = c->reply_type != TYPE_MULTIBULK || c->reply_len == -1 ||
-        mbulk_resp_loop(c->cmd_sock, mctx->z_multi, c->reply_len, redis_empty_ctx) == FAILURE;
+        mbulk_resp_loop(c->cmd_sock, result, c->reply_len, redis_empty_ctx) == FAILURE;
 
-    // If we had a failure, pad results with FALSE to indicate failure.  Non
-    // existent keys (e.g. for MGET will come back as NULL)
+    if (result == &ignored) zval_ptr_dtor_nogc(&ignored);
+
     if (fail) {
         if (!error_reply) CLUSTER_MARK_DECODE_ERROR(c);
-        while (mctx->count--) {
-            add_next_index_bool(mctx->z_multi, 0);
+        if (redis_sock_is_pipeline(c->flags)) {
+            if (Z_TYPE_P(mctx->z_multi) == IS_ARRAY) {
+                zval_ptr_dtor_nogc(mctx->z_multi);
+                ZVAL_FALSE(mctx->z_multi);
+            }
+        } else {
+            while (mctx->count--) {
+                add_next_index_bool(mctx->z_multi, 0);
+            }
         }
     }
 

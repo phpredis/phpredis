@@ -260,7 +260,16 @@ static int cluster_enter_pipeline(redisCluster *c)
         return FAILURE;
     }
 
-    if (cluster_is_atomic(c)) cluster_start_pipeline(c);
+    if (cluster_is_atomic(c)) {
+        if (c->pipeline_refresh_slots) {
+            /* The previous pipeline has released every borrowed node socket.
+             * Refresh before new commands bind themselves to the slot map. */
+            c->cmd_sock = NULL;
+            if (cluster_map_keyspace(c) == FAILURE) return FAILURE;
+            c->pipeline_refresh_slots = 0;
+        }
+        cluster_start_pipeline(c);
+    }
 
     return SUCCESS;
 }
@@ -2714,6 +2723,8 @@ PHP_METHOD(RedisCluster, exec) {
         c->pipeline_executing = 1;
 
         if (cluster_pipeline_send_buffers(c) < 0) {
+            c->pipeline_refresh_slots = 1;
+            cluster_cache_clear(c);
             cluster_pipeline_abort(c);
             if (!EG(exception)) {
                 CLUSTER_THROW_EXCEPTION("Unable to send pipeline to node", 0);

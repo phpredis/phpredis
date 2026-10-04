@@ -156,12 +156,20 @@ state; support may be considered in a future release. Existing top-level
 
 Pipelines are not retried after connection failures, MOVED/ASK redirections, or
 `CLUSTERDOWN` errors because some commands may already have executed. Involved
-connections are closed instead. Node-directed commands, `WAIT`, `WAITAOF`,
+connections are closed instead, and a redirect aborts the entire pipeline.
+After a topology or connection failure, routing is refreshed before the next
+pipeline starts; commands from the failed pipeline are never replayed.
+Node-directed commands, `rawCommand`, `WAIT`, `WAITAOF`,
 `KEYS`, SCAN-style commands, and Pub/Sub subscriptions cannot be queued. As with
 standalone pipelines, an ACL rejection of `MULTI` may cause buffered commands to
 execute outside the transaction. Blocking commands may prevent `exec()` from
 completing and should not rely on later commands in the pipeline to unblock
 them.
+
+Existing slot-cache limitations are unchanged: the client that populates a
+cache entry cannot invalidate it, and cache-loaded clients cannot remap when
+authentication is required. For authenticated topology recovery, construct the
+client with `redis.clusters.cache_slots=0`.
 
 ## Multiple key commands
 Redis cluster does allow commands that operate on multiple keys, but only if all of those keys hash to the same slot.  Note that it is not enough that the keys are all on the same node, but must actually hash to the exact same hash slot.
