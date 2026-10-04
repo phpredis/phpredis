@@ -1,6 +1,6 @@
 <?php
 
-/* Emit malformed RESP and routing failures to test pipeline recovery. */
+/* Emit malformed RESP and routing failures to test cluster recovery. */
 
 function readLineFromClient($client) {
     $line = @fgets($client);
@@ -61,7 +61,9 @@ function writeToClient($client, $response) {
 }
 
 $scenario = $argv[1] ?? '';
-if (!in_array($scenario, ['pipeline', 'multi', 'multi-framing', 'partial-slots', 'cache-auth'], true)) {
+if (!in_array($scenario, [
+    'pipeline', 'multi', 'multi-framing', 'partial-slots', 'cache-auth', 'failover-partial-slots'
+], true)) {
     exit(1);
 }
 
@@ -79,6 +81,19 @@ flush();
 
 $slots = "*1\r\n*3\r\n:0\r\n:16383\r\n*2\r\n" .
          "$9\r\n127.0.0.1\r\n:$port\r\n";
+$replicaServer = null;
+if ($scenario === 'failover-partial-slots') {
+    /* Reserve a distinct replica endpoint so MOVED enters the failover remap. */
+    $replicaServer = @stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+    if ($replicaServer === false) {
+        fwrite(STDERR, "$errstr ($errno)\n");
+        exit(1);
+    }
+    $address = stream_socket_get_name($replicaServer, false);
+    $replicaPort = (int)substr(strrchr($address, ':'), 1);
+    $slots = "*1\r\n*4\r\n:0\r\n:16383\r\n*2\r\n$9\r\n127.0.0.1\r\n:$port\r\n" .
+             "*2\r\n$9\r\n127.0.0.1\r\n:$replicaPort\r\n";
+}
 $malformed = "*3\r\n$3\r\none\r\n$3\r\ntwo\r\n$5\r\nthree\r\n";
 $pipelineConnection = null;
 $pipelineQueuedGetPending = false;
@@ -107,9 +122,17 @@ while (microtime(true) < $deadline) {
             writeToClient($client, "-NOAUTH Authentication required\r\n");
         } else if ($verb === 'CLUSTER') {
             /* A valid but incomplete map must not retain freed node pointers. */
-            writeToClient($client, $scenario === 'partial-slots' && $refreshPending
+            $partial = $refreshPending &&
+                in_array($scenario, ['partial-slots', 'failover-partial-slots'], true);
+            writeToClient($client, $partial
                 ? "*1\r\n*3\r\n:0\r\n:0\r\n*2\r\n$9\r\n127.0.0.1\r\n:$port\r\n"
                 : $slots);
+        } else if ($scenario === 'failover-partial-slots' && $verb === 'GET' && !$refreshPending) {
+            $refreshPending = true;
+            $slot = (int)$argv[2];
+            writeToClient($client, "-MOVED $slot 127.0.0.1:$replicaPort\r\n");
+            /* Retire this connection so the fixture can serve the seed remap. */
+            break;
         } else if (in_array($scenario, ['partial-slots', 'cache-auth'], true) && $verb === 'EVAL') {
             $refreshPending = true;
             writeToClient($client, "-CLUSTERDOWN simulated failure\r\n");
@@ -156,4 +179,5 @@ while (microtime(true) < $deadline) {
 }
 
 fclose($server);
+if ($replicaServer) fclose($replicaServer);
 exit(1);

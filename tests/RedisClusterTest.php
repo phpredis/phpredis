@@ -51,13 +51,14 @@ class Redis_Cluster_Test extends Redis_Test {
         return true;
     }
 
-    private function startMalformedReplyServer($scenario) {
+    private function startMalformedReplyServer($scenario, $slot = null) {
         if (!function_exists('proc_open')) {
             $this->markTestSkipped('proc_open is required');
         }
 
         $process = proc_open(
-            [PHP_BINARY, '-n', __DIR__ . '/RedisClusterMalformedReplyServer.php', $scenario],
+            [PHP_BINARY, '-n', __DIR__ . '/RedisClusterMalformedReplyServer.php',
+                $scenario, (string)$slot],
             [
                 0 => ['pipe', 'r'],
                 1 => ['pipe', 'w'],
@@ -2026,6 +2027,47 @@ class Redis_Cluster_Test extends Redis_Test {
         } finally {
             if ($redis) $redis->close();
             $this->stopMalformedReplyServer($process, $pipes);
+        }
+    }
+
+    public function testNonPipelineMovedRemapRejectsUncoveredSlot() {
+        $key = '{failover-partial-slots}hole';
+        $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
+        $this->assertGT(0, $slot);
+        $cacheSlots = ini_get('redis.clusters.cache_slots');
+        ini_set('redis.clusters.cache_slots', 0);
+
+        try {
+            foreach ([false, true] as $persistent) {
+                [$process, $pipes, $port] = $this->startMalformedReplyServer(
+                    'failover-partial-slots', $slot
+                );
+                $redis = null;
+
+                try {
+                    $redis = new RedisCluster(null, ["127.0.0.1:$port"], 1, 1, $persistent);
+                    $exception = null;
+                    try {
+                        $redis->get($key);
+                    } catch (RedisClusterException $e) {
+                        $exception = $e;
+                    }
+                    $this->assertTrue($exception instanceof RedisClusterException);
+                    $this->assertStringContains(
+                        'Socket for slot is NULL after MOVED redirection',
+                        $exception->getMessage()
+                    );
+                    $this->assertEquals(Redis::ATOMIC, $redis->getMode());
+
+                    /* An empty key hashes to slot zero, which remains covered. */
+                    $this->assertEquals('actual', $redis->get(''));
+                } finally {
+                    if ($redis) $redis->close();
+                    $this->stopMalformedReplyServer($process, $pipes);
+                }
+            }
+        } finally {
+            ini_set('redis.clusters.cache_slots', $cacheSlots);
         }
     }
 

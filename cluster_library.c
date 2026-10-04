@@ -1720,6 +1720,7 @@ PHP_REDIS_API int cluster_send_pipeline(redisCluster *c, RedisSock *sock,
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
                                          int cmd_len)
 {
+    redisClusterNode *node;
     int resp, timedout = 0;
     long msstart;
 
@@ -1779,8 +1780,9 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                if (FAILURE == cluster_update_slot(c)) {
                    return -1;
                }
-               c->cmd_sock = cluster_slot_master_sock(c, slot);
-               /* Verify slot is valid after update */
+               /* A successful remap may still omit the redirected slot. */
+               node = cluster_slot(c, slot);
+               c->cmd_sock = node ? node->sock : NULL;
                if (!c->cmd_sock) {
                    CLUSTER_THROW_EXCEPTION("Socket for slot is NULL after MOVED redirection", 0);
                    return -1;
