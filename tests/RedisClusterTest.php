@@ -270,6 +270,72 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals([true, 'BEEP'], $this->redis->exec());
     }
 
+    public function testDirectedCommandsRejectUncoveredSlot() {
+        for ($i = 0; $i < 256; $i++) {
+            $key = "{uncovered-directed-$i}key";
+            $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
+            if ($this->redis->cluster($key, 'COUNTKEYSINSLOT', $slot) === 0) break;
+        }
+        if ($i === 256) throw new RuntimeException('Unable to find an empty slot');
+
+        foreach ($this->redis->rawCommand($key, 'CLUSTER', 'SLOTS') as $range) {
+            if ($slot >= $range[0] && $slot <= $range[1]) {
+                $master = [$range[2][0], $range[2][1]];
+                break;
+            }
+        }
+        $node = $this->connectToNode($master);
+        $cache = ini_get('redis.clusters.cache_slots');
+        $client = null;
+        $removed = false;
+
+        try {
+            ini_set('redis.clusters.cache_slots', 0);
+            if ($node->rawCommand('CLUSTER', 'DELSLOTS', $slot) === false) {
+                throw new RuntimeException('Unable to unassign the test slot');
+            }
+            $removed = true;
+            /* Map from the owner so the object's slot table contains the hole. */
+            $client = new RedisCluster(null, ["{$master[0]}:{$master[1]}"],
+                1, 1, false, $this->getAuth());
+
+            /* GET already has this guard; directed commands must reject the slot too. */
+            $commands = [
+                ['get', [$key]],
+                ['ping', [$key]],
+                ['echo', [$key, 'message']],
+                ['info', [$key]],
+                ['client', [$key, 'GETNAME']],
+            ];
+
+            foreach ([Redis::ATOMIC, Redis::MULTI] as $mode) {
+                if ($mode === Redis::MULTI) $client->multi();
+                foreach ($commands as [$method, $args]) {
+                    $thrown = false;
+                    try {
+                        $client->$method(...$args);
+                    } catch (RedisClusterException $e) {
+                        $thrown = true;
+                    }
+                    $this->assertTrue($thrown);
+                    $this->assertEquals($mode, $client->getMode());
+                }
+                /* Explicit-node routing and transaction state remain usable. */
+                if ($mode === Redis::MULTI) {
+                    $client->ping($master);
+                    $this->assertEquals([true], $client->exec());
+                } else {
+                    $this->assertTrue($client->ping($master));
+                }
+            }
+        } finally {
+            if ($client) $client->close();
+            if ($removed) $this->assertTrue($node->rawCommand('CLUSTER', 'ADDSLOTS', $slot) !== false);
+            $node->close();
+            ini_set('redis.clusters.cache_slots', $cache);
+        }
+    }
+
     public function testRandomKey() {
         /* Ensure some keys are present to test */
         for ($i = 0; $i < 1000; $i++) {
