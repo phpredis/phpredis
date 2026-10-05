@@ -1631,6 +1631,12 @@ PHP_REDIS_API int
 cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
                   REDIS_REPLY_TYPE rtype)
 {
+    if (!cluster_slot(c, slot)) {
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+            "The slot %d is not covered by any node in this cluster", slot);
+        return -1;
+    }
+
     /* Point our cluster to this slot and it's socket */
     c->cmd_slot = slot;
     c->cmd_sock = cluster_slot_master_sock(c, slot);
