@@ -62,7 +62,8 @@ function writeToClient($client, $response) {
 
 $scenario = $argv[1] ?? '';
 if (!in_array($scenario, [
-    'pipeline', 'multi', 'multi-framing', 'partial-slots', 'cache-auth', 'failover-partial-slots'
+    'pipeline', 'multi', 'multi-framing', 'partial-slots', 'cache-auth', 'failover-partial-slots',
+    'eof-header', 'eof-body', 'send-failure', 'cache-refresh'
 ], true)) {
     exit(1);
 }
@@ -81,6 +82,16 @@ flush();
 
 $slots = "*1\r\n*3\r\n:0\r\n:16383\r\n*2\r\n" .
          "$9\r\n127.0.0.1\r\n:$port\r\n";
+if ($scenario === 'send-failure') {
+    /* Reserve then close an endpoint that will reject the second node's write. */
+    $closed = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+    if ($closed === false) exit(1);
+    $address = stream_socket_get_name($closed, false);
+    $closedPort = (int)substr(strrchr($address, ':'), 1);
+    fclose($closed);
+    $sendSlots = "*2\r\n*3\r\n:0\r\n:8191\r\n*2\r\n$9\r\n127.0.0.1\r\n:$port\r\n" .
+                 "*3\r\n:8192\r\n:16383\r\n*2\r\n$9\r\n127.0.0.1\r\n:$closedPort\r\n";
+}
 $replicaServer = null;
 if ($scenario === 'failover-partial-slots') {
     /* Reserve a distinct replica endpoint so MOVED enters the failover remap. */
@@ -99,6 +110,7 @@ $pipelineConnection = null;
 $pipelineQueuedGetPending = false;
 $refreshPending = false;
 $connectionId = 0;
+$slotsRequests = $writes = $getReplies = 0;
 $deadline = microtime(true) + 15;
 
 while (microtime(true) < $deadline) {
@@ -121,12 +133,44 @@ while (microtime(true) < $deadline) {
         } else if ($scenario === 'cache-auth' && !$authenticated) {
             writeToClient($client, "-NOAUTH Authentication required\r\n");
         } else if ($verb === 'CLUSTER') {
+            $slotsRequests++;
             /* A valid but incomplete map must not retain freed node pointers. */
             $partial = $refreshPending &&
                 in_array($scenario, ['partial-slots', 'failover-partial-slots'], true);
             writeToClient($client, $partial
                 ? "*1\r\n*3\r\n:0\r\n:0\r\n*2\r\n$9\r\n127.0.0.1\r\n:$port\r\n"
-                : $slots);
+                : ($scenario === 'send-failure' && !$refreshPending ? $sendSlots : $slots));
+        } else if ($scenario === 'cache-refresh' && $verb === 'EVAL') {
+            if (strpos($command[1], 'ASK') !== false) {
+                writeToClient($client, "-ASK 0 127.0.0.1:$port\r\n");
+            } else if (strpos($command[1], 'TRYAGAIN') !== false) {
+                writeToClient($client, "-TRYAGAIN fixture failure\r\n");
+            } else {
+                writeToClient($client, "-CLUSTERDOWN fixture failure\r\n");
+            }
+        } else if ($scenario === 'cache-refresh' && $verb === 'INCR') {
+            writeToClient($client, "-ERR fixture failure\r\n");
+        } else if ($scenario === 'cache-refresh' && $verb === 'GET') {
+            $value = (string)$slotsRequests;
+            writeToClient($client, '$' . strlen($value) . "\r\n$value\r\n");
+        } else if ($scenario === 'send-failure' && $verb === 'SET') {
+            $writes++;
+            $refreshPending = true;
+            $pipelineConnection = $connectionId;
+            writeToClient($client, "+OK\r\n");
+        } else if ($scenario === 'send-failure' && $verb === 'GET') {
+            $value = $connectionId === $pipelineConnection ? 'reused' : (string)$writes;
+            writeToClient($client, '$' . strlen($value) . "\r\n$value\r\n");
+        } else if (in_array($scenario, ['eof-header', 'eof-body'], true) &&
+                   $verb === 'GET' && $pipelineConnection === null)
+        {
+            if (++$getReplies === 1) {
+                writeToClient($client, "$6\r\nactual\r\n");
+            } else {
+                $pipelineConnection = $connectionId;
+                if ($scenario === 'eof-body') writeToClient($client, "$6\r\nac");
+                break;
+            }
         } else if ($scenario === 'failover-partial-slots' && $verb === 'GET' && !$refreshPending) {
             $refreshPending = true;
             $slot = (int)$argv[2];
@@ -149,16 +193,16 @@ while (microtime(true) < $deadline) {
         } else if ($inMulti && $verb === 'EXEC') {
             $inMulti = false;
             if ($scenario === 'multi-framing') {
-                writeToClient($client, "*1\r\n$6\r\nactual\r\n");
+                writeToClient($client, "*1\r\n$5\r\nstale\r\n");
             } else {
-                writeToClient($client, "*2\r\n" . $malformed . "$6\r\nactual\r\n");
+                writeToClient($client, "*2\r\n" . $malformed . "$5\r\nstale\r\n");
             }
         } else if ($scenario === 'pipeline' && $verb === 'GET' &&
                    $connectionId === $pipelineConnection &&
                    $pipelineQueuedGetPending)
         {
             $pipelineQueuedGetPending = false;
-            writeToClient($client, "$6\r\nactual\r\n");
+            writeToClient($client, "$5\r\nstale\r\n");
         } else if ($verb === 'GET') {
             $reused = $connectionId === $pipelineConnection;
             writeToClient($client, $reused
