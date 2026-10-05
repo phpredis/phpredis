@@ -2812,10 +2812,55 @@ class Redis_Cluster_Test extends Redis_Test {
         throw new RuntimeException('Unable to find an empty slot for migration');
     }
 
+    private function waitForSlotOwner($slot, $owner) {
+        $nodes = [];
+
+        try {
+            foreach (self::$seeds as $seed) {
+                $separator = strrpos($seed, ':');
+                $nodes[$seed] = $this->connectToNode([
+                    substr($seed, 0, $separator), (int)substr($seed, $separator + 1)
+                ]);
+            }
+
+            $deadline = microtime(true) + 30;
+            do {
+                $pending = [];
+                foreach ($nodes as $seed => $node) {
+                    $actual = null;
+                    foreach ($node->rawCommand('CLUSTER', 'SLOTS') as $range) {
+                        if ($slot >= $range[0] && $slot <= $range[1]) {
+                            $actual = $range[2][2];
+                            break;
+                        }
+                    }
+                    if ($actual !== $owner) $pending[$seed] = $actual;
+                }
+                if (!$pending) return;
+                usleep(50000);
+            } while (microtime(true) < $deadline);
+
+            throw new RuntimeException(
+                "Slot $slot did not converge to owner $owner: " . json_encode($pending)
+            );
+        } finally {
+            foreach ($nodes as $node) $node->close();
+        }
+    }
+
     private function clusterSlotsCalls() {
         $calls = 0;
-        foreach ($this->redis->_masters() as $master) {
-            $stats = $this->redis->info($master, 'COMMANDSTATS');
+        /* A topology refresh can query a replica seed as well as a master. */
+        foreach (self::$seeds as $seed) {
+            $separator = strrpos($seed, ':');
+            $node = $this->connectToNode([
+                substr($seed, 0, $separator), (int)substr($seed, $separator + 1)
+            ]);
+            try {
+                $stats = $node->info('COMMANDSTATS');
+            } finally {
+                $node->close();
+            }
             /* Older servers group CLUSTER subcommands; these checks run between slot changes. */
             $stat = $stats['cmdstat_cluster|slots'] ?? $stats['cmdstat_cluster'] ?? '';
             if (preg_match('/calls=(\d+)/', $stat, $match)) {
@@ -2853,6 +2898,8 @@ class Redis_Cluster_Test extends Redis_Test {
                         $this->assertTrue($node->rawCommand('CLUSTER', 'SETSLOT', $slot, 'NODE', $ids[$target]) !== false);
                     }
                     $this->assertTrue($nodes[$target]->set($key, 'new-owner'));
+                    /* Replica seed maps converge through cluster gossip, not SETSLOT. */
+                    $this->waitForSlotOwner($slot, $ids[$target]);
                     $before = $this->clusterSlotsCalls();
                     $exception = null;
                     try {
@@ -2881,6 +2928,7 @@ class Redis_Cluster_Test extends Redis_Test {
                     foreach ($nodes as $node) {
                         $this->assertTrue($node->rawCommand('CLUSTER', 'SETSLOT', $slot, 'NODE', $ids[$owner]) !== false);
                     }
+                    $this->waitForSlotOwner($slot, $ids[$owner]);
                     foreach ([$redis, $populator, $fresh] as $client) {
                         if ($client) $client->close();
                     }
@@ -2924,6 +2972,7 @@ class Redis_Cluster_Test extends Redis_Test {
             foreach ($nodes as $node) {
                 $node->rawCommand('CLUSTER', 'SETSLOT', $slot, 'NODE', $ids[$target]);
             }
+            $this->waitForSlotOwner($slot, $ids[$target]);
             $exception = null;
             try {
                 $redis->pipeline()->get($key)->exec();
@@ -2940,6 +2989,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 $this->assertTrue($node->rawCommand('CLUSTER', 'SETSLOT', $slot, 'NODE', $ids[$owner]) !== false);
                 $node->close();
             }
+            $this->waitForSlotOwner($slot, $ids[$owner]);
             $redis->close();
         }
     }
