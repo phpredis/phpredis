@@ -300,8 +300,8 @@ struct clusterFoldItem {
     /* Response processing callback */
     cluster_cb callback;
 
-    /* Optional error folding callback for distributed logical commands */
-    cluster_cb error_callback;
+    /* Distributed logical commands fold error replies through their callback. */
+    zend_bool fold_errors;
 
     /* The actual socket where we send this request */
     unsigned short slot;

@@ -2620,10 +2620,10 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     zval z_result;
     char *info;
 
-    if (c->reply_type != TYPE_BULK ||
-        (info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
+    // Read our bulk response
+    if ((info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
     {
-        CLUSTER_RETURN_DECODE_ERROR(c);
+        CLUSTER_RETURN_FALSE(c);
     }
 
     /* Parse response, free memory */
@@ -2645,10 +2645,10 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
     char *info;
     zval z_result;
 
-    if (c->reply_type != TYPE_BULK ||
-        (info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len)) == NULL)
-    {
-        CLUSTER_RETURN_DECODE_ERROR(c);
+    /* Read the bulk response */
+    info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len);
+    if (info == NULL) {
+        CLUSTER_RETURN_FALSE(c);
     }
 
     /* Parse it and free the bulk string */
@@ -2915,11 +2915,9 @@ cluster_acl_custom_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     zval z_ret;
 
     array_init(&z_ret);
-    if ((redis_sock_is_pipeline(c->flags) && c->reply_type != TYPE_MULTIBULK) ||
-        cb(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS)
-    {
+    if (cb(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
         zval_ptr_dtor_nogc(&z_ret);
-        CLUSTER_RETURN_DECODE_ERROR(c);
+        CLUSTER_RETURN_FALSE(c);
     }
 
     if (cluster_is_atomic(c)) {
@@ -3068,7 +3066,6 @@ static int cluster_pipeline_read_item(redisCluster *c, clusterFoldItem *fi)
 static int cluster_pipeline_invoke(INTERNAL_FUNCTION_PARAMETERS,
                                    redisCluster *c, clusterFoldItem *fi)
 {
-    cluster_cb callback;
     zend_bool failed;
     uint8_t flags = c->flags->flags;
 
@@ -3080,15 +3077,14 @@ static int cluster_pipeline_invoke(INTERNAL_FUNCTION_PARAMETERS,
         return FAILURE;
     }
 
-    if (c->err != NULL && fi->error_callback == NULL) {
+    if (c->err != NULL && !fi->fold_errors) {
         add_next_index_bool(&c->multi_resp, 0);
         return SUCCESS;
     }
 
-    callback = c->err == NULL ? fi->callback : fi->error_callback;
     c->pipeline_decode_error = 0;
     c->flags->flags = fi->flags;
-    callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
+    fi->callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
     c->flags->flags = flags;
     failed = c->pipeline_decode_error;
 
@@ -3108,7 +3104,6 @@ static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
 {
     clusterFoldItem *fi, *first, *exec;
     int count = 0, invalid = 0;
-    uint8_t flags = c->flags->flags;
     zval outer, transaction;
 
     if (cluster_pipeline_read_item(c, multi) == FAILURE) {
@@ -3167,7 +3162,6 @@ static int cluster_pipeline_transaction_resp(INTERNAL_FUNCTION_PARAMETERS,
     ZVAL_COPY_VALUE(&transaction, &c->multi_resp);
     ZVAL_COPY_VALUE(&c->multi_resp, &outer);
     add_next_index_zval(&c->multi_resp, &transaction);
-    c->flags->flags = flags;
 
     *next = exec->next;
     return SUCCESS;
