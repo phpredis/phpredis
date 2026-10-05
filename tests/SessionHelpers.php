@@ -5,6 +5,8 @@ namespace SessionHelpers;
 class PhpSpawner {
     protected static function appendPhpArgs(string $php): string {
         $modules   = shell_exec("$php --no-php-ini -m");
+        if ( ! is_string($modules))
+            throw new \RuntimeException('Unable to query PHP extensions');
 
         /* Determine if we need to specifically add extensions */
         $extensions = array_filter(
@@ -346,7 +348,7 @@ class Runner {
         if ($exit_code != 0)
             return false;
 
-        return $output[0];
+        return $output[0] ?? false;
     }
 
     private function getDataCmd(?int $lifetime): string {
@@ -370,6 +372,6 @@ class Runner {
             return implode("\n", $output);
         }
 
-        return $output[0];
+        return $output[0] ?? '';
     }
 }

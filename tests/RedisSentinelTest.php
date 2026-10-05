@@ -56,28 +56,28 @@ class Redis_Sentinel_Test extends TestSuite
     public function testGetMasterAddrByName()
     {
         $result = $this->sentinel->getMasterAddrByName(self::NAME);
-        $this->assertTrue(is_array($result));
-        $this->assertEquals(2, count($result));
+        $this->assertIsArray($result, 2);
     }
 
-    protected function checkFields(array $fields)
+    protected function checkFields($fields)
     {
+        $this->assertIsArray($fields);
+
         foreach ($this->fields as $k) {
-            $this->assertTrue(array_key_exists($k, $fields));
+            $this->assertArrayKey($fields, $k);
         }
     }
 
     public function testMaster()
     {
         $result = $this->sentinel->master(self::NAME);
-        $this->assertTrue(is_array($result));
         $this->checkFields($result);
     }
 
     public function testMasters()
     {
         $result = $this->sentinel->masters();
-        $this->assertTrue(is_array($result));
+        $this->assertIsArray($result);
         foreach ($result as $master) {
             $this->checkFields($master);
         }
@@ -86,7 +86,7 @@ class Redis_Sentinel_Test extends TestSuite
     public function testMyid()
     {
         $result = $this->sentinel->myid();
-        $this->assertTrue(is_string($result));
+        $this->assertIsString($result);
     }
 
     public function testPing()
@@ -102,7 +102,7 @@ class Redis_Sentinel_Test extends TestSuite
     public function testSentinels()
     {
         $result = $this->sentinel->sentinels(self::NAME);
-        $this->assertTrue(is_array($result));
+        $this->assertIsArray($result);
         foreach ($result as $sentinel) {
             $this->checkFields($sentinel);
         }
@@ -111,7 +111,7 @@ class Redis_Sentinel_Test extends TestSuite
     public function testSlaves()
     {
         $result = $this->sentinel->slaves(self::NAME);
-        $this->assertTrue(is_array($result));
+        $this->assertIsArray($result);
         foreach ($result as $slave) {
             $this->checkFields($slave);
         }
@@ -121,7 +121,13 @@ class Redis_Sentinel_Test extends TestSuite
     {
         $result = [];
 
-        foreach ($redis->client('list') as $client) {
+        $clients = $redis->client('list');
+        $this->assertIsArray($clients);
+
+        foreach ($clients as $client) {
+            $this->assertArrayKey($client, 'cmd');
+            $this->assertArrayKey($client, 'id');
+
             if ($client['cmd'] !== $cmd)
                 continue;
 
@@ -147,6 +153,7 @@ class Redis_Sentinel_Test extends TestSuite
             $this->assertTrue($sentinel->ping());
 
             $clients = $this->getClients($redis, 'ping');
+            $this->assertArrayKey($clients, 0);
 
             /* Capture the ping client */
             $id ??= $clients[0];
@@ -155,6 +162,6 @@ class Redis_Sentinel_Test extends TestSuite
         }
 
         /* The same client should have been reused */
-        $this->assertEquals($id, $clients[0]);
+        $this->assertArrayKeyEquals($clients, 0, $id);
     }
 }
