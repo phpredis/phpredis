@@ -25,7 +25,7 @@ ini_set('session.gc_maxlifetime', $lifetime);
 
 session_id($id);
 if ( ! session_start()) {
-    fprintf(STDERR, "session_start() was nut successful");
+    fprintf(STDERR, "session_start() was not successful\n");
     exit(1);
 } else {
     echo isset($_SESSION['redis_test']) ? $_SESSION['redis_test'] : 'Key redis_test not found';

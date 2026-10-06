@@ -219,7 +219,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testServerInfo() { $this->markTestSkipped(); }
     public function testServerInfoOldRedis() { $this->markTestSkipped(); }
 
-    /* Tests we'll skip all together in the context of RedisCluster.  The
+    /* Tests we'll skip altogether in the context of RedisCluster.  The
      * RedisCluster class doesn't implement specialized (non-redis) commands
      * such as sortAsc, or sortDesc and other commands such as SELECT are
      * simply invalid in Redis Cluster */
@@ -243,8 +243,8 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testFlushDB() { $this->markTestSkipped(); }
     public function testFunction() { $this->markTestSkipped(); }
 
-    /* Session locking feature is currently not supported in in context of Redis Cluster.
-       The biggest issue for this is the distribution nature of Redis cluster */
+    /* Session locking is currently not supported in RedisCluster.
+       The biggest issue is the distributed nature of Redis Cluster. */
     public function testSession_lockKeyCorrect() { $this->markTestSkipped(); }
     public function testSession_lockingDisabledByDefault() { $this->markTestSkipped(); }
     public function testSession_lockReleasedOnClose() { $this->markTestSkipped(); }
@@ -358,7 +358,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
     private function findCliExe() {
         foreach (['redis-cli', 'valkey-cli'] as $candidate) {
-            $path = trim(shell_exec("command -v $candidate 2>/dev/null"));
+            $path = trim(shell_exec("command -v $candidate 2>/dev/null") ?? '');
             if (is_executable($path)) {
                 return $path;
             }
@@ -385,7 +385,7 @@ class Redis_Cluster_Test extends Redis_Test {
         return is_string($resp) ? trim($resp) : $resp;
     }
 
-    /* Try to gat a new RedisCluster instance. The strange logic is an attempt
+    /* Try to get a new RedisCluster instance. The strange logic is an attempt
        to solve a problem where this sometimes fails but only ever on GitHub
        runners. If we're not on a runner we just get a new instance. Otherwise
        we allow for two tries to get the instance. */
@@ -3522,18 +3522,89 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertFalse(@$this->redis->exec());
     }
 
+    public function testDirectedCommandsRejectUncoveredSlot() {
+        for ($i = 0; $i < 256; $i++) {
+            $key = "{uncovered-directed-$i}key";
+            $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
+            if ($this->redis->cluster($key, 'COUNTKEYSINSLOT', $slot) === 0) break;
+        }
+        if ($i === 256) throw new RuntimeException('Unable to find an empty slot');
+
+        foreach ($this->redis->rawCommand($key, 'CLUSTER', 'SLOTS') as $range) {
+            if ($slot >= $range[0] && $slot <= $range[1]) {
+                $master = [$range[2][0], $range[2][1]];
+                break;
+            }
+        }
+        $node = $this->connectToNode($master);
+        $cache = ini_get('redis.clusters.cache_slots');
+        $client = null;
+        $removed = false;
+
+        try {
+            ini_set('redis.clusters.cache_slots', 0);
+            if ($node->rawCommand('CLUSTER', 'DELSLOTS', $slot) === false) {
+                throw new RuntimeException('Unable to unassign the test slot');
+            }
+            $removed = true;
+            /* Map from the owner so the object's slot table contains the hole. */
+            $client = new RedisCluster(null, ["{$master[0]}:{$master[1]}"],
+                1, 1, false, $this->getAuth());
+
+            /* GET already has this guard; directed commands must reject the slot too. */
+            $commands = [
+                ['get', [$key]],
+                ['ping', [$key]],
+                ['echo', [$key, 'message']],
+                ['info', [$key]],
+                ['client', [$key, 'GETNAME']],
+            ];
+
+            foreach ([Redis::ATOMIC, Redis::MULTI] as $mode) {
+                if ($mode === Redis::MULTI) $client->multi();
+                foreach ($commands as [$method, $args]) {
+                    $thrown = false;
+                    try {
+                        $client->$method(...$args);
+                    } catch (RedisClusterException $e) {
+                        $thrown = true;
+                    }
+                    $this->assertTrue($thrown);
+                    $this->assertEquals($mode, $client->getMode());
+                }
+                /* Explicit-node routing and transaction state remain usable. */
+                if ($mode === Redis::MULTI) {
+                    $client->ping($master);
+                    $this->assertEquals([true], $client->exec());
+                } else {
+                    $this->assertTrue($client->ping($master));
+                }
+            }
+        } finally {
+            if ($client) $client->close();
+            if ($removed) $this->assertTrue($node->rawCommand('CLUSTER', 'ADDSLOTS', $slot) !== false);
+            $node->close();
+            ini_set('redis.clusters.cache_slots', $cache);
+        }
+    }
+
     public function testRandomKey() {
-        /* Ensure some keys are present to test */
-        for ($i = 0; $i < 1000; $i++) {
-            if (rand(1, 2) == 1) {
-                $this->redis->set("key:$i", "val:$i");
+        $key = 'randomkey-test';
+        $this->redis->set($key, 'value');
+
+        /* Exercise every master, including an empty node, if any. */
+        foreach ($this->redis->_masters() as $master) {
+            $k = $this->redis->randomKey($master);
+            if ($k === false) {
+                $this->assertEquals(0, $this->redis->dbsize($master));
+            } else {
+                $this->assertKeyExists($k);
             }
         }
 
-        for ($i = 0; $i < 1000; $i++) {
-            $k = $this->redis->randomKey("key:$i");
-            $this->assertEquals(1, $this->redis->exists($k));
-        }
+        /* Also exercise directing the command by key. */
+        $this->assertKeyExists($this->redis->randomKey($key));
+        $this->redis->del($key);
     }
 
     public function testEcho() {
@@ -3567,7 +3638,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Regression test for GH #2890 */
     public function testDirectedFlushUsesMaster() {
-        $master = $this->redis->_masters()[0];
+        $masters = $this->redis->_masters();
+        $this->assertArrayKey($masters, 0, 'is_array');
+        $master = $masters[0];
 
         $this->assertTrue(
             $this->redis->setOption(
@@ -3597,15 +3670,26 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* The replicas serving $key, as [host, port] pairs */
     private function replicasForKey(string $key): array {
-        $master = $this->redis->_masters()[0];
+        $masters = $this->redis->_masters();
+        $this->assertArrayKey($masters, 0, 'is_array');
+        $master = $masters[0];
         $slot = $this->redis->rawCommand($master, 'cluster', 'keyslot', $key);
 
-        foreach ($this->redis->rawCommand($master, 'cluster', 'slots') as $entry) {
+        $slots = $this->redis->rawCommand($master, 'cluster', 'slots');
+        $this->assertIsInt($slot);
+        $this->assertIsArray($slots);
+
+        foreach ($slots as $entry) {
+            $this->assertArrayKey($entry, 0, 'is_int');
+            $this->assertArrayKey($entry, 1, 'is_int');
+
             if ($slot < $entry[0] || $slot > $entry[1])
                 continue;
 
             /* [start, end, master, replica, ...], each node [host, port, ...] */
             return array_map(function ($node) {
+                $this->assertArrayKey($node, 0, 'is_string');
+                $this->assertArrayKey($node, 1, 'is_int');
                 return [$node[0], $node[1]];
             }, array_slice($entry, 3));
         }
@@ -3704,9 +3788,9 @@ class Redis_Cluster_Test extends Redis_Test {
             ->exec();
 
         $this->assertIsArray($result, 3);
-        $this->assertTrue($result[0]);
-        $this->assertIsInt($result[1]);
-        $this->assertTrue($result[2]);
+        $this->assertArrayKeyEquals($result, 0, true);
+        $this->assertArrayKey($result, 1, 'is_int');
+        $this->assertArrayKeyEquals($result, 2, true);
     }
 
     public function testInfo() {
@@ -3736,6 +3820,9 @@ class Redis_Cluster_Test extends Redis_Test {
         /* Find us in the list */
         $addr = NULL;
         foreach ($clients as $client) {
+            $this->assertArrayKey($client, 'name');
+            $this->assertArrayKey($client, 'addr', 'is_string');
+
             if ($client['name'] == 'cluster_tests') {
                 $addr = $client['addr'];
                 break;
@@ -3753,9 +3840,13 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testTime() {
-        [$sec, $usec] = $this->redis->time(uniqid());
-        $this->assertEquals(strval(intval($sec)), strval($sec));
-        $this->assertEquals(strval(intval($usec)), strval($usec));
+        $time = $this->redis->time(uniqid());
+        $this->assertIsArray($time, 2);
+        foreach ([0, 1] as $key) {
+            $this->assertArrayKey($time, $key, function ($value) {
+                return is_string($value) && preg_match('/^[0-9]+$/D', $value);
+            });
+        }
     }
 
     public function testExpireAt() {
@@ -3763,6 +3854,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->set('key', 'value');
 
         $now = $this->redis->time('key');
+        $this->assertArrayKey($now, 0, 'is_numeric');
         $this->assertTrue($this->redis->expireAt('key', $now[0] + 10));
         $this->assertLTE(10, $this->redis->ttl('key'));
 
@@ -3836,7 +3928,7 @@ class Redis_Cluster_Test extends Redis_Test {
             }
         }
 
-        /* We should now have both prefixs' keys */
+        /* We should now have both prefixes' keys */
         foreach ($arr_keys as $prefix => $id) {
             $this->assertInArray("{$prefix}{$id}", $scan_keys);
         }
@@ -3858,21 +3950,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $result = $this->redis->pubsub("{pubsub}", "numsub", $c1, $c2);
 
-        // Should get an array back, with two elements
-        $this->assertIsArray($result);
-        $this->assertEquals(4, count($result));
-
-        $zipped = [];
-        for ($i = 0; $i <= count($result) / 2; $i += 2) {
-            $zipped[$result[$i]] = $result[$i+1];
-        }
-        $result = $zipped;
-
-        // Make sure the elements are correct, and have zero counts
-        foreach([$c1,$c2] as $channel) {
-            $this->assertArrayKey($result, $channel);
-            $this->assertEquals(0, $result[$channel]);
-        }
+        $this->assertEquals([$c1, 0, $c2, 0], $result);
 
         // PUBSUB NUMPAT
         $result = $this->redis->pubsub("somekey", "numpat");
@@ -3916,10 +3994,8 @@ class Redis_Cluster_Test extends Redis_Test {
         $info = $this->redis->info(uniqid(), "COMMANDSTATS");
 
         $this->assertIsArray($info);
-        if (is_array($info)) {
-            foreach($info as $k => $value) {
-                $this->assertStringContains('cmdstat_', $k);
-            }
+        foreach ($info as $k => $value) {
+            $this->assertStringContains('cmdstat_', $k);
         }
     }
 
@@ -4005,7 +4081,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         // Non existent script (but proper sha1), and a random (not) sha1 string
         $this->assertFalse($this->redis->evalsha(sha1(uniqid()),[$key], 1));
-        $this->assertFalse($this->redis->evalsha('some-random-data'),[$key], 1);
+        $this->assertFalse($this->redis->evalsha('some-random-data', [$key], 1));
 
         // Load a script
         $cb  = uniqid(); // To ensure the script is new
@@ -4029,8 +4105,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $result = $this->redis->eval($scr,[$key1, $key2], 2);
 
-        $this->assertEquals($key1, $result[0]);
-        $this->assertEquals($key2, $result[1]);
+        $this->assertEquals([$key1, $key2], $result);
     }
 
     public function testEvalBulkResponseMulti() {
@@ -4047,8 +4122,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $result = $this->redis->exec();
 
-        $this->assertEquals($key1, $result[0][0]);
-        $this->assertEquals($key2, $result[0][1]);
+        $this->assertEquals([[$key1, $key2]], $result);
     }
 
     public function testEvalBulkEmptyResponse() {
@@ -4158,7 +4232,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 $score = 1;
                 $value = [
                     "$key-mem1" => 1, "$key-mem2" => 2,
-                    "$key-mem3" => 3, "$key-mem3" => 3
+                    "$key-mem3" => 3, "$key-mem4" => 4
                 ];
                 foreach ($value as $mem => $score) {
                     $this->redis->zadd($key, $score, $mem);
@@ -4174,16 +4248,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Verify that our ZSET values are identical */
     protected function checkZSetEquality($a, $b) {
-        /* If the count is off, the array keys are different or the sums are
-         * different, we know there is something off */
-        $boo_diff = count($a) != count($b) ||
-            count(array_diff(array_keys($a), array_keys($b))) != 0 ||
-            array_sum($a) != array_sum($b);
+        $this->assertIsArray($b);
 
-        if ($boo_diff) {
-            $this->assertEquals($a, $b);
-            return;
-        }
+        $this->assertEqualsCanonicalizing(array_map('floatval', $a), $b, true);
     }
 
     protected function checkKeyValue($key, $key_type, $value) {
@@ -4192,11 +4259,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 $this->assertEquals($value, $this->redis->get($key));
                 break;
             case Redis::REDIS_SET:
-                $arr_r_values = $this->redis->sMembers($key);
-                $arr_l_values = $value;
-                sort($arr_r_values);
-                sort($arr_l_values);
-                $this->assertEquals($arr_r_values, $arr_l_values);
+                $this->assertEqualsCanonicalizing($value, $this->redis->sMembers($key));
                 break;
             case Redis::REDIS_LIST:
                 $this->assertEquals($value, $this->redis->lrange($key, 0, -1));
@@ -4217,12 +4280,20 @@ class Redis_Cluster_Test extends Redis_Test {
         $value_ref = [];
         $type_ref  = [];
 
-        /* Set a bunch of keys of various redis types*/
-        for ($i = 0; $i < 200; $i++) {
+        /* Keep several keys of every type spread across the cluster. */
+        for ($i = 0; $i < 20; $i++) {
             foreach ($this->redis_types as $type) {
                 $key = $this->setKeyVals($i, $type, $value_ref);
                 $type_ref[$key] = $type;
             }
+        }
+
+        /* Replica reads must see the fixtures before testing distribution. */
+        $masters = $this->redis->_masters();
+        foreach ($this->redis->rawCommand($masters[0], 'CLUSTER', 'SLOTS') as $slots) {
+            $replicas = count($slots) - 3;
+            $master = [$slots[2][0], $slots[2][1]];
+            $this->assertEquals($replicas, $this->redis->rawCommand($master, 'WAIT', $replicas, 1000));
         }
 
         /* Iterate over failover options */
@@ -4232,8 +4303,6 @@ class Redis_Cluster_Test extends Redis_Test {
             foreach ($value_ref as $key => $value) {
                 $this->checkKeyValue($key, $type_ref[$key], $value);
             }
-
-            break;
         }
     }
 
