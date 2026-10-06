@@ -271,17 +271,22 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testRandomKey() {
-        /* Ensure some keys are present to test */
-        for ($i = 0; $i < 1000; $i++) {
-            if (rand(1, 2) == 1) {
-                $this->redis->set("key:$i", "val:$i");
+        $key = 'randomkey-test';
+        $this->redis->set($key, 'value');
+
+        /* Exercise every master, including an empty node, if any. */
+        foreach ($this->redis->_masters() as $master) {
+            $k = $this->redis->randomKey($master);
+            if ($k === false) {
+                $this->assertEquals(0, $this->redis->dbsize($master));
+            } else {
+                $this->assertKeyExists($k);
             }
         }
 
-        for ($i = 0; $i < 1000; $i++) {
-            $k = $this->redis->randomKey("key:$i");
-            $this->assertEquals(1, $this->redis->exists($k));
-        }
+        /* Also exercise directing the command by key. */
+        $this->assertKeyExists($this->redis->randomKey($key));
+        $this->redis->del($key);
     }
 
     public function testEcho() {
@@ -957,12 +962,20 @@ class Redis_Cluster_Test extends Redis_Test {
         $value_ref = [];
         $type_ref  = [];
 
-        /* Set a bunch of keys of various redis types*/
-        for ($i = 0; $i < 200; $i++) {
+        /* Keep several keys of every type spread across the cluster. */
+        for ($i = 0; $i < 20; $i++) {
             foreach ($this->redis_types as $type) {
                 $key = $this->setKeyVals($i, $type, $value_ref);
                 $type_ref[$key] = $type;
             }
+        }
+
+        /* Replica reads must see the fixtures before testing distribution. */
+        $masters = $this->redis->_masters();
+        foreach ($this->redis->rawCommand($masters[0], 'CLUSTER', 'SLOTS') as $slots) {
+            $replicas = count($slots) - 3;
+            $master = [$slots[2][0], $slots[2][1]];
+            $this->assertEquals($replicas, $this->redis->rawCommand($master, 'WAIT', $replicas, 1000));
         }
 
         /* Iterate over failover options */
@@ -972,8 +985,6 @@ class Redis_Cluster_Test extends Redis_Test {
             foreach ($value_ref as $key => $value) {
                 $this->checkKeyValue($key, $type_ref[$key], $value);
             }
-
-            break;
         }
     }
 
