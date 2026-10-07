@@ -169,7 +169,8 @@ class Redis_Test extends TestSuite {
     }
 
     protected function newInstance() {
-        $r = new Redis([
+        $class = $this->getRedisClass();
+        $r = new $class([
             'host' => $this->getHost(),
             'port' => $this->getPort(),
         ]);
@@ -3806,7 +3807,8 @@ class Redis_Test extends TestSuite {
         $this->redis->watch($skey);
         $this->redis->multi()->hMGet($hkey, ['field'])->zRandMember($zkey);
         $other->set($skey, 'changed');
-        $aborted = $this->redis instanceof RedisCluster ? [false, false] : false;
+        $cluster_class = $this->getRedisClusterClass();
+        $aborted = $this->redis instanceof $cluster_class ? [false, false] : false;
         $this->assertEquals($aborted, $this->redis->exec());
         $this->assertEquals('member', $this->redis->zRandMember($zkey));
         $this->redis->del($zkey, $hkey, $skey);
@@ -8552,6 +8554,7 @@ class Redis_Test extends TestSuite {
 
     /* If we detect a unix socket make sure we can connect to it in a variety of ways */
     public function testUnixSocket() {
+        $class = $this->getRedisClass();
         if ( ! file_exists('/tmp/redis.sock'))
             $this->markTestSkipped();
 
@@ -8563,7 +8566,7 @@ class Redis_Test extends TestSuite {
         ];
 
         foreach ($sock_tests as $args) {
-            $redis = new Redis();
+            $redis = new $class();
 
             if (count($args) == 2) {
                 @$redis->connect($args[0], $args[1]);
@@ -8593,6 +8596,7 @@ class Redis_Test extends TestSuite {
 
     /* Test high ports if we detect Redis running there */
     public function testHighPorts() {
+        $class = $this->getRedisClass();
         $ports = array_filter(array_map(function ($port) {
             return $this->detectRedis('localhost', $port) ? $port : 0;
         }, [32768, 32769, 32770]));
@@ -8601,7 +8605,7 @@ class Redis_Test extends TestSuite {
             $this->markTestSkipped();
 
         foreach ($ports as $port) {
-            $redis = new Redis();
+            $redis = new $class();
             @$redis->connect('localhost', $port);
             if ($this->getAuth()) {
                 $this->assertTrue($redis->auth($this->getAuth()));
@@ -8981,6 +8985,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testConnectDatabaseSelect() {
+        $class = $this->getRedisClass();
         $options = [
             'host' => $this->getHost(),
             'port' => $this->getPort(),
@@ -8991,7 +8996,7 @@ class Redis_Test extends TestSuite {
             $options['auth'] = $this->getAuth();
         }
 
-        $redis = new Redis($options);
+        $redis = new $class($options);
         $this->assertEquals(2, $redis->getDBNum());
         $this->assertEquals(2, $redis->client('info')['db']);
 
@@ -9002,11 +9007,12 @@ class Redis_Test extends TestSuite {
     }
 
     public function testConnectException() {
+        $class = $this->getRedisClass();
         $host = 'github.com';
         if (gethostbyname($host) === $host)
             $this->markTestSkipped('online test');
 
-        $redis = new Redis();
+        $redis = new $class();
         try {
             $redis->connect($host, 6379, 0.01);
         }  catch (Exception $e) {
@@ -9017,13 +9023,14 @@ class Redis_Test extends TestSuite {
     /* Regression test for GitHub PR #2802). Make sure we don't leak the
      * context array when explicitly reconnecting in a loop */
     public function testTlsReconnect() {
+        $class = $this->getRedisClass();
         $tls_port = $this->getTlsPort();
         if (($fp = @fsockopen($this->getHost(), $tls_port)) == NULL)
             $this->markTestSkipped();
 
         fclose($fp);
 
-        $redis = new Redis;
+        $redis = new $class;
 
         $context = ['stream' => [
             'verify_peer_name' => false,
@@ -9043,6 +9050,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testTlsConnect() {
+        $class = $this->getRedisClass();
         $tls_port = $this->getTlsPort();
 
         if (($fp = @fsockopen($this->getHost(), $tls_port)) == NULL)
@@ -9051,7 +9059,7 @@ class Redis_Test extends TestSuite {
         fclose($fp);
 
         foreach (['localhost' => true, '127.0.0.1' => false] as $host => $verify) {
-            $redis = new Redis();
+            $redis = new $class();
             $this->assertTrue($redis->connect('tls://' . $host, $tls_port, 0, null, 0, 0, [
                 'stream' => ['verify_peer_name' => $verify, 'verify_peer' => false]
             ]));
