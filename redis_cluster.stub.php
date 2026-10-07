@@ -358,7 +358,7 @@ class RedisCluster {
     /**
      * @see \Redis::exec()
      */
-    public function exec(): array|false;
+    public function exec(): RedisCluster|array|false;
 
     /**
      * @see \Redis::exists()

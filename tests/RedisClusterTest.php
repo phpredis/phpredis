@@ -1306,12 +1306,17 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $this->redis->clearTransferredBytes();
         $pipe = $this->redis->pipeline();
-        $pipe->multi()
+        $inner = $pipe->multi()
             ->set($key1, 'one')
             ->set($key2, 'two')
             ->mget([$key1, $key2])
             ->exec();
 
+        $this->assertTrue($inner === $pipe);
+        if (PHP_VERSION_ID >= 80000) {
+            $type = (string)(new ReflectionMethod(RedisCluster::class, 'exec'))->getReturnType();
+            $this->assertStringContains(RedisCluster::class, $type);
+        }
         $this->assertEquals([0, 0], $this->redis->getTransferredBytes());
         $ret = $pipe->exec();
         $this->assertEquals([[true, true, ['one', 'two']]], $ret);
