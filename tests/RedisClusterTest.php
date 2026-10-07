@@ -72,11 +72,12 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Regression test for GH #2810 */
     public function testConstructNullSeeds() {
+        $class = $this->getRedisClusterClass();
         /* new RedisCluster(null, null) must not throw TypeError.
          * $seeds is declared ?array so null is a valid argument. */
         $thrown = false;
         try {
-            new RedisCluster(null, null);
+            new $class(null, null);
         } catch (\Throwable $e) {
             $thrown = true;
             $this->assertFalse($e instanceof \TypeError);
@@ -86,7 +87,7 @@ class Redis_Cluster_Test extends Redis_Test {
         /* Passing an empty array must also not throw TypeError (control). */
         $thrown = false;
         try {
-            new RedisCluster(null, []);
+            new $class(null, []);
         } catch (\Throwable $e) {
             $thrown = true;
             $this->assertFalse($e instanceof \TypeError);
@@ -96,17 +97,18 @@ class Redis_Cluster_Test extends Redis_Test {
         /* Both (null) and (null, null) mean "no name, no seeds" and must
          * produce the same exception type. */
         $ex1 = $ex2 = null;
-        try { new RedisCluster(null); }
+        try { new $class(null); }
         catch (\Throwable $e) { $ex1 = get_class($e); }
-        try { new RedisCluster(null, null); }
+        try { new $class(null, null); }
         catch (\Throwable $e) { $ex2 = get_class($e); }
         $this->assertTrue($ex1 !== null);
         $this->assertEquals($ex1, $ex2);
     }
 
     private function loadSeedsFromHostPort($host, $port) {
+        $class = $this->getRedisClusterClass();
         try {
-            $rc = new RedisCluster(NULL, ["$host:$port"], 1, 1, true, $this->getAuth());
+            $rc = new $class(NULL, ["$host:$port"], 1, 1, true, $this->getAuth());
             self::$seed_source = "Host: $host, Port: $port";
             return array_map(function($master) {
                 return sprintf('%s:%s', $master[0], $master[1]);
@@ -203,16 +205,17 @@ class Redis_Cluster_Test extends Redis_Test {
        runners. If we're not on a runner we just get a new instance. Otherwise
        we allow for two tries to get the instance. */
     private function getNewInstance() {
+        $class = $this->getRedisClusterClass();
         if (getenv('GITHUB_ACTIONS') === 'true') {
             try {
-                return new RedisCluster(NULL, self::$seeds, 30, 30, true,
-                                        $this->getAuth());
+                return new $class(NULL, self::$seeds, 30, 30, true,
+                                  $this->getAuth());
             } catch (Exception $ex) {
                 TestSuite::errorMessage("Failed to connect: %s", $ex->getMessage());
             }
         }
 
-        return new RedisCluster(NULL, self::$seeds, 30, 30, true, $this->getAuth());
+        return new $class(NULL, self::$seeds, 30, 30, true, $this->getAuth());
     }
 
     /* Override newInstance as we want a RedisCluster object */
@@ -271,6 +274,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testDirectedCommandsRejectUncoveredSlot() {
+        $class = $this->getRedisClusterClass();
         for ($i = 0; $i < 256; $i++) {
             $key = "{uncovered-directed-$i}key";
             $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
@@ -296,7 +300,7 @@ class Redis_Cluster_Test extends Redis_Test {
             }
             $removed = true;
             /* Map from the owner so the object's slot table contains the hole. */
-            $client = new RedisCluster(null, ["{$master[0]}:{$master[1]}"],
+            $client = new $class(null, ["{$master[0]}:{$master[1]}"],
                 1, 1, false, $this->getAuth());
 
             /* GET already has this guard; directed commands must reject the slot too. */
@@ -448,7 +452,8 @@ class Redis_Cluster_Test extends Redis_Test {
     /* Directed RedisCluster commands can only address a node that owns slots,
      * so talk to a replica over a plain Redis connection instead. */
     private function connectToNode(array $node) {
-        $redis = new Redis(['host' => $node[0], 'port' => $node[1]]);
+        $class = $this->getRedisClass();
+        $redis = new $class(['host' => $node[0], 'port' => $node[1]]);
 
         if ($this->getAuth())
             $this->assertTrue($redis->auth($this->getAuth()));
@@ -474,6 +479,7 @@ class Redis_Cluster_Test extends Redis_Test {
      * READONLY we sent doesn't survive the new connection, so we have to send
      * it again or the replica answers MOVED to every read we send it. */
     public function testReplicaReadonlyResentAfterReconnect() {
+        $class = $this->getRedisClusterClass();
         if ( ! $this->minVersionCheck('6.2.0'))
             $this->markTestSkipped('INFO ERRORSTATS requires Redis >= 6.2.0');
 
@@ -487,7 +493,7 @@ class Redis_Cluster_Test extends Redis_Test {
         /* Without READONLY every read bounces on MOVED until the redirection
          * loop gives up after timeout + read_timeout, so keep those short or a
          * regression takes the default 60 seconds per read to surface. */
-        $client = new RedisCluster(NULL, self::$seeds, 1, 1, false, $this->getAuth());
+        $client = new $class(NULL, self::$seeds, 1, 1, false, $this->getAuth());
         $client->setOption(RedisCluster::OPT_SLAVE_FAILOVER,
                            RedisCluster::FAILOVER_DISTRIBUTE_SLAVES);
 
@@ -1013,7 +1019,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 $this->assertEquals($value, $this->redis->lrange($key, 0, -1));
                 break;
             case Redis::REDIS_HASH:
-                $this->assertEquals($value, $this->redis->hgetall($key));
+                $this->assertEqualsCanonicalizing($value, $this->redis->hgetall($key), true);
                 break;
             case Redis::REDIS_ZSET:
                 $this->checkZSetEquality($value, $this->redis->zrange($key, 0, -1, true));
