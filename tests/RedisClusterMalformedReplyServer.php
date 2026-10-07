@@ -63,7 +63,7 @@ function writeToClient($client, $response) {
 $scenario = $argv[1] ?? '';
 if (!in_array($scenario, [
     'pipeline', 'multi', 'multi-framing', 'partial-slots', 'cache-auth', 'failover-partial-slots',
-    'eof-header', 'eof-body', 'send-failure', 'cache-refresh'
+    'eof-header', 'eof-body', 'send-failure', 'cache-refresh', 'failed-reconnect'
 ], true)) {
     exit(1);
 }
@@ -109,6 +109,7 @@ $malformed = "*3\r\n$3\r\none\r\n$3\r\ntwo\r\n$5\r\nthree\r\n";
 $pipelineConnection = null;
 $pipelineQueuedGetPending = false;
 $refreshPending = false;
+$reconnectPending = $reconnectRejected = false;
 $connectionId = 0;
 $slotsRequests = $writes = $getReplies = 0;
 $deadline = microtime(true) + 15;
@@ -127,7 +128,18 @@ while (microtime(true) < $deadline) {
     while (($command = readCommandFromClient($client)) !== false) {
         $verb = strtoupper($command[0] ?? '');
 
-        if ($scenario === 'cache-auth' && $verb === 'AUTH') {
+        if ($scenario === 'failed-reconnect' && $verb === 'PING' && !$reconnectPending) {
+            /* Leave the directed socket at EOF, then fail its next reconnect. */
+            $reconnectPending = true;
+            writeToClient($client, "+PONG\r\n");
+            break;
+        } else if ($scenario === 'failed-reconnect' && $verb === 'AUTH' &&
+                   $reconnectPending && !$reconnectRejected)
+        {
+            $reconnectRejected = true;
+            writeToClient($client, "-WRONGPASS simulated reconnect failure\r\n");
+            break;
+        } else if ($scenario === 'cache-auth' && $verb === 'AUTH') {
             $authenticated = $command === ['AUTH', 'pipeline-user', 'secret'];
             writeToClient($client, $authenticated ? "+OK\r\n" : "-WRONGPASS invalid credentials\r\n");
         } else if ($scenario === 'cache-auth' && !$authenticated) {
@@ -220,6 +232,10 @@ while (microtime(true) < $deadline) {
     }
 
     fclose($client);
+    if ($scenario === 'failed-reconnect' && $reconnectPending && !$reconnectRejected) {
+        echo "disconnected\n";
+        flush();
+    }
 }
 
 fclose($server);

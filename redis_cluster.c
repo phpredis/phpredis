@@ -166,19 +166,24 @@ static void cluster_pipeline_disconnect(redisCluster *c)
 static int cluster_pipeline_send_buffers(redisCluster *c)
 {
     clusterFoldItem *item;
+    smart_string buf;
+    int ret;
 
-    /* Freeing a sent buffer also skips later items sharing that socket. */
+    /* Detaching a buffer also skips later items sharing that socket. */
     for (item = c->multi_head; item; item = item->next) {
         if (item->sock == NULL || item->sock->pipeline_cmd.len == 0) {
             continue;
         }
 
-        if (cluster_send_pipeline(c, item->sock, item->sock->pipeline_cmd.c,
-                                  item->sock->pipeline_cmd.len) < 0)
-        {
+        /* Reopening a FAILED socket frees its pipeline_cmd. */
+        buf = item->sock->pipeline_cmd;
+        memset(&item->sock->pipeline_cmd, 0, sizeof(item->sock->pipeline_cmd));
+
+        ret = cluster_send_pipeline(c, item->sock, buf.c, buf.len);
+        smart_string_free(&buf);
+        if (ret < 0) {
             return -1;
         }
-        smart_string_free(&item->sock->pipeline_cmd);
     }
 
     return 0;

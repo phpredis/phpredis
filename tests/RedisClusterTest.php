@@ -596,6 +596,41 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    public function testPipelineAfterFailedSocketReconnect() {
+        foreach ([false, true] as $persistent) {
+            foreach (['pipeline', 'multi'] as $entry) {
+                [$process, $pipes, $port] = $this->startMalformedReplyServer('failed-reconnect');
+                $redis = null;
+
+                try {
+                    $redis = new RedisCluster(null, ["127.0.0.1:$port"], 1, 1,
+                        $persistent, ['pipeline-user', 'secret']);
+                    $key = '{failed-reconnect}key';
+                    $this->assertTrue($redis->ping($key));
+                    /* Observe the fixture's close before attempting reconnect. */
+                    $this->assertEquals("disconnected\n", fgets($pipes[1]));
+
+                    $exception = null;
+                    try {
+                        $redis->ping($key);
+                    } catch (RedisClusterException $e) {
+                        $exception = $e;
+                    }
+                    $this->assertTrue($exception instanceof RedisClusterException);
+
+                    $pipe = $entry === 'pipeline' ? $redis->pipeline() : $redis->multi(Redis::PIPELINE);
+                    $pipe->set($key, 'actual')->get($key);
+                    $this->assertEquals([true, 'actual'], $pipe->exec());
+                    $this->assertEquals(Redis::ATOMIC, $redis->getMode());
+                    $this->assertEquals('actual', $redis->get($key));
+                } finally {
+                    if ($redis) @$redis->close();
+                    $this->stopMalformedReplyServer($process, $pipes);
+                }
+            }
+        }
+    }
+
     public function testPipelineSameSlot() {
         $key1 = '{pipe}one';
         $key2 = '{pipe}two';
