@@ -3980,7 +3980,7 @@ class Redis_Test extends TestSuite {
 
         $i = 0;
         $this->assertIsArray($ret, 18);
-        $this->assertTrue(is_long($ret[$i++]));
+        $this->assertTrue(is_int($ret[$i++]));
         $this->assertEqualsWeak(true, $ret[$i++]);
         $this->assertEqualsWeak('value1', $ret[$i++]);
         $this->assertEqualsWeak('value1', $ret[$i++]);
@@ -4195,7 +4195,7 @@ class Redis_Test extends TestSuite {
             ->exec();
         $i = 0;
         $this->assertIsArray($ret, 7);
-        $this->assertTrue(is_long($ret[$i++]));
+        $this->assertTrue(is_int($ret[$i++]));
         $this->assertIsArray($ret[$i++], 3);
 //        $i++;
         $this->assertTrue($ret[$i++]); // mset always returns true
@@ -4534,7 +4534,7 @@ class Redis_Test extends TestSuite {
 
         $i = 0;
         $this->assertIsArray($ret, 49);
-        $this->assertTrue(is_long($ret[$i++])); // delete
+        $this->assertTrue(is_int($ret[$i++])); // delete
         $this->assertTrue($ret[$i++]); // set
 
         $this->assertFalse($ret[$i++]); // rpush
@@ -4653,7 +4653,7 @@ class Redis_Test extends TestSuite {
 
         $i = 0;
         $this->assertIsArray($ret, 46);
-        $this->assertTrue(is_long($ret[$i++])); // delete
+        $this->assertTrue(is_int($ret[$i++])); // delete
         $this->assertEquals(1, $ret[$i++]); // lpush
 
         $this->assertFalse($ret[$i++]); // get
@@ -4770,7 +4770,7 @@ class Redis_Test extends TestSuite {
 
         $i = 0;
         $this->assertIsArray($ret, 47);
-        $this->assertTrue(is_long($ret[$i++])); // delete
+        $this->assertTrue(is_int($ret[$i++])); // delete
         $this->assertEquals(1, $ret[$i++]); // zadd
 
         $this->assertFalse($ret[$i++]); // get
@@ -4886,7 +4886,7 @@ class Redis_Test extends TestSuite {
 
         $i = 0;
         $this->assertIsArray($ret, 45);
-        $this->assertTrue(is_long($ret[$i++])); // delete
+        $this->assertTrue(is_int($ret[$i++])); // delete
         $this->assertEquals(1, $ret[$i++]); // zadd
 
         $this->assertFalse($ret[$i++]); // get
@@ -5002,7 +5002,7 @@ class Redis_Test extends TestSuite {
 
         $i = 0;
         $this->assertIsArray($ret, 47);
-        $this->assertTrue(is_long($ret[$i++])); // delete
+        $this->assertTrue(is_int($ret[$i++])); // delete
         $this->assertEquals(1, $ret[$i++]); // hset
 
         $this->assertFalse($ret[$i++]); // get
