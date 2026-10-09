@@ -714,9 +714,10 @@ static void redis_get_zcmd_options(redisZcmdOptions *dst, zval *src, int flags) 
             {
                 if (Z_TYPE_P(zv) != IS_STRING || (!zend_string_equals_literal_ci(Z_STR_P(zv), "SUM") &&
                                                   !zend_string_equals_literal_ci(Z_STR_P(zv), "MIN") &&
-                                                  !zend_string_equals_literal_ci(Z_STR_P(zv), "MAX")))
+                                                  !zend_string_equals_literal_ci(Z_STR_P(zv), "MAX") &&
+                                                  !zend_string_equals_literal_ci(Z_STR_P(zv), "COUNT")))
                 {
-                    php_error_docref(NULL, E_WARNING, "Valid AGGREGATE options are 'SUM', 'MIN', or 'MAX'");
+                    php_error_docref(NULL, E_WARNING, "Valid AGGREGATE options are 'SUM', 'MIN', 'MAX', or 'COUNT'");
                 } else {
                     dst->aggregate = Z_STR_P(zv);
                 }
@@ -1446,9 +1447,10 @@ redis_zinterunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
     // AGGREGATE option
     if (agg != NULL && (!zend_string_equals_literal_ci(agg, "SUM") &&
                         !zend_string_equals_literal_ci(agg, "MIN") &&
-                        !zend_string_equals_literal_ci(agg, "MAX")))
+                        !zend_string_equals_literal_ci(agg, "MAX") &&
+                        !zend_string_equals_literal_ci(agg, "COUNT")))
     {
-        php_error_docref(NULL, E_WARNING, "AGGREGATE option must be 'SUM', 'MIN', or 'MAX'");
+        php_error_docref(NULL, E_WARNING, "AGGREGATE option must be 'SUM', 'MIN', 'MAX', or 'COUNT'");
         return NULL;
     }
 

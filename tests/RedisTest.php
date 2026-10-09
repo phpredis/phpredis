@@ -3342,6 +3342,37 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(['a' => 1.0, 'b' => 1.0, 'c' => 1.0], $this->redis->zUnion(['key'], null, ['withscores' => true]));
     }
 
+    public function testZAggregateCount() {
+        if ( ! $this->minVersionCheck('8.8.0'))
+            $this->markTestSkipped();
+
+        $keys = ['{zcount}1', '{zcount}2', '{zcount}3'];
+        $dst = '{zcount}dst';
+        $this->redis->del($keys);
+        $this->redis->zAdd($keys[0], 10, 'a', 20, 'b', 30, 'c');
+        $this->redis->zAdd($keys[1], 40, 'b', 50, 'c');
+        $this->redis->zAdd($keys[2], 60, 'c');
+
+        foreach (['COUNT', 'count'] as $aggregate) {
+            foreach ([null, [0, -2, 3]] as $weights) {
+                $union = $weights === null ? ['a' => 1.0, 'b' => 2.0, 'c' => 3.0]
+                                           : ['b' => -2.0, 'a' => 0.0, 'c' => 1.0];
+                foreach (['zUnion' => $union, 'zInter' => ['c' => $union['c']]] as $command => $expected)
+                {
+                    $options = ['aggregate' => $aggregate, 'withscores' => true];
+                    $this->assertEquals($expected, $this->redis->$command($keys, $weights, $options));
+
+                    $store = $command . 'Store';
+                    $this->assertEquals(count($expected), $this->redis->$store($dst, $keys, $weights, $aggregate));
+                    $this->assertEquals($expected, $this->redis->zRange($dst, 0, -1, true));
+                }
+            }
+        }
+
+        $this->redis->del($keys);
+        $this->redis->del($dst);
+    }
+
     public function testzDiffStore() {
         // Only available since 6.2.0
         if (version_compare($this->version, '6.2.0') < 0)
