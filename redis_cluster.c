@@ -1758,11 +1758,11 @@ PHP_METHOD(RedisCluster, zdiffstore) {
 }
 
 PHP_METHOD(RedisCluster, zinter) {
-    CLUSTER_PROCESS_KW_CMD("ZUNION", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("ZINTER", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
 }
 
 PHP_METHOD(RedisCluster, zunion) {
-    CLUSTER_PROCESS_KW_CMD("ZINTER", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("ZUNION", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
 }
 
 /* {{{ proto array RedisCluster::zrandmember(string key, array options) */
