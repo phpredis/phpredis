@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 097f539fffdd7fbfd13b82b501badc3009568757 */
+ * Stub hash: 82a77e4ed63d38d7e361fc1c016bfbe5f8a0df31 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -1808,9 +1808,12 @@ static zend_class_entry *register_class_RedisCluster(void)
 
 	INIT_CLASS_ENTRY(ce, "RedisCluster", class_RedisCluster_methods);
 #if (PHP_VERSION_ID >= 80400)
-	class_entry = zend_register_internal_class_with_flags(&ce, NULL, 0);
+	class_entry = zend_register_internal_class_with_flags(&ce, NULL, ZEND_ACC_NOT_SERIALIZABLE);
 #else
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#if (PHP_VERSION_ID >= 80100)
+	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#endif
 #endif
 
 	zval const_OPT_SLAVE_FAILOVER_value;

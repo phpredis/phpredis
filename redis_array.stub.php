@@ -259,6 +259,8 @@
  * @method RedisArray|array|false zunion(array $keys, ?array $weights = null, ?array $options = null)
  * @method RedisArray|int|false zunionstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null)
  * @method RedisArray|string|false digest(string $key)
+ *
+ * @not-serializable
  */
 class RedisArray {
 

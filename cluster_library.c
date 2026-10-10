@@ -301,23 +301,34 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
     return r;
 }
 
+/* Connect the socket if needed and make sure it's still alive.  Note that
+ * redis_check_eof can reconnect transparently, which drops any per-connection
+ * state we had sent (e.g. READONLY). */
 static zend_always_inline zend_bool
-cluster_send_payload(RedisSock *redis_sock, const char *buf, size_t len)
+cluster_sock_live(RedisSock *redis_sock)
 {
-    ssize_t nwritten;
-
     if (redis_sock == NULL)
         return 0;
 
     if (redis_sock_server_open(redis_sock) != 0 || redis_sock->stream == NULL)
         return 0;
 
-    if (redis_check_eof(redis_sock, 0, 1) != 0)
-        return 0;
+    return redis_check_eof(redis_sock, 0, 1) == 0;
+}
 
-    /* Require a complete write; leave retry decisions to the caller. */
-    nwritten = redis_sock_write_raw(redis_sock, buf, len);
+/* Require a complete write; leave retry decisions to the caller. */
+static zend_always_inline zend_bool
+cluster_write_payload(RedisSock *redis_sock, const char *buf, size_t len)
+{
+    ssize_t nwritten = redis_sock_write_raw(redis_sock, buf, len);
     return nwritten >= 0 && nwritten == len;
+}
+
+static zend_always_inline zend_bool
+cluster_send_payload(RedisSock *redis_sock, const char *buf, size_t len)
+{
+    return cluster_sock_live(redis_sock) &&
+           cluster_write_payload(redis_sock, buf, len);
 }
 
 static zend_always_inline zend_bool
@@ -370,6 +381,17 @@ static int cluster_send_readonly(RedisSock *redis_sock) {
 
     /* Return the result of our send */
     return ret;
+}
+
+/* Send a command to a replica, issuing READONLY first if this connection
+ * doesn't have it.  Liveness is checked once, before READONLY, because a
+ * transparent reconnect after that point would drop it again. */
+static zend_bool
+cluster_send_replica_payload(RedisSock *redis_sock, const char *buf, size_t len)
+{
+    return cluster_sock_live(redis_sock) &&
+           cluster_send_readonly(redis_sock) == 0 &&
+           cluster_write_payload(redis_sock, buf, len);
 }
 
 /* Send MULTI to a specific ReidsSock */
@@ -1501,15 +1523,12 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
         redis_sock = cluster_slot_sock(c, c->cmd_slot, nodes[i]);
         if (!redis_sock) continue;
 
-        /* If we're not on the master, attempt to send the READONLY command to
-         * this slave, and skip it if that fails */
-        if (nodes[i] == 0 || cluster_send_readonly(redis_sock) == 0) {
-            /* Attempt to send the command */
-            if (cluster_send_payload(redis_sock, cmd, sz)) {
-                c->cmd_sock = redis_sock;
-                if (nodes != stack_nodes) efree(nodes);
-                return 0;
-            }
+        if (nodes[i] == 0 ? cluster_send_payload(redis_sock, cmd, sz)
+                          : cluster_send_replica_payload(redis_sock, cmd, sz))
+        {
+            c->cmd_sock = redis_sock;
+            if (nodes != stack_nodes) efree(nodes);
+            return 0;
         }
     }
 
@@ -1747,6 +1766,12 @@ PHP_REDIS_API int
 cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
                   REDIS_REPLY_TYPE rtype)
 {
+    if (!cluster_slot(c, slot)) {
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+            "The slot %d is not covered by any node in this cluster", slot);
+        return -1;
+    }
+
     /* Point our cluster to this slot and it's socket */
     c->cmd_slot = slot;
     c->cmd_sock = cluster_slot_master_sock(c, slot);

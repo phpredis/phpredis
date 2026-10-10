@@ -180,6 +180,7 @@ PHP_MINIT_FUNCTION(redis_cluster)
 {
     redis_cluster_ce = register_class_RedisCluster();
     redis_cluster_ce->create_object = create_cluster_context;
+    redis_class_deny_serialization(redis_cluster_ce);
 
     redis_cluster_exception_ce = register_class_RedisClusterException(spl_ce_RuntimeException);
 
@@ -1774,11 +1775,11 @@ PHP_METHOD(RedisCluster, zdiffstore) {
 }
 
 PHP_METHOD(RedisCluster, zinter) {
-    CLUSTER_PROCESS_KW_CMD("ZUNION", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("ZINTER", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
 }
 
 PHP_METHOD(RedisCluster, zunion) {
-    CLUSTER_PROCESS_KW_CMD("ZINTER", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("ZUNION", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
 }
 
 /* {{{ proto array RedisCluster::zrandmember(string key, array options) */

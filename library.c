@@ -3166,6 +3166,22 @@ static int redis_stream_detect_dirty(php_stream *stream) {
     return rv == 0 ? SUCCESS : FAILURE;
 }
 
+/* Read and validate a RESP line without throwing or disconnecting. */
+static int
+redis_sock_gets_silent(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_size)
+{
+    if (redis_sock_get_line(redis_sock, buf, buf_size, line_size) == NULL ||
+        *line_size < 2 || memcmp(buf + *line_size - 2, ZEND_STRL("\r\n")) != 0)
+    {
+        return FAILURE;
+    }
+
+    *line_size -= 2;
+    buf[*line_size] = '\0';
+
+    return SUCCESS;
+}
+
 static inline zend_bool
 redis_check_echo_response(RedisSock *redis_sock, char *hdr, const char *id,
                           size_t idlen)
@@ -3182,7 +3198,7 @@ redis_check_echo_response(RedisSock *redis_sock, char *hdr, const char *id,
 
     /* Non-sentinel: Read and verify the ID */
     return *hdr == TYPE_BULK && atoi(hdr + 1) == idlen &&
-           redis_sock_gets(redis_sock, buf, sizeof(buf) - 1, &len) == 0 &&
+           redis_sock_gets_silent(redis_sock, buf, sizeof(buf) - 1, &len) == SUCCESS &&
            redis_strncmp(buf, id, idlen) == 0;
 }
 
@@ -3217,15 +3233,16 @@ redis_sock_check_liveness(RedisSock *redis_sock)
 
     resp_str_cat_str(&cmd, id, idlen);
 
-    /* Send command(s) and make sure we can consume reply(ies) */
-    if (redis_sock_write(redis_sock, ZSTR_VAL(cmd.s), ZSTR_LEN(cmd.s)) < 0) {
+    /* Probe only this stream, without throwing, reconnecting, or changing pool
+     * accounting.  The caller will replace it if the probe fails. */
+    if (redis_sock_write_raw(redis_sock, ZSTR_VAL(cmd.s), ZSTR_LEN(cmd.s)) != ZSTR_LEN(cmd.s)) {
         smart_str_free(&cmd);
         goto failure;
     }
 
     smart_str_free(&cmd);
 
-    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+    if (redis_sock_gets_silent(redis_sock, inbuf, sizeof(inbuf) - 1, &len) == FAILURE) {
         goto failure;
     }
 
@@ -3234,13 +3251,13 @@ redis_sock_check_liveness(RedisSock *redis_sock)
             redis_strncmp(inbuf, ZEND_STRL("-ERR Client sent AUTH")) == 0)
         {
             /* successfully authenticated or authentication isn't required */
-            if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+            if (redis_sock_gets_silent(redis_sock, inbuf, sizeof(inbuf) - 1, &len) == FAILURE) {
                 goto failure;
             }
         } else if (redis_strncmp(inbuf, ZEND_STRL("-NOAUTH")) == 0) {
             /* connection is fine but authentication failed, next command must
              * fail too */
-            if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0
+            if (redis_sock_gets_silent(redis_sock, inbuf, sizeof(inbuf) - 1, &len) == FAILURE
                 || redis_strncmp(inbuf, ZEND_STRL("-NOAUTH")) != 0)
             {
                 goto failure;
@@ -3508,6 +3525,9 @@ redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
     }
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
+
+    /* READONLY lives on the server, so it cannot survive the stream */
+    redis_sock->readonly = 0;
 
     return SUCCESS;
 }
@@ -4560,8 +4580,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
         return -1;
     }
 
-    if(redis_sock_get_line(redis_sock, buf, buf_size, line_size) == NULL ||
-       *line_size < 2 || memcmp(buf + *line_size - 2, ZEND_STRL("\r\n")) != 0)
+    if (redis_sock_gets_silent(redis_sock, buf, buf_size, line_size) == FAILURE)
     {
         if (redis_sock->port < 0) {
             snprintf(buf, buf_size, "read error on connection to %s", ZSTR_VAL(redis_sock->host));
@@ -4575,10 +4594,6 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
         REDIS_THROW_EXCEPTION(buf, 0);
         return FAILURE;
     }
-
-    /* We don't need \r\n */
-    *line_size -= 2;
-    buf[*line_size] = '\0';
 
     /* Success! */
     return 0;
@@ -4611,8 +4626,9 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         // Buffer to hold size information
         char inbuf[255];
 
-        /* Read up to our newline */
-        if (redis_sock_get_line(redis_sock, inbuf, sizeof(inbuf), &nread) == NULL) {
+        /* Read up to our newline, failing if the line isn't terminated
+         * with \r\n (e.g. a read timeout in the middle of the line) */
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &nread) < 0) {
             return -1;
         }
 

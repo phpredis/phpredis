@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: b3c1c6723fea03ccd447f71a5d18a31279e482c2 */
+ * Stub hash: 702da70525cb89e3444713287350a4985fe88567 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1974,9 +1974,12 @@ static zend_class_entry *register_class_Redis(void)
 
 	INIT_CLASS_ENTRY(ce, "Redis", class_Redis_methods);
 #if (PHP_VERSION_ID >= 80400)
-	class_entry = zend_register_internal_class_with_flags(&ce, NULL, 0);
+	class_entry = zend_register_internal_class_with_flags(&ce, NULL, ZEND_ACC_NOT_SERIALIZABLE);
 #else
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#if (PHP_VERSION_ID >= 80100)
+	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#endif
 #endif
 
 	zval const_REDIS_NOT_FOUND_value;

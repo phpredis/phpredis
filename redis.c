@@ -360,6 +360,7 @@ PHP_MINIT_FUNCTION(redis)
     /* Redis class */
     redis_ce = register_class_Redis();
     redis_ce->create_object = create_redis_object;
+    redis_class_deny_serialization(redis_ce);
 
     /* Redis object handler initialization */
     redis_init_object_handlers();
