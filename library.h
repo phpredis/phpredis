@@ -4,6 +4,11 @@
 #include "php_redis.h"
 #include "redis_cmd.h"
 
+/* Declared here so every user of the macros below can throw without having
+ * to redeclare these itself */
+extern zend_class_entry *redis_exception_ce;
+extern zend_class_entry *redis_cluster_exception_ce;
+
 #define REDIS_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_exception_ce, (msg), code)
 
@@ -50,6 +55,7 @@ PHP_REDIS_API int redis_sock_configure(RedisSock *redis_sock, HashTable *opts);
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock);
 PHP_REDIS_API int redis_sock_server_open(RedisSock *redis_sock);
 PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock);
+PHP_REDIS_API int redis_sock_select_db(RedisSock *redis_sock, zend_long db);
 PHP_REDIS_API zend_string *redis_sock_auth_cmd(RedisSock *redis_sock);
 PHP_REDIS_API void redis_sock_set_auth(RedisSock *redis_sock, zend_string *user, zend_string *pass);
 PHP_REDIS_API void redis_sock_set_auth_zval(RedisSock *redis_sock, zval *zv);

@@ -27,6 +27,10 @@ $obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true
 // If value is array (even empty), it will connect via TLS.  If not, it will connect without TLS.
 // Note: If the seeds start with "ssl:// or tls://", it will connect to the seeds via TLS, but the subsequent connections will connect without TLS if this value is null.  So, if your nodes require TLS, this value must be an array, even if empty.
 $obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, NULL, ["verify_peer" => false]);
+
+// Connect and select database 2.  See "Numbered databases" below -- this
+// requires a server which supports databases in cluster mode.
+$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, NULL, NULL, 2);
 ```
 
 #### Loading a cluster configuration by name
@@ -38,6 +42,7 @@ redis.clusters.seeds = "mycluster[]=localhost:7000&test[]=localhost:7001"
 redis.clusters.timeout = "mycluster=5"
 redis.clusters.read_timeout = "mycluster=10"
 redis.clusters.auth = "mycluster=password"
+redis.clusters.database = "mycluster=2"
 ```
 
 Then, this cluster can be loaded by doing the following
@@ -52,6 +57,50 @@ On construction, the RedisCluster class will iterate over the provided seed node
 
 ## Slot caching
 Each time the `RedisCluster` class is constructed from scratch, phpredis needs to execute a `CLUSTER SLOTS` command to map the keyspace.  Although this isn't an expensive command, it does require a round trip for each newly created object, which is inefficient.  Starting from PhpRedis 5.0.0 these slots can be cached by setting `redis.clusters.cache_slots = 1` in `php.ini`.
+
+## Numbered databases
+Historically, cluster mode was restricted to a single database, so `SELECT` was rejected outright.  Valkey 9.0 lifted this restriction:  when a cluster is started with `cluster-databases` set to a value greater than 1, connections may select a database just as they do in standalone mode.  Key hashing is unaffected -- a given key always maps to the same slot and therefore the same node, in every database.
+
+PhpRedis can select a database either on construction or at any point afterward:
+
+```php
+// Select database 2 when constructing the cluster
+$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, NULL, NULL, 2);
+
+// Or switch databases later
+$obj_cluster->select(2);
+
+// And read back the database currently in use
+$obj_cluster->getDbNum();
+```
+
+The database applies to every node in the cluster, including any nodes discovered later through `MOVED`/`ASK` redirection or a failover, and is reselected automatically if a connection drops and is re-established.
+
+Note that `SWAPDB` remains unsupported in cluster mode, so `RedisCluster` does not implement it.  Commands which operate on the current database of a single node -- notably `FLUSHDB`, `DBSIZE` and `SCAN` -- act on the selected database of the node they are directed at.
+
+#### Servers without support
+
+Redis, KeyDB and Valkey before 9.0 do not support databases in cluster mode, and neither does Valkey 9 left at its default of `cluster-databases 1`.  Selecting database 0 is always valid, so code which never asks for another database behaves identically on every server -- phpredis sends no `SELECT` at all in that case.
+
+Asking for a nonzero database against a server without support fails in one of two ways:
+
+* `select()` returns `false` and the server's error is available from `getLastError()`.  The connection is left on its previous database and remains usable.
+* Passing a database to the constructor raises a `RedisClusterException`.  When slot caching is enabled the constructor may not connect at all, in which case the exception is raised by the first command instead.
+
+```php
+if ( ! $obj_cluster->select(2)) {
+    // e.g. "ERR SELECT is not allowed in cluster mode"
+    echo $obj_cluster->getLastError();
+}
+```
+
+#### Persistent connections
+
+Persistent connections are pooled per database, so a connection left on one database is never reused by a client asking for another.  Note that this means a given node may hold one pooled connection per database in use.
+
+#### Restrictions
+
+`select()` cannot be called inside `MULTI` or while subscribed, and returns `false` with an appropriate error in both cases.  Because switching databases reconnects the cluster's other nodes, any outstanding `WATCH` is discarded.
 
 ## Timeouts
 Because Redis cluster is intended to provide high availability, timeouts do not work in the same way they do in normal socket communication.  It's fully possible to have a timeout or even exception on a given socket (say in the case that a master node has failed), and continue to serve the request if and when a slave can be promoted as the new master.
@@ -198,6 +247,7 @@ The save path for cluster based session storage takes the form of a PHP GET requ
   * _error_: phpredis will communicate with master nodes unless one fails, in which case an attempt will be made to read session information from a slave.
   * _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _auth (string, empty by default)_:  The password used to authenticate with the server prior to sending commands.
+* _database (int)_:  The database to store sessions in.  Requires a server which supports [numbered databases](#numbered-databases) in cluster mode.
 * _stream (array)_: ssl/tls stream context options.
 
 ### redis.session.early_refresh
