@@ -1564,8 +1564,9 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineMultiRejectsCrossSlotDistributedCommands() {
-        $keys = ['{pipeA}tx-dist-one', '{pipeB}tx-dist-two'];
-        $values = [$keys[0] => 'one', $keys[1] => 'two'];
+        /* A/B/A makes the helper prepare another key before B is rejected. */
+        $keys = ['{pipeA}tx-dist-one', '{pipeB}tx-dist-two', '{pipeA}tx-dist-three'];
+        $values = array_fill_keys($keys, ['value' => str_repeat('v', 512)]);
         $commands = [
             ['mget', [$keys]],
             ['mset', [$values]],
@@ -1574,23 +1575,35 @@ class Redis_Cluster_Test extends Redis_Test {
             ['unlink', [$keys]],
         ];
 
-        $this->redis->del($keys);
+        $prefix = $this->redis->getOption(Redis::OPT_PREFIX);
+        $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
+        try {
+            $this->redis->setOption(Redis::OPT_PREFIX, str_repeat('p', 2048));
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+            $this->redis->del($keys);
 
-        foreach ($commands as [$method, $args]) {
-            $threw = false;
+            foreach ($commands as [$method, $args]) {
+                for ($i = 0; $i <= 50; $i++) {
+                    $this->assertThrowsMatch($args, function ($args) use ($method) {
+                        $pipe = $this->redis->pipeline()->multi();
+                        $pipe->$method(...$args);
+                    }, '/same hash slot/');
+                    $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
 
-            try {
-                $pipe = $this->redis->pipeline()->multi();
-                $pipe->$method(...$args);
-            } catch (RedisClusterException $ex) {
-                $threw = true;
+                    /* Warm up exception handling before measuring repeated aborts. */
+                    if ($i === 0) $before = memory_get_usage();
+                }
+                if (getenv('USE_ZEND_ALLOC') !== '0') {
+                    $this->assertLTE(8192, memory_get_usage() - $before);
+                }
+                $this->assertEquals([false, false, false], $this->redis->mget($keys));
             }
-
-            $this->assertTrue($threw);
-            $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        } finally {
+            if ($this->redis->getMode() !== Redis::ATOMIC) $this->redis->discard();
+            $this->redis->del($keys);
+            $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
         }
-
-        $this->assertEquals([false, false], $this->redis->mget($keys));
     }
 
     public function testPipelineViaMultiEmpty() {

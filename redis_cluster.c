@@ -959,6 +959,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
             if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot,
                                     &mc, z_ret, i == argc, cb) < 0)
             {
+                if (kv.key_free) efree(kv.key);
                 cluster_multi_free(&mc);
                 if (ht_free) {
                     zend_hash_destroy(ht_arr);
@@ -1067,6 +1068,8 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
             if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                                     slot, &mc, z_ret, i == argc, cb) < 0)
             {
+                if (kv.key_free) efree(kv.key);
+                if (kv.val_free) efree(kv.val);
                 cluster_multi_free(&mc);
                 return -1;
             }
