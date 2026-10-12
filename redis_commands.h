@@ -19,7 +19,7 @@ typedef struct subscribeContext {
 } subscribeContext;
 
 /* Construct a raw command */
-RedisCmd *redis_build_raw_cmd(zval *z_args, int argc);
+RedisCmd *redis_build_raw_cmd(const zval *z_args, int argc);
 
 /* Construct a script command */
 RedisCmd *redis_build_script_cmd(int argc, zval *z_args);
@@ -182,23 +182,23 @@ RedisCmd *redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
  * depending if this is a Redis object or a RedisCluster object. */
 
 void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, redisCluster *c);
+    const RedisSock *redis_sock, const redisCluster *c);
 void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, redisCluster *c);
 void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock);
+    const RedisSock *redis_sock);
 void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock);
+    const RedisSock *redis_sock);
 void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, zend_class_entry *ex);
+    const RedisSock *redis_sock, zend_class_entry *ex);
 void redis_compress_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock);
+    const RedisSock *redis_sock);
 void redis_uncompress_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, zend_class_entry *ex);
+    const RedisSock *redis_sock, zend_class_entry *ex);
 
-void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
-void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
-void redis_digest_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, const RedisSock *redis_sock);
+void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, const RedisSock *redis_sock);
+void redis_digest_handler(INTERNAL_FUNCTION_PARAMETERS, const RedisSock *redis_sock,
     zend_class_entry *exception_ce);
 
 #endif
