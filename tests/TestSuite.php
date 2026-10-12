@@ -52,6 +52,12 @@ class TestSuite
     public function getTlsPort() { return $this->tls_port; }
     public function getAuth() { return $this->auth; }
 
+    /* Override these independently: cluster and sentinel tests also use
+     * standalone clients for administrative commands. */
+    protected function getRedisClass() { return Redis::class; }
+    protected function getRedisClusterClass() { return RedisCluster::class; }
+    protected function getRedisSentinelClass() { return RedisSentinel::class; }
+
     /* Test classes that can query INFO may override this. */
     public function getServerInfo() {
         return NULL;

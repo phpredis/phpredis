@@ -5947,6 +5947,7 @@ class Redis {
      *                               'SUM' - Store sum of all intersected members (this is the default).
      *                               'MIN' - Store minimum value for each intersected member.
      *                               'MAX' - Store maximum value for each intersected member.
+     *                               'COUNT' - Sum weights of input sets containing each member (Redis >= 8.8).
      *
      * @return Redis|int|false  The total number of members written to the destination set or false on failure.
      *
@@ -6007,10 +6008,12 @@ class Redis {
      *
      *                             ```php
      *                             $options = [
-     *                                 'AGGREGATE' => 'SUM', // Sum scores for members in multiple sets; also MIN or MAX.
+     *                                 'AGGREGATE' => 'SUM', // Also MIN, MAX, or COUNT (Redis >= 8.8).
      *                                 'WITHSCORES' => true, // Return each member's aggregated score.
      *                             ];
      *                             ```
+     *
+     *                             COUNT sums the weights of input sets containing each member, ignoring member scores.
      *
      * @return Redis|array|false The union of each sorted set or false on failure
      *
@@ -6035,7 +6038,7 @@ class Redis {
      * @param array       $keys      One or more input keys on which to perform our union.
      * @param array|null  $weights   An optional weights array used to weight each input set.
      * @param string|null $aggregate An optional modifier in how Redis will combine duplicate members.
-     *                               Valid:  'MIN', 'MAX', 'SUM'.
+     *                               Valid:  'MIN', 'MAX', 'SUM', or 'COUNT' (Redis >= 8.8).
      *
      * @return Redis|int|false The number of members stored in the destination set or false on failure.
      *

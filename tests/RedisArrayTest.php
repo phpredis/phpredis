@@ -68,6 +68,7 @@ class Redis_Array_Test extends TestSuite
     }
 
     public function testMSet() {
+        $class = $this->getRedisClass();
         // run mset
         $this->assertTrue($this->ra->mset($this->strings));
 
@@ -82,7 +83,7 @@ class Redis_Array_Test extends TestSuite
             $node = $this->ra->_target($k);
             if ( ! isset($clients[$node])) {
                 parseHostPort($node, $host, $port);
-                $clients[$node] = new Redis;
+                $clients[$node] = new $class;
                 $clients[$node]->pconnect($host, (int)$port);
                 if ($this->getAuth()) {
                     $this->assertTrue($clients[$node]->auth($this->getAuth()));
@@ -280,12 +281,13 @@ class Redis_Rehashing_Test extends TestSuite
     }
 
     public function testFlush() {
+        $class = $this->getRedisClass();
         // flush all servers first.
         global $server_list;
         foreach ($server_list as $s) {
             parseHostPort($s, $host, $port);
 
-            $r = new Redis();
+            $r = new $class();
             $r->pconnect($host, (int)$port, 0);
             if ($this->getAuth()) {
                 $this->assertTrue($r->auth($this->getAuth()));
@@ -461,12 +463,13 @@ class Redis_Auto_Rehashing_Test extends TestSuite {
 
     // Read and migrate keys on fallback, causing the whole ring to be rehashed.
     public function testAllKeysHaveBeenMigrated() {
+        $class = $this->getRedisClass();
         $clients = [];
         foreach ($this->strings as $k => $v) {
             $node = $this->ra->_target($k);
             if ( ! isset($clients[$node])) {
                 parseHostPort($node, $host, $port);
-                $clients[$node] = new Redis;
+                $clients[$node] = new $class;
                 $clients[$node]->pconnect($host, (int)$port);
                 if ($this->getAuth()) {
                     $this->assertTrue($clients[$node]->auth($this->getAuth()));

@@ -30,7 +30,8 @@ class Redis_Sentinel_Test extends TestSuite
 
     protected function newInstance()
     {
-        return new RedisSentinel(['host' => $this->getHost()]);
+        $class = $this->getRedisSentinelClass();
+        return new $class(['host' => $this->getHost()]);
     }
 
     public function setUp()
@@ -122,7 +123,7 @@ class Redis_Sentinel_Test extends TestSuite
         }
     }
 
-    protected function getClients(Redis $redis, string $cmd)
+    protected function getClients($redis, string $cmd)
     {
         $result = [];
 
@@ -143,14 +144,17 @@ class Redis_Sentinel_Test extends TestSuite
     }
 
     public function testPersistent() {
+        $redis_class = $this->getRedisClass();
+        $sentinel_class = $this->getRedisSentinelClass();
+
         /* I think the tests just use the default port */
-        $redis = new Redis;
+        $redis = new $redis_class;
         $redis->connect($this->getHost(), 26379);
 
         $id = null;
 
         for ($i = 0; $i < 3; $i++) {
-            $sentinel = new RedisSentinel([
+            $sentinel = new $sentinel_class([
                 'host' => $this->getHost(),
                 'persistent' => 'sentinel',
             ]);
