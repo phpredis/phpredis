@@ -1,6 +1,6 @@
 <?php
-/* One-shot seed advertising a supplied slot map. Data commands use real nodes. */
-$slots = json_decode(fgets(STDIN), true);
+/* One-shot seed mapping every slot to a master without replicas. Data commands use real nodes. */
+$slots = [[0, 16383, [$argv[1], (int)$argv[2]]]];
 $server = stream_socket_server('tcp://127.0.0.1:0', $errno, $error);
 if (!$server) throw new RuntimeException($error, $errno);
 echo stream_socket_get_name($server, false), "\n";
