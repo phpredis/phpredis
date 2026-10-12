@@ -132,9 +132,9 @@ $result = $pipe
 ```
 
 `multi(Redis::PIPELINE)` is equivalent to `pipeline()`; previously it warned and
-fell back to MULTI. Starting a pipeline while already in MULTI is a fatal error,
-matching standalone Redis. Calling `multi()` on a pipeline queues a
-MULTI ... EXEC block. When Redis accepts `MULTI`, the
+fell back to MULTI. Starting a pipeline while already in MULTI warns and returns
+`false`, leaving the existing transaction unchanged. Calling `multi()` on a
+pipeline queues a MULTI ... EXEC block. When Redis accepts `MULTI`, the
 transaction is bound to one hash slot and its commands execute atomically; all
 keyed commands must resolve to that slot. An uncovered slot or a slot violation
 discards the entire pending pipeline and restores ATOMIC mode; subsequent

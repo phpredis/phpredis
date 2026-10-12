@@ -1817,6 +1817,41 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
     }
 
+    public function testPipelineActivationPreservesActiveMulti() {
+        $key = '{pipe-active-multi}key';
+
+        foreach ([false, true] as $nested) {
+            foreach (['pipeline', 'multi'] as $entry) {
+                $this->redis->del($key);
+                $tx = $nested ? $this->redis->pipeline()->multi() : $this->redis->multi();
+                $tx->set($key, 'queued');
+
+                $warning = null;
+                set_error_handler(function ($severity, $message) use (&$warning) {
+                    $warning = $message;
+                    return true;
+                }, E_WARNING);
+                try {
+                    $result = $entry === 'pipeline'
+                        ? $tx->pipeline() : $tx->multi(Redis::PIPELINE);
+                } finally {
+                    restore_error_handler();
+                }
+
+                $this->assertFalse($result);
+                $this->assertStringContains("Can't activate pipeline in MULTI mode", $warning);
+                $this->assertEquals($nested ? Redis::PIPELINE : Redis::MULTI, $tx->getMode());
+
+                $tx->get($key);
+                if ($nested) $this->assertTrue($tx->exec() === $tx);
+                $this->assertEquals($nested ? [[true, 'queued']] : [true, 'queued'], $tx->exec());
+                $this->assertEquals(Redis::ATOMIC, $tx->getMode());
+                $this->assertEquals('queued', $tx->get($key));
+            }
+        }
+        $this->redis->del($key);
+    }
+
     public function testMultiModeTransitions() {
         $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
 

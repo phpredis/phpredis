@@ -238,7 +238,7 @@ static void cluster_start_pipeline(redisCluster *c)
 static int cluster_enter_pipeline(redisCluster *c)
 {
     if (redis_sock_is_multi(c->flags)) {
-        php_error_docref(NULL, E_ERROR,
+        php_error_docref(NULL, E_WARNING,
             "Can't activate pipeline in MULTI mode!");
         return FAILURE;
     }
