@@ -108,11 +108,12 @@ class Redis_Cluster_Test extends Redis_Test {
         $scenario,
         $message = 'Error reading pipeline response'
     ) {
+        $class = $this->getRedisClusterClass();
         [$process, $pipes, $port] = $this->startMalformedReplyServer($scenario);
         $redis = $exception = null;
 
         try {
-            $redis = new RedisCluster(
+            $redis = new $class(
                 null, ["127.0.0.1:$port"], 1, 1, true
             );
 
@@ -600,13 +601,14 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineAfterFailedSocketReconnect() {
+        $class = $this->getRedisClusterClass();
         foreach ([false, true] as $persistent) {
             foreach (['pipeline', 'multi'] as $entry) {
                 [$process, $pipes, $port] = $this->startMalformedReplyServer('failed-reconnect');
                 $redis = null;
 
                 try {
-                    $redis = new RedisCluster(null, ["127.0.0.1:$port"], 1, 1,
+                    $redis = new $class(null, ["127.0.0.1:$port"], 1, 1,
                         $persistent, ['pipeline-user', 'secret']);
                     $key = '{failed-reconnect}key';
                     $this->assertTrue($redis->ping($key));
@@ -2274,6 +2276,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineMgetChunkErrorFailsLogicalCommand() {
+        $class = $this->getRedisClusterClass();
         if (!$this->minVersionCheck('6.0')) $this->markTestSkipped();
 
         $user = 'phpredis-pipeline-mget-' . uniqid();
@@ -2296,7 +2299,7 @@ class Redis_Cluster_Test extends Redis_Test {
                     "~$allowed*", '+@all'
                 ));
             }
-            $restricted = new RedisCluster(
+            $restricted = new $class(
                 null, self::$seeds, 1, 2, false, [$user, $pass]
             );
 
@@ -2334,6 +2337,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineEofDisconnectsPersistentSocket() {
+        $class = $this->getRedisClusterClass();
         $pooling = ini_get('redis.pconnect.pooling_enabled');
         ini_set('redis.pconnect.pooling_enabled', 1);
 
@@ -2342,7 +2346,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 [$process, $pipes, $port] = $this->startMalformedReplyServer($scenario);
                 $redis = null;
                 try {
-                    $redis = new RedisCluster(null, ["127.0.0.1:$port"], 1, 1, true);
+                    $redis = new $class(null, ["127.0.0.1:$port"], 1, 1, true);
                     $exception = null;
                     try {
                         $redis->pipeline()->get('first')->get('second')->get('third')->exec();
@@ -2366,6 +2370,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelinePartialSendDoesNotReplayOrReuseSocket() {
+        $class = $this->getRedisClusterClass();
         $keys = [];
         for ($i = 0; count($keys) < 2; $i++) {
             $key = "{partial-send-$i}key";
@@ -2380,7 +2385,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 [$process, $pipes, $port] = $this->startMalformedReplyServer('send-failure');
                 $redis = null;
                 try {
-                    $redis = new RedisCluster(null, ["127.0.0.1:$port"], 1, 1, $persistent);
+                    $redis = new $class(null, ["127.0.0.1:$port"], 1, 1, $persistent);
                     $exception = null;
                     try {
                         $redis->pipeline()->set($keys[0], 'sent')->get($keys[1])->exec();
@@ -2403,6 +2408,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineFailureInvalidatesLoadedCacheAndRefreshesOnce() {
+        $class = $this->getRedisClusterClass();
         [$process, $pipes, $port] = $this->startMalformedReplyServer('cache-refresh');
         $cacheSlots = ini_get('redis.clusters.cache_slots');
         ini_set('redis.clusters.cache_slots', 1);
@@ -2411,10 +2417,10 @@ class Redis_Cluster_Test extends Redis_Test {
 
         try {
             $seeds = ["127.0.0.1:$port"];
-            $populator = new RedisCluster(null, $seeds, 1, 1, false);
+            $populator = new $class(null, $seeds, 1, 1, false);
             $this->assertEquals('1', $populator->get($key));
             $populator->close();
-            $cached = new RedisCluster(null, $seeds, 1, 1, false);
+            $cached = new $class(null, $seeds, 1, 1, false);
             $this->assertEquals('1', $cached->get($key));
             $exception = null;
             try {
@@ -2424,7 +2430,7 @@ class Redis_Cluster_Test extends Redis_Test {
             }
             $this->assertTrue($exception instanceof RedisClusterException);
 
-            $fresh = new RedisCluster(null, $seeds, 1, 1, false);
+            $fresh = new $class(null, $seeds, 1, 1, false);
             $this->assertEquals('2', $fresh->get($key));
             $fresh->close();
             /* Atomic commands must not consume the pending pipeline refresh. */
@@ -2460,6 +2466,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineReadTimeoutDoesNotReuseLateReplies() {
+        $class = $this->getRedisClusterClass();
         [$key, $control] = $this->keysOnDistinctMasters('pipe-read-timeout');
         $empty = "$key:empty";
         $this->redis->del($empty);
@@ -2472,7 +2479,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         try {
             foreach ([false, true] as $persistent) {
-                $redis = new RedisCluster(null, self::$seeds, 1, .2, $persistent, $this->getAuth());
+                $redis = new $class(null, self::$seeds, 1, .2, $persistent, $this->getAuth());
                 $fresh = null;
                 try {
                     $exception = null;
@@ -2487,7 +2494,7 @@ class Redis_Cluster_Test extends Redis_Test {
                     $this->assertEquals(Redis::ATOMIC, $redis->getMode());
                     $this->assertEquals('before-block', $redis->get($key));
                     $this->assertEquals('other-node', $redis->get($control));
-                    $fresh = new RedisCluster(null, self::$seeds, 1, 1, $persistent, $this->getAuth());
+                    $fresh = new $class(null, self::$seeds, 1, 1, $persistent, $this->getAuth());
                     $this->assertEquals(['before-block', 'other-node'],
                         $fresh->pipeline()->get($key)->get($control)->exec());
                     $fresh->close();
@@ -2509,6 +2516,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineReconnectsKilledIdleParticipants() {
+        $class = $this->getRedisClusterClass();
         $keys = $this->keysOnDistinctMasters('pipe-idle-reconnect', 3);
         $masters = $this->redis->_masters();
         $pooling = ini_get('redis.pconnect.pooling_enabled');
@@ -2516,7 +2524,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         try {
             foreach ([false, true] as $persistent) {
-                $redis = new RedisCluster(null, self::$seeds, 1, 1, $persistent, $this->getAuth());
+                $redis = new $class(null, self::$seeds, 1, 1, $persistent, $this->getAuth());
                 try {
                     $ids = [];
                     foreach ($masters as $master) {
@@ -2546,6 +2554,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineFailedTopologyRefreshCanRecover() {
+        $class = $this->getRedisClusterClass();
         /* Denying individual ACL subcommands requires Redis 7.0. */
         if (!$this->minVersionCheck('7.0')) $this->markTestSkipped();
 
@@ -2565,7 +2574,7 @@ class Redis_Cluster_Test extends Redis_Test {
                     $master, 'SETUSER', $user, 'reset', 'on', ">$pass", '~*', '+@all'
                 ));
             }
-            $restricted = new RedisCluster(
+            $restricted = new $class(
                 null, self::$seeds, 1, 2, true, [$user, $pass]
             );
             $exception = null;
@@ -2615,11 +2624,12 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineRefreshRejectsUncoveredSlot() {
+        $class = $this->getRedisClusterClass();
         [$process, $pipes, $port] = $this->startMalformedReplyServer('partial-slots');
         $redis = null;
 
         try {
-            $redis = new RedisCluster(null, ["127.0.0.1:$port"], 1, 1, false);
+            $redis = new $class(null, ["127.0.0.1:$port"], 1, 1, false);
             $key = '{malformed}hole';
             $exception = null;
             try {
@@ -2646,6 +2656,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testNonPipelineMovedRemapRejectsUncoveredSlot() {
+        $class = $this->getRedisClusterClass();
         $key = '{failover-partial-slots}hole';
         $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
         $this->assertGT(0, $slot);
@@ -2660,7 +2671,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 $redis = null;
 
                 try {
-                    $redis = new RedisCluster(null, ["127.0.0.1:$port"], 1, 1, $persistent);
+                    $redis = new $class(null, ["127.0.0.1:$port"], 1, 1, $persistent);
                     $exception = null;
                     try {
                         $redis->get($key);
@@ -2687,6 +2698,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineRefreshAuthenticatesCacheLoadedSeeds() {
+        $class = $this->getRedisClusterClass();
         $cacheSlots = ini_get('redis.clusters.cache_slots');
         ini_set('redis.clusters.cache_slots', 1);
 
@@ -2698,8 +2710,8 @@ class Redis_Cluster_Test extends Redis_Test {
                 try {
                     $seeds = ["127.0.0.1:$port"];
                     $auth = ['pipeline-user', 'secret'];
-                    $populator = new RedisCluster(null, $seeds, 1, 1, false, $auth);
-                    $cached = new RedisCluster(null, $seeds, 1, 1, $persistent, $auth);
+                    $populator = new $class(null, $seeds, 1, 1, false, $auth);
+                    $cached = new $class(null, $seeds, 1, 1, $persistent, $auth);
                     $key = '{cache-auth}key';
                     $this->assertEquals(['actual'], $cached->pipeline()->get($key)->exec());
 
@@ -2727,6 +2739,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineRefreshDoesNotLeakNonParticipantConnections() {
+        $class = $this->getRedisClusterClass();
         [$key] = $this->keysOnDistinctMasters('pipe-remap-connections', 3);
         $masters = $this->redis->_masters();
         $pooling = ini_get('redis.pconnect.pooling_enabled');
@@ -2734,7 +2747,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         try {
             foreach ([false, true] as $persistent) {
-                $redis = new RedisCluster(null, self::$seeds, 1, 1, $persistent, $this->getAuth());
+                $redis = new $class(null, self::$seeds, 1, 1, $persistent, $this->getAuth());
                 $name = 'phpredis-pipeline-remap-' . uniqid();
 
                 try {
@@ -2927,6 +2940,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineRealMovedRefreshesRouting() {
+        $class = $this->getRedisClusterClass();
         $cacheSlots = ini_get('redis.clusters.cache_slots');
         $nodes = [];
         foreach ($this->redis->_masters() as $master) $nodes[] = $this->connectToNode($master);
@@ -2940,9 +2954,9 @@ class Redis_Cluster_Test extends Redis_Test {
                 $target = ($owner + 1) % count($nodes);
                 $populator = $fresh = null;
                 if ($variant === 'cached') {
-                    $populator = new RedisCluster(null, self::$seeds, 1, 1, false, $this->getAuth());
+                    $populator = new $class(null, self::$seeds, 1, 1, false, $this->getAuth());
                 }
-                $redis = new RedisCluster(null, self::$seeds, 1, 1, false, $this->getAuth());
+                $redis = new $class(null, self::$seeds, 1, 1, false, $this->getAuth());
 
                 try {
                     $pipe = $redis->pipeline();
@@ -2970,7 +2984,7 @@ class Redis_Cluster_Test extends Redis_Test {
                     if ($variant === 'atomic-between') {
                         $this->assertEquals('new-owner', $redis->get($key));
                     } else if ($variant === 'cached') {
-                        $fresh = new RedisCluster(null, self::$seeds, 1, 1, false, $this->getAuth());
+                        $fresh = new $class(null, self::$seeds, 1, 1, false, $this->getAuth());
                         $this->assertEquals($before + 1, $this->clusterSlotsCalls());
                         $this->assertEquals('new-owner', $fresh->get($key));
                     }
@@ -2997,13 +3011,14 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineRealAskDoesNotRefreshRouting() {
+        $class = $this->getRedisClusterClass();
         [$key, $slot] = $this->emptySlotKey('pipe-real-ask');
         $nodes = [];
         foreach ($this->redis->_masters() as $master) $nodes[] = $this->connectToNode($master);
         $ids = array_map(function ($node) { return $node->rawCommand('CLUSTER', 'MYID'); }, $nodes);
         $owner = array_search($this->redis->cluster($key, 'MYID'), $ids, true);
         $target = ($owner + 1) % count($nodes);
-        $redis = new RedisCluster(null, self::$seeds, 1, 1, false, $this->getAuth());
+        $redis = new $class(null, self::$seeds, 1, 1, false, $this->getAuth());
 
         try {
             $this->assertTrue($nodes[$target]->rawCommand('CLUSTER', 'SETSLOT', $slot, 'IMPORTING', $ids[$owner]) !== false);
@@ -3082,6 +3097,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineDistributedCommandErrorsPreserveResults() {
+        $class = $this->getRedisClusterClass();
         if ( ! $this->minVersionCheck('6.0')) {
             $this->markTestSkipped();
         }
@@ -3118,7 +3134,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 $keys[7] => 'unlink-two',
             ]);
 
-            $restricted = new RedisCluster(
+            $restricted = new $class(
                 NULL, self::$seeds, 1, 1, false, [$user, $pass]
             );
 
@@ -3200,6 +3216,7 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineDistributedPartialKeyPermissionFailures() {
+        $class = $this->getRedisClusterClass();
         if (!$this->minVersionCheck('6.0')) $this->markTestSkipped();
         [$allowed, $denied] = $this->keysOnDistinctMasters('pipe-partial-permission');
         $user = 'phpredis-partial-' . uniqid();
@@ -3214,7 +3231,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 $this->assertTrue($this->redis->acl($master, 'SETUSER', $user,
                     'reset', 'on', ">$pass", "~$allowed*", '+@all'));
             }
-            $restricted = new RedisCluster(null, self::$seeds, 1, 1, false, [$user, $pass]);
+            $restricted = new $class(null, self::$seeds, 1, 1, false, [$user, $pass]);
             $this->redis->del($keys);
             /* Legacy immediate MSETNX stops on a denied fragment, but is not globally atomic. */
             $this->assertFalse($restricted->msetnx([$keys[2] => 'one', $keys[3] => 'two']));
@@ -3291,8 +3308,9 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineRejectsReentrantCommandsWhileReading() {
+        $class = $this->getRedisClusterClass();
         [$valueKey, $sideEffectKey] = $this->keysOnDistinctMasters('pipe-reentrant');
-        $redis = new RedisCluster(
+        $redis = new $class(
             NULL, self::$seeds, 1, .25, false, $this->getAuth()
         );
         $exception = NULL;
@@ -3326,8 +3344,9 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testPipelineRejectsSetOptionWhileReading() {
+        $class = $this->getRedisClusterClass();
         $key = '{pipe-reentrant-option}value';
-        $redis = new RedisCluster(
+        $redis = new $class(
             NULL, self::$seeds, 1, .25, false, $this->getAuth()
         );
         $exception = NULL;
