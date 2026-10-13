@@ -16,6 +16,11 @@
 #ifdef HAVE_REDIS_MSGPACK
 #include "msgpack/php_msgpack.h"
 #endif
+#ifdef HAVE_REDIS_PHPSER
+#include "phpser/php_phpser_api.h"
+
+#define REDIS_PHPSER_CONTEXT "redis"
+#endif
 
 #ifdef HAVE_REDIS_LZF
 #include <lzf.h>
@@ -4314,6 +4319,19 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
     return tmpfree;
 }
 
+static void
+redis_unserialize_or_copy(RedisSock *redis_sock, const char *src, size_t len,
+                          zval *zdst)
+{
+    int ret = redis_unserialize(redis_sock, src, len, zdst);
+
+    if (ret == 0) {
+        ZVAL_STRINGL_FAST(zdst, src, len);
+    } else if (ret < 0) {
+        ZVAL_FALSE(zdst);
+    }
+}
+
 PHP_REDIS_API int
 redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
     zend_long lval;
@@ -4339,24 +4357,25 @@ redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
         }
     }
 
-    /* Input string is empty */
+    /* Input string is empty.  phpser never produces an empty payload, so an
+     * empty value is treated like any other one that fails to decode. */
     if (srclen == 0) {
-        ZVAL_STR(zdst, ZSTR_EMPTY_ALLOC());
+        if (redis_sock->serializer == REDIS_SERIALIZER_PHPSER) {
+            ZVAL_FALSE(zdst);
+        } else {
+            ZVAL_STR(zdst, ZSTR_EMPTY_ALLOC());
+        }
         return 1;
     }
 
     /* Uncompress, then unserialize */
     if (redis_uncompress(redis_sock, &buf, &len, src, srclen)) {
-        if (!redis_unserialize(redis_sock, buf, len, zdst)) {
-            ZVAL_STRINGL_FAST(zdst, buf, len);
-        }
+        redis_unserialize_or_copy(redis_sock, buf, len, zdst);
         efree(buf);
         return 1;
     }
 
-    if (!redis_unserialize(redis_sock, src, srclen, zdst)) {
-        ZVAL_STRINGL_FAST(zdst, src, srclen);
-    }
+    redis_unserialize_or_copy(redis_sock, src, srclen, zdst);
 
     return 1;
 }
@@ -4371,6 +4390,9 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
 #ifdef HAVE_REDIS_IGBINARY
     size_t sz;
     uint8_t *val8;
+#endif
+#ifdef HAVE_REDIS_PHPSER
+    zend_string *zstr;
 #endif
 
     *val = "";
@@ -4427,6 +4449,19 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
             if(igbinary_serialize(&val8, (size_t *)&sz, z) == 0) {
                 *val = (char*)val8;
                 *val_len = sz;
+                return 1;
+            }
+#endif
+            break;
+        case REDIS_SERIALIZER_PHPSER:
+#ifdef HAVE_REDIS_PHPSER
+            if (phpser_api_serialize(z, REDIS_PHPSER_CONTEXT,
+                                     sizeof(REDIS_PHPSER_CONTEXT) - 1,
+                                     &zstr) == PHPSER_API_OK)
+            {
+                *val = estrndup(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+                *val_len = ZSTR_LEN(zstr);
+                zend_string_release(zstr);
                 return 1;
             }
 #endif
@@ -4501,6 +4536,20 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             }
 
             ret = !igbinary_unserialize((const uint8_t *)val, val_len, z_ret);
+#endif
+            break;
+        case REDIS_SERIALIZER_PHPSER:
+#ifdef HAVE_REDIS_PHPSER
+            /* Never fall back to the raw bytes: with phpser.key set, a value
+             * that fails here may be unsigned or tampered with. */
+            if (phpser_api_unserialize(val, val_len, REDIS_PHPSER_CONTEXT,
+                                       sizeof(REDIS_PHPSER_CONTEXT) - 1,
+                                       z_ret) == PHPSER_API_OK)
+            {
+                ret = 1;
+            } else {
+                ret = -1;
+            }
 #endif
             break;
         case REDIS_SERIALIZER_JSON:

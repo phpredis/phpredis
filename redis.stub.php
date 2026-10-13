@@ -261,6 +261,20 @@ class Redis {
      */
     public const SERIALIZER_JSON = UNKNOWN;
 
+#ifdef HAVE_REDIS_PHPSER
+    /**
+     * Sets the serializer to phpser. Note that PhpRedis must be compiled
+     * with phpser support to use this serializer. When `phpser.key` is set,
+     * values are HMAC-signed and a value that fails verification is returned
+     * as `false`.
+     *
+     * @var int
+     * @cvalue REDIS_SERIALIZER_PHPSER
+     *
+     */
+    public const SERIALIZER_PHPSER = UNKNOWN;
+#endif
+
     /**
      * Disables compression.
      *
@@ -4132,7 +4146,7 @@ class Redis {
      * | --------------- | ---- | ----------- |
      * | OPT_MAX_RETRIES | int  | The maximum number of times Redis will attempt to reconnect if it gets disconnected, before throwing an exception. |
      * | OPT_SCAN        | enum | Redis::SCAN_RETRY, or Redis::SCAN_NORETRY.  Whether PhpRedis should automatically SCAN again when zero keys but a nonzero iterator are returned. |
-     * | OPT_SERIALIZER  | enum | Set the automatic data serializer.<br>`Redis::SERIALIZER_NONE`<br>`Redis::SERIALIZER_PHP`<br>`Redis::SERIALIZER_IGBINARY`<br>`Redis::SERIALIZER_MSGPACK`, `Redis::SERIALIZER_JSON`|
+     * | OPT_SERIALIZER  | enum | Set the automatic data serializer.<br>`Redis::SERIALIZER_NONE`<br>`Redis::SERIALIZER_PHP`<br>`Redis::SERIALIZER_IGBINARY`<br>`Redis::SERIALIZER_MSGPACK`, `Redis::SERIALIZER_JSON`<br>`Redis::SERIALIZER_PHPSER`|
      * | OPT_PREFIX | string | A string PhpRedis will use to prefix every key we read or write. |
      * | OPT_READ_TIMEOUT | float | How long PhpRedis will block for a response from Redis before throwing a 'read error on connection' exception. |
      * | OPT_TCP_KEEPALIVE | bool |   Set or disable TCP_KEEPALIVE on the connection. |

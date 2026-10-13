@@ -144,6 +144,8 @@ redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
 PHP_REDIS_API zend_string *
 redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key);
 
+/* Return 1 on success and 0 on failure. Return -1 on a failure where the input
+ * must not be handed back as a raw string, leaving z_ret undefined. */
 PHP_REDIS_API int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);
 
