@@ -36,6 +36,8 @@ class Redis_Test extends TestSuite {
             $result['json'] = Redis::SERIALIZER_JSON;
         if (defined('Redis::SERIALIZER_MSGPACK'))
             $result['msgpack'] = Redis::SERIALIZER_MSGPACK;
+        if (defined('Redis::SERIALIZER_PHPSER'))
+            $result['phpser'] = Redis::SERIALIZER_PHPSER;
 
         return $result;
     }
@@ -5546,6 +5548,62 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, 'test:');
         $this->checkSerializer(Redis::SERIALIZER_JSON);
         $this->redis->setOption(Redis::OPT_PREFIX, '');
+    }
+
+    public function testSerializerPhpser() {
+        if ( ! defined('Redis::SERIALIZER_PHPSER'))
+            $this->markTestSkipped('Redis::SERIALIZER_PHPSER is not defined');
+
+        $this->checkSerializer(Redis::SERIALIZER_PHPSER);
+
+        // with prefix
+        $this->redis->setOption(Redis::OPT_PREFIX, 'test:');
+        $this->checkSerializer(Redis::SERIALIZER_PHPSER);
+        $this->redis->setOption(Redis::OPT_PREFIX, '');
+
+        /* A value phpser can't decode (or verify, when phpser.key is set) must
+           come back as false and never as the raw bytes stored in Redis. */
+        $signed = strlen((string)ini_get('phpser.key')) >= 32;
+        $value = ['a' => 1, 'b' => [true, null, 1.5]];
+
+        $this->redis->del('phpser-raw', 'phpser-empty', 'phpser-plain',
+                          'phpser-tampered', 'phpser-context');
+
+        $this->redis->set('phpser-raw', 'not a phpser value');
+        $this->redis->set('phpser-empty', '');
+        $this->redis->set('phpser-plain', phpser_serialize($value));
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHPSER);
+        $this->assertTrue($this->redis->set('phpser-tampered', $value));
+        $this->assertEquals($value, $this->redis->get('phpser-tampered'));
+
+        $this->assertFalse(@$this->redis->get('phpser-raw'));
+        $this->assertFalse(@$this->redis->get('phpser-empty'));
+        $this->assertEquals([false, false, $value],
+            @$this->redis->mGet(['phpser-raw', 'phpser-empty', 'phpser-tampered']));
+        $this->assertThrowsMatch(NULL, function () {
+            @$this->redis->_unserialize('not a phpser value');
+        }, '/Invalid serialized data/');
+
+        if ($signed) {
+            $this->assertFalse(@$this->redis->get('phpser-plain'));
+
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+            $payload = $this->redis->get('phpser-tampered');
+            $payload[0] = chr(ord($payload[0]) ^ 1);
+            $this->redis->set('phpser-tampered', $payload);
+            $this->redis->set('phpser-context', phpser_serialize_keyed($value, 'memcached'));
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHPSER);
+
+            $this->assertFalse(@$this->redis->get('phpser-tampered'));
+            $this->assertFalse(@$this->redis->get('phpser-context'));
+        } else {
+            $this->assertEquals($value, $this->redis->get('phpser-plain'));
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        $this->redis->del('phpser-raw', 'phpser-empty', 'phpser-plain',
+                          'phpser-tampered', 'phpser-context');
     }
 
     private function checkSerializer($mode) {
