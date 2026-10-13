@@ -20,6 +20,16 @@
 #include "phpser/php_phpser_api.h"
 
 #define REDIS_PHPSER_CONTEXT "redis"
+
+/* phpser has no API that reports whether signing is active, so apply its own
+ * rule: a non-empty phpser.key means values must verify.  A key shorter than
+ * phpser accepts also counts, because phpser then rejects every value with a
+ * plain PHPSER_API_ERR, and the raw bytes behind it were never verified. */
+static int redis_phpser_signed(void) {
+    const char *key = zend_ini_string_ex("phpser.key", sizeof("phpser.key") - 1, 0, NULL);
+
+    return key != NULL && *key != '\0';
+}
 #endif
 
 #ifdef HAVE_REDIS_LZF
@@ -4357,14 +4367,16 @@ redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
         }
     }
 
-    /* Input string is empty.  phpser never produces an empty payload, so an
-     * empty value is treated like any other one that fails to decode. */
+    /* Input string is empty */
     if (srclen == 0) {
-        if (redis_sock->serializer == REDIS_SERIALIZER_PHPSER) {
+#ifdef HAVE_REDIS_PHPSER
+        /* A signed value is never empty, so this one failed verification */
+        if (redis_sock->serializer == REDIS_SERIALIZER_PHPSER && redis_phpser_signed()) {
             ZVAL_FALSE(zdst);
-        } else {
-            ZVAL_STR(zdst, ZSTR_EMPTY_ALLOC());
+            return 1;
         }
+#endif
+        ZVAL_STR(zdst, ZSTR_EMPTY_ALLOC());
         return 1;
     }
 
@@ -4540,14 +4552,13 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             break;
         case REDIS_SERIALIZER_PHPSER:
 #ifdef HAVE_REDIS_PHPSER
-            /* Never fall back to the raw bytes: with phpser.key set, a value
-             * that fails here may be unsigned or tampered with. */
             if (phpser_api_unserialize(val, val_len, REDIS_PHPSER_CONTEXT,
                                        sizeof(REDIS_PHPSER_CONTEXT) - 1,
                                        z_ret) == PHPSER_API_OK)
             {
                 ret = 1;
-            } else {
+            } else if (redis_phpser_signed()) {
+                /* The raw bytes are what the signature exists to reject */
                 ret = -1;
             }
 #endif
