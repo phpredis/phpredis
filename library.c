@@ -26,9 +26,10 @@
  * phpser accepts also counts, because phpser then rejects every value with a
  * plain PHPSER_API_ERR, and the raw bytes behind it were never verified. */
 static int redis_phpser_signed(void) {
-    const char *key = zend_ini_string_ex("phpser.key", sizeof("phpser.key") - 1, 0, NULL);
+    zend_ini_entry *entry = zend_hash_str_find_ptr(
+        EG(ini_directives), "phpser.key", sizeof("phpser.key") - 1);
 
-    return key != NULL && *key != '\0';
+    return entry && entry->value && ZSTR_LEN(entry->value) > 0;
 }
 #endif
 
