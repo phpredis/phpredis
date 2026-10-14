@@ -810,7 +810,9 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
 
     /* Protect against reading too few bytes */
     if (offset < nbytes) {
-        /* Error or EOF */
+        /* Error, EOF, or timeout. The rest of the payload may still arrive,
+         * so the socket can't be reused for another command. */
+        redis_sock_disconnect(redis_sock, 1, 1);
         REDIS_THROW_EXCEPTION("socket error on read socket", 0);
         efree(reply);
         return NULL;
@@ -874,6 +876,8 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
             }
             REDIS_FALLTHROUGH;
         default:
+            /* We don't know where the next reply starts */
+            redis_sock_disconnect(redis_sock, 1, 1);
             zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, got '%c' as reply type byte\n",
                 inbuf[0]
@@ -3724,6 +3728,7 @@ redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
     }
 
     if (offset < nbytes) {
+        redis_sock_disconnect(redis_sock, 1, 1);
         REDIS_THROW_EXCEPTION("socket error on read socket", 0);
         zend_string_release(zstr);
         return NULL;
@@ -3784,6 +3789,8 @@ redis_sock_read_zstr(RedisSock *redis_sock)
             }
             REDIS_FALLTHROUGH;
         default:
+            /* We don't know where the next reply starts */
+            redis_sock_disconnect(redis_sock, 1, 1);
             zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, got '%c' as reply type byte\n",
                 inbuf[0]
@@ -4591,6 +4598,8 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
 
     // Attempt to read the reply-type byte
     if((*reply_type = redis_sock_getc(redis_sock)) == EOF) {
+        /* On a timeout the reply may still arrive and be read by the next command */
+        redis_sock_disconnect(redis_sock, 1, 1);
         REDIS_THROW_EXCEPTION( "socket error on read socket", 0);
         return -1;
     }
