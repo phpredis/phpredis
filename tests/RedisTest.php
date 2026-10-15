@@ -765,6 +765,85 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(['test'], $this->redis->mget([1])); // non-string
     }
 
+    public function testMultiKeyCommandsKeepArrayArguments() {
+        $prefix = $this->redis->getOption(Redis::OPT_PREFIX);
+
+        try {
+            foreach (['', 'key-arguments:'] as $testPrefix) {
+                $this->redis->setOption(Redis::OPT_PREFIX, $testPrefix);
+
+                foreach (['mget', 'del', 'unlink'] as $command) {
+                    $number = 101;
+                    $keys = [&$number, 202, '{key-arguments}one', '{key-arguments}two'];
+                    $copy = $keys;
+                    $values = ['first', 'second', 'third', 'fourth'];
+
+                    foreach ($keys as $i => $key) {
+                        $this->redis->set((string)$key, $values[$i]);
+                    }
+
+                    $result = $this->redis->$command($keys);
+                    $this->assertEquals($command === 'mget' ? $values : 4, $result);
+                    $this->assertEquals([101, 202, '{key-arguments}one', '{key-arguments}two'], $keys);
+                    $this->assertEquals($keys, $copy);
+                    $this->assertEquals(101, $number);
+                    $number = 303;
+                    $this->assertEquals(303, $keys[0]);
+                    $this->assertEquals(303, $copy[0]);
+                }
+            }
+        } finally {
+            $this->redis->del(['101', '202', '{key-arguments}one', '{key-arguments}two']);
+            $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+        }
+    }
+
+    public function testMultiKeyCommandsKeepStringableArguments() {
+        foreach (['del', 'unlink'] as $command) {
+            $destroyed = 0;
+            $key = new class($destroyed) {
+                private $destroyed;
+
+                public function __construct(&$destroyed) {
+                    $this->destroyed = &$destroyed;
+                }
+
+                public function __toString() {
+                    return '{key-arguments}object';
+                }
+
+                public function __destruct() {
+                    $this->destroyed++;
+                }
+            };
+
+            $this->redis->set((string)$key, 'value');
+            $this->assertEquals(1, $this->redis->$command($key));
+            $this->assertEquals(0, $destroyed);
+            $this->assertEquals('{key-arguments}object', (string)$key);
+
+            unset($key);
+            $this->assertEquals(1, $destroyed);
+        }
+    }
+
+    public function testMultiKeyCommandsDoNotLeakIntegerKeys() {
+        if (memory_get_usage() === 0)
+            $this->markTestSkipped('Zend memory manager is required');
+
+        foreach (['del', 'unlink'] as $command) {
+            for ($i = 0; $i < 10; $i++) {
+                $this->redis->$command(101, 202);
+            }
+
+            $before = memory_get_usage();
+            for ($i = 0; $i < 100; $i++) {
+                $this->redis->$command(101, 202);
+            }
+            $this->assertLTE(0, memory_get_usage() - $before);
+        }
+    }
+
     public function testMultipleBin() {
         $kvals = [
             'binkey-1' => random_bytes(16),

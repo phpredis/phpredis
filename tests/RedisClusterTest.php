@@ -70,6 +70,141 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession_noUnlockOfOtherProcess() { $this->markTestSkipped(); }
     public function testSession_lockWaitTime() { $this->markTestSkipped(); }
 
+    public function testMultiKeyCommandsHandleKeyConversionErrors() {
+        $invalid = new class {
+            public function __toString() {
+                throw new RuntimeException('key conversion failed');
+            }
+        };
+
+        foreach (['mget', 'del', 'unlink'] as $command) {
+            foreach ([[$invalid], ['{key-arguments}first', $invalid]] as $keys) {
+                $exception = null;
+                try {
+                    if ($command === 'mget') {
+                        $this->redis->mget($keys);
+                    } else {
+                        $this->redis->$command(...$keys);
+                    }
+                } catch (RuntimeException $e) {
+                    $exception = $e;
+                }
+
+                $this->assertIsObject($exception, RuntimeException::class);
+                $this->assertEquals('key conversion failed', $exception->getMessage());
+                $this->assertTrue($keys[count($keys) - 1] === $invalid);
+                $this->assertTrue($this->redis->set('{key-arguments}after', 'clean'));
+                $this->assertEquals('clean', $this->redis->get('{key-arguments}after'));
+            }
+        }
+        $this->redis->del('{key-arguments}after');
+    }
+
+    public function testMultiKeyCommandsRejectInvalidKeysBeforeDispatch() {
+        $invalid = new class {
+            public function __toString() {
+                throw new RuntimeException('key conversion failed');
+            }
+        };
+        $first = '{key-arguments-a}first';
+        $second = '{key-arguments-b}second';
+        $this->assertNotEquals(
+            $this->redis->rawCommand($first, 'CLUSTER', 'KEYSLOT', $first),
+            $this->redis->rawCommand($second, 'CLUSTER', 'KEYSLOT', $second)
+        );
+
+        foreach (['mget', 'del', 'unlink'] as $command) {
+            foreach ([Redis::ATOMIC, Redis::MULTI] as $mode) {
+                foreach ([$invalid, []] as $badKey) {
+                    $this->redis->set($first, 'first');
+                    $this->redis->set($second, 'second');
+                    $transactionOpen = false;
+                    if ($mode === Redis::MULTI) {
+                        $this->redis->multi()->get($first);
+                        $transactionOpen = true;
+                    }
+
+                    // Two slots precede the invalid key, so no earlier batch may escape.
+                    $keys = [$first, $second, $badKey];
+                    $exception = null;
+                    try {
+                        if ($command === 'mget') {
+                            $this->redis->mget($keys);
+                        } else {
+                            $this->redis->$command(...$keys);
+                        }
+                    } catch (RuntimeException | ErrorException $e) {
+                        $exception = $e;
+                    }
+
+                    try {
+                        $this->assertIsObject($exception, is_array($badKey)
+                            ? ErrorException::class : RuntimeException::class);
+                        $this->assertEquals(is_array($badKey)
+                            ? 'Array to string conversion' : 'key conversion failed',
+                            $exception->getMessage());
+                        $this->assertEquals([$first, $second, $badKey], $keys);
+
+                        if ($mode === Redis::MULTI) {
+                            $this->redis->get($second);
+                            $result = $this->redis->exec();
+                            $transactionOpen = false;
+                            $this->assertEquals(['first', 'second'], $result);
+                        }
+                        $this->assertEquals('first', $this->redis->get($first));
+                        $this->assertEquals('second', $this->redis->get($second));
+                    } finally {
+                        if ($transactionOpen) $this->redis->discard();
+                        $this->redis->del($first, $second);
+                    }
+                }
+            }
+        }
+    }
+
+    public function testMultiKeyCommandsKeepArrayKeyWarnings() {
+        $first = '{key-arguments}warning';
+        $keys = [$first, []];
+        $warning = null;
+        set_error_handler(function ($severity, $message) use (&$warning) {
+            $warning = $message;
+            return true;
+        }, E_WARNING | E_NOTICE);
+
+        try {
+            foreach (['mget', 'del', 'unlink'] as $command) {
+                $this->redis->set($first, 'first');
+                $this->redis->set('Array', 'array');
+                $warning = null;
+
+                $result = $command === 'mget'
+                    ? $this->redis->mget($keys) : $this->redis->$command(...$keys);
+
+                $this->assertEquals('Array to string conversion', $warning);
+                $this->assertEquals($command === 'mget' ? ['first', 'array'] : 2, $result);
+                $this->assertEquals([$first, []], $keys);
+            }
+        } finally {
+            restore_error_handler();
+            $this->redis->del($first, 'Array');
+        }
+    }
+
+    public function testMultiKeyCommandsIgnoreEmptyKeyArrays() {
+        $key = '{key-arguments}empty';
+        foreach (['mget', 'del', 'unlink'] as $command) {
+            $this->redis->del($key);
+            $this->assertFalse($this->redis->$command([]));
+
+            $this->redis->multi()->get($key);
+            $this->assertFalse($this->redis->$command([]));
+            $this->redis->set($key, 'value');
+            $this->assertEquals([false, true], $this->redis->exec());
+            $this->assertEquals('value', $this->redis->get($key));
+        }
+        $this->redis->del($key);
+    }
+
     /* Regression test for GH #2810 */
     public function testConstructNullSeeds() {
         $class = $this->getRedisClusterClass();
