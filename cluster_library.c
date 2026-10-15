@@ -2651,7 +2651,7 @@ cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         CLUSTER_RETURN_FALSE(c);
     }
 
-    array_init(&z_msg);
+    ZVAL_UNDEF(&z_msg);
 
     ZEND_ASSERT(ctx.mode == REDIS_CTX_DEFAULT || ctx.mode == REDIS_CTX_XAUTOCLAIM);
 
