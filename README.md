@@ -463,6 +463,7 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	  // Use built-
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY); // Use igBinary serialize/unserialize
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_MSGPACK);  // Use msgpack serialize/unserialize
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);  // Use JSON to serialize/unserialize
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHPSER);  // Use phpser serialize/unserialize (signed when phpser.key is set)
 
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 
@@ -495,7 +496,8 @@ Parameter value.
 ###### *Example*
 ~~~php
 // return Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP,
-//        Redis::SERIALIZER_IGBINARY, Redis::SERIALIZER_MSGPACK or Redis::SERIALIZER_JSON
+//        Redis::SERIALIZER_IGBINARY, Redis::SERIALIZER_MSGPACK, Redis::SERIALIZER_JSON
+//        or Redis::SERIALIZER_PHPSER
 $redis->getOption(Redis::OPT_SERIALIZER);
 ~~~
 

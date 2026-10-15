@@ -38,6 +38,11 @@
 
 #include "library.h"
 
+#ifdef HAVE_REDIS_PHPSER
+#include <ext/standard/php_versioning.h>
+#include "phpser/php_phpser_api.h"
+#endif
+
 #ifdef HAVE_REDIS_ZSTD
 #include <zstd.h>
 #endif
@@ -116,6 +121,9 @@ static const zend_module_dep redis_deps[] = {
 #endif
 #ifdef HAVE_REDIS_MSGPACK
      ZEND_MOD_REQUIRED("msgpack")
+#endif
+#ifdef HAVE_REDIS_PHPSER
+     ZEND_MOD_REQUIRED("phpser")
 #endif
 #ifdef HAVE_REDIS_JSON
      ZEND_MOD_REQUIRED("json")
@@ -339,12 +347,44 @@ static void redis_init_object_handlers(void) {
     redis_object_handlers.clone_obj = NULL;
 }
 
+#ifdef HAVE_REDIS_PHPSER
+/* phpser_api_version() does not exist before phpser 0.9.0, so check the
+ * module version before calling into the API. */
+static int
+redis_check_phpser(void)
+{
+    const char *version = zend_get_module_version("phpser");
+
+    if (version == NULL || php_version_compare(version, "0.9.0") < 0) {
+        php_error_docref(NULL, E_CORE_WARNING,
+            "Redis::SERIALIZER_PHPSER requires phpser 0.9.0 or later, found %s",
+            version ? version : "none");
+        return FAILURE;
+    }
+
+    if (phpser_api_version() != PHPSER_API_VERSION) {
+        php_error_docref(NULL, E_CORE_WARNING,
+            "Redis::SERIALIZER_PHPSER requires phpser API version %d, found %u",
+            PHPSER_API_VERSION, phpser_api_version());
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+#endif
+
 /**
  * PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(redis)
 {
     struct timeval tv;
+
+#ifdef HAVE_REDIS_PHPSER
+    if (redis_check_phpser() == FAILURE) {
+        return FAILURE;
+    }
+#endif
 
     /* Seed random generator (for RedisCluster failover) */
     gettimeofday(&tv, NULL);
@@ -396,35 +436,20 @@ PHP_MINIT_FUNCTION(redis)
 static const char *
 get_available_serializers(void)
 {
+    return "php"
 #ifdef HAVE_REDIS_JSON
-    #ifdef HAVE_REDIS_IGBINARY
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, json, igbinary, msgpack";
-        #else
-            return "php, json, igbinary";
-        #endif
-    #else
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, json, msgpack";
-        #else
-            return "php, json";
-        #endif
-    #endif
-#else
-    #ifdef HAVE_REDIS_IGBINARY
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, igbinary, msgpack";
-        #else
-            return "php, igbinary";
-        #endif
-    #else
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, msgpack";
-        #else
-            return "php";
-        #endif
-    #endif
+        ", json"
 #endif
+#ifdef HAVE_REDIS_IGBINARY
+        ", igbinary"
+#endif
+#ifdef HAVE_REDIS_MSGPACK
+        ", msgpack"
+#endif
+#ifdef HAVE_REDIS_PHPSER
+        ", phpser"
+#endif
+        ;
 }
 
 /**
