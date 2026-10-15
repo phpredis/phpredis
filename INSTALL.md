@@ -28,12 +28,14 @@ To build this extension for the sources tree:
 git clone https://github.com/phpredis/phpredis.git
 cd phpredis
 phpize
-./configure [--enable-redis-igbinary] [--enable-redis-msgpack] [--enable-redis-lzf [--with-liblzf[=DIR]]] [--enable-redis-zstd] [--enable-redis-lz4]
+./configure [--enable-redis-igbinary] [--enable-redis-msgpack] [--enable-redis-phpser] [--enable-redis-lzf [--with-liblzf[=DIR]]] [--enable-redis-zstd] [--enable-redis-lz4]
 make && make install
 ~~~
 
 If you would like phpredis to serialize your data using the igbinary library, run configure with `--enable-redis-igbinary`.
 If you would like to use the msgpack serializer, run configure with `--enable-redis-msgpack` (note:  Requires php-msgpack >= 2.0.3)
+If you would like to use the [phpser](https://github.com/iliaal/phpser) serializer, run configure with `--enable-redis-phpser` (note: Requires phpser >= 0.9.0 and PHP >= 8.2). Load phpser before redis (`extension=phpser.so` above `extension=redis.so`).
+When `phpser.key` is set to a key of at least 32 bytes, `Redis::SERIALIZER_PHPSER` values are HMAC-signed for the `redis` context and verified before decoding. While `phpser.key` is set, a value that fails verification or does not decode is returned as `false`, never as its raw bytes, so plain values written by other clients or by `INCR` read back as `false` unless `Redis::OPT_PACK_IGNORE_NUMBERS` is enabled for numeric values. Without `phpser.key`, such values are returned as strings, as with igbinary and the PHP serializer.
 The extension also may compress data before sending it to Redis server, if you run configure with `--enable-redis-lzf`. If you want to use lzf library pre-installed into your system use `--with-liblzf` configuration option to specify the path where to search files.
 `make install` copies `redis.so` to an appropriate location, but you still need to enable the module in the PHP config file. To do so, either edit your php.ini or add a redis.ini file in `/etc/php5/conf.d` with the following contents: `extension=redis.so`.
 

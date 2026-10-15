@@ -7192,6 +7192,9 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 #ifdef HAVE_REDIS_MSGPACK
                 || val_long == REDIS_SERIALIZER_MSGPACK
 #endif
+#ifdef HAVE_REDIS_PHPSER
+                || val_long == REDIS_SERIALIZER_PHPSER
+#endif
             ) {
                 redis_sock->serializer = val_long;
                 RETURN_TRUE;
@@ -7380,7 +7383,7 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     zval z_ret;
-    if (!redis_unserialize(redis_sock, value, value_len, &z_ret)) {
+    if (redis_unserialize(redis_sock, value, value_len, &z_ret) <= 0) {
         // Badly formed input, throw an exception
         zend_throw_exception(ex, "Invalid serialized data, or unserialization error", 0);
         RETURN_FALSE;
