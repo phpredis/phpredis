@@ -340,6 +340,56 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    public function testMovedFromMasterWithoutReplicas() {
+        if (!function_exists('proc_open'))
+            $this->markTestSkipped('proc_open is required for the stale slot-map seed');
+
+        $masters = $this->redis->_masters();
+        if (count($masters) < 2) $this->markTestSkipped('At least two masters are required');
+        $source = $masters[0];
+        $ranges = $this->redis->rawCommand($source, 'CLUSTER', 'SLOTS');
+        $owner = null;
+        for ($i = 0; $i < 256; $i++) {
+            $key = "{unmapped-master-$i}key";
+            $slot = $this->redis->cluster($source, 'KEYSLOT', $key);
+            foreach ($ranges as $range) {
+                if ($slot >= $range[0] && $slot <= $range[1]) {
+                    $owner = [$range[2][0], $range[2][1]];
+                    break;
+                }
+            }
+            if ($owner !== $source) break;
+        }
+        if ($i === 256) throw new RuntimeException('Unable to find a slot on another master');
+
+        $class = $this->getRedisClusterClass();
+        $cache = ini_get('redis.clusters.cache_slots');
+        $client = null;
+        $process = proc_open([PHP_BINARY, '-n', __DIR__ . '/ClusterSlotsFixture.php', $source[0], $source[1]],
+            [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+        if (!is_resource($process)) throw new RuntimeException('Unable to start slot-map seed');
+
+        try {
+            ini_set('redis.clusters.cache_slots', 0);
+            fclose($pipes[0]);
+            $seed = trim(fgets($pipes[1]));
+            if ($seed === '') throw new RuntimeException(stream_get_contents($pipes[2]));
+            $client = new $class(null, [$seed], 1, 1, false, $this->getAuth());
+            $this->redis->set($key, 'moved-value');
+            $this->assertEquals('moved-value', $client->get($key));
+            $this->assertEquals('moved-value', $client->get($key));
+            $this->assertTrue($client->set($key, 'updated-value'));
+            $this->assertEquals('updated-value', $this->redis->get($key));
+        } finally {
+            if ($client) $client->close();
+            $this->redis->del($key);
+            foreach ($pipes as $pipe) if (is_resource($pipe)) fclose($pipe);
+            proc_terminate($process);
+            proc_close($process);
+            ini_set('redis.clusters.cache_slots', $cache);
+        }
+    }
+
     public function testRandomKey() {
         $key = 'randomkey-test';
         $this->redis->set($key, 'value');

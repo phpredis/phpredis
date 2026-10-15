@@ -1527,25 +1527,23 @@ static int cluster_update_slot(redisCluster *c) {
             /* If the redirected node is a replica of the previous slot owner, a failover has taken place.
             We must then remap the cluster's keyspace in order to update the cluster's topology. */
             redisClusterNode *prev_master = cluster_slot(c,c->redir_slot);
-            if (NULL == prev_master->slaves) {
-                CLUSTER_THROW_EXCEPTION("Redis Cluster's master data is incomplete.  Cluster is in invalid state.", 0);
-                return FAILURE;
-            }
-            redisClusterNode *slave;
-            ZEND_HASH_FOREACH_PTR(prev_master->slaves, slave) {
-                if (slave == NULL) {
-                    continue;
-                }
-                if (cluster_redir_matches(c, slave->sock)) {
-                    // Detected a failover, the redirected node was a replica
-                    // Remap the cluster's keyspace
-                    if (cluster_map_keyspace(c) == FAILURE) {
-                        CLUSTER_THROW_EXCEPTION("Failed to remap cluster keyspace after failover", 0);
-                        return FAILURE;
+            if (prev_master->slaves) {
+                redisClusterNode *slave;
+                ZEND_HASH_FOREACH_PTR(prev_master->slaves, slave) {
+                    if (slave == NULL) {
+                        continue;
                     }
-                    return SUCCESS;
-                }
-            } ZEND_HASH_FOREACH_END();
+                    if (cluster_redir_matches(c, slave->sock)) {
+                        // Detected a failover, the redirected node was a replica
+                        // Remap the cluster's keyspace
+                        if (cluster_map_keyspace(c) == FAILURE) {
+                            CLUSTER_THROW_EXCEPTION("Failed to remap cluster keyspace after failover", 0);
+                            return FAILURE;
+                        }
+                        return SUCCESS;
+                    }
+                } ZEND_HASH_FOREACH_END();
+            }
 
             /* Create our node */
             node = cluster_node_create(c, c->redir_host, c->redir_host_len,
