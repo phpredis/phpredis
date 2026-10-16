@@ -351,9 +351,15 @@ static int cluster_send_direct(RedisSock *redis_sock, const char *cmd, size_t cm
     char buf[1024];
 
     /* Connect to the socket if we aren't yet and send our command, validate the reply type, and consume the first line */
-    if (!cluster_send_payload(redis_sock, cmd, cmd_len) ||
-        !cluster_validate_reply_type(redis_sock, type) ||
-        !redis_sock_gets_raw(redis_sock, buf, sizeof(buf))) return -1;
+    if (!cluster_send_payload(redis_sock, cmd, cmd_len)) return -1;
+
+    /* A mismatched or incomplete reply leaves unread bytes on the socket */
+    if (!cluster_validate_reply_type(redis_sock, type) ||
+        !redis_sock_gets_raw(redis_sock, buf, sizeof(buf)))
+    {
+        redis_sock_disconnect(redis_sock, 1, 1);
+        return -1;
+    }
 
     /* Success! */
     return 0;
@@ -1269,6 +1275,11 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
     return 0;
 }
 
+static int cluster_is_reply_type(REDIS_REPLY_TYPE type) {
+    return type == TYPE_LINE || type == TYPE_INT || type == TYPE_ERR ||
+           type == TYPE_BULK || type == TYPE_MULTIBULK;
+}
+
 /* Once we write a command to a node in our cluster, this function will check
  * the reply type and extract information from those that will specify a length
  * bit.  If we encounter an error condition, we'll check for MOVED or ASK
@@ -1289,9 +1300,10 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
     cluster_clear_reply(c);
 
     if (-1 == redis_check_eof(c->cmd_sock, 1, 1) ||
-       EOF == (*reply_type = redis_sock_getc(c->cmd_sock)))
+       EOF == (*reply_type = redis_sock_getc(c->cmd_sock)) ||
+       !cluster_is_reply_type(*reply_type))
     {
-        return -1;
+        goto failure;
     }
 
     // In the event of an ERROR, check if it's a MOVED/ASK error
@@ -1302,7 +1314,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
 
         // Attempt to read the error
         if (redis_sock_gets(c->cmd_sock, inbuf, sizeof(inbuf), &nbytes) < 0) {
-            return -1;
+            goto failure;
         }
 
         // Check for MOVED or ASK redirection
@@ -1319,16 +1331,22 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
     if (redis_sock_gets(c->cmd_sock,c->line_reply,sizeof(c->line_reply),
                        &sz) < 0)
     {
-        return -1;
+        goto failure;
     }
 
     if (cluster_parse_reply_len(c, *reply_type, sz) == FAILURE) {
-        return -1;
+        goto failure;
     }
 
     // Clear out any previous error, and return that the data is here
     cluster_clear_error(c);
     return 0;
+
+failure:
+    /* The rest of this reply may still arrive, so the next command on this
+     * socket would read it as its own reply. */
+    redis_sock_disconnect(c->cmd_sock, 1, 1);
+    return -1;
 }
 
 /* Disconnect from each node we're connected to */
@@ -1650,8 +1668,17 @@ cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
     c->flags->txBytes += cmd_len;
 
     /* Check our response */
-    if (cluster_check_response(c, &c->reply_type) != 0 ||
-       (rtype != TYPE_EOF && rtype != c->reply_type)) return -1;
+    if (cluster_check_response(c, &c->reply_type) != 0) return -1;
+
+    if (rtype != TYPE_EOF && rtype != c->reply_type) {
+        /* Our caller won't read the payload of a reply it didn't expect */
+        if ((c->reply_type == TYPE_BULK && c->reply_len >= 0) ||
+            (c->reply_type == TYPE_MULTIBULK && c->reply_len > 0))
+        {
+            redis_sock_disconnect(c->cmd_sock, 1, 1);
+        }
+        return -1;
+    }
 
     /* Success */
     return 0;
