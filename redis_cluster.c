@@ -548,9 +548,6 @@ static int get_key_ht(const redisCluster *c, HashTable *ht, HashPosition *ptr,
         return -1;
     }
 
-    // Always want to work with strings
-    convert_to_string(z_key);
-
     kv->key = Z_STRVAL_P(z_key);
     kv->key_len = Z_STRLEN_P(z_key);
     kv->key_free = redis_key_prefix(c->flags, &(kv->key), &(kv->key_len));
@@ -562,22 +559,41 @@ static int get_key_ht(const redisCluster *c, HashTable *ht, HashPosition *ptr,
     return 0;
 }
 
-/* Turn variable arguments into a HashTable for processing */
+/* Own converted keys before any slot batch is sent or queued. */
 static HashTable *method_args_to_ht(zval *z_args, int argc) {
-    HashTable *ht_ret;
+    HashTable *ht_ret, *ht_src = NULL;
+    zval *z_arg, z_key;
     int i;
+
+    if (argc == 1 && Z_TYPE(z_args[0]) == IS_ARRAY) {
+        ht_src = Z_ARRVAL(z_args[0]);
+        argc = zend_hash_num_elements(ht_src);
+    }
 
     /* Allocate our hash table */
     ALLOC_HASHTABLE(ht_ret);
-    zend_hash_init(ht_ret, argc, NULL, NULL, 0);
+    zend_hash_init(ht_ret, argc, NULL, ZVAL_PTR_DTOR, 0);
 
-    /* Populate our return hash table with our arguments */
-    for (i = 0; i < argc; i++) {
-        zend_hash_next_index_insert(ht_ret, &z_args[i]);
+    if (ht_src) {
+        ZEND_HASH_FOREACH_VAL(ht_src, z_arg) {
+            ZVAL_STR(&z_key, zval_get_string(z_arg));
+            zend_hash_next_index_insert(ht_ret, &z_key);
+            if (UNEXPECTED(EG(exception))) goto failure;
+        } ZEND_HASH_FOREACH_END();
+    } else {
+        for (i = 0; i < argc; i++) {
+            ZVAL_STR(&z_key, zval_get_string(&z_args[i]));
+            zend_hash_next_index_insert(ht_ret, &z_key);
+            if (UNEXPECTED(EG(exception))) goto failure;
+        }
     }
 
-    /* Return our hash table */
     return ht_ret;
+
+failure:
+    zend_hash_destroy(ht_ret);
+    FREE_HASHTABLE(ht_ret);
+    return NULL;
 }
 
 /* Convenience handler for commands that take multiple keys such as
@@ -591,7 +607,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     zval *z_args;
     HashTable *ht_arr;
     HashPosition ptr;
-    int i = 1, argc = ZEND_NUM_ARGS(), ht_free = 0;
+    int i = 1, argc = ZEND_NUM_ARGS();
     short slot;
 
     /* If we don't have any arguments we're invalid */
@@ -604,17 +620,14 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
         return -1;
     }
 
-    /* Determine if we're working with a single array or variadic args */
-    if (argc == 1 && Z_TYPE(z_args[0]) == IS_ARRAY) {
-        ht_arr = Z_ARRVAL(z_args[0]);
-        argc = zend_hash_num_elements(ht_arr);
-        if (!argc) {
-            efree(z_args);
-            return -1;
-        }
-    } else {
-        ht_arr = method_args_to_ht(z_args, argc);
-        ht_free = 1;
+    ht_arr = method_args_to_ht(z_args, argc);
+    efree(z_args);
+    if (ht_arr == NULL) return -1;
+
+    if ((argc = zend_hash_num_elements(ht_arr)) == 0) {
+        zend_hash_destroy(ht_arr);
+        FREE_HASHTABLE(ht_arr);
+        return -1;
     }
 
     /* MGET is readonly, DEL is not */
@@ -627,7 +640,9 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     // it's the first iteration every time, needlessly
     zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
     if (get_key_ht(c, ht_arr, &ptr, &kv) < 0) {
-        efree(z_args);
+        cluster_multi_free(&mc);
+        zend_hash_destroy(ht_arr);
+        FREE_HASHTABLE(ht_arr);
         return -1;
     }
 
@@ -645,11 +660,8 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     while (zend_hash_has_more_elements_ex(ht_arr, &ptr) ==SUCCESS) {
         if (get_key_ht(c, ht_arr, &ptr, &kv) < 0) {
             cluster_multi_free(&mc);
-            if (ht_free) {
-                zend_hash_destroy(ht_arr);
-                efree(ht_arr);
-            }
-            efree(z_args);
+            zend_hash_destroy(ht_arr);
+            FREE_HASHTABLE(ht_arr);
             return -1;
         }
 
@@ -659,12 +671,10 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
             if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot,
                                     &mc, z_ret, i == argc, cb) < 0)
             {
+                if (kv.key_free) efree(kv.key);
                 cluster_multi_free(&mc);
-                if (ht_free) {
-                    zend_hash_destroy(ht_arr);
-                    efree(ht_arr);
-                }
-                efree(z_args);
+                zend_hash_destroy(ht_arr);
+                FREE_HASHTABLE(ht_arr);
                 return -1;
             }
         }
@@ -681,7 +691,6 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
 
         zend_hash_move_forward_ex(ht_arr, &ptr);
     }
-    efree(z_args);
 
     // If we've got straggler(s) process them
     if (mc.argc > 0) {
@@ -689,10 +698,8 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
                                 &mc, z_ret, 1, cb) < 0)
         {
             cluster_multi_free(&mc);
-            if (ht_free) {
-                zend_hash_destroy(ht_arr);
-                efree(ht_arr);
-            }
+            zend_hash_destroy(ht_arr);
+            FREE_HASHTABLE(ht_arr);
             return -1;
         }
     }
@@ -700,11 +707,8 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     // Free our command
     cluster_multi_free(&mc);
 
-    /* Clean up our hash table if we constructed it from variadic args */
-    if (ht_free) {
-        zend_hash_destroy(ht_arr);
-        efree(ht_arr);
-    }
+    zend_hash_destroy(ht_arr);
+    FREE_HASHTABLE(ht_arr);
 
     /* Return our object if we're in MULTI mode */
     if (!cluster_is_atomic(c))
