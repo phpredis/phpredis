@@ -287,8 +287,8 @@ typedef struct clusterDistList {
  * we'll want to re-integrate into one running array, except for the last
  * command execution, in which we'll want to return the value (or add it) */
 typedef struct clusterMultiCtx {
-    /* Our running array */
-    zval *z_multi;
+    /* Shared reference to the running result. */
+    zval z_multi;
 
     /* How many keys did we request for this bit */
     int count;

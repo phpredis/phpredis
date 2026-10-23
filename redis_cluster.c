@@ -233,6 +233,7 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
 void free_cluster_context(zend_object *object) {
     redisCluster *cluster = PHPREDIS_GET_OBJECT(redisCluster, object);
 
+    cluster_free_queue(cluster);
     cluster_free(cluster, 0);
     zend_object_std_dtor(&cluster->std);
 }
@@ -434,9 +435,7 @@ static void cluster_multi_ctx_dtor(void *ptr)
 {
     clusterMultiCtx *mctx = ptr;
 
-    if (mctx->last) {
-        efree(mctx->z_multi);
-    }
+    zval_ptr_dtor(&mctx->z_multi);
     efree(mctx);
 }
 
@@ -451,18 +450,17 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
     // Finalize multi command
     cluster_multi_fini(mc);
 
-    // Spin up multi context
-    mctx = emalloc(sizeof(clusterMultiCtx));
-    mctx->z_multi = z_ret;
-    mctx->count   = mc->argc;
-    mctx->last    = last;
-
     // Attempt to send the command
     if (cluster_send_rcmd_ex(c, slot, mc->cmd) < 0 || c->err != NULL)
     {
-        efree(mctx);
         return -1;
     }
+
+    /* Each queued batch owns the result even if a later batch fails. */
+    mctx = emalloc(sizeof(clusterMultiCtx));
+    ZVAL_COPY(&mctx->z_multi, z_ret);
+    mctx->count = mc->argc;
+    mctx->last = last;
 
     ctx.ptr = mctx;
     ctx.dtor = cluster_multi_ctx_dtor;
@@ -659,6 +657,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
             if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot,
                                     &mc, z_ret, i == argc, cb) < 0)
             {
+                if (kv.key_free) efree(kv.key);
                 cluster_multi_free(&mc);
                 if (ht_free) {
                     zend_hash_destroy(ht_arr);
@@ -768,6 +767,8 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
             if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                                     slot, &mc, z_ret, i == argc, cb) < 0)
             {
+                if (kv.key_free) efree(kv.key);
+                if (kv.val_free) efree(kv.val);
                 cluster_multi_free(&mc);
                 return -1;
             }
@@ -814,18 +815,19 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
 static void cluster_generic_delete(INTERNAL_FUNCTION_PARAMETERS,
                                    const char *kw, int kw_len)
 {
-    zval *z_ret = emalloc(sizeof(*z_ret));
+    zval z_ret;
 
     // Initialize a LONG value to zero for our return
-    ZVAL_LONG(z_ret, 0);
+    ZVAL_LONG(&z_ret, 0);
+    ZVAL_MAKE_REF(&z_ret);
 
     // Parse args, process
-    if (cluster_mkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, kw, kw_len, z_ret,
+    if (cluster_mkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, kw, kw_len, &z_ret,
                         cluster_del_resp) < 0)
     {
-        efree(z_ret);
-        RETURN_FALSE;
+        RETVAL_FALSE;
     }
+    zval_ptr_dtor(&z_ret);
 }
 
 /* {{{ proto array RedisCluster::del(string key1, string key2, ... keyN) */
@@ -852,49 +854,50 @@ PHP_METHOD(RedisCluster, msetex) {
 
 /* {{{ proto array RedisCluster::mget(array keys) */
 PHP_METHOD(RedisCluster, mget) {
-    zval *z_ret = emalloc(sizeof(*z_ret));
+    zval z_ret;
 
-    array_init(z_ret);
+    array_init(&z_ret);
+    ZVAL_MAKE_REF(&z_ret);
 
     // Parse args, process
     if (cluster_mkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, ZEND_STRL("MGET"),
-                         z_ret, cluster_mbulk_mget_resp) < 0)
+                         &z_ret, cluster_mbulk_mget_resp) < 0)
     {
-        zval_ptr_dtor_nogc(z_ret);
-        efree(z_ret);
-        RETURN_FALSE;
+        RETVAL_FALSE;
     }
+    zval_ptr_dtor(&z_ret);
 }
 
 /* {{{ proto bool RedisCluster::mset(array keyvalues) */
 PHP_METHOD(RedisCluster, mset) {
-    zval *z_ret = emalloc(sizeof(*z_ret));
+    zval z_ret;
 
-    ZVAL_TRUE(z_ret);
+    ZVAL_TRUE(&z_ret);
+    ZVAL_MAKE_REF(&z_ret);
 
     // Parse args and process.  If we get a failure, free zval and return FALSE.
     if (cluster_mset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, ZEND_STRL("MSET"),
-                         z_ret, cluster_mset_resp) == -1)
+                         &z_ret, cluster_mset_resp) == -1)
     {
-        efree(z_ret);
-        RETURN_FALSE;
+        RETVAL_FALSE;
     }
+    zval_ptr_dtor(&z_ret);
 }
 
 /* {{{ proto array RedisCluster::msetnx(array keyvalues) */
 PHP_METHOD(RedisCluster, msetnx) {
-    zval *z_ret = emalloc(sizeof(*z_ret));
+    zval z_ret;
 
-    array_init(z_ret);
+    array_init(&z_ret);
+    ZVAL_MAKE_REF(&z_ret);
 
     // Parse args and process.  If we get a failure, free mem and return FALSE
     if (cluster_mset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, ZEND_STRL("MSETNX"),
-                         z_ret, cluster_msetnx_resp) ==-1)
+                         &z_ret, cluster_msetnx_resp) ==-1)
     {
-        zval_ptr_dtor_nogc(z_ret);
-        efree(z_ret);
-        RETURN_FALSE;
+        RETVAL_FALSE;
     }
+    zval_ptr_dtor(&z_ret);
 }
 /* }}} */
 
