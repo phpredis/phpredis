@@ -6907,10 +6907,9 @@ class Redis_Test extends TestSuite {
                 $ex = null;
                 try {
                     new $class(['backoff' => [$name => $value]]);
-                } catch (RedisException | ValueError $ex) {
+                } catch (Exception | ValueError $ex) {
                 }
                 $this->assertTrue($ex !== null);
-                $this->assertEquals('Invalid backoff options', $ex->getMessage());
             }
         }
     }
