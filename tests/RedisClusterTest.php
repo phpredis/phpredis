@@ -688,6 +688,35 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    public function testScanPrefixEmptyPattern() {
+        $prefix = uniqid('scan-prefix:');
+        $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        $this->redis->hSet('hash', $prefix, 'value');
+        $this->redis->sAdd('set', $prefix);
+        $this->redis->zAdd('zset', 1, $prefix);
+        $this->redis->set('', 'value');
+
+        foreach (['hscan' => ['hash', [$prefix => 'value']],
+                  'sscan' => ['set', [$prefix]],
+                  'zscan' => ['zset', [$prefix => 1.0]],
+                  'scan' => ['', [$prefix]]] as $method => [$key, $expected]) {
+            foreach ([[], [null], ['']] as $pattern) {
+                $it = null;
+                $actual = $method === 'scan'
+                    ? $this->redis->scan($it, $key, ...$pattern)
+                    : $this->redis->$method($key, $it, ...$pattern);
+                $this->assertEquals($expected, $actual);
+            }
+        }
+
+        foreach (['hash', 'set', 'zset', ''] as $key) {
+            $this->redis->del($key);
+        }
+    }
+
     // Run some simple tests against the PUBSUB command.  This is problematic, as we
     // can't be sure what's going on in the instance, but we can do some things.
     public function testPubSub() {
