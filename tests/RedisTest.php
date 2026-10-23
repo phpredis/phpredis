@@ -8125,6 +8125,48 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testXClaimDoesNotLeakMemory() {
+        if ( ! $this->minVersionCheck('5.0'))
+            $this->markTestSkipped();
+        if (memory_get_usage() === 0)
+            $this->markTestSkipped('Zend memory manager is required');
+
+        $this->redis->del('claim-memory');
+        $this->redis->xGroup('CREATE', 'claim-memory', 'group', '0-0', true);
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->redis->xClaim('claim-memory', 'group', 'consumer', 0, ['0-1'], []);
+        }
+
+        $before = memory_get_usage();
+        for ($i = 0; $i < 100; $i++) {
+            $this->redis->xClaim('claim-memory', 'group', 'consumer', 0, ['0-1'], []);
+        }
+        $this->assertLTE(0, memory_get_usage() - $before);
+        $this->redis->del('claim-memory');
+    }
+
+    public function testXAutoClaimDoesNotLeakMemory() {
+        if ( ! $this->minVersionCheck('6.2'))
+            $this->markTestSkipped();
+        if (memory_get_usage() === 0)
+            $this->markTestSkipped('Zend memory manager is required');
+
+        $this->redis->del('autoclaim-memory');
+        $this->redis->xGroup('CREATE', 'autoclaim-memory', 'group', '0-0', true);
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->redis->xAutoClaim('autoclaim-memory', 'group', 'consumer', 0, '0-0');
+        }
+
+        $before = memory_get_usage();
+        for ($i = 0; $i < 100; $i++) {
+            $this->redis->xAutoClaim('autoclaim-memory', 'group', 'consumer', 0, '0-0');
+        }
+        $this->assertLTE(0, memory_get_usage() - $before);
+        $this->redis->del('autoclaim-memory');
+    }
+
     /* Make sure our XAUTOCLAIM handler works */
     public function testXAutoClaim() {
         $this->redis->del('ships');
