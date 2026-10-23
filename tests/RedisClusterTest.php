@@ -761,6 +761,100 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertFalse($this->redis->msetnx([])); // set ø → FALSE
     }
 
+    public function testDistributedMultiFailure() {
+        if ( ! $this->minVersionCheck('6.0'))
+            $this->markTestSkipped();
+
+        $allowed = '{' . __METHOD__ . ':0}';
+        $node = $this->redis->rawCommand($allowed, 'CLUSTER', 'MYID');
+        for ($i = 1; $i < 1000; $i++) {
+            $denied = '{' . __METHOD__ . ":$i}";
+            if ($this->redis->rawCommand($denied, 'CLUSTER', 'MYID') !== $node)
+                break;
+        }
+        if ($i == 1000)
+            $this->markTestSkipped('Requires two cluster masters');
+
+        $user = uniqid('phpredis-multi-');
+        $prefix = $user . ':';
+        $class = $this->getRedisClusterClass();
+        try {
+            foreach ($this->redis->_masters() as $master) {
+                $this->assertTrue($this->redis->acl($master, 'SETUSER', $user,
+                    'on', '>' . $user, '+@all', '~' . $prefix . $allowed . '*'));
+            }
+
+            foreach (['del', 'unlink', 'mget', 'mset', 'msetnx'] as $method) {
+                $args = in_array($method, ['mset', 'msetnx'])
+                    ? [$allowed => 'value', $denied => 'value', $allowed . ':tail' => 'value']
+                    : [$allowed, $denied, $allowed . ':tail'];
+
+                foreach (['exec', 'discard', null] as $finish) {
+                    $redis = new $class(NULL, self::$seeds, 2, 2, false, [$user, $user]);
+                    $redis->setOption(Redis::OPT_PREFIX, $prefix);
+                    $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+                    $redis->multi();
+                    // The first node queues a batch before the second node rejects its key.
+                    $this->assertFalse($redis->$method($args));
+                    $this->assertStringContains('NOPERM', $redis->getLastError());
+                    if ($finish !== null)
+                        $this->assertEquals($finish === 'exec' ? [] : true, $redis->$finish());
+                    unset($redis);
+                }
+            }
+        } finally {
+            unset($redis);
+            foreach ($this->redis->_masters() as $master) {
+                $this->redis->acl($master, 'DELUSER', $user);
+            }
+            $this->redis->del($prefix . $allowed, $prefix . $denied, $prefix . $allowed . ':tail');
+        }
+    }
+
+    public function testDistributedMultiResults() {
+        foreach ([['{a}:1', '{a}:2'], ['{a}:1', '{b}:2', '{a}:3']] as $keys) {
+            $values = array_fill_keys($keys, 'value');
+            $calls = [
+                ['mset', $values, true],
+                ['mget', $keys, array_values($values)],
+                ['msetnx', $values, array_fill(0, count($keys), 0)],
+                ['del', $keys, count($keys)],
+                ['msetnx', $values, array_fill(0, count($keys), 1)],
+                ['unlink', $keys, count($keys)],
+            ];
+
+            foreach ([false, true] as $multi) {
+                $this->redis->del($keys);
+                if ($multi) $this->redis->multi();
+                foreach ($calls as [$method, $args, $expected]) {
+                    $result = $this->redis->$method($args);
+                    $this->assertEquals($multi ? $this->redis : $expected, $result);
+                }
+                if ($multi)
+                    $this->assertEquals(array_column($calls, 2), $this->redis->exec());
+            }
+
+            $this->redis->multi();
+            foreach ($calls as [$method, $args]) {
+                $this->redis->$method($args);
+            }
+            $this->assertTrue($this->redis->discard());
+            $this->assertEquals(array_fill(0, count($keys), false), $this->redis->mget($keys));
+
+            $this->redis->watch(...$keys);
+            $this->redis->multi();
+            foreach ($calls as [$method, $args]) {
+                $this->redis->$method($args);
+            }
+            $other = $this->newInstance();
+            $other->mset($values);
+            $result = $this->redis->exec();
+            $this->assertIsArray($result);
+            $this->assertEquals(array_fill(0, count($result), false), $result);
+            $this->redis->del($keys);
+        }
+    }
+
     /* Slowlog needs to take a key or [ip, port], to direct it to a node */
     public function testSlowlog() {
         $key = uniqid() . '-' . rand(1, 1000);
