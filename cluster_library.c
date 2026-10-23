@@ -8,6 +8,7 @@
 #include <errno.h>
 
 extern zend_class_entry *redis_cluster_exception_ce;
+extern zend_class_entry *redis_exception_ce;
 int le_cluster_slot_cache;
 
 /* Debugging methods/
@@ -1329,6 +1330,199 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
     // Clear out any previous error, and return that the data is here
     cluster_clear_error(c);
     return 0;
+}
+
+typedef struct {
+    RedisCmd *cmd;
+    RedisSock *sock;
+    clusterReply *reply;
+} clusterMgetBatch;
+
+typedef struct {
+    RedisSock *sock;
+    smart_string payload;
+} clusterMgetNode;
+
+/* Return zero to use the ordinary MGET path after draining any queued replies. */
+int cluster_mget_pipelined(redisCluster *c, HashTable *keys, zval *result)
+{
+    clusterMgetBatch *batches, *batch = NULL;
+    clusterMgetNode *node;
+    HashTable nodes;
+    RedisSock decoder = {0};
+    zend_string *error = NULL;
+    zval *key, value;
+    uint32_t count = 0, i, j;
+    int status = 0, pending = 0, retry = 0, clusterdown = 0, nodes_initialized = 0;
+
+    batches = ecalloc(zend_hash_num_elements(keys), sizeof(*batches));
+    ZEND_HASH_FOREACH_VAL(keys, key) {
+        char *str;
+        size_t len;
+        unsigned short slot;
+        int prefixed;
+
+        convert_to_string(key);
+        if (EG(exception)) {
+            status = -1;
+            goto cleanup;
+        }
+        str = Z_STRVAL_P(key);
+        len = Z_STRLEN_P(key);
+        prefixed = redis_key_prefix(c->flags, &str, &len);
+        slot = cluster_hash_key(str, len);
+
+        if (batch == NULL || batch->cmd->slot != slot) {
+            batch = &batches[count++];
+            batch->cmd = redis_cmd_create_literal(c->flags, "MGET");
+            batch->cmd->slot = slot;
+        }
+        redis_cmd_cat_str(batch->cmd, str, len);
+        if (prefixed) efree(str);
+    } ZEND_HASH_FOREACH_END();
+
+    if (count < 2) goto cleanup;
+
+    zend_hash_init(&nodes, zend_hash_num_elements(c->nodes), NULL, NULL, 0);
+    nodes_initialized = 1;
+
+    /* Open every connection before leaving responses unread on any socket. */
+    for (i = 0; i < count; i++) {
+        batch = &batches[i];
+        if (!cluster_slot(c, batch->cmd->slot)) goto cleanup;
+        batch->sock = cluster_slot_master_sock(c, batch->cmd->slot);
+        if (batch->sock->watching) goto cleanup;
+        node = zend_hash_index_find_ptr(&nodes, (zend_ulong)(uintptr_t)batch->sock);
+        if (node == NULL) {
+            if (!cluster_sock_live(batch->sock)) {
+                status = EG(exception) ? -1 : 0;
+                goto cleanup;
+            }
+            node = ecalloc(1, sizeof(*node));
+            node->sock = batch->sock;
+            zend_hash_index_add_ptr(&nodes, (zend_ulong)(uintptr_t)batch->sock, node);
+        }
+        smart_string_appendl(&node->payload, redis_cmd_str(batch->cmd),
+                              redis_cmd_len(batch->cmd));
+    }
+
+    pending = 1;
+    ZEND_HASH_FOREACH_PTR(&nodes, node) {
+        if (!cluster_write_payload(node->sock, node->payload.c, node->payload.len)) {
+            cluster_cache_clear(c);
+            c->redir_type = REDIR_NONE;
+            status = EG(exception) ? -1 : 0;
+            goto cleanup;
+        }
+        smart_string_free(&node->payload);
+    } ZEND_HASH_FOREACH_END();
+
+    for (i = 0; i < count; i++) {
+        int response;
+
+        batch = &batches[i];
+        c->cmd_sock = batch->sock;
+        c->cmd_slot = batch->cmd->slot;
+        response = cluster_check_response(c, &c->reply_type);
+        if (response < 0) goto io_failure;
+        if (response > 0) {
+            if (error == NULL) retry = 1;
+            continue;
+        }
+        if (c->err) {
+            if (error == NULL) {
+                error = zend_string_copy(c->err);
+                clusterdown = c->clusterdown;
+            }
+            continue;
+        }
+
+        if (c->reply_type != TYPE_MULTIBULK ||
+            c->reply_len != batch->cmd->argc - 1)
+        {
+            goto io_failure;
+        }
+        batch->reply = cluster_read_resp(c, 0);
+        if (batch->reply == NULL) goto io_failure;
+        for (j = 0; j < batch->reply->elements; j++) {
+            if (batch->reply->element[j]->type != TYPE_BULK) goto io_failure;
+        }
+    }
+    pending = 0;
+    c->redir_type = REDIR_NONE;
+
+    /* Native redirection handling can safely remap nodes once replies are drained. */
+    if (retry) goto cleanup;
+server_error:
+    if (error) {
+        cluster_clear_error(c);
+        c->err = error;
+        error = NULL;
+        c->clusterdown = clusterdown;
+        if (clusterdown) {
+            cluster_cache_clear(c);
+            CLUSTER_THROW_EXCEPTION("The Redis Cluster is down (CLUSTERDOWN)", 0);
+        }
+        status = -1;
+        goto cleanup;
+    }
+
+    /* Unserializers can call back into this client, so decode only after draining. */
+    for (i = 0; i < count; i++) {
+        /* Match the ordinary MGET handler's per-command decoding options. */
+        decoder.serializer = c->flags->serializer;
+        decoder.compression = c->flags->compression;
+        for (j = 0; j < batches[i].reply->elements; j++) {
+            clusterReply *reply = batches[i].reply->element[j];
+
+            if (reply->len == -1) {
+                ZVAL_FALSE(&value);
+            } else {
+                redis_unpack(&decoder, reply->str, reply->len, &value);
+                efree(reply->str);
+                reply->str = NULL;
+            }
+            add_next_index_zval(result, &value);
+            if (EG(exception)) {
+                status = -1;
+                goto cleanup;
+            }
+        }
+    }
+    status = 1;
+    goto cleanup;
+
+io_failure:
+    cluster_cache_clear(c);
+    c->redir_type = REDIR_NONE;
+    if (error && !retry &&
+        (!EG(exception) || EG(exception)->ce == redis_exception_ce ||
+         EG(exception)->ce == redis_cluster_exception_ce))
+    {
+        if (EG(exception)) zend_clear_exception();
+        goto server_error;
+    }
+    if (!EG(exception)) {
+        CLUSTER_THROW_EXCEPTION("Error processing response from Redis node!", 0);
+    }
+    status = -1;
+
+cleanup:
+    if (nodes_initialized) {
+        ZEND_HASH_FOREACH_PTR(&nodes, node) {
+            if (pending) redis_sock_disconnect(node->sock, 1, 1);
+            smart_string_free(&node->payload);
+            efree(node);
+        } ZEND_HASH_FOREACH_END();
+        zend_hash_destroy(&nodes);
+    }
+    for (i = 0; i < count; i++) {
+        redis_cmd_free(batches[i].cmd);
+        if (batches[i].reply) cluster_free_reply(batches[i].reply, 1);
+    }
+    if (error) zend_string_release(error);
+    efree(batches);
+    return status;
 }
 
 /* Disconnect from each node we're connected to */
