@@ -2911,28 +2911,30 @@ cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                         RedisCmdCtx ctx)
 {
     clusterMultiCtx *mctx = ctx.ptr;
+    zval *z_multi = Z_REFVAL(mctx->z_multi);
 
     /* Protect against an invalid response type, -1 response length, and failure
      * to consume the responses. */
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
     const short fail = c->reply_type != TYPE_MULTIBULK || c->reply_len == -1 ||
-        mbulk_resp_loop(c->cmd_sock, mctx->z_multi, c->reply_len, redis_empty_ctx) == FAILURE;
+        mbulk_resp_loop(c->cmd_sock, z_multi, c->reply_len, redis_empty_ctx) == FAILURE;
 
     // If we had a failure, pad results with FALSE to indicate failure.  Non
     // existent keys (e.g. for MGET will come back as NULL)
     if (fail) {
         while (mctx->count--) {
-            add_next_index_bool(mctx->z_multi, 0);
+            add_next_index_bool(z_multi, 0);
         }
     }
 
     // If this is the tail of our multi command, we can set our returns
     if (mctx->last) {
         if (cluster_is_atomic(c)) {
-            RETVAL_ZVAL(mctx->z_multi, 0, 1);
+            RETVAL_ZVAL(z_multi, 1, 0);
         } else {
-            add_next_index_zval(&c->multi_resp, mctx->z_multi);
+            Z_ADDREF_P(z_multi);
+            add_next_index_zval(&c->multi_resp, z_multi);
         }
 
     }
@@ -2944,6 +2946,7 @@ cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                     RedisCmdCtx ctx)
 {
     const clusterMultiCtx *mctx = ctx.ptr;
+    zval *z_multi = Z_REFVAL(mctx->z_multi);
     int real_argc = mctx->count/2;
 
     // Protect against an invalid response type
@@ -2951,22 +2954,23 @@ cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         php_error_docref(0, E_WARNING,
             "Invalid response type for MSETNX");
         while (real_argc--) {
-            add_next_index_bool(mctx->z_multi, 0);
+            add_next_index_bool(z_multi, 0);
         }
         return;
     }
 
     // Response will be 1/0 per key, so the client can match them up
     while (real_argc--) {
-        add_next_index_long(mctx->z_multi, c->reply_len);
+        add_next_index_long(z_multi, c->reply_len);
     }
 
     // Set return value if it's our last response
     if (mctx->last) {
         if (cluster_is_atomic(c)) {
-            RETVAL_ZVAL(mctx->z_multi, 0, 0);
+            RETVAL_ZVAL(z_multi, 1, 0);
         } else {
-            add_next_index_zval(&c->multi_resp, mctx->z_multi);
+            Z_ADDREF_P(z_multi);
+            add_next_index_zval(&c->multi_resp, z_multi);
         }
     }
 }
@@ -2976,6 +2980,7 @@ PHP_REDIS_API void
 cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
 {
     const clusterMultiCtx *mctx = ctx.ptr;
+    zval *z_multi = Z_REFVAL(mctx->z_multi);
 
     // If we get an invalid reply, inform the client
     if (c->reply_type != TYPE_INT) {
@@ -2985,13 +2990,13 @@ cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, RedisCmdCtx ctx)
     }
 
     // Increment by the number of keys deleted
-    Z_LVAL_P(mctx->z_multi) += c->reply_len;
+    Z_LVAL_P(z_multi) += c->reply_len;
 
     if (mctx->last) {
         if (cluster_is_atomic(c)) {
-            ZVAL_LONG(return_value, Z_LVAL_P(mctx->z_multi));
+            ZVAL_LONG(return_value, Z_LVAL_P(z_multi));
         } else {
-            add_next_index_long(&c->multi_resp, Z_LVAL_P(mctx->z_multi));
+            add_next_index_long(&c->multi_resp, Z_LVAL_P(z_multi));
         }
     }
 }
@@ -3001,22 +3006,22 @@ PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
                                      RedisCmdCtx ctx)
 {
     const clusterMultiCtx *mctx = ctx.ptr;
+    zval *z_multi = Z_REFVAL(mctx->z_multi);
 
     // If we get an invalid reply type something very wrong has happened,
     // and we have to abort.
     if (c->reply_type != TYPE_LINE) {
         php_error_docref(0, E_ERROR,
             "Invalid reply type returned for MSET command");
-        zval_ptr_dtor_nogc(mctx->z_multi);
         RETURN_FALSE;
     }
 
     // Set our return if it's the last call
     if (mctx->last) {
         if (cluster_is_atomic(c)) {
-            ZVAL_BOOL(return_value, zend_is_true(mctx->z_multi));
+            ZVAL_BOOL(return_value, zend_is_true(z_multi));
         } else {
-            add_next_index_bool(&c->multi_resp, zend_is_true(mctx->z_multi));
+            add_next_index_bool(&c->multi_resp, zend_is_true(z_multi));
         }
     }
 }
