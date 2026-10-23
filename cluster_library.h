@@ -374,6 +374,8 @@ long long mstime(void);
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot,
     const char *cmd, int cmd_len);
 
+int cluster_mget_pipelined(redisCluster *c, HashTable *keys, zval *result);
+
 static zend_always_inline short
 cluster_send_rcmd(redisCluster *c, RedisCmd *cmd)
 {

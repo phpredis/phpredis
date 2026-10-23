@@ -171,6 +171,253 @@ class Redis_Cluster_Test extends Redis_Test {
         return $redis->info(uniqid());
     }
 
+    public function testMGetPipelinesSlotBatches() {
+        $this->withMGetServer('pipeline', function($redis) {
+            try {
+                $values = $redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']);
+            } catch (RedisClusterException $e) {
+                $this->assert('MGET must send all slot batches before reading responses: %s', $e->getMessage());
+            }
+
+            $this->assertEquals(["a\0\xFF\r\n", false, 'c', "a\0\xFF\r\n"], $values);
+            $this->assertEquals('after-value', $redis->get('after'));
+        });
+    }
+
+    public function testMGetDrainsRepliesBeforeRedirection() {
+        foreach (['moved', 'ask'] as $scenario) {
+            $this->withMGetServer($scenario, function($redis) {
+                $this->assertEquals(["a\0\xFF\r\n", false, 'c', "a\0\xFF\r\n"],
+                    $redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']));
+                $this->assertNull($redis->getLastError());
+                $this->assertEquals('after-value', $redis->get('after'));
+            });
+        }
+    }
+
+    public function testMGetUsesMappedNodeConnections() {
+        $this->withMGetServer('multiple', function($redis) {
+            $this->assertEquals(["a\0\xFF\r\n", false, 'c', "a\0\xFF\r\n"],
+                $redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']));
+            $this->assertEquals('after-value', $redis->get('after'));
+        });
+    }
+
+    public function testMGetPreservesErrorsWhileDrainingReplies() {
+        $this->withMGetServer('error', function($redis) {
+            $this->assertFalse($redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']));
+            $this->assertEquals('ERR planned MGET failure', $redis->getLastError());
+            $this->assertEquals('after-value', $redis->get('after'));
+        });
+    }
+
+    public function testMGetPreservesErrorBeforeTruncatedReply() {
+        $this->withMGetServer('error-truncated', function($redis) {
+            $this->assertFalse($redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']));
+            $this->assertEquals('ERR planned MGET failure', $redis->getLastError());
+            $this->assertEquals('after-value', $redis->get('after'));
+        });
+    }
+
+    public function testMGetPreservesClusterDownWhileDrainingReplies() {
+        $this->withMGetServer('clusterdown', function($redis) {
+            $exception = NULL;
+            try {
+                $redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']);
+            } catch (RedisClusterException $e) {
+                $exception = $e;
+            }
+            $this->assertTrue($exception instanceof RedisClusterException);
+            $this->assertPatternMatch('/CLUSTERDOWN/', $exception->getMessage());
+            $this->assertEquals('CLUSTERDOWN planned MGET failure', $redis->getLastError());
+            $this->assertEquals('after-value', $redis->get('after'));
+        });
+    }
+
+    public function testMGetPreservesClusterDownBeforeTruncatedReply() {
+        $this->withMGetServer('clusterdown-truncated', function($redis) {
+            $exception = NULL;
+            try {
+                $redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']);
+            } catch (RedisClusterException $e) {
+                $exception = $e;
+            }
+            $this->assertTrue($exception instanceof RedisClusterException);
+            $this->assertPatternMatch('/CLUSTERDOWN/', $exception->getMessage());
+            $this->assertEquals('CLUSTERDOWN planned MGET failure', $redis->getLastError());
+            $this->assertEquals('after-value', $redis->get('after'));
+        });
+    }
+
+    public function testMGetReconnectsAfterTruncatedReply() {
+        $this->withMGetServer('truncated', function($redis) {
+            $exception = NULL;
+            try {
+                $redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']);
+            } catch (RedisException | RedisClusterException $e) {
+                $exception = $e;
+            }
+            $this->assertTrue($exception instanceof RedisException || $exception instanceof RedisClusterException);
+            $this->assertEquals('after-value', $redis->get('after'));
+        });
+    }
+
+    public function testMGetClearsOtherPendingConnectionsAfterTruncatedReply() {
+        $this->withMGetServer('multiple-truncated', function($redis) {
+            $exception = NULL;
+            try {
+                $redis->mget(['{one}a', '{one}b', '{two}c', '{one}a']);
+            } catch (RedisException | RedisClusterException $e) {
+                $exception = $e;
+            }
+            $this->assertTrue($exception instanceof RedisException || $exception instanceof RedisClusterException);
+            $this->assertEquals('after-value', $redis->get('after{two}'));
+        });
+    }
+
+    private function withMGetServer(string $scenario, callable $test): void {
+        if (!function_exists('proc_open')) {
+            $this->markTestSkipped();
+        }
+
+        $process = proc_open([PHP_BINARY, '-n', '-d', 'memory_limit=512M', __DIR__ . '/RedisClusterMGetServer.php', $scenario], [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ], $pipes);
+        $this->assertTrue(is_resource($process));
+        $redis = NULL;
+
+        try {
+            stream_set_timeout($pipes[1], 5);
+            $address = trim(fgets($pipes[1]) ?: '');
+            $this->assertPatternMatch('/^127\\.0\\.0\\.1:\\d+$/', $address);
+
+            $class = $this->getRedisClusterClass();
+            $redis = new $class(NULL, [$address], 2, 5);
+            $redis->setOption(Redis::OPT_PREFIX, 'pipeline_');
+            $test($redis);
+        } finally {
+            if ($redis !== NULL) {
+                $redis->close();
+            }
+            foreach ($pipes as $pipe) {
+                fclose($pipe);
+            }
+            if (proc_get_status($process)['running']) {
+                proc_terminate($process, 9);
+            }
+            proc_close($process);
+        }
+    }
+
+    public function testMGetAcrossSlots() {
+        $this->redis->setOption(Redis::OPT_PREFIX, 'mget_slots_');
+        $keys = ['{one}a', '{one}list', '{two}empty', '{two}missing', '{one}a'];
+        $binary = "a\0\xFF\r\n";
+        $this->redis->del(array_unique($keys));
+
+        try {
+            $this->assertTrue($this->redis->set('{one}a', $binary));
+            $this->assertEquals(1, $this->redis->rpush('{one}list', 'value'));
+            $this->assertTrue($this->redis->set('{two}empty', ''));
+            $this->redis->clearLastError();
+
+            $expected = [$binary, false, '', false, $binary];
+            $this->assertEquals($expected, $this->redis->mget($keys));
+            $this->assertNull($this->redis->getLastError());
+            $this->assertKeyEquals($binary, '{one}a');
+
+            $this->redis->multi()->mget($keys)->get('{one}a');
+            $this->assertEquals([$expected, $binary], $this->redis->exec());
+        } finally {
+            $this->redis->del(array_unique($keys));
+            $this->redis->setOption(Redis::OPT_PREFIX, '');
+        }
+    }
+
+    public function testMGetSerializedAcrossSlots() {
+        $keys = ['{mget-one}array', '{mget-two}false', '{mget-one}string'];
+        $values = [['text' => str_repeat('payload', 100), 'number' => 42], false, 'value'];
+
+        try {
+            foreach ($this->getSerializers() as $serializer) {
+                if ($serializer === Redis::SERIALIZER_NONE) {
+                    continue;
+                }
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+
+                foreach ($this->getCompressors() as $compression) {
+                    $this->redis->setOption(Redis::OPT_COMPRESSION, $compression);
+                    foreach ($keys as $i => $key) {
+                        $this->assertTrue($this->redis->set($key, $values[$i]));
+                    }
+                    $this->assertEquals($values, $this->redis->mget($keys));
+                }
+            }
+        } finally {
+            $this->redis->del($keys);
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+        }
+    }
+
+    public function testMGetPreservesNumericTypesAcrossSlots() {
+        if (!defined('Redis::OPT_PACK_IGNORE_NUMBERS')) {
+            $this->markTestSkipped();
+        }
+
+        $keys = ['{mget-numeric-one}int', '{mget-numeric-one}float', '{mget-numeric-two}int', '{mget-numeric-two}float'];
+        $this->redis->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, true);
+
+        try {
+            foreach ($this->getSerializers() as $serializer) {
+                if ($serializer === Redis::SERIALIZER_NONE) {
+                    continue;
+                }
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+                foreach ($this->getCompressors() as $compression) {
+                    $this->redis->setOption(Redis::OPT_COMPRESSION, $compression);
+                    foreach ($keys as $i => $key) {
+                        $this->assertTrue($this->redis->set($key, $i % 2 ? 3.14 : 42));
+                    }
+                    $expected = $this->redis->mget(array_slice($keys, 0, 2));
+                    if ($serializer === Redis::SERIALIZER_PHP) {
+                        $this->assertEquals(['42', '3.14'], $expected);
+                    }
+                    $this->assertEquals(array_merge($expected, $expected), $this->redis->mget($keys));
+                }
+            }
+        } finally {
+            $this->redis->del($keys);
+            $this->redis->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, false);
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+        }
+    }
+
+    public function testMGetAllowsReentrantUnserialization() {
+        $keys = ['{mget-reentrant-one}object', '{mget-reentrant-two}value', '{mget-reentrant-one}value'];
+        $nested = '{mget-reentrant-one}nested';
+        RedisClusterMGetUnserializer::$redis = $this->redis;
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+        try {
+            $this->assertTrue($this->redis->set($nested, 'nested-value'));
+            foreach ([new RedisClusterMGetUnserializer(), 'two', 'three'] as $i => $value) {
+                $this->assertTrue($this->redis->set($keys[$i], $value));
+            }
+            $values = $this->redis->mget($keys);
+            $this->assertIsObject($values[0], RedisClusterMGetUnserializer::class);
+            $this->assertEquals('nested-value', $values[0]->value);
+            $this->assertEquals(['two', 'three'], array_slice($values, 1));
+        } finally {
+            $this->redis->del(array_merge($keys, [$nested]));
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+            RedisClusterMGetUnserializer::$redis = NULL;
+        }
+    }
+
     private function findCliExe() {
         foreach (['redis-cli', 'valkey-cli'] as $candidate) {
             $path = trim(shell_exec("command -v $candidate 2>/dev/null") ?? '');
@@ -1187,6 +1434,19 @@ class Redis_Cluster_Test extends Redis_Test {
 
     protected function execWaitAOF() {
         return $this->redis->waitaof(uniqid(), 0, 0, 0);
+    }
+}
+
+class RedisClusterMGetUnserializer {
+    public static $redis;
+    public $value;
+
+    public function __serialize(): array {
+        return [];
+    }
+
+    public function __unserialize(array $data): void {
+        $this->value = self::$redis->get('{mget-reentrant-one}nested');
     }
 }
 ?>

@@ -620,6 +620,25 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     /* MGET is readonly, DEL is not */
     c->readonly = kw_len == 4 && cluster_is_atomic(c);
 
+    if (c->readonly && argc > 1 && c->failover == REDIS_FAILOVER_NONE) {
+        int status = cluster_mget_pipelined(c, ht_arr, z_ret);
+
+        if (status != 0) {
+            if (ht_free) {
+                zend_hash_destroy(ht_arr);
+                efree(ht_arr);
+            }
+            efree(z_args);
+
+            if (status > 0) {
+                RETVAL_ZVAL(z_ret, 0, 1);
+                efree(z_ret);
+                return 0;
+            }
+            return -1;
+        }
+    }
+
     // Initialize our "multi" command handler with command/len
     cluster_multi_init(&mc, kw, kw_len);
 
