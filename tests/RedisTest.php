@@ -6834,9 +6834,39 @@ class Redis_Test extends TestSuite {
         $this->assertFalse($this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, 55555));
 
         foreach ([Redis::OPT_BACKOFF_BASE, Redis::OPT_BACKOFF_CAP] as $option) {
-            foreach ([500, 750] as $value) {
-                $this->redis->setOption($option, $value);
+            $limit = intdiv(PHP_INT_MAX, 1000);
+            foreach ([0, 500, 750, $limit] as $value) {
+                $this->assertTrue($this->redis->setOption($option, $value));
                 $this->assertEquals($value, $this->redis->getOption($option));
+            }
+
+            foreach ([-1, $limit + 1, PHP_INT_MAX] as $value) {
+                $this->assertFalse($this->redis->setOption($option, $value));
+                $this->assertEquals($limit, $this->redis->getOption($option));
+            }
+
+            $this->redis->setOption($option, 750);
+        }
+    }
+
+    public function testBackoffConstructorOptions() {
+        $class = $this->getRedisClass();
+        $limit = intdiv(PHP_INT_MAX, 1000);
+
+        foreach (['base' => Redis::OPT_BACKOFF_BASE, 'cap' => Redis::OPT_BACKOFF_CAP] as $name => $option) {
+            foreach ([0, 750, $limit] as $value) {
+                $redis = new $class(['backoff' => [$name => $value]]);
+                $this->assertEquals($value, $redis->getOption($option));
+            }
+
+            foreach ([-1, $limit + 1, PHP_INT_MAX] as $value) {
+                $ex = null;
+                try {
+                    new $class(['backoff' => [$name => $value]]);
+                } catch (RedisException | ValueError $ex) {
+                }
+                $this->assertTrue($ex !== null);
+                $this->assertEquals('Invalid backoff options', $ex->getMessage());
             }
         }
     }

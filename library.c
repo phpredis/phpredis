@@ -3605,12 +3605,12 @@ redis_sock_set_backoff(RedisSock *redis_sock, const zval *options)
                 }
                 redis_sock->backoff.algorithm = val;
             } else if (zend_string_equals_literal_ci(zkey, "base")) {
-                if ((val = zval_get_long(z_ele)) < 0) {
+                if ((val = zval_get_long(z_ele)) < 0 || val > ZEND_LONG_MAX / 1000) {
                     return FAILURE;
                 }
                 redis_sock->backoff.base = val * 1000;
             } else if (zend_string_equals_literal_ci(zkey, "cap")) {
-                if ((val = zval_get_long(z_ele)) < 0) {
+                if ((val = zval_get_long(z_ele)) < 0 || val > ZEND_LONG_MAX / 1000) {
                     return FAILURE;
                 }
                 redis_sock->backoff.cap = val * 1000;
@@ -4595,7 +4595,9 @@ redis_key_prefix(const RedisSock *redis_sock, char **key, size_t *key_len) {
     ret_len = redis_concat_length(ZSTR_LEN(redis_sock->prefix), *key_len);
     ret = emalloc(ret_len + 1);
     memcpy(ret, ZSTR_VAL(redis_sock->prefix), ZSTR_LEN(redis_sock->prefix));
-    memcpy(ret + ZSTR_LEN(redis_sock->prefix), *key, *key_len);
+    if (*key_len) {
+        memcpy(ret + ZSTR_LEN(redis_sock->prefix), *key, *key_len);
+    }
     ret[ret_len] = '\0';
 
     *key = ret;

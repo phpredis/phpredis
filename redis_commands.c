@@ -7314,14 +7314,14 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             break;
         case REDIS_OPT_BACKOFF_BASE:
             val_long = zval_get_long(val);
-            if(val_long >= 0) {
+            if(val_long >= 0 && val_long <= ZEND_LONG_MAX / 1000) {
                 redis_sock->backoff.base = val_long * 1000;
                 RETURN_TRUE;
             }
             break;
         case REDIS_OPT_BACKOFF_CAP:
             val_long = zval_get_long(val);
-            if(val_long >= 0) {
+            if(val_long >= 0 && val_long <= ZEND_LONG_MAX / 1000) {
                 redis_sock->backoff.cap = val_long * 1000;
                 RETURN_TRUE;
             }
