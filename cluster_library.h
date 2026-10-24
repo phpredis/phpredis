@@ -389,6 +389,7 @@ cluster_send_rcmd_ex(redisCluster *c, short slot, RedisCmd *cmd)
 }
 
 PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force);
+PHP_REDIS_API int cluster_reconnect(redisCluster *c);
 
 PHP_REDIS_API int cluster_send_exec(redisCluster *c, short slot);
 PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot);

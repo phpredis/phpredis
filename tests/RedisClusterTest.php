@@ -50,6 +50,106 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
     public function testConnectDatabaseSelect() { $this->markTestSkipped(); }
+    public function testReconnectPooledConnection() {
+        if (!ini_get('redis.pconnect.pooling_enabled'))
+            $this->markTestSkipped('Requires connection pooling');
+
+        $client = $this->newInstance();
+        $other = $this->newInstance();
+        $masters = $client->_masters();
+        $ids = [];
+        foreach ($masters as $node) {
+            $ids[] = [$client->rawCommand($node, 'CLIENT', 'ID'),
+                      $other->rawCommand($node, 'CLIENT', 'ID')];
+        }
+        unset($other);
+        $this->assertTrue($client->reconnect());
+        foreach ($masters as $i => $node)
+            $this->assertFalse(in_array($client->rawCommand($node, 'CLIENT', 'ID'), $ids[$i]));
+        $client->close();
+    }
+
+    public function testReconnect() {
+        $class = $this->getRedisClusterClass();
+        $masters = $this->redis->_masters();
+        foreach ([false, true] as $persistent) {
+            $client = new $class(NULL, self::$seeds, 2, 2, $persistent, $this->getAuth());
+            try {
+                foreach ([false, true] as $close) {
+                    $ids = [];
+                    foreach ($masters as $node)
+                        $ids[] = $client->rawCommand($node, 'CLIENT', 'ID');
+                    if ($close) {
+                        $client->close();
+                        // Leave some masters disconnected and one connected.
+                        $client->rawCommand($masters[0], 'CLIENT', 'ID');
+                    }
+                    $this->assertTrue($client->reconnect());
+                    foreach ($masters as $i => $node) {
+                        // Inspect first so a lazy connection cannot satisfy the test.
+                        $connected = array_column($this->redis->client($node, 'list'), 'id');
+                        $id = $client->rawCommand($node, 'CLIENT', 'ID');
+                        $this->assertTrue(in_array($id, $connected));
+                        $this->assertNotEquals($ids[$i], $id);
+                    }
+                    $this->assertEquals($masters, $client->_masters());
+                }
+                $client->close();
+                $this->assertTrue($client->reconnect());
+                foreach ($masters as $node) {
+                    $connected = array_column($this->redis->client($node, 'list'), 'id');
+                    $this->assertTrue(in_array($client->rawCommand($node, 'CLIENT', 'ID'), $connected));
+                }
+            } finally {
+                $client->close();
+            }
+        }
+    }
+
+    public function testReconnectNotConnected() {
+        $class = new ReflectionClass($this->getRedisClusterClass());
+        $client = $class->newInstanceWithoutConstructor();
+        $this->assertThrowsMatch($client, function ($client) {
+            $client->reconnect();
+        }, '/^Not connected$/');
+    }
+
+    public function testReconnectFailure() {
+        if (!$this->minVersionCheck('6.0') || $this->is_keydb)
+            $this->markTestSkipped('Requires Redis ACLs');
+
+        $class = $this->getRedisClusterClass();
+        $masters = $this->redis->_masters();
+        $user = uniqid('reconnect-cluster-user-');
+        $client = null;
+        try {
+            foreach ($masters as $node)
+                $this->assertTrue($this->redis->rawCommand($node, 'ACL', 'SETUSER', $user,
+                                                         'on', '>before', '~*', '+@all'));
+            $client = new $class(NULL, self::$seeds, 2, 2, false, [$user, 'before']);
+            foreach ($masters as $node)
+                $this->assertIsInt($client->rawCommand($node, 'CLIENT', 'ID'));
+            $this->assertTrue($this->redis->rawCommand(end($masters), 'ACL', 'SETUSER',
+                                                     $user, 'resetpass', '>after'));
+            $this->assertThrowsMatch($client, function ($client) {
+                $client->reconnect();
+            });
+            foreach ($masters as $node) {
+                $users = array_column($this->redis->client($node, 'list'), 'user');
+                $this->assertFalse(in_array($user, $users));
+            }
+
+            $this->assertTrue($this->redis->rawCommand(end($masters), 'ACL', 'SETUSER',
+                                                     $user, 'resetpass', '>before'));
+            $this->assertTrue($client->reconnect());
+            foreach ($masters as $node)
+                $this->assertIsInt($client->rawCommand($node, 'CLIENT', 'ID'));
+        } finally {
+            if ($client) $client->close();
+            foreach ($masters as $node)
+                $this->redis->rawCommand($node, 'ACL', 'DELUSER', $user);
+        }
+    }
 
     /* These 'directed node' commands work differently in RedisCluster */
     public function testConfig() { $this->markTestSkipped(); }
@@ -528,6 +628,46 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals($moved, $this->movedCount($nodes));
 
         $client->del($key);
+    }
+
+    public function testReconnectReplicas() {
+        $key = uniqid('explicit-reconnect-replica:', true);
+        if (!($replicas = $this->replicasForKey($key)))
+            $this->markTestSkipped('Requires replicas');
+
+        $nodes = array_map([$this, 'connectToNode'], $replicas);
+        $class = $this->getRedisClusterClass();
+        $client = new $class(NULL, self::$seeds, 1, 1, false, $this->getAuth());
+        $client->setOption(RedisCluster::OPT_SLAVE_FAILOVER,
+                           RedisCluster::FAILOVER_DISTRIBUTE_SLAVES);
+        try {
+            $this->assertTrue($client->set($key, 'value'));
+            $this->assertEquals(count($nodes), $client->rawCommand($key, 'WAIT', count($nodes), 1000));
+            $baseline = [];
+            foreach ($nodes as $i => $node)
+                $baseline[$i] = array_column($node->client('list'), 'id');
+            for ($i = 0; $i < 10 * count($nodes); $i++)
+                $this->assertEquals('value', $client->get($key));
+            $connected = [];
+            foreach ($nodes as $i => $node)
+                $connected[$i] = array_column($node->client('list'), 'id');
+
+            $this->assertTrue($client->reconnect());
+            foreach ($nodes as $i => $node) {
+                $now = array_column($node->client('list'), 'id');
+                $old = array_diff($connected[$i], $baseline[$i]);
+                $this->assertEquals([], array_values(array_intersect($old, $now)));
+                $this->assertEquals(count($old), count(array_diff($now, $connected[$i])));
+            }
+            $moved = $this->movedCount($nodes);
+            for ($i = 0; $i < 10 * count($nodes); $i++)
+                $this->assertEquals('value', $client->get($key));
+            $this->assertEquals($moved, $this->movedCount($nodes));
+        } finally {
+            $client->del($key);
+            $client->close();
+            foreach ($nodes as $node) $node->close();
+        }
     }
 
     /* Regression test for directed commands in MULTI mode */

@@ -6660,6 +6660,132 @@ class Redis_Test extends TestSuite {
         $this->assertFalse(@$this->redis->config('set', [0, 1, 2]));
     }
 
+    public function testReconnect() {
+        $class = $this->getRedisClass();
+        $key = uniqid('reconnect:', true);
+
+        foreach ([false, true] as $persistent) {
+            $client = new $class;
+            $connect = $persistent ? 'pconnect' : 'connect';
+            $this->assertTrue($client->$connect($this->getHost(), $this->getPort()));
+            if ($this->getAuth())
+                $this->assertTrue($client->auth($this->getAuth()));
+
+            try {
+                foreach ([3, 0, 5] as $db) {
+                    $this->assertTrue($client->select($db));
+                    $this->assertTrue($client->set($key, 'db' . $db));
+                    $id = $client->client('id');
+                    $this->assertTrue($client->reconnect());
+                    $this->assertTrue($client->isConnected());
+                    $this->assertNotEquals($id, $client->client('id'));
+                    $this->assertEquals($db, $client->getDbNum());
+                    $this->assertEquals('db' . $db, $client->get($key));
+                    $client->del($key);
+                }
+            } finally {
+                $client->close();
+            }
+        }
+    }
+
+    public function testReconnectNotConnected() {
+        $class = $this->getRedisClass();
+        $client = new $class;
+        $this->assertThrowsMatch($client, function ($client) {
+            $client->reconnect();
+        }, '/^Not connected$/');
+        $this->redis->close();
+        $this->assertThrowsMatch($this->redis, function ($client) {
+            $client->reconnect();
+        }, '/^Not connected$/');
+    }
+
+    public function testReconnectDiscardsQueue() {
+        $client = $this->redis;
+        $key = uniqid('reconnect-queue:', true);
+        $modes = $this->havePipeline() ? [Redis::MULTI, Redis::PIPELINE,
+                                         Redis::MULTI | Redis::PIPELINE] : [Redis::MULTI];
+        $client->setOption(Redis::OPT_PREFIX, 'reconnect:');
+        $client->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        if ($this->havePipeline())
+            $client->select(3);
+        try {
+            foreach ($modes as $mode) {
+                $client->set($key, ['before']);
+                $client->watch($key);
+                $client->multi($mode & Redis::PIPELINE ? Redis::PIPELINE : Redis::MULTI);
+                if ($mode === (Redis::MULTI | Redis::PIPELINE))
+                    $client->multi();
+                $client->set($key, ['queued']);
+                if ($this->havePipeline())
+                    $client->select(5)->select(0);
+                $this->assertTrue($client->reconnect());
+                if ($this->havePipeline())
+                    $this->assertEquals(3, $client->getDbNum());
+                $this->assertEquals('reconnect:', $client->getOption(Redis::OPT_PREFIX));
+                $this->assertEquals(Redis::SERIALIZER_PHP, $client->getOption(Redis::OPT_SERIALIZER));
+                $this->assertEquals(['before'], $client->get($key));
+                $this->assertTrue($client->set($key, ['after']));
+                $this->assertEquals([['after']], $client->multi()->get($key)->exec());
+            }
+        } finally {
+            $client->del($key);
+            $client->setOption(Redis::OPT_PREFIX, '');
+            $client->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+            if ($this->havePipeline())
+                $client->select(0);
+        }
+    }
+
+    public function testReconnectPooledConnection() {
+        if (!ini_get('redis.pconnect.pooling_enabled'))
+            $this->markTestSkipped('Requires connection pooling');
+
+        $class = $this->getRedisClass();
+        $client = new $class;
+        $other = new $class;
+        $pool = uniqid('reconnect-pool:', true);
+        foreach ([$client, $other] as $redis) {
+            $this->assertTrue($redis->pconnect($this->getHost(), $this->getPort(), 0, $pool));
+            if ($this->getAuth())
+                $this->assertTrue($redis->auth($this->getAuth()));
+        }
+        unset($redis);
+        $ids = [$client->client('id'), $other->client('id')];
+        $this->assertTrue($other->client('setname', 'must-not-be-reused'));
+        unset($other);
+
+        $this->assertTrue($client->reconnect());
+        $this->assertFalse(in_array($client->client('id'), $ids));
+        $this->assertFalse($client->client('getname'));
+        $client->close();
+    }
+
+    public function testReconnectFailure() {
+        if (!$this->minVersionCheck('6.0') || $this->is_keydb)
+            $this->markTestSkipped('Requires Redis ACLs');
+
+        $user = uniqid('reconnect-user-');
+        $client = $this->newInstance();
+        try {
+            $this->assertTrue($this->redis->acl('SETUSER', $user, 'on', '>before', '~*', '+@all'));
+            $this->assertTrue($client->auth([$user, 'before']));
+            $this->assertTrue($this->redis->acl('SETUSER', $user, 'resetpass', '>after'));
+            $this->assertThrowsMatch($client, function ($client) {
+                $client->reconnect();
+            });
+            $this->assertFalse($client->isConnected());
+
+            $this->assertTrue($this->redis->acl('SETUSER', $user, 'resetpass', '>before'));
+            $this->assertTrue($client->reconnect());
+            $this->assertTrue($client->ping());
+        } finally {
+            $client->close();
+            $this->redis->acl('DELUSER', $user);
+        }
+    }
+
     public function testReconnectSelect() {
         $key = 'reconnect-select';
         $value = 'Has been set!';

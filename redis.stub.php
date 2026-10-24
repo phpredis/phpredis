@@ -1106,6 +1106,14 @@ class Redis {
     public function close(): bool;
 
     /**
+     * Closes and reopens the connection, restoring authentication and the selected database.
+     * Pending transactions and pipelines are discarded. Client options are preserved.
+     *
+     * @throws RedisException if never connected, explicitly closed, or reconnection fails.
+     */
+    public function reconnect(): bool;
+
+    /**
      * Execute Redis COMMAND subcommands.
      *
      * @see https://redis.io/docs/latest/commands/command/

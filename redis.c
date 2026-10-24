@@ -801,6 +801,28 @@ PHP_METHOD(Redis, close)
     RETURN_FALSE;
 }
 
+PHP_METHOD(Redis, reconnect)
+{
+    RedisSock *redis_sock;
+
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    redis_sock = redis_sock_get_instance(getThis(), 1);
+    if (redis_sock == NULL || redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
+        REDIS_THROW_EXCEPTION("Not connected", 0);
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_reconnect(redis_sock) != SUCCESS) {
+        if (!EG(exception)) {
+            REDIS_THROW_EXCEPTION(redis_sock->err ? ZSTR_VAL(redis_sock->err) :
+                                  "Failed to reconnect", 0);
+        }
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
+}
+
 PHP_METHOD(Redis, reset)
 {
     char *response;

@@ -1351,6 +1351,47 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force) {
     } ZEND_HASH_FOREACH_END();
 }
 
+PHP_REDIS_API int cluster_reconnect(redisCluster *c) {
+    const redisClusterNode *node, *slave;
+    RedisSock **socks;
+    size_t count = 0, capacity = zend_hash_num_elements(c->nodes);
+    int ret = SUCCESS;
+
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node && node->slaves)
+            capacity += zend_hash_num_elements(node->slaves);
+    } ZEND_HASH_FOREACH_END();
+    socks = safe_emalloc(capacity, sizeof(*socks), 0);
+
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node == NULL) continue;
+        socks[count++] = node->sock;
+        if (node->slaves) {
+            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+                if (slave->sock->stream)
+                    socks[count++] = slave->sock;
+            } ZEND_HASH_FOREACH_END();
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    /* Close every old connection before opening any replacement. */
+    cluster_disconnect(c, 1);
+    cluster_clear_error(c);
+    for (size_t i = 0; i < count; i++) {
+        if (redis_sock_reconnect(socks[i]) != SUCCESS) {
+            if (!EG(exception)) {
+                CLUSTER_THROW_EXCEPTION(socks[i]->err ? ZSTR_VAL(socks[i]->err) :
+                                        "Failed to reconnect", 0);
+            }
+            cluster_disconnect(c, 1);
+            ret = FAILURE;
+            break;
+        }
+    }
+    efree(socks);
+    return ret;
+}
+
 /* This method attempts to write our command at random to the master and any
  * attached slaves, until we either successufly do so, or fail. */
 static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
