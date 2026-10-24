@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 2de44845003c74a5972aaf8c15e80820ebd5dcfd */
+ * Stub hash: 1fbc36b72f9f9ebcbd57e1dc385e3f60de1fc54e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -121,6 +121,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_client, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_close arginfo_class_Redis___destruct
+
+#define arginfo_class_Redis_reconnect arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_command, 0, 0, 0)
 	ZEND_ARG_INFO(0, opt)
@@ -1215,6 +1217,7 @@ ZEND_METHOD(Redis, lmpop);
 ZEND_METHOD(Redis, clearLastError);
 ZEND_METHOD(Redis, client);
 ZEND_METHOD(Redis, close);
+ZEND_METHOD(Redis, reconnect);
 ZEND_METHOD(Redis, command);
 ZEND_METHOD(Redis, config);
 ZEND_METHOD(Redis, connect);
@@ -1512,6 +1515,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, clearLastError, arginfo_class_Redis_clearLastError, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, client, arginfo_class_Redis_client, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, close, arginfo_class_Redis_close, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, reconnect, arginfo_class_Redis_reconnect, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, command, arginfo_class_Redis_command, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, config, arginfo_class_Redis_config, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, connect, arginfo_class_Redis_connect, ZEND_ACC_PUBLIC)

@@ -3314,7 +3314,7 @@ alloc_stream_context(const RedisSock *redis_sock) {
 /**
  * redis_sock_connect
  */
-PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
+static int redis_sock_connect_impl(RedisSock *redis_sock, zend_bool fresh)
 {
     struct timeval tv, read_tv, *tv_ptr = NULL;
     zend_string *persistent_id = NULL, *estr = NULL;
@@ -3360,7 +3360,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     if (redis_sock->persistent) {
         if (zend_ini_long_literal("redis.pconnect.pooling_enabled")) {
             p = redis_sock_get_connection_pool(redis_sock);
-            if (zend_llist_count(&p->list) > 0) {
+            if (!fresh && zend_llist_count(&p->list) > 0) {
                 redis_sock->stream = *(php_stream **)zend_llist_get_last(&p->list);
                 zend_llist_remove_tail(&p->list);
 
@@ -3451,6 +3451,34 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
 
     return SUCCESS;
+}
+
+PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
+{
+    return redis_sock_connect_impl(redis_sock, 0);
+}
+
+PHP_REDIS_API int redis_sock_reconnect(RedisSock *redis_sock)
+{
+    int ret, max_retries = redis_sock->max_retries;
+
+    redis_sock_disconnect(redis_sock, 1, 1);
+    redis_free_reply_callbacks(redis_sock);
+    smart_string_free(&redis_sock->pipeline_cmd);
+    redis_sock_clear_err(redis_sock);
+
+    /* Handshake retries must not silently borrow a pooled connection. */
+    redis_sock->max_retries = 0;
+    ret = redis_sock_connect_impl(redis_sock, 1);
+    if (ret == SUCCESS)
+        ret = redis_sock_server_open(redis_sock);
+    redis_sock->max_retries = max_retries;
+
+    if (ret != SUCCESS) {
+        redis_sock_disconnect(redis_sock, 1, 1);
+        redis_sock->status = REDIS_SOCK_STATUS_FAILED;
+    }
+    return ret;
 }
 
 /**

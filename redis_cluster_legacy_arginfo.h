@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 82a77e4ed63d38d7e361fc1c016bfbe5f8a0df31 */
+ * Stub hash: 360bca96f4284093ff238218a50b19a97d529112 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -164,6 +164,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_client, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_close arginfo_class_RedisCluster__masters
+
+#define arginfo_class_RedisCluster_reconnect arginfo_class_RedisCluster__masters
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_cluster, 0, 0, 2)
 	ZEND_ARG_INFO(0, key_or_address)
@@ -1111,6 +1113,7 @@ ZEND_METHOD(RedisCluster, lmpop);
 ZEND_METHOD(RedisCluster, clearlasterror);
 ZEND_METHOD(RedisCluster, client);
 ZEND_METHOD(RedisCluster, close);
+ZEND_METHOD(RedisCluster, reconnect);
 ZEND_METHOD(RedisCluster, cluster);
 ZEND_METHOD(RedisCluster, command);
 ZEND_METHOD(RedisCluster, config);
@@ -1380,6 +1383,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, clearlasterror, arginfo_class_RedisCluster_clearlasterror, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, client, arginfo_class_RedisCluster_client, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, close, arginfo_class_RedisCluster_close, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, reconnect, arginfo_class_RedisCluster_reconnect, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, cluster, arginfo_class_RedisCluster_cluster, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, command, arginfo_class_RedisCluster_command, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, config, arginfo_class_RedisCluster_config, ZEND_ACC_PUBLIC)

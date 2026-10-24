@@ -406,6 +406,22 @@ PHP_METHOD(RedisCluster, close) {
     RETURN_TRUE;
 }
 
+/* {{{ proto bool RedisCluster::reconnect() */
+PHP_METHOD(RedisCluster, reconnect) {
+    redisCluster *c = GET_CONTEXT();
+
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    if (zend_hash_num_elements(c->nodes) == 0) {
+        CLUSTER_THROW_EXCEPTION("Not connected", 0);
+        RETURN_FALSE;
+    }
+
+    cluster_free_queue(c);
+    cluster_reset_multi(c);
+    RETURN_BOOL(cluster_reconnect(c) == SUCCESS);
+}
+
 /* {{{ proto string RedisCluster::get(string key) */
 PHP_METHOD(RedisCluster, get) {
     CLUSTER_PROCESS_KW_CMD("GET", redis_key_cmd, cluster_bulk_resp, 1);
