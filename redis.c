@@ -641,12 +641,6 @@ pipeline_enqueue_cmd_strl(RedisSock *redis_sock, const char *cmd, int len) {
     smart_string_appendl(&redis_sock->pipeline_cmd, cmd, len);
 }
 
-static zend_always_inline void
-pipeline_enqueue_cmd(RedisSock *redis_sock, RedisCmd *cmd) {
-    pipeline_enqueue_cmd_strl(redis_sock, redis_cmd_str(cmd),
-                              redis_cmd_len(cmd));
-}
-
 static void
 redis_save_callback(RedisSock *redis_sock, FailableResultCallback cb,
                     RedisCmdCtx ctx)
@@ -662,6 +656,11 @@ redis_save_callback(RedisSock *redis_sock, FailableResultCallback cb,
 static int
 redis_process_request_strl(RedisSock *redis_sock, const char *cmd, int len) {
     int res = SUCCESS;
+
+    /* Command construction can invoke serializers that throw. */
+    if (UNEXPECTED(EG(exception))) {
+        return FAILURE;
+    }
 
     if (redis_sock_is_pipeline(redis_sock)) {
         pipeline_enqueue_cmd_strl(redis_sock, cmd, len);
@@ -699,12 +698,7 @@ redis_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redis_cmd_cb *cmd_cb,
 
     ctx = redis_cmd_pop_ctx(cmd);
 
-    if (redis_sock_is_pipeline(redis_sock)) {
-        pipeline_enqueue_cmd(redis_sock, cmd);
-        res = SUCCESS;
-    } else {
-        res = redis_sock_write_cmd(redis_sock, cmd) < 0 ? FAILURE : SUCCESS;
-    }
+    res = redis_process_request(redis_sock, cmd);
 
     redis_cmd_free(cmd);
 
@@ -761,12 +755,7 @@ redis_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, size_t kw_len
 
     ctx = redis_cmd_pop_ctx(cmd);
 
-    if (redis_sock_is_pipeline(redis_sock)) {
-        pipeline_enqueue_cmd(redis_sock, cmd);
-        res = SUCCESS;
-    } else {
-        res = redis_sock_write_cmd(redis_sock, cmd) < 0 ? FAILURE : SUCCESS;
-    }
+    res = redis_process_request(redis_sock, cmd);
 
     redis_cmd_free(cmd);
 

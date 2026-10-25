@@ -4327,6 +4327,12 @@ redis_pack(const RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
     /* First serialize */
     tmpfree = redis_serialize(redis_sock, z, &tmp, &tmplen);
 
+    if (UNEXPECTED(EG(exception))) {
+        *val = tmp;
+        *val_len = tmplen;
+        return tmpfree;
+    }
+
     /* Now attempt compression */
     if (redis_compress(redis_sock, val, val_len, tmp, tmplen)) {
         if (tmpfree) efree(tmp);
@@ -4416,6 +4422,12 @@ redis_serialize(const RedisSock *redis_sock, zval *z, char **val, size_t *val_le
 
     *val = "";
     *val_len = 0;
+
+    /* Do not invoke another serializer after an earlier argument failed. */
+    if (UNEXPECTED(EG(exception))) {
+        return 0;
+    }
+
     switch(redis_sock->serializer) {
         case REDIS_SERIALIZER_NONE:
             switch(Z_TYPE_P(z)) {
@@ -4443,24 +4455,11 @@ redis_serialize(const RedisSock *redis_sock, zval *z, char **val, size_t *val_le
             php_var_serialize(&sstr, z, &ht);
             PHP_VAR_SERIALIZE_DESTROY(ht);
 
-            if (!sstr.s) {
-                break;
-            }
-            *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
-            *val_len = ZSTR_LEN(sstr.s);
-
-            smart_str_free(&sstr);
-
-            return 1;
+            break;
 
         case REDIS_SERIALIZER_MSGPACK:
 #ifdef HAVE_REDIS_MSGPACK
             php_msgpack_serialize(&sstr, z);
-            *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
-            *val_len = ZSTR_LEN(sstr.s);
-            smart_str_free(&sstr);
-
-            return 1;
 #endif
             break;
         case REDIS_SERIALIZER_IGBINARY:
@@ -4488,17 +4487,22 @@ redis_serialize(const RedisSock *redis_sock, zval *z, char **val, size_t *val_le
         case REDIS_SERIALIZER_JSON:
 #ifdef HAVE_REDIS_JSON
             php_json_encode(&sstr, z, PHP_JSON_OBJECT_AS_ARRAY);
-            *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
-            *val_len = ZSTR_LEN(sstr.s);
-            smart_str_free(&sstr);
-            return 1;
 #endif
             break;
         default:
             ZEND_UNREACHABLE();
     }
 
-    return 0;
+    if (sstr.s == NULL || EG(exception)) {
+        smart_str_free(&sstr);
+        return 0;
+    }
+
+    *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
+    *val_len = ZSTR_LEN(sstr.s);
+    smart_str_free(&sstr);
+
+    return 1;
 }
 
 PHP_REDIS_API int
