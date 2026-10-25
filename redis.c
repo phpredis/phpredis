@@ -654,27 +654,20 @@ redis_save_callback(RedisSock *redis_sock, FailableResultCallback cb,
 }
 
 static int
-redis_process_request_strl(RedisSock *redis_sock, const char *cmd, int len) {
-    int res = SUCCESS;
-
+redis_process_request(RedisSock *redis_sock, RedisCmd *cmd) {
     /* Command construction can invoke serializers that throw. */
     if (UNEXPECTED(EG(exception))) {
         return FAILURE;
     }
 
     if (redis_sock_is_pipeline(redis_sock)) {
-        pipeline_enqueue_cmd_strl(redis_sock, cmd, len);
-    } else if (UNEXPECTED(redis_sock_write(redis_sock, cmd, len) < 0)) {
-        res = FAILURE;
+        pipeline_enqueue_cmd_strl(redis_sock, redis_cmd_str(cmd),
+                                  redis_cmd_len(cmd));
+    } else if (UNEXPECTED(redis_sock_write_cmd(redis_sock, cmd) < 0)) {
+        return FAILURE;
     }
 
-    return res;
-}
-
-static int
-redis_process_request(RedisSock *redis_sock, RedisCmd *cmd) {
-    return redis_process_request_strl(redis_sock, redis_cmd_str(cmd),
-                                      redis_cmd_len(cmd));
+    return SUCCESS;
 }
 
 static void

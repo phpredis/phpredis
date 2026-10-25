@@ -9487,12 +9487,14 @@ class Redis_Test extends TestSuite {
 
     public function testSerializationFailureDoesNotWrite() {
         $key = '{serialization-failure}';
+        $options = $this->cartesianProduct([
+            array_diff($this->getSerializers(), [Redis::SERIALIZER_NONE]),
+            $this->getCompressors(),
+        ]);
 
-        foreach ($this->getSerializers() as $serializer) {
-            if ($serializer === Redis::SERIALIZER_NONE)
-                continue;
-
+        foreach ($options as [$serializer, $compressor]) {
             $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
             $values = [new RedisTestSerializationFailure];
 
             if (!defined('Redis::SERIALIZER_JSON') || $serializer !== Redis::SERIALIZER_JSON) {
@@ -9500,33 +9502,29 @@ class Redis_Test extends TestSuite {
                 $values[] = (object)['cb' => function () {}];
             }
 
-            foreach ($this->getCompressors() as $compressor) {
-                $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
+            foreach ($values as $value) {
+                $commands = [
+                    'set' => [$key, $value],
+                    'setex' => [$key, 300, $value],
+                    'hSet' => [$key, 'field', $value],
+                    'hMSet' => [$key, ['good' => 'ok', 'bad' => $value]],
+                    'rPush' => [$key, 'ok', $value],
+                    'sAdd' => [$key, 'ok', $value],
+                    'zAdd' => [$key, 1, 'ok', 2, $value],
+                    'mSet' => [[$key => $value]],
+                    'mSetNX' => [[$key => $value]],
+                ];
 
-                foreach ($values as $value) {
-                    $commands = [
-                        fn() => $this->redis->set($key, $value),
-                        fn() => $this->redis->setex($key, 300, $value),
-                        fn() => $this->redis->hSet($key, 'field', $value),
-                        fn() => $this->redis->hMSet($key, ['good' => 'ok', 'bad' => $value]),
-                        fn() => $this->redis->rPush($key, 'ok', $value),
-                        fn() => $this->redis->sAdd($key, 'ok', $value),
-                        fn() => $this->redis->zAdd($key, 1, 'ok', 2, $value),
-                        fn() => $this->redis->mSet([$key => $value]),
-                        fn() => $this->redis->mSetNX([$key => $value]),
-                    ];
-
-                    foreach ($commands as $command) {
-                        $this->redis->del($key);
-                        $this->assertThrowsMatch(null, $command);
-                        $this->assertEquals(0, $this->redis->exists($key));
-                    }
-
-                    $this->assertTrue($this->redis->set($key, 'original', ['ex' => 300]));
-                    $this->assertThrowsMatch(null, fn() => $this->redis->set($key, $value));
-                    $this->assertEquals('original', $this->redis->get($key));
-                    $this->assertGT(0, $this->redis->ttl($key));
+                foreach ($commands as $method => $args) {
+                    $this->redis->del($key);
+                    $this->assertThrowsMatch(null, fn() => $this->redis->$method(...$args));
+                    $this->assertEquals(0, $this->redis->exists($key), $method);
                 }
+
+                $this->assertTrue($this->redis->set($key, 'original', ['ex' => 300]));
+                $this->assertThrowsMatch(null, fn() => $this->redis->set($key, $value));
+                $this->assertEquals('original', $this->redis->get($key));
+                $this->assertGT(0, $this->redis->ttl($key));
             }
 
             /* Later arguments must not invoke user code with an exception pending. */
@@ -9548,36 +9546,33 @@ class Redis_Test extends TestSuite {
         $value = new RedisTestSerializationFailure;
         $modes = [Redis::MULTI];
         if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+        $options = $this->cartesianProduct([
+            array_diff($this->getSerializers(), [Redis::SERIALIZER_NONE]),
+            $this->getCompressors(),
+            $modes,
+        ]);
 
-        foreach ($this->getSerializers() as $serializer) {
-            if ($serializer === Redis::SERIALIZER_NONE)
-                continue;
-
+        foreach ($options as [$serializer, $compressor, $mode]) {
             $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
 
-            foreach ($this->getCompressors() as $compressor) {
-                $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
+            $this->redis->del($missing);
+            $this->assertTrue($this->redis->set($key, 'original', ['ex' => 300]));
 
-                foreach ($modes as $mode) {
-                    $this->redis->del($missing);
-                    $this->assertTrue($this->redis->set($key, 'original', ['ex' => 300]));
+            $this->redis->multi($mode);
+            $this->redis->get($key);
+            $this->assertThrowsMatch(null, fn() => $this->redis->set($key, $value),
+                '/Test serialization failure/');
+            $this->assertThrowsMatch(null, fn() => $this->redis->setex($missing, 300, $value));
+            $this->assertThrowsMatch(null, fn() => $this->redis->hMSet($missing, ['bad' => $value]));
+            $this->assertThrowsMatch(null, fn() => $this->redis->mSet([$missing => $value]));
+            $this->redis->get($key);
 
-                    $this->redis->multi($mode);
-                    $this->redis->get($key);
-                    $this->assertThrowsMatch(null, fn() => $this->redis->set($key, $value),
-                        '/Test serialization failure/');
-                    $this->assertThrowsMatch(null, fn() => $this->redis->setex($missing, 300, $value));
-                    $this->assertThrowsMatch(null, fn() => $this->redis->hMSet($missing, ['bad' => $value]));
-                    $this->assertThrowsMatch(null, fn() => $this->redis->mSet([$missing => $value]));
-                    $this->redis->get($key);
-
-                    /* Failed commands must not add either writes or reply callbacks. */
-                    $this->assertEquals(['original', 'original'], $this->redis->exec());
-                    $this->assertEquals('original', $this->redis->get($key));
-                    $this->assertGT(0, $this->redis->ttl($key));
-                    $this->assertEquals(0, $this->redis->exists($missing));
-                }
-            }
+            /* Failed commands must not add either writes or reply callbacks. */
+            $this->assertEquals(['original', 'original'], $this->redis->exec());
+            $this->assertEquals('original', $this->redis->get($key));
+            $this->assertGT(0, $this->redis->ttl($key));
+            $this->assertEquals(0, $this->redis->exists($missing));
         }
 
         $this->redis->del($key);

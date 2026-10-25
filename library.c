@@ -4314,7 +4314,7 @@ static int serialize_generic_zval(char **dst, size_t *len, zval *zsrc) {
 PHP_REDIS_API int
 redis_pack(const RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
     size_t tmplen;
-    int tmpfree;
+    int valfree;
     char *tmp;
 
     /* Don't pack actual numbers if the user asked us not to */
@@ -4325,21 +4325,17 @@ redis_pack(const RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
     }
 
     /* First serialize */
-    tmpfree = redis_serialize(redis_sock, z, &tmp, &tmplen);
-
-    if (UNEXPECTED(EG(exception))) {
-        *val = tmp;
-        *val_len = tmplen;
-        return tmpfree;
-    }
+    valfree = redis_serialize(redis_sock, z, val, val_len);
 
     /* Now attempt compression */
-    if (redis_compress(redis_sock, val, val_len, tmp, tmplen)) {
-        if (tmpfree) efree(tmp);
+    if (!EG(exception) && redis_compress(redis_sock, &tmp, &tmplen, *val, *val_len)) {
+        if (valfree) efree(*val);
+        *val = tmp;
+        *val_len = tmplen;
         return 1;
     }
 
-    return tmpfree;
+    return valfree;
 }
 
 static void
