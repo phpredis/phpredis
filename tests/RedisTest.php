@@ -9506,6 +9506,7 @@ class Redis_Test extends TestSuite {
         $key = '{serialization-failure}:option';
         $this->assertFalse($this->redis->getOption(Redis::OPT_STRICT_SERIALIZATION));
         $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        $legacy_payload = null;
 
         foreach ([null, true, false] as $strict) {
             if ($strict !== null) {
@@ -9516,8 +9517,18 @@ class Redis_Test extends TestSuite {
             $this->redis->del($key);
             $this->assertThrowsMatch(null, fn() => $this->redis->set($key, function () {}));
             $this->assertEquals($strict ? 0 : 1, $this->redis->exists($key));
-            if (!$strict)
-                $this->assertEquals('', $this->redis->get($key));
+            if (!$strict) {
+                /* PHP versions differ in the partial payload left by a rejected Closure. */
+                $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+                $payload = $this->redis->get($key);
+                $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+                if ($strict === null) {
+                    $legacy_payload = $payload;
+                } else {
+                    $this->assertEquals($legacy_payload, $payload);
+                }
+            }
         }
 
         $this->redis->del($key);
