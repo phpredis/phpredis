@@ -761,6 +761,97 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertFalse($this->redis->msetnx([])); // set ø → FALSE
     }
 
+    public function testMSetSerializationFailure() {
+        $keys = ['{a}:critical', '{b}:critical', '{c}:cache'];
+        $before = '{a}:before';
+        $after = '{b}:after';
+        $this->assertFalse($this->redis->getOption(Redis::OPT_STRICT_SERIALIZATION));
+        $options = $this->cartesianProduct([
+            array_diff($this->getSerializers(), [Redis::SERIALIZER_NONE]),
+            [Redis::ATOMIC, Redis::MULTI],
+            ['mSet', 'mSetNX'],
+            [null, false, true, false],
+        ]);
+
+        foreach ($options as [$serializer, $mode, $method, $strict]) {
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            if ($strict !== null)
+                $this->redis->setOption(Redis::OPT_STRICT_SERIALIZATION, $strict);
+
+            foreach ($strict ? [0, 1, 2] : [2] as $position) {
+                $this->redis->del(...$keys);
+                $values = array_fill_keys($keys, 'updated');
+                $bad = new RedisTestSerializationFailure;
+                $values[$keys[$position]] = $bad;
+
+                if ($mode === Redis::MULTI) {
+                    $this->redis->multi()->mSet([$before => 'before']);
+                }
+
+                $this->assertThrowsMatch(null, fn() => $this->redis->$method($values),
+                    '/Test serialization failure/');
+                $this->assertEquals(1, $bad->calls);
+
+                if ($mode === Redis::MULTI) {
+                    $replies = $this->redis->set($after, 'after')->exec();
+                    $this->assertEquals($strict ? 2 : 3, count($replies));
+                    $this->assertEquals('before', $this->redis->get($before));
+                    $this->assertEquals('after', $this->redis->get($after));
+                }
+
+                if ($strict) {
+                    foreach ($keys as $key)
+                        $this->assertEquals(0, $this->redis->exists($key));
+                } else {
+                    /* Preserve 6.x completion, including the invalid cache value. */
+                    $this->assertEquals('updated', $this->redis->get($keys[0]));
+                    $this->assertEquals('updated', $this->redis->get($keys[1]));
+                    $this->assertEquals(1, $this->redis->exists($keys[2]));
+                }
+            }
+        }
+
+        $this->redis->del(...array_merge($keys, [$before, $after]));
+    }
+
+    public function testMSetStrictSerializationValues() {
+        $this->redis->setOption(Redis::OPT_STRICT_SERIALIZATION, true);
+        $this->redis->setOption(Redis::OPT_PREFIX, 'strict:');
+        $options = $this->cartesianProduct([
+            array_diff($this->getSerializers(), [Redis::SERIALIZER_NONE]),
+            $this->getCompressors(),
+            [Redis::ATOMIC, Redis::MULTI],
+            ['mSet', 'mSetNX'],
+        ]);
+
+        foreach ($options as [$serializer, $compressor, $mode, $method]) {
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
+            $value = new RedisTestSerializationValue;
+            $values = ['{a}:binary' => "value\0bytes", 42 => 'integer key', '{a}:object' => $value];
+            $this->redis->del(...array_keys($values));
+
+            if ($mode === Redis::MULTI)
+                $this->redis->multi();
+
+            $this->redis->$method($values);
+            if ($mode === Redis::MULTI)
+                $this->redis->exec();
+
+            $this->assertEquals(1, $value->calls);
+            $this->assertTrue($values['{a}:object'] === $value);
+            $this->assertEquals("value\0bytes", $this->redis->get('{a}:binary'));
+            $this->assertEquals('integer key', $this->redis->get('42'));
+            $stored = $this->redis->get('{a}:object');
+            if (defined('Redis::SERIALIZER_JSON') && $serializer === Redis::SERIALIZER_JSON) {
+                $this->assertEquals(['calls' => 1], $stored);
+            } else {
+                $this->assertEquals(1, $stored->calls);
+            }
+            $this->redis->del(...array_keys($values));
+        }
+    }
+
     public function testDistributedMultiFailure() {
         if ( ! $this->minVersionCheck('6.0'))
             $this->markTestSkipped();

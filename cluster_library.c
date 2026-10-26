@@ -1665,7 +1665,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     int resp, timedout = 0;
 
     /* Command construction can invoke serializers that throw. */
-    if (UNEXPECTED(EG(exception))) {
+    if (UNEXPECTED(redis_serialization_failed(c->flags))) {
         return -1;
     }
 

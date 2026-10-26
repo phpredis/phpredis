@@ -4328,7 +4328,9 @@ redis_pack(const RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
     valfree = redis_serialize(redis_sock, z, val, val_len);
 
     /* Now attempt compression */
-    if (!EG(exception) && redis_compress(redis_sock, &tmp, &tmplen, *val, *val_len)) {
+    if (!redis_serialization_failed(redis_sock) &&
+        redis_compress(redis_sock, &tmp, &tmplen, *val, *val_len))
+    {
         if (valfree) efree(*val);
         *val = tmp;
         *val_len = tmplen;
@@ -4420,7 +4422,7 @@ redis_serialize(const RedisSock *redis_sock, zval *z, char **val, size_t *val_le
     *val_len = 0;
 
     /* Do not invoke another serializer after an earlier argument failed. */
-    if (UNEXPECTED(EG(exception))) {
+    if (UNEXPECTED(redis_serialization_failed(redis_sock))) {
         return 0;
     }
 
@@ -4489,7 +4491,7 @@ redis_serialize(const RedisSock *redis_sock, zval *z, char **val, size_t *val_le
             ZEND_UNREACHABLE();
     }
 
-    if (sstr.s == NULL || EG(exception)) {
+    if (sstr.s == NULL || redis_serialization_failed(redis_sock)) {
         smart_str_free(&sstr);
         return 0;
     }

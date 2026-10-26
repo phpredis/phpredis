@@ -656,7 +656,7 @@ redis_save_callback(RedisSock *redis_sock, FailableResultCallback cb,
 static int
 redis_process_request(RedisSock *redis_sock, RedisCmd *cmd) {
     /* Command construction can invoke serializers that throw. */
-    if (UNEXPECTED(EG(exception))) {
+    if (UNEXPECTED(redis_serialization_failed(redis_sock))) {
         return FAILURE;
     }
 

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 2de44845003c74a5972aaf8c15e80820ebd5dcfd */
+ * Stub hash: 9867962b9f9cdebb2f1df9aa308d4006bc5c9053 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1979,6 +1979,8 @@ static zend_class_entry *register_class_Redis(void)
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
 #if (PHP_VERSION_ID >= 80100)
 	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#elif (PHP_VERSION_ID >= 80000)
+	class_entry->ce_flags |= 0;
 #endif
 #endif
 
@@ -2101,6 +2103,12 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string *const_OPT_PACK_IGNORE_NUMBERS_name = zend_string_init_interned("OPT_PACK_IGNORE_NUMBERS", sizeof("OPT_PACK_IGNORE_NUMBERS") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_OPT_PACK_IGNORE_NUMBERS_name, &const_OPT_PACK_IGNORE_NUMBERS_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_OPT_PACK_IGNORE_NUMBERS_name);
+
+	zval const_OPT_STRICT_SERIALIZATION_value;
+	ZVAL_LONG(&const_OPT_STRICT_SERIALIZATION_value, REDIS_OPT_STRICT_SERIALIZATION);
+	zend_string *const_OPT_STRICT_SERIALIZATION_name = zend_string_init_interned("OPT_STRICT_SERIALIZATION", sizeof("OPT_STRICT_SERIALIZATION") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_OPT_STRICT_SERIALIZATION_name, &const_OPT_STRICT_SERIALIZATION_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_OPT_STRICT_SERIALIZATION_name);
 
 	zval const_SERIALIZER_NONE_value;
 	ZVAL_LONG(&const_SERIALIZER_NONE_value, REDIS_SERIALIZER_NONE);

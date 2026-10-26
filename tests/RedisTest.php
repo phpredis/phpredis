@@ -17,6 +17,23 @@ class RedisTestSerializationFailure implements JsonSerializable {
     }
 }
 
+class RedisTestSerializationValue implements JsonSerializable {
+    public $calls = 0;
+
+    public function __serialize(): array {
+        return ['calls' => ++$this->calls];
+    }
+
+    public function __unserialize(array $data): void {
+        $this->calls = $data['calls'];
+    }
+
+    #[\ReturnTypeWillChange]
+    public function jsonSerialize() {
+        return $this->__serialize();
+    }
+}
+
 class Redis_Test extends TestSuite {
     /**
      * @var Redis
@@ -5462,7 +5479,7 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
-    private function cartesianProduct(array $arrays) {
+    protected function cartesianProduct(array $arrays) {
         $result = [[]];
 
         foreach ($arrays as $array) {
@@ -9485,7 +9502,29 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testStrictSerializationOption() {
+        $key = '{serialization-failure}:option';
+        $this->assertFalse($this->redis->getOption(Redis::OPT_STRICT_SERIALIZATION));
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+        foreach ([null, true, false] as $strict) {
+            if ($strict !== null) {
+                $this->assertTrue($this->redis->setOption(Redis::OPT_STRICT_SERIALIZATION, $strict));
+                $this->assertEquals($strict, $this->redis->getOption(Redis::OPT_STRICT_SERIALIZATION));
+            }
+
+            $this->redis->del($key);
+            $this->assertThrowsMatch(null, fn() => $this->redis->set($key, function () {}));
+            $this->assertEquals($strict ? 0 : 1, $this->redis->exists($key));
+            if (!$strict)
+                $this->assertEquals('', $this->redis->get($key));
+        }
+
+        $this->redis->del($key);
+    }
+
     public function testSerializationFailureDoesNotWrite() {
+        $this->redis->setOption(Redis::OPT_STRICT_SERIALIZATION, true);
         $key = '{serialization-failure}';
         $options = $this->cartesianProduct([
             array_diff($this->getSerializers(), [Redis::SERIALIZER_NONE]),
@@ -9541,6 +9580,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSerializationFailureInQueuedCommands() {
+        $this->redis->setOption(Redis::OPT_STRICT_SERIALIZATION, true);
         $key = '{serialization-failure}:existing';
         $missing = '{serialization-failure}:missing';
         $value = new RedisTestSerializationFailure;
