@@ -475,6 +475,63 @@ class Redis_Cluster_Test extends Redis_Test {
         return $count;
     }
 
+    public function testCachedSeedsAuthenticateDuringRemap() {
+        if (!$this->getAuth() || !$this->minVersionCheck('5.0'))
+            $this->markTestSkipped('Authentication and CLIENT ID are required');
+
+        $class = $this->getRedisClusterClass();
+        $key = '{cached-seed-auth}' . uniqid();
+        if (!($replicas = $this->replicasForKey($key)))
+            $this->markTestSkipped('A known replica is required for remapping');
+
+        $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
+        foreach ($this->redis->rawCommand($key, 'CLUSTER', 'SLOTS') as $range) {
+            if ($slot >= $range[0] && $slot <= $range[1]) {
+                $node = $this->connectToNode([$range[2][0], $range[2][1]]);
+                break;
+            }
+        }
+        $endpoint = implode(':', $replicas[0]);
+        /* A MOVED to a known replica triggers the legacy full remap. The retry
+         * succeeds without changing the cluster's topology. */
+        $script = "local n = redis.call('INCR', KEYS[1]); " .
+            "if n == 1 then return redis.error_reply('MOVED $slot $endpoint') end; return n";
+        $cache = ini_get('redis.clusters.cache_slots');
+        $client = $populator = null;
+        $ids = [];
+
+        try {
+            foreach ([false, true] as $persistent) {
+                foreach ([0, 1] as $cached) {
+                    ini_set('redis.clusters.cache_slots', $cached);
+                    if ($cached) {
+                        $populator = new $class(null, self::$seeds, 1, 1,
+                            $persistent, $this->getAuth());
+                        $populator->close();
+                        $populator = null;
+                    }
+                    $client = new $class(null, self::$seeds, 1, 1,
+                        $persistent, $this->getAuth());
+                    $ids[] = $client->rawCommand($key, 'CLIENT', 'ID');
+                    $client->del($key);
+                    $this->assertEquals(2, $client->eval($script, [$key], 1));
+                    $this->assertEquals('2', $client->get($key));
+                    $this->assertEquals(Redis::ATOMIC, $client->getMode());
+                    $client->close();
+                    $client = null;
+                }
+            }
+        } finally {
+            if ($client) $client->close();
+            if ($populator) $populator->close();
+            $this->redis->del($key);
+            /* The existing remap connection leak is independent of this test. */
+            foreach ($ids as $id) $node->rawCommand('CLIENT', 'KILL', 'ID', $id);
+            $node->close();
+            ini_set('redis.clusters.cache_slots', $cache);
+        }
+    }
+
     /* A replica that hangs up on us is reconnected transparently, but the
      * READONLY we sent doesn't survive the new connection, so we have to send
      * it again or the replica answers MOVED to every read we send it. */
