@@ -371,6 +371,29 @@ redis_error_throw(const RedisSock *redis_sock)
     }
 }
 
+/* Parse the length following a RESP '$' or '*' type byte. Since a bad length
+ * means we can't frame the rest of the stream, any malformed or out of range
+ * value disconnects and throws. */
+static int
+redis_sock_parse_len(RedisSock *redis_sock, const char *str, long long max,
+                     long long *len)
+{
+    char *endptr;
+
+    errno = 0;
+    *len = strtoll(str, &endptr, 10);
+    if (endptr != str && *endptr == '\0' && errno != ERANGE &&
+        *len >= -1 && *len <= max)
+    {
+        return SUCCESS;
+    }
+
+    redis_sock_disconnect(redis_sock, 1, 1);
+    zend_throw_exception_ex(redis_exception_ce, 0,
+        "protocol error, invalid reply length");
+    return FAILURE;
+}
+
 static int
 read_mbulk_header(RedisSock *redis_sock, int *nelem)
 {
@@ -390,15 +413,12 @@ read_mbulk_header(RedisSock *redis_sock, int *nelem)
     }
 
     {
-        char *endptr;
         long long n;
 
-        errno = 0;
-        n = strtoll(line + 1, &endptr, 10);
-        if (endptr == line + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+        if (redis_sock_parse_len(redis_sock, line + 1, INT_MAX, &n) < 0) {
             return FAILURE;
         }
-        *nelem = (int)n;
+        *nelem = n;
     }
 
     return SUCCESS;
@@ -876,15 +896,12 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
             return NULL;
         case '$':
             {
-                char *endptr;
                 long long n;
 
-                errno = 0;
-                n = strtoll(inbuf + 1, &endptr, 10);
-                if (endptr == inbuf + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+                if (redis_sock_parse_len(redis_sock, inbuf + 1, INT_MAX - 2, &n) < 0) {
                     return NULL;
                 }
-                *buf_len = (int)n;
+                *buf_len = n;
             }
             return redis_sock_read_bulk_reply(redis_sock, *buf_len);
 
@@ -3816,18 +3833,14 @@ redis_sock_read_zstr(RedisSock *redis_sock)
             return NULL;
         case '$':
             {
-                char *endptr;
                 long long n;
 
-                errno = 0;
-                n = strtoll(inbuf + 1, &endptr, 10);
-                if (endptr == inbuf + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+                if (redis_sock_parse_len(redis_sock, inbuf + 1, INT_MAX - 2, &n) < 0 ||
+                    n == -1)
+                {
                     return NULL;
                 }
-                if (n == -1) {
-                    return NULL;
-                }
-                return redis_sock_read_bulk_zstr(redis_sock, (int)n);
+                return redis_sock_read_bulk_zstr(redis_sock, n);
             }
         case '*':
             /* For null multi-bulk replies (like timeouts from brpoplpush): */
@@ -4731,7 +4744,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         }
 
         /* Set our size response */
-        {
+        if (*reply_type == TYPE_INT) {
             char *endptr;
 
             errno = 0;
@@ -4739,15 +4752,16 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
             if (endptr == inbuf || errno == ERANGE) {
                 return -1;
             }
-        }
+        } else {
+            /* Validate lengths before callers narrow them to int or allocate. */
+            long long n;
 
-        /* Validate lengths before callers narrow them to int or allocate. */
-        if ((*reply_type == TYPE_BULK && (*reply_info < -1 || *reply_info > INT_MAX - 2)) ||
-            (*reply_type == TYPE_MULTIBULK && (*reply_info < -1 || *reply_info > INT_MAX)))
-        {
-            zend_throw_exception_ex(redis_exception_ce, 0,
-                "protocol error, invalid reply length");
-            return -1;
+            if (redis_sock_parse_len(redis_sock, inbuf,
+                    *reply_type == TYPE_BULK ? INT_MAX - 2 : INT_MAX, &n) < 0)
+            {
+                return -1;
+            }
+            *reply_info = n;
         }
     } else {
         /* Always initialize to prevent UB */
