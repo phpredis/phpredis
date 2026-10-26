@@ -465,6 +465,9 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_MSGPACK);  // Use msg
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);  // Use JSON to serialize/unserialize
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHPSER);  // Use phpser serialize/unserialize (signed when phpser.key is set)
 
+// Opt in to rejecting writes when serialization throws (default: false in 6.x).
+$redis->setOption(Redis::OPT_STRICT_SERIALIZATION, true);
+
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 
 /* Options for the SCAN family of commands, indicating whether to abstract
@@ -481,6 +484,15 @@ $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
 ~~~
+
+`OPT_STRICT_SERIALIZATION` also applies to `RedisCluster`. When enabled, a
+serialization exception leaves the failed command's keys and TTLs unchanged.
+Cluster `mSet()` and `mSetNX()` serialize every value before sending any of the
+call's batches. Commands queued by earlier calls remain available to `exec()`.
+Preparing these multi-key calls requires additional memory for the packed values.
+This option does not make operations atomic across slots when server or
+connection errors occur. When disabled, legacy 6.x behavior is preserved,
+including writes of empty or partial values after serialization exceptions.
 
 
 #### getOption

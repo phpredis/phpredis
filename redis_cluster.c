@@ -495,7 +495,7 @@ typedef struct clusterKeyValHT {
 
 /* Helper to pull a key/value pair from a HashTable */
 static int get_key_val_ht(const redisCluster *c, HashTable *ht, HashPosition *ptr,
-                          clusterKeyValHT *kv)
+                          clusterKeyValHT *kv, zend_bool packed)
 {
     zval *z_val;
     zend_ulong idx;
@@ -523,12 +523,18 @@ static int get_key_val_ht(const redisCluster *c, HashTable *ht, HashPosition *pt
 
     // Now grab our value
     if ((z_val = zend_hash_get_current_data_ex(ht, ptr)) == NULL) {
+        if (kv->key_free) efree(kv->key);
         CLUSTER_THROW_EXCEPTION("Internal Zend HashTable error", 0);
         return -1;
     }
 
-    // Serialize our value if required
-    kv->val_free = redis_pack(c->flags,z_val,&(kv->val),&(kv->val_len));
+    if (packed) {
+        kv->val = Z_STRVAL_P(z_val);
+        kv->val_len = Z_STRLEN_P(z_val);
+        kv->val_free = 0;
+    } else {
+        kv->val_free = redis_pack(c->flags, z_val, &kv->val, &kv->val_len);
+    }
 
     // Success
     return 0;
@@ -713,6 +719,41 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     return 0;
 }
 
+/* Return an owned snapshot of packed values, or NULL without sending any
+ * batches. Copy borrowed payloads before another serializer can mutate them. */
+static HashTable *cluster_pack_mset_values(const redisCluster *c, HashTable *values)
+{
+    HashTable *packed = zend_array_dup(values);
+    zend_string *str;
+    zval *zv, *value;
+    char *buf;
+    size_t len;
+    int valfree;
+
+    ZEND_HASH_FOREACH_VAL(packed, zv) {
+        value = zv;
+        ZVAL_DEREF(value);
+        valfree = redis_pack(c->flags, value, &buf, &len);
+        if (EG(exception)) {
+            if (valfree) efree(buf);
+            zend_array_destroy(packed);
+            return NULL;
+        }
+
+        str = zend_string_init(buf, len, 0);
+        if (valfree) efree(buf);
+        zval_ptr_dtor(zv);
+        ZVAL_STR(zv, str);
+    } ZEND_HASH_FOREACH_END();
+
+    if (EG(exception)) {
+        zend_array_destroy(packed);
+        return NULL;
+    }
+
+    return packed;
+}
+
 /* Handler for both MSET and MSETNX */
 static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw_len,
                             zval *z_ret, cluster_cb cb)
@@ -721,9 +762,10 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     clusterKeyValHT kv;
     clusterMultiCmd mc = {0};
     zval *z_arr;
-    HashTable *ht_arr;
+    HashTable *ht_arr, *packed = NULL;
     HashPosition ptr;
     int i = 1;
+    int res = FAILURE;
     short slot;
 
     ZEND_PARSE_PARAMETERS_START(1, 1)
@@ -737,6 +779,13 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
         return -1;
     }
 
+    if (c->flags->strict_serialization) {
+        packed = cluster_pack_mset_values(c, ht_arr);
+        if (packed == NULL)
+            return FAILURE;
+        ht_arr = packed;
+    }
+
     /* This is a write command */
     c->readonly = 0;
 
@@ -745,7 +794,8 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
 
     // Process the first key/value pair outside of our loop
     zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
-    if (get_key_val_ht(c, ht_arr, &ptr, &kv) ==-1) return -1;
+    if (get_key_val_ht(c, ht_arr, &ptr, &kv, packed != NULL) == -1)
+        goto cleanup;
     zend_hash_move_forward_ex(ht_arr, &ptr);
 
     // Add this to our multi cmd, set slot, free key if we prefixed
@@ -758,8 +808,8 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     slot = kv.slot;
     while (zend_hash_has_more_elements_ex(ht_arr, &ptr) ==SUCCESS) {
         // Pull the next key/value pair
-        if (get_key_val_ht(c, ht_arr, &ptr, &kv) ==-1) {
-            return -1;
+        if (get_key_val_ht(c, ht_arr, &ptr, &kv, packed != NULL) == -1) {
+            goto cleanup;
         }
 
         // If the slots have changed, process responses
@@ -769,8 +819,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
             {
                 if (kv.key_free) efree(kv.key);
                 if (kv.val_free) efree(kv.val);
-                cluster_multi_free(&mc);
-                return -1;
+                goto cleanup;
             }
         }
 
@@ -795,20 +844,20 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
         if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, &mc,
                                 z_ret, 1, cb) < 0)
         {
-            cluster_multi_free(&mc);
-            return -1;
+            goto cleanup;
         }
     }
-
-    // Free our command
-    cluster_multi_free(&mc);
 
     /* Return our object if we're in MULTI mode */
     if (!cluster_is_atomic(c))
         RETVAL_ZVAL(getThis(), 1, 0);
 
-    // Success
-    return 0;
+    res = SUCCESS;
+
+cleanup:
+    cluster_multi_free(&mc);
+    if (packed) zend_array_destroy(packed);
+    return res;
 }
 
 /* Generic passthru for DEL and UNLINK which act identically */

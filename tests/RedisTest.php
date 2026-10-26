@@ -3,6 +3,37 @@
 require_once __DIR__ . '/TestSuite.php';
 require_once __DIR__ . '/SessionHelpers.php';
 
+class RedisTestSerializationFailure implements JsonSerializable {
+    public $calls = 0;
+
+    public function __serialize(): array {
+        $this->calls++;
+        throw new Exception('Test serialization failure');
+    }
+
+    #[\ReturnTypeWillChange]
+    public function jsonSerialize() {
+        return $this->__serialize();
+    }
+}
+
+class RedisTestSerializationValue implements JsonSerializable {
+    public $calls = 0;
+
+    public function __serialize(): array {
+        return ['calls' => ++$this->calls];
+    }
+
+    public function __unserialize(array $data): void {
+        $this->calls = $data['calls'];
+    }
+
+    #[\ReturnTypeWillChange]
+    public function jsonSerialize() {
+        return $this->__serialize();
+    }
+}
+
 class Redis_Test extends TestSuite {
     /**
      * @var Redis
@@ -5448,7 +5479,7 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
-    private function cartesianProduct(array $arrays) {
+    protected function cartesianProduct(array $arrays) {
         $result = [[]];
 
         foreach ($arrays as $array) {
@@ -9469,6 +9500,133 @@ class Redis_Test extends TestSuite {
             $this->assertTrue($this->redis->set('captain', 'Archer'));
             $this->assertEquals(1, $this->redis->delex('captain', $arg));
         }
+    }
+
+    public function testStrictSerializationOption() {
+        $key = '{serialization-failure}:option';
+        $this->assertFalse($this->redis->getOption(Redis::OPT_STRICT_SERIALIZATION));
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        $legacy_payload = null;
+
+        foreach ([null, true, false] as $strict) {
+            if ($strict !== null) {
+                $this->assertTrue($this->redis->setOption(Redis::OPT_STRICT_SERIALIZATION, $strict));
+                $this->assertEquals($strict, $this->redis->getOption(Redis::OPT_STRICT_SERIALIZATION));
+            }
+
+            $this->redis->del($key);
+            $this->assertThrowsMatch(null, fn() => $this->redis->set($key, function () {}));
+            $this->assertEquals($strict ? 0 : 1, $this->redis->exists($key));
+            if (!$strict) {
+                /* PHP versions differ in the partial payload left by a rejected Closure. */
+                $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+                $payload = $this->redis->get($key);
+                $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+                if ($strict === null) {
+                    $legacy_payload = $payload;
+                } else {
+                    $this->assertEquals($legacy_payload, $payload);
+                }
+            }
+        }
+
+        $this->redis->del($key);
+    }
+
+    public function testSerializationFailureDoesNotWrite() {
+        $this->redis->setOption(Redis::OPT_STRICT_SERIALIZATION, true);
+        $key = '{serialization-failure}';
+        $options = $this->cartesianProduct([
+            array_diff($this->getSerializers(), [Redis::SERIALIZER_NONE]),
+            $this->getCompressors(),
+        ]);
+
+        foreach ($options as [$serializer, $compressor]) {
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
+            $values = [new RedisTestSerializationFailure];
+
+            if (!defined('Redis::SERIALIZER_JSON') || $serializer !== Redis::SERIALIZER_JSON) {
+                $values[] = function () {};
+                $values[] = (object)['cb' => function () {}];
+            }
+
+            foreach ($values as $value) {
+                $commands = [
+                    'set' => [$key, $value],
+                    'setex' => [$key, 300, $value],
+                    'hSet' => [$key, 'field', $value],
+                    'hMSet' => [$key, ['good' => 'ok', 'bad' => $value]],
+                    'rPush' => [$key, 'ok', $value],
+                    'sAdd' => [$key, 'ok', $value],
+                    'zAdd' => [$key, 1, 'ok', 2, $value],
+                    'mSet' => [[$key => $value]],
+                    'mSetNX' => [[$key => $value]],
+                ];
+
+                foreach ($commands as $method => $args) {
+                    $this->redis->del($key);
+                    $this->assertThrowsMatch(null, fn() => $this->redis->$method(...$args));
+                    $this->assertEquals(0, $this->redis->exists($key), $method);
+                }
+
+                $this->assertTrue($this->redis->set($key, 'original', ['ex' => 300]));
+                $this->assertThrowsMatch(null, fn() => $this->redis->set($key, $value));
+                $this->assertEquals('original', $this->redis->get($key));
+                $this->assertGT(0, $this->redis->ttl($key));
+            }
+
+            /* Later arguments must not invoke user code with an exception pending. */
+            $first = new RedisTestSerializationFailure;
+            $later = new RedisTestSerializationFailure;
+            $this->redis->del($key);
+            $this->assertThrowsMatch(null, fn() => $this->redis->hMSet($key, [
+                'first' => $first, 'later' => $later,
+            ]), '/Test serialization failure/');
+            $this->assertEquals(1, $first->calls);
+            $this->assertEquals(0, $later->calls);
+            $this->assertEquals(0, $this->redis->exists($key));
+        }
+    }
+
+    public function testSerializationFailureInQueuedCommands() {
+        $this->redis->setOption(Redis::OPT_STRICT_SERIALIZATION, true);
+        $key = '{serialization-failure}:existing';
+        $missing = '{serialization-failure}:missing';
+        $value = new RedisTestSerializationFailure;
+        $modes = [Redis::MULTI];
+        if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+        $options = $this->cartesianProduct([
+            array_diff($this->getSerializers(), [Redis::SERIALIZER_NONE]),
+            $this->getCompressors(),
+            $modes,
+        ]);
+
+        foreach ($options as [$serializer, $compressor, $mode]) {
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
+
+            $this->redis->del($missing);
+            $this->assertTrue($this->redis->set($key, 'original', ['ex' => 300]));
+
+            $this->redis->multi($mode);
+            $this->redis->get($key);
+            $this->assertThrowsMatch(null, fn() => $this->redis->set($key, $value),
+                '/Test serialization failure/');
+            $this->assertThrowsMatch(null, fn() => $this->redis->setex($missing, 300, $value));
+            $this->assertThrowsMatch(null, fn() => $this->redis->hMSet($missing, ['bad' => $value]));
+            $this->assertThrowsMatch(null, fn() => $this->redis->mSet([$missing => $value]));
+            $this->redis->get($key);
+
+            /* Failed commands must not add either writes or reply callbacks. */
+            $this->assertEquals(['original', 'original'], $this->redis->exec());
+            $this->assertEquals('original', $this->redis->get($key));
+            $this->assertGT(0, $this->redis->ttl($key));
+            $this->assertEquals(0, $this->redis->exists($missing));
+        }
+
+        $this->redis->del($key);
     }
 
     public function testAnonymousClassSerializationFailure() {

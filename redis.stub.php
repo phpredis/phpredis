@@ -211,6 +211,20 @@ class Redis {
     public const OPT_PACK_IGNORE_NUMBERS = UNKNOWN;
 
     /**
+     * Reject a command when serialization throws, preserving existing values
+     * and expirations. Disabled by default for compatibility with 6.x.
+     *
+     * Also supported by RedisCluster, where mSet() and mSetNX() serialize all
+     * values before sending any batch. Commands queued by earlier calls remain
+     * in the transaction. This does not provide atomicity across cluster slots
+     * for server or connection errors.
+     *
+     * @var int
+     * @cvalue REDIS_OPT_STRICT_SERIALIZATION
+     */
+    public const OPT_STRICT_SERIALIZATION = UNKNOWN;
+
+    /**
      * Sets the serializer to none (no serialization).
      *
      * @var int
@@ -4147,6 +4161,7 @@ class Redis {
      * | OPT_MAX_RETRIES | int  | The maximum number of times Redis will attempt to reconnect if it gets disconnected, before throwing an exception. |
      * | OPT_SCAN        | enum | Redis::SCAN_RETRY, or Redis::SCAN_NORETRY.  Whether PhpRedis should automatically SCAN again when zero keys but a nonzero iterator are returned. |
      * | OPT_SERIALIZER  | enum | Set the automatic data serializer.<br>`Redis::SERIALIZER_NONE`<br>`Redis::SERIALIZER_PHP`<br>`Redis::SERIALIZER_IGBINARY`<br>`Redis::SERIALIZER_MSGPACK`, `Redis::SERIALIZER_JSON`<br>`Redis::SERIALIZER_PHPSER`|
+     * | OPT_STRICT_SERIALIZATION | bool | Reject commands whose serialization throws. Defaults to false for 6.x compatibility. Also supported by RedisCluster. |
      * | OPT_PREFIX | string | A string PhpRedis will use to prefix every key we read or write. |
      * | OPT_READ_TIMEOUT | float | How long PhpRedis will block for a response from Redis before throwing a 'read error on connection' exception. |
      * | OPT_TCP_KEEPALIVE | bool |   Set or disable TCP_KEEPALIVE on the connection. |

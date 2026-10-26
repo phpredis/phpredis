@@ -1664,6 +1664,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 {
     int resp, timedout = 0;
 
+    /* Command construction can invoke serializers that throw. */
+    if (UNEXPECTED(redis_serialization_failed(c->flags))) {
+        return -1;
+    }
+
     if (!cluster_slot(c, slot)) {
         zend_throw_exception_ex(redis_cluster_exception_ce, 0,
             "The slot %d is not covered by any node in this cluster", slot);

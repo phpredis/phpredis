@@ -134,6 +134,11 @@ int redis_sock_set_context_zval(RedisSock *redis_sock, const zval *zv);
 
 PHP_REDIS_API int redis_sock_set_backoff(RedisSock *redis_sock, const zval *options);
 
+static zend_always_inline zend_bool
+redis_serialization_failed(const RedisSock *redis_sock) {
+    return redis_sock->strict_serialization && EG(exception);
+}
+
 PHP_REDIS_API int
 redis_serialize(const RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
 /* No prefix: leave the borrowed key unchanged and return 0.

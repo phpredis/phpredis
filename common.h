@@ -146,6 +146,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_BACKOFF_BASE        13
 #define REDIS_OPT_BACKOFF_CAP         14
 #define REDIS_OPT_PACK_IGNORE_NUMBERS 15
+#define REDIS_OPT_STRICT_SERIALIZATION 16
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -275,6 +276,7 @@ typedef struct {
     HashTable           *subs[REDIS_SUBS_BUCKETS];
     redis_serializer    serializer;
     zend_bool           pack_ignore_numbers;
+    zend_bool           strict_serialization;
     int                 compression;
     int                 compression_level;
     long                dbNumber;
