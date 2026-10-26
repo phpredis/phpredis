@@ -803,6 +803,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
     ssize_t got;
 
     if (bytes < -1 || bytes > INT_MAX - 2) {
+        redis_sock_disconnect(redis_sock, 1, 1);
         zend_throw_exception_ex(redis_exception_ce, 0,
             "protocol error, invalid bulk length: %d", bytes);
         return NULL;
@@ -831,6 +832,13 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
     if (offset < nbytes) {
         /* Error or EOF */
         REDIS_THROW_EXCEPTION("socket error on read socket", 0);
+        efree(reply);
+        return NULL;
+    }
+
+    if (reply[bytes] != '\r' || reply[bytes + 1] != '\n') {
+        redis_sock_disconnect(redis_sock, 1, 1);
+        REDIS_THROW_EXCEPTION("protocol error, invalid bulk terminator", 0);
         efree(reply);
         return NULL;
     }
