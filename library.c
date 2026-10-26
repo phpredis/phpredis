@@ -1949,7 +1949,11 @@ int redis_client_trackinginfo_reply(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     redis_array_init_reply(&z_ret, numElems);
-    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
     array_zip_values_and_scores(redis_sock, &z_ret, 0);
 
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
@@ -2083,7 +2087,11 @@ redis_function_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     redis_array_init_reply(&z_ret, numElems);
-    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
     array_zip_values_recursive(&z_ret);
 
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
@@ -2123,7 +2131,11 @@ redis_command_info_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     redis_array_init_reply(&z_ret, numElems);
-    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
 
     return SUCCESS;
@@ -4848,6 +4860,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
     long reply_info;
     REDIS_REPLY_TYPE reply_type;
     zval z_subelem;
+    int res = SUCCESS;
 
     // Iterate while we have elements
     while(elements > 0) {
@@ -4855,17 +4868,20 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
         if(redis_read_reply_type(redis_sock, &reply_type, &reply_info
                                 ) < 0)
         {
+            /* We're part way through a reply, so the stream is unusable */
+            redis_sock_disconnect(redis_sock, 1, 1);
             zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, couldn't parse MULTI-BULK response\n");
             return FAILURE;
         }
 
-        // Switch on our reply-type byte
+        /* Nested failures leave the stream unparseable, so stop reading.
+         * Partial elements are still added so z_ret owns them. */
         switch(reply_type) {
             case TYPE_ERR:
             case TYPE_LINE:
-                redis_read_variant_line(redis_sock, reply_type, status_strings,
-                                        &z_subelem);
+                res = redis_read_variant_line(redis_sock, reply_type, status_strings,
+                                              &z_subelem);
                 add_next_index_zval(z_ret, &z_subelem);
                 break;
             case TYPE_INT:
@@ -4873,8 +4889,13 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
                 add_next_index_long(z_ret, reply_info);
                 break;
             case TYPE_BULK:
-                // Init a zval for our bulk response, read and add it
-                redis_read_variant_bulk(redis_sock, reply_info, &z_subelem);
+                /* Init a zval for our bulk response, read and add it. A nil
+                 * bulk is reported as a failure but is a valid element. */
+                if (redis_read_variant_bulk(redis_sock, reply_info, &z_subelem) < 0 &&
+                    reply_info != -1)
+                {
+                    res = FAILURE;
+                }
                 add_next_index_zval(z_ret, &z_subelem);
                 break;
             case TYPE_MULTIBULK:
@@ -4883,14 +4904,20 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
                 } else {
                     redis_array_init_reply(&z_subelem, reply_info);
                     if (reply_info > 0) {
-                        redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_subelem);
+                        res = redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_subelem);
                     }
                     add_next_index_zval(z_ret, &z_subelem);
                 }
                 break;
             default:
-                // Stop the compiler from whinging
-                break;
+                redis_sock_disconnect(redis_sock, 1, 1);
+                zend_throw_exception_ex(redis_exception_ce, 0,
+                    "protocol error, got '%c' as reply-type byte", reply_type);
+                return FAILURE;
+        }
+
+        if (res < 0) {
+            return FAILURE;
         }
 
         /* Decrement our element counter */
