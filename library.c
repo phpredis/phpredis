@@ -4314,7 +4314,9 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
                 memcpy(&datalen, copy, sizeof(int));
                 copy += sizeof(int); copylen -= sizeof(int);
 
-                if (datalen <= 0)
+                /* Each LZ4 input byte decodes to at most 255 output bytes, so
+                 * larger claims are corrupt. Reject them before allocating. */
+                if (datalen <= 0 || (size_t)(datalen - 1) / 255 >= copylen)
                     break;
 
                 /* Make sure our CRC matches (TODO:  Maybe issue a docref error?) */
