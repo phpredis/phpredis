@@ -815,61 +815,105 @@ redis_sock_read_multibulk_reply_zval(RedisSock *redis_sock, zval *z_tab)
     return z_tab;
 }
 
-/**
- * redis_sock_read_bulk_reply
- */
-PHP_REDIS_API char *
-redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
+/* Bulk lengths come from the server. Preallocate at most this much and grow
+ * only as payload actually arrives, so a bogus length can't trigger an absurd
+ * up-front allocation, which is a fatal error in the Zend allocator. */
+#define REDIS_BULK_PREALLOC_MAX (1 << 20)
+
+static zend_always_inline char *
+redis_bulk_resize(void **buf, size_t size, zend_bool zstr)
 {
-    int offset = 0, nbytes;
-    char *reply;
+    if (zstr) {
+        *buf = *buf ? zend_string_realloc(*buf, size, 0) : zend_string_alloc(size, 0);
+        return ZSTR_VAL((zend_string *)*buf);
+    }
+
+    return *buf = erealloc(*buf, size);
+}
+
+/* Read a bulk payload and its CRLF terminator, returning either an owned
+ * zend_string or an emalloc'd buffer (per zstr) with the payload NUL
+ * terminated. On failure, throws and returns NULL. Framing errors disconnect,
+ * since the rest of the stream can no longer be parsed. */
+static zend_always_inline void *
+redis_sock_read_bulk_payload(RedisSock *redis_sock, int bytes, zend_bool zstr)
+{
+    size_t offset = 0, capacity, nbytes;
+    void *buf = NULL;
+    char *data;
     ssize_t got;
 
-    if (bytes < -1 || bytes > INT_MAX - 2) {
+    if (bytes < 0 || bytes > INT_MAX - 2) {
         redis_sock_disconnect(redis_sock, 1, 1);
         zend_throw_exception_ex(redis_exception_ce, 0,
             "protocol error, invalid bulk length: %d", bytes);
         return NULL;
     }
 
-    if (-1 == bytes || -1 == redis_check_eof(redis_sock, 1, 0)) {
+    if (-1 == redis_check_eof(redis_sock, 1, 0)) {
         return NULL;
     }
 
     /* + 2 for \r\n */
     nbytes = bytes + 2;
-
-    /* Allocate memory for string */
-    reply = emalloc(nbytes);
+    capacity = MIN(nbytes, REDIS_BULK_PREALLOC_MAX);
+    data = redis_bulk_resize(&buf, capacity, zstr);
 
     /* Consume bulk string */
     while (offset < nbytes) {
-        got = redis_sock_read_raw(redis_sock, reply + offset, nbytes - offset);
+        if (offset == capacity) {
+            capacity = MIN(nbytes, capacity * 2);
+            data = redis_bulk_resize(&buf, capacity, zstr);
+        }
+
+        got = redis_sock_read_raw(redis_sock, data + offset, capacity - offset);
         if (got <= 0)
             break;
 
         offset += got;
     }
 
-    /* Protect against reading too few bytes */
     if (offset < nbytes) {
-        /* Error or EOF */
+        /* Error, EOF, or timeout part way through the payload */
+        redis_sock_disconnect(redis_sock, 1, 1);
         REDIS_THROW_EXCEPTION("socket error on read socket", 0);
-        efree(reply);
-        return NULL;
+        goto failure;
     }
 
-    if (reply[bytes] != '\r' || reply[bytes + 1] != '\n') {
+    if (data[bytes] != '\r' || data[bytes + 1] != '\n') {
         redis_sock_disconnect(redis_sock, 1, 1);
         REDIS_THROW_EXCEPTION("protocol error, invalid bulk terminator", 0);
-        efree(reply);
-        return NULL;
+        goto failure;
     }
 
     /* Null terminate reply string */
-    reply[bytes] = '\0';
+    data[bytes] = '\0';
+    if (zstr) {
+        ZSTR_LEN((zend_string *)buf) = bytes;
+    }
 
-    return reply;
+    return buf;
+
+failure:
+    if (zstr) {
+        zend_string_efree(buf);
+    } else {
+        efree(buf);
+    }
+    return NULL;
+}
+
+/**
+ * redis_sock_read_bulk_reply
+ */
+PHP_REDIS_API char *
+redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
+{
+    if (bytes == -1) {
+        return NULL;
+    }
+
+    return redis_sock_read_bulk_payload(redis_sock, bytes, 0);
 }
 
 /**
@@ -3773,43 +3817,7 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 static zend_string *
 redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
 {
-    size_t offset = 0, nbytes;
-    zend_string *zstr;
-    ssize_t got;
-
-    if (bytes < 0 || bytes > INT_MAX - 2) {
-        zend_throw_exception_ex(redis_exception_ce, 0,
-            "protocol error, invalid bulk length: %d", bytes);
-        return NULL;
-    }
-
-    if (-1 == redis_check_eof(redis_sock, 1, 0)) {
-        return NULL;
-    }
-
-    /* Over-allocate by two so the trailing \r\n lands in the same buffer as
-     * the body; the reported length is trimmed back to the payload below. */
-    nbytes = bytes + 2;
-    zstr = zend_string_alloc(nbytes, 0);
-
-    while (offset < nbytes) {
-        got = redis_sock_read_raw(redis_sock, ZSTR_VAL(zstr) + offset, nbytes - offset);
-        if (got <= 0)
-            break;
-
-        offset += got;
-    }
-
-    if (offset < nbytes) {
-        REDIS_THROW_EXCEPTION("socket error on read socket", 0);
-        zend_string_release(zstr);
-        return NULL;
-    }
-
-    ZSTR_LEN(zstr) = bytes;
-    ZSTR_VAL(zstr)[bytes] = '\0';
-
-    return zstr;
+    return redis_sock_read_bulk_payload(redis_sock, bytes, 1);
 }
 
 /* A zend_string-returning counterpart to redis_sock_read, used by the
