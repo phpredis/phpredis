@@ -43,6 +43,9 @@ static int redis_phpser_signed(void) {
 
 #ifdef HAVE_REDIS_ZSTD
 #include <zstd.h>
+
+/* The zstd format's maximum decoded block size */
+#define REDIS_ZSTD_BLOCK_MAX (128 * 1024)
 #endif
 
 #ifdef HAVE_REDIS_LZ4
@@ -4268,6 +4271,12 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
 
                 zlen = ZSTD_getFrameContentSize(src, len);
                 if (zlen == ZSTD_CONTENTSIZE_ERROR || zlen == ZSTD_CONTENTSIZE_UNKNOWN || zlen > INT_MAX)
+                    break;
+
+                /* Every zstd block has a 3 byte header and decodes to at most
+                 * 128KB, so larger claims are corrupt. Reject them before
+                 * allocating. */
+                if (zlen / REDIS_ZSTD_BLOCK_MAX >= len / 3 + 1)
                     break;
 
                 data = emalloc(zlen + 1);
