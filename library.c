@@ -4233,21 +4233,26 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
             {
                 char *data = NULL;
                 uint32_t res;
-                int i;
+                size_t capacity;
+                const size_t max_capacity = MIN((size_t)UINT_MAX, SIZE_MAX - 1);
 
-                if (len == 0)
+                /* liblzf takes unsigned int lengths. Leave room for our NUL. */
+                if (len == 0 || len > UINT_MAX)
                     break;
 
                 /* Grow our buffer until we succeed or get a non E2BIG error */
-                errno = E2BIG;
-                for (i = 2; errno == E2BIG; i *= 2) {
-                    data = safe_erealloc(data, len, i, 1);
-                    if ((res = lzf_decompress(src, len, data, len * i)) > 0) {
+                capacity = len > max_capacity / 2 ? max_capacity : len * 2;
+                for (;;) {
+                    data = erealloc(data, capacity + 1);
+                    if ((res = lzf_decompress(src, len, data, capacity)) > 0) {
                         data[res] = '\0';
                         *dst = data;
                         *dstlen = res;
                         return 1;
                     }
+                    if (errno != E2BIG || capacity == max_capacity)
+                        break;
+                    capacity = capacity > max_capacity / 2 ? max_capacity : capacity * 2;
                 }
 
                 efree(data);
