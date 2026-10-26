@@ -809,7 +809,7 @@ redis_sock_read_multibulk_reply_zval(RedisSock *redis_sock, zval *z_tab)
         ZVAL_NULL(z_tab);
         return NULL;
     }
-    array_init_size(z_tab, numElems > 0 ? numElems : 0);
+    redis_array_init_reply(z_tab, numElems);
     redis_mbulk_reply_loop(redis_sock, z_tab, numElems, UNSERIALIZE_ALL);
 
     return z_tab;
@@ -1475,7 +1475,7 @@ redis_read_lpos_response(zval *zdst, RedisSock *redis_sock, char reply_type,
         if (reply_type != TYPE_MULTIBULK)
             return FAILURE;
 
-        array_init_size(zdst, elements > 0 ? elements : 0);
+        redis_array_init_reply(zdst, elements);
 
         for (i = 0;  i < elements; ++i) {
             if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &len) < 0) {
@@ -1701,7 +1701,7 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (numElems < 1) {
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
-        array_init_size(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
+        redis_array_init_reply(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
 
         /* Grab our key, value, key, value array */
         redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, unserialize);
@@ -1759,7 +1759,7 @@ redis_read_mpop_response(RedisSock *redis_sock, zval *zdst, int elements,
     add_next_index_stringl(zdst, key, keylen);
     efree(key);
 
-    array_init_size(&zele, elements);
+    redis_array_init_reply(&zele, elements);
 
     if (ctx.mode == REDIS_CTX_WITHSCORES) {
         int i;
@@ -1820,12 +1820,12 @@ redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
         return SUCCESS;
     }
 
-    array_init_size(zdst, elements > 0 ? elements : 0);
+    redis_array_init_reply(zdst, elements);
 
     if (with_aux_data == 0) {
         redis_mbulk_reply_loop(redis_sock, zdst, elements, UNSERIALIZE_NONE);
     } else {
-        array_init_size(&z_multi_result, elements > 0 ? elements : 0);
+        redis_array_init_reply(&z_multi_result, elements);
 
         if (redis_read_multibulk_recursive(redis_sock, elements, 0,
                                            &z_multi_result) == FAILURE)
@@ -1904,7 +1904,7 @@ int redis_client_trackinginfo_reply(INTERNAL_FUNCTION_PARAMETERS,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
+    redis_array_init_reply(&z_ret, numElems);
     redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
     array_zip_values_and_scores(redis_sock, &z_ret, 0);
 
@@ -1951,7 +1951,7 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (read_mbulk_header(redis_sock, &numElems) < 0)
         goto fail;
 
-    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
+    redis_array_init_reply(&z_ret, numElems);
 
     if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS ||
         array_zip_values_recursive(&z_ret) != SUCCESS)
@@ -2038,7 +2038,7 @@ redis_function_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
+    redis_array_init_reply(&z_ret, numElems);
     redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
     array_zip_values_recursive(&z_ret);
 
@@ -2078,7 +2078,7 @@ redis_command_info_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
+    redis_array_init_reply(&z_ret, numElems);
     redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
 
@@ -2134,7 +2134,7 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret) {
         if (fields < 0) {
             add_assoc_null_ex(z_ret, id, idlen);
         } else {
-            array_init_size(&z_message, fields > 0 ? fields : 0);
+            redis_array_init_reply(&z_message, fields);
             if (redis_mbulk_reply_loop(redis_sock, &z_message, fields, UNSERIALIZE_VALS) < 0) {
                 zval_ptr_dtor_nogc(&z_message);
                 efree(id);
@@ -2161,7 +2161,7 @@ redis_xrange_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return -1;
     }
 
-    array_init_size(&z_messages, messages > 0 ? messages : 0);
+    redis_array_init_reply(&z_messages, messages);
 
     if (redis_read_stream_messages(redis_sock, messages, &z_messages) < 0)
     {
@@ -2195,7 +2195,7 @@ redis_read_stream_messages_multi(RedisSock *redis_sock, int count,
             return -1;
         }
 
-        array_init_size(&z_messages, messages > 0 ? messages : 0);
+        redis_array_init_reply(&z_messages, messages);
 
         if (redis_read_stream_messages(redis_sock, messages, &z_messages) < 0)
             goto failure;
@@ -2224,7 +2224,7 @@ redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (streams == -1 && redis_sock->null_mbulk_as_null) {
         ZVAL_NULL(&z_rv);
     } else {
-        array_init_size(&z_rv, streams > 0 ? streams : 0);
+        redis_array_init_reply(&z_rv, streams);
         if (redis_read_stream_messages_multi(redis_sock, streams, &z_rv) < 0)
             goto cleanup;
     }
@@ -2271,7 +2271,7 @@ redis_read_xclaim_ids(RedisSock *redis_sock, int count, zval *rv) {
                 return -1;
             }
 
-            array_init_size(&z_msg, fields > 0 ? fields : 0);
+            redis_array_init_reply(&z_msg, fields);
 
             if (redis_mbulk_reply_loop(redis_sock, &z_msg, fields, UNSERIALIZE_VALS) < 0) {
                 zval_ptr_dtor_nogc(&z_msg);
@@ -2317,7 +2317,7 @@ redis_read_xclaim_reply(RedisSock *redis_sock, int count, int is_xautoclaim,
         messages = count;
     }
 
-    array_init_size(&z_msgs, messages > 0 ? messages : 0);
+    redis_array_init_reply(&z_msgs, messages);
 
     if (redis_read_xclaim_ids(redis_sock, messages, &z_msgs) < 0)
         goto failure;
@@ -2419,7 +2419,7 @@ redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
             }
             break;
         case TYPE_MULTIBULK:
-            array_init_size(&zv, li > 0 ? li : 0);
+            redis_array_init_reply(&zv, li);
             if (redis_read_xinfo_response(redis_sock, &zv, li) != SUCCESS) {
                 zval_ptr_dtor_nogc(&zv);
                 goto failure;
@@ -2500,7 +2500,7 @@ redis_vinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, count / 2);
+    redis_array_init_reply(&z_ret, count / 2);
 
     if (redis_read_vinfo_response(redis_sock, &z_ret, count) != SUCCESS) {
         zval_ptr_dtor_nogc(&z_ret);
@@ -2568,7 +2568,7 @@ redis_vemb_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, count);
+    redis_array_init_reply(&z_ret, count);
 
     if (redis_read_vemb_response(redis_sock, &z_ret, count) != SUCCESS) {
         zval_ptr_dtor_nogc(&z_ret);
@@ -2589,13 +2589,13 @@ redis_read_vlinks_response(RedisSock *redis_sock, zval *z_ret,
     zval z_ele;
     int links;
 
-    array_init_size(z_ret, elements);
+    redis_array_init_reply(z_ret, elements);
 
     for (i = 0; i < elements; i++) {
         if (read_mbulk_header(redis_sock, &links) < 0)
             return FAILURE;
 
-        array_init_size(&z_ele, links > 0 ? links : 0);
+        redis_array_init_reply(&z_ele, links);
         redis_mbulk_reply_loop(redis_sock, &z_ele, links, UNSERIALIZE_KEYS);
 
         if (ctx.mode == REDIS_CTX_WITHSCORES) {
@@ -2703,7 +2703,7 @@ redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int elements;
 
     if (read_mbulk_header(redis_sock, &elements) == SUCCESS) {
-        array_init_size(&z_ret, elements > 0 ? elements : 0);
+        redis_array_init_reply(&z_ret, elements);
         if (redis_read_xinfo_response(redis_sock, &z_ret, elements) == SUCCESS) {
             REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
             return SUCCESS;
@@ -2752,7 +2752,7 @@ redis_read_acl_log_reply(RedisSock *redis_sock, zval *zret, long count) {
         if (read_mbulk_header(redis_sock, &nsub) < 0 || nsub % 2 != 0)
             return FAILURE;
 
-        array_init_size(&zsub, nsub > 0 ? nsub : 0);
+        redis_array_init_reply(&zsub, nsub);
         if (redis_mbulk_reply_zipped_raw_variant(redis_sock, &zsub, nsub) == FAILURE)
             return FAILURE;
 
@@ -2786,7 +2786,7 @@ redis_read_acl_getuser_reply(RedisSock *redis_sock, zval *zret, long count) {
             add_assoc_stringl_ex(zret, key, klen, val, vlen);
             efree(val);
         } else {
-            array_init_size(&zv, vlen > 0 ? vlen : 0);
+            redis_array_init_reply(&zv, vlen);
             redis_mbulk_reply_loop(redis_sock, &zv, (int)vlen, UNSERIALIZE_NONE);
             add_assoc_zval_ex(zret, key, klen, &zv);
         }
@@ -2807,7 +2807,7 @@ int redis_acl_custom_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     long len;
 
     if (redis_read_reply_type(redis_sock, &type, &len) == 0 && type == TYPE_MULTIBULK) {
-        array_init_size(&zret, len > 0 ? len : 0);
+        redis_array_init_reply(&zret, len);
 
         res = cb(redis_sock, &zret, len);
         if (res == FAILURE) {
@@ -3698,7 +3698,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     } else if (numElems < 1) {
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
-        array_init_size(&z_multi_result, numElems);
+        redis_array_init_reply(&z_multi_result, numElems);
         redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, UNSERIALIZE_ALL);
     }
 
@@ -3725,7 +3725,7 @@ redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (numElems < 1) {
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
-        array_init_size(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
+        redis_array_init_reply(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
         redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, UNSERIALIZE_NONE);
     }
 
@@ -3750,7 +3750,7 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (numElems < 1) {
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
-        array_init_size(&z_multi_result, numElems);
+        redis_array_init_reply(&z_multi_result, numElems);
         for (i = 0; i < numElems; ++i) {
             if ((line = redis_sock_read(redis_sock, &len)) == NULL) {
                 add_next_index_bool(&z_multi_result, 0);
@@ -4873,7 +4873,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
                 if (reply_info < 0 && redis_sock->null_mbulk_as_null) {
                     add_next_index_null(z_ret);
                 } else {
-                    array_init_size(&z_subelem, reply_info > 0 ? reply_info : 0);
+                    redis_array_init_reply(&z_subelem, reply_info);
                     if (reply_info > 0) {
                         redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_subelem);
                     }
@@ -4922,7 +4922,7 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             break;
         case TYPE_MULTIBULK:
             if (reply_info > -1) {
-                array_init_size(&z_ret, reply_info);
+                redis_array_init_reply(&z_ret, reply_info);
                 res = redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_ret);
             } else {
                 if (null_mbulk_as_null) {

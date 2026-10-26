@@ -2741,7 +2741,7 @@ cluster_vinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         CLUSTER_RETURN_FALSE(c);
     }
 
-    array_init_size(&z_ret, c->reply_len / 2);
+    redis_array_init_reply(&z_ret, c->reply_len / 2);
     if (redis_read_vinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
         zval_ptr_dtor_nogc(&z_ret);
         CLUSTER_RETURN_FALSE(c);
