@@ -4280,6 +4280,7 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
                 capacity = len > max_capacity / 2 ? max_capacity : len * 2;
                 for (;;) {
                     data = erealloc(data, capacity + 1);
+                    errno = 0;
                     if ((res = lzf_decompress(src, len, data, capacity)) > 0) {
                         data[res] = '\0';
                         *dst = data;
@@ -4840,16 +4841,15 @@ redis_read_variant_bulk(RedisSock *redis_sock, long size, zval *z_ret
 
     bytes = size;
 
-    // Attempt to read the bulk reply
-    char *bulk_resp = redis_sock_read_bulk_reply(redis_sock, bytes);
+    /* Read straight into a zend_string to avoid a copy */
+    zend_string *bulk_resp = bytes == -1 ? NULL : redis_sock_read_bulk_zstr(redis_sock, bytes);
 
     /* Set our reply to FALSE on failure, and the string on success */
     if(bulk_resp == NULL) {
         ZVAL_FALSE(z_ret);
         return -1;
     }
-    ZVAL_STRINGL(z_ret, bulk_resp, bytes);
-    efree(bulk_resp);
+    ZVAL_STR(z_ret, bulk_resp);
     return 0;
 }
 
