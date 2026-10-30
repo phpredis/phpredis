@@ -163,6 +163,7 @@ jobs:
       - name: Start dragonfly
         if: matrix.server == 'dragonfly'
         run: |
+          # The SETBIT boundary test allocates 256 MiB for one key.
           for PORT in {6379..6382} {32767..32769}; do
             mkdir -p "/tmp/dragonfly-data-$PORT"
             dragonfly \
@@ -170,14 +171,15 @@ jobs:
               --dir="/tmp/dragonfly-data-$PORT" \
               --aclfile=tests/users.acl \
               --proactor_threads=1 \
-              --maxmemory=256mb \
+              --maxmemory=1gb \
               --maxclients=1000 \
               --version_check=false \
               >"/tmp/dragonfly-$PORT.log" 2>&1 &
           done
           mkdir -p /tmp/dragonfly-data-unixsocket
+          # shortcut: port=0 ignores ACLs; remove the TCP listener when Dragonfly fixes this.
           dragonfly \
-            --port=0 \
+            --port=6383 \
             --unixsocket=/tmp/redis.sock \
             --dir=/tmp/dragonfly-data-unixsocket \
             --aclfile=tests/users.acl \
@@ -215,7 +217,7 @@ jobs:
             --dir=/tmp/dragonfly-data-cluster \
             --aclfile=tests/users.acl \
             --proactor_threads=1 \
-            --maxmemory=256mb \
+            --maxmemory=1gb \
             --maxclients=1000 \
             --version_check=false \
             >/tmp/dragonfly-cluster.log 2>&1 &
