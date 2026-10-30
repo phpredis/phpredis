@@ -2171,6 +2171,7 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         }
 
         if ((z_tmp = zend_hash_index_find(Z_ARRVAL(z_tab), 0)) == NULL ||
+            Z_TYPE_P(z_tmp) != IS_STRING ||
             strcasecmp(Z_STRVAL_P(z_tmp), sctx->kw) != 0
         ) {
             zval_ptr_dtor_nogc(&z_tab);
@@ -2277,7 +2278,8 @@ cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         // Fail if we didn't get an array or can't find index 1
         if (!cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, pull,
                                      mbulk_resp_loop_raw, &z_tab) ||
-            (z_chan = zend_hash_index_find(Z_ARRVAL(z_tab), 1)) == NULL
+            (z_chan = zend_hash_index_find(Z_ARRVAL(z_tab), 1)) == NULL ||
+            Z_TYPE_P(z_chan) != IS_STRING
         ) {
             zval_ptr_dtor_nogc(&z_tab);
             zval_ptr_dtor_nogc(return_value);
@@ -2286,6 +2288,7 @@ cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
         // Find the flag for this channel/pattern
         if ((z_flag = zend_hash_index_find(Z_ARRVAL(z_tab), 2)) == NULL ||
+            Z_TYPE_P(z_flag) != IS_STRING ||
             Z_STRLEN_P(z_flag) != 2
         ) {
             zval_ptr_dtor_nogc(&z_tab);

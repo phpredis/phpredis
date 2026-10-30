@@ -587,7 +587,9 @@ redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         // We'll need to find the command response
-        if ((z_tmp = zend_hash_index_find(Z_ARRVAL(z_resp), 0)) == NULL) {
+        if ((z_tmp = zend_hash_index_find(Z_ARRVAL(z_resp), 0)) == NULL ||
+            Z_TYPE_P(z_tmp) != IS_STRING
+        ) {
             goto error;
         }
 
@@ -596,7 +598,9 @@ redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             goto error;
         }
 
-        if ((z_tmp = zend_hash_index_find(Z_ARRVAL(z_resp), 1)) == NULL) {
+        if ((z_tmp = zend_hash_index_find(Z_ARRVAL(z_resp), 1)) == NULL ||
+            Z_TYPE_P(z_tmp) != IS_STRING
+        ) {
             goto error;
         }
 
@@ -746,7 +750,8 @@ PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     while (sctx->argc--) {
         ZVAL_NULL(&z_resp);
         if (!redis_sock_read_multibulk_reply_zval(redis_sock, &z_resp) ||
-            (z_chan = zend_hash_index_find(Z_ARRVAL(z_resp), 1)) == NULL
+            (z_chan = zend_hash_index_find(Z_ARRVAL(z_resp), 1)) == NULL ||
+            Z_TYPE_P(z_chan) != IS_STRING
         ) {
             zval_ptr_dtor_nogc(&z_resp);
             zval_ptr_dtor_nogc(&z_ret);
