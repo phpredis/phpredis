@@ -164,54 +164,62 @@ void cluster_free_reply(clusterReply *reply, int free_data) {
     efree(reply);
 }
 
+/* Read len elements into the multibulk reply r. The element array grows as
+ * elements actually arrive, so a bogus count can't force a huge allocation,
+ * and r->elements only counts elements read so far so cluster_free_reply can
+ * always clean up a partial reply. */
 static int
-cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
-                                 clusterReply **element, int status_strings)
+cluster_multibulk_resp_recursive(RedisSock *sock, clusterReply *r, long long len,
+                                 int status_strings)
 {
-    int i;
+    long long capacity = 0;
     size_t sz;
-    clusterReply *r;
-    long len;
+    clusterReply *e;
+    long elen;
     char buf[1024];
 
-    for (i = 0; i < elements; i++) {
-        r = element[i] = ecalloc(1, sizeof(clusterReply));
+    for (r->elements = 0; r->elements < len; ) {
+        if (r->elements == capacity) {
+            capacity = capacity ? MIN(len, capacity * 2) : MIN(len, REDIS_REPLY_PRESIZE_MAX);
+            r->element = safe_erealloc(r->element, capacity, sizeof(*r->element), 0);
+        }
+
+        e = r->element[r->elements++] = ecalloc(1, sizeof(*e));
 
         // Bomb out, flag error condition on a communication failure
-        if (redis_read_reply_type(sock, &r->type, &len) < 0) {
+        if (redis_read_reply_type(sock, &e->type, &elen) < 0) {
             return FAILURE;
         }
 
         /* Set our reply len */
-        r->len = len;
+        e->len = elen;
 
-        switch(r->type) {
+        switch(e->type) {
             case TYPE_ERR:
             case TYPE_LINE:
                 if (redis_sock_gets(sock,buf,sizeof(buf),&sz) < 0) {
                     return FAILURE;
                 }
-                r->len = (long long)sz;
-                if (status_strings) r->str = estrndup(buf, r->len);
+                e->len = (long long)sz;
+                if (status_strings) e->str = estrndup(buf, e->len);
                 break;
             case TYPE_INT:
-                r->integer = len;
+                e->integer = elen;
                 break;
             case TYPE_BULK:
-                if (r->len >= 0) {
-                    r->str = redis_sock_read_bulk_reply(sock,r->len);
-                    if (!r->str) {
+                if (e->len >= 0) {
+                    e->str = redis_sock_read_bulk_reply(sock,e->len);
+                    if (!e->str) {
                         return FAILURE;
                     }
                 }
                 break;
             case TYPE_MULTIBULK:
-                r->elements = r->len;
-                if (r->elements > 0) {
-                    r->element = ecalloc(r->len, sizeof(*r->element));
-                    if (cluster_multibulk_resp_recursive(sock, r->elements, r->element, status_strings) < 0) {
-                        return FAILURE;
-                    }
+                e->elements = e->len;
+                if (e->elements > 0 &&
+                    cluster_multibulk_resp_recursive(sock, e, e->len, status_strings) < 0)
+                {
+                    return FAILURE;
                 }
                 break;
             default:
@@ -283,12 +291,11 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
             break;
         case TYPE_MULTIBULK:
             r->elements = len;
-            if (r->elements > 0) {
-                r->element = ecalloc(len, sizeof(clusterReply*));
-                if (cluster_multibulk_resp_recursive(redis_sock, len, r->element, line_reply != NULL) < 0) {
-                    cluster_free_reply(r, 1);
-                    return NULL;
-                }
+            if (r->elements > 0 &&
+                cluster_multibulk_resp_recursive(redis_sock, r, len, line_reply != NULL) < 0)
+            {
+                cluster_free_reply(r, 1);
+                return NULL;
             }
             break;
         default:
@@ -2745,7 +2752,7 @@ cluster_vinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         CLUSTER_RETURN_FALSE(c);
     }
 
-    array_init_size(&z_ret, c->reply_len / 2);
+    redis_array_init_reply(&z_ret, c->reply_len / 2);
     if (redis_read_vinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
         zval_ptr_dtor_nogc(&z_ret);
         CLUSTER_RETURN_FALSE(c);

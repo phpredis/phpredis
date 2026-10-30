@@ -257,6 +257,15 @@ void redis_conf_string(const HashTable *ht, const char *key, size_t keylen, zend
 void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret, int copy, int dtor);
 void redis_conf_auth(const HashTable *ht, const char *key, size_t keylen, zend_string **user, zend_string **pass);
 
+/* Server supplied element counts are only a sizing hint. Cap the preallocation
+ * so a bogus count can't trigger a huge (fatal) allocation before any elements
+ * have actually arrived. The array still grows as needed. */
+#define REDIS_REPLY_PRESIZE_MAX 1024
+
+static inline void redis_array_init_reply(zval *z, long long count) {
+    array_init_size(z, count > 0 ? MIN(count, REDIS_REPLY_PRESIZE_MAX) : 0);
+}
+
 static inline char *redis_sock_get_line(RedisSock *redis_sock, char *buf, size_t buf_size, size_t *nread) {
     char *const res = php_stream_get_line(redis_sock->stream, buf, buf_size, nread);
     if (res != NULL)
