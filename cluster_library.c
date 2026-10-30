@@ -2198,7 +2198,8 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
 
         // Get the next subscribe response
         if (!cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 1, mbulk_resp_loop, &z_tab) ||
-            (z_type = zend_hash_index_find(Z_ARRVAL(z_tab), 0)) == NULL
+            (z_type = zend_hash_index_find(Z_ARRVAL(z_tab), 0)) == NULL ||
+            Z_TYPE_P(z_type) != IS_STRING
         ) {
             break;
         }
