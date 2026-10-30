@@ -5126,9 +5126,7 @@ void redisSetScanCursor(zval *zv, uint64_t cursor) {
 /* Get a Redis SCAN cursor value out of a zval.  These are always taken as a
  * reference argument that that must be `null`, `int`, or `string`.  */
 uint64_t redisGetScanCursor(zval *zv, zend_bool *was_zero) {
-    ZEND_ASSERT(zv != NULL && (Z_TYPE_P(zv) == IS_LONG ||
-                               Z_TYPE_P(zv) == IS_STRING ||
-                               Z_TYPE_P(zv) == IS_NULL));
+    ZEND_ASSERT(zv != NULL);
 
     if (Z_TYPE_P(zv) == IS_NULL) {
         convert_to_long(zv);
@@ -5137,10 +5135,14 @@ uint64_t redisGetScanCursor(zval *zv, zend_bool *was_zero) {
     } else if (Z_TYPE_P(zv) == IS_STRING) {
         *was_zero = Z_STRLEN_P(zv) == 1 && Z_STRVAL_P(zv)[0] == '0';
         return strtoull(Z_STRVAL_P(zv), NULL, 10);
-    } else {
+    } else if (Z_TYPE_P(zv) == IS_LONG) {
         *was_zero = Z_LVAL_P(zv) == 0;
         return Z_LVAL_P(zv);
     }
+
+    zend_type_error("Scan cursor must be of type int|string|null, %s given", zend_zval_type_name(zv));
+    *was_zero = 0;
+    return 0;
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
