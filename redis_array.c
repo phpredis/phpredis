@@ -1055,14 +1055,23 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
         if(ra->index) { /* add MULTI */
             ra_index_multi(&ra->redis[n], MULTI);
             call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
+            zval_ptr_dtor_nogc(&z_ret);
+            ZVAL_NULL(&z_ret);
             ra_index_del(&z_argarray, &ra->redis[n]); /* use SREM to remove keys from node index */
             ra_index_exec(&ra->redis[n], &z_ret, 0); /* run EXEC */
         } else {
             call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
         }
-        total += Z_LVAL(z_ret);    /* increment total */
-
         zval_ptr_dtor_nogc(&z_argarray);
+
+        if (Z_TYPE(z_ret) != IS_LONG) {
+            zval_ptr_dtor_nogc(&z_ret);
+            zval_ptr_dtor_nogc(&z_fun);
+            RETVAL_FALSE;
+            goto cleanup;
+        }
+
+        total += Z_LVAL(z_ret);    /* increment total */
         zval_ptr_dtor_nogc(&z_ret);
     }
 

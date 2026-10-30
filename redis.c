@@ -1659,7 +1659,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
 
     /* Get our SCAN cursor short circuiting if we're done */
     cursor = redisGetScanCursor(z_cursor, &completed);
-    if (completed)
+    if (EG(exception) || completed)
         RETURN_FALSE;
 
     if(key)
@@ -1691,7 +1691,8 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
 
         if (redis_process_request(redis_sock, cmd) != SUCCESS ||
             redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                      redis_sock, type, &cursor) < 0)
+                                      redis_sock, type, &cursor) < 0 ||
+            Z_TYPE_P(return_value) != IS_ARRAY)
         {
             if (key)
                 zend_string_release(key);
