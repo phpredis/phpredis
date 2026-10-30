@@ -181,7 +181,7 @@ RedisArray *ra_load_array(const char *name) {
     array_init(&z_params_hosts);
     if ((iptr = zend_ini_string_literal("redis.arrays.hosts")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_hosts);
-        if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_hosts), name, name_len)) != NULL) {
+        if ((z_data = redis_hash_str_find_type(Z_ARRVAL(z_params_hosts), name, name_len, IS_ARRAY)) != NULL) {
             hHosts = Z_ARRVAL_P(z_data);
         }
     }
@@ -1200,6 +1200,10 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, zend_string *hostname, zend_bool
     /* for each key, redistribute */
     ZEND_HASH_FOREACH_VAL(h_keys, z_ele) {
         int pos = 0;
+
+        if (Z_TYPE_P(z_ele) != IS_STRING)
+            continue;
+
         /* check that we're not moving to the same node. */
         zval *z_target = ra_find_node(ra, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), &pos);
 

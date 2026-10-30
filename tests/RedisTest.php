@@ -7453,6 +7453,27 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(0, $p_count);
     }
 
+    public function testScanCursorType() {
+        $clusterClass = $this->getRedisClusterClass();
+        foreach (['scan', 'sscan', 'hscan', 'zscan'] as $method) {
+            foreach ([[], new stdClass, true, false, 1.5] as $cursor) {
+                $original = $cursor;
+                try {
+                    if ($method !== 'scan') {
+                        $this->redis->$method('key', $cursor);
+                    } else if ($this->redis instanceof $clusterClass) {
+                        $this->redis->scan($cursor, $this->redis->_masters()[0]);
+                    } else {
+                        $this->redis->scan($cursor);
+                    }
+                    $this->assert('Invalid scan cursor accepted');
+                } catch (TypeError $e) {
+                    $this->assertEquals($original, $cursor);
+                }
+            }
+        }
+    }
+
     /* Make sure we capture errors when scanning */
     public function testScanErrors() {
         $this->redis->set('scankey', 'simplekey');
