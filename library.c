@@ -2108,7 +2108,7 @@ redis_command_info_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     redis_array_init_reply(&z_ret, numElems);
-    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    redis_read_multibulk_recursive(redis_sock, numElems, 1, &z_ret);
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
 
     return SUCCESS;

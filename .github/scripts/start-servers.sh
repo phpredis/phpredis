@@ -3,7 +3,7 @@ set -euo pipefail
 
 backend=${1:?Expected redis, valkey or dragonfly}
 server="$backend-server"
-cli="${1}-cli"
+cli="$backend-cli"
 if [[ $backend == dragonfly ]]; then
     server=redis-server
     cli=redis-cli
@@ -17,8 +17,9 @@ start_server() {
     shift
     mkdir -p "$state/$name"
     if [[ $backend == dragonfly ]]; then
+        # The SETBIT boundary test allocates 256 MiB for one key.
         dragonfly --bind=127.0.0.1 --dir="$state/$name" --aclfile="$acl" \
-            --proactor_threads=1 --maxmemory=256mb --maxclients=1000 \
+            --proactor_threads=1 --maxmemory=1gb --maxclients=1000 \
             --version_check=false "$@" >"$state/$name/server.log" 2>&1 &
         return
     fi
@@ -40,6 +41,10 @@ wait_for() {
 }
 
 socket_port=0
+if [[ $backend == dragonfly ]]; then
+    # shortcut: port=0 ignores ACLs; remove the TCP listener when Dragonfly fixes this.
+    socket_port=6383
+fi
 for port in {6379..6382}; do
     start_server "$port" --port "$port"
 done
