@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 1fbc36b72f9f9ebcbd57e1dc385e3f60de1fc54e */
+ * Stub hash: 6a68da5f60754572a412c221e752b43b75c07f4f */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -2345,13 +2345,33 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string_release(const_OPT_BACKOFF_CAP_name);
 
 
+	zend_string *attribute_name_SensitiveParameter_func___construct_arg0_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 0, attribute_name_SensitiveParameter_func___construct_arg0_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func___construct_arg0_0);
+
 	zend_string *attribute_name_SensitiveParameter_func_auth_arg0_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
 	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "auth", sizeof("auth") - 1), 0, attribute_name_SensitiveParameter_func_auth_arg0_0, 0);
 	zend_string_release(attribute_name_SensitiveParameter_func_auth_arg0_0);
 
+	zend_string *attribute_name_SensitiveParameter_func_connect_arg6_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "connect", sizeof("connect") - 1), 6, attribute_name_SensitiveParameter_func_connect_arg6_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_connect_arg6_0);
+
 	zend_string *attribute_name_SensitiveParameter_func_migrate_arg7_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
 	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "migrate", sizeof("migrate") - 1), 7, attribute_name_SensitiveParameter_func_migrate_arg7_0, 0);
 	zend_string_release(attribute_name_SensitiveParameter_func_migrate_arg7_0);
+
+	zend_string *attribute_name_SensitiveParameter_func_open_arg6_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "open", sizeof("open") - 1), 6, attribute_name_SensitiveParameter_func_open_arg6_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_open_arg6_0);
+
+	zend_string *attribute_name_SensitiveParameter_func_pconnect_arg6_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "pconnect", sizeof("pconnect") - 1), 6, attribute_name_SensitiveParameter_func_pconnect_arg6_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_pconnect_arg6_0);
+
+	zend_string *attribute_name_SensitiveParameter_func_popen_arg6_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "popen", sizeof("popen") - 1), 6, attribute_name_SensitiveParameter_func_popen_arg6_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_popen_arg6_0);
 
 	return class_entry;
 }
