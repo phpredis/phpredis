@@ -9337,6 +9337,18 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testLastErrorAfterFailedConnect() {
+        $class = $this->getRedisClass();
+        $redis = new $class();
+
+        $this->assertThrowsMatch($redis, function ($redis) {
+            $redis->connect('/nonexistent/phpredis.sock');
+        });
+
+        $this->assertNull($redis->getLastError());
+        $this->assertTrue($redis->clearLastError());
+    }
+
     /* Regression test for GitHub PR #2802). Make sure we don't leak the
      * context array when explicitly reconnecting in a loop */
     public function testTlsReconnect() {

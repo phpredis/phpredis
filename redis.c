@@ -1384,8 +1384,8 @@ PHP_METHOD(Redis, getLastError) {
     RedisSock *redis_sock;
 
     // Grab socket
-    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
-        RETURN_FALSE;
+    if ((redis_sock = redis_sock_get_instance(getThis(), 1)) == NULL) {
+        RETURN_NULL();
     }
 
     /* Return our last error or NULL if we don't have one */
@@ -1399,8 +1399,8 @@ PHP_METHOD(Redis, clearLastError) {
     RedisSock *redis_sock;
 
     // Grab socket
-    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
-        RETURN_FALSE;
+    if ((redis_sock = redis_sock_get_instance(getThis(), 1)) == NULL) {
+        RETURN_TRUE;
     }
 
     redis_sock_clear_err(redis_sock);
