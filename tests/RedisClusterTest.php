@@ -44,6 +44,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testDoublePipeNoOp() { $this->markTestSkipped(); }
     public function testSwapDB() { $this->markTestSkipped(); }
     public function testConnectException() { $this->markTestSkipped(); }
+    public function testLastErrorAfterFailedConnect() { $this->markTestSkipped(); }
     public function testTlsConnect() { $this->markTestSkipped(); }
     public function testTlsReconnect() { $this->markTestSkipped(); }
     public function testReset() { $this->markTestSkipped(); }
