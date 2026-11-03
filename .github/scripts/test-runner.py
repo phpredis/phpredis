@@ -1,7 +1,9 @@
-"""Check that CI runs every suite and propagates failures through tee."""
+"""Check suite selection and failure propagation through tee."""
 
+from itertools import product
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 
@@ -16,27 +18,32 @@ with tempfile.TemporaryDirectory() as directory:
     valgrind = root / "valgrind"
     valgrind.write_text('#!/bin/bash\n[[ $1 == --error-exitcode=1 ]] || exit 2\nshift\nexec "$@"\n')
     valgrind.chmod(0o755)
-    for command in (["php"], ["valgrind", "--error-exitcode=1", "php"]):
+    commands = (["php"], ["valgrind", "--error-exitcode=1", "php"])
+    for command, selection in product(commands, ("", "Redis RedisCluster")):
+        selected = selection.split() if selection else suites
         for failure in ["", *suites]:
+            shutil.rmtree(root / "phpredis-tests", ignore_errors=True)
             summary = root / "summary"
             summary.write_text("")
             result = subprocess.run(
                 ["bash", str(runner), *command],
                 env={**os.environ, "PATH": f"{root}:{os.environ['PATH']}",
                      "RUNNER_TEMP": directory, "GITHUB_STEP_SUMMARY": str(summary),
-                     "FAIL_SUITE": failure},
+                     "FAIL_SUITE": failure, "PHPREDIS_TEST_SUITES": selection},
                 capture_output=True, text=True,
             )
-            assert result.returncode == bool(failure), result.stdout + result.stderr
+            assert result.returncode == (failure in selected), result.stdout + result.stderr
             assert summary.read_text().splitlines() == [
                 f"- {command[0]} / {suite}: {'FAIL' if suite == failure else 'PASS'}"
-                for suite in suites
+                for suite in selected
             ]
-            for suite in suites:
+            logs = root / "phpredis-tests" / command[0]
+            assert sorted(p.stem for p in logs.glob("*.log")) == sorted(selected)
+            for suite in selected:
                 expected = f"tests/TestRedis.php --class {suite} --auth phpredis --nocolors"
                 if suite != "RedisSentinel":
                     expected += " --user phpredis"
                 log = root / "phpredis-tests" / command[0] / f"{suite}.log"
                 assert log.read_text().strip() == expected
 
-print("Test runner: success and every suite failure checked with PHP and Valgrind prefixes")
+print("Test runner: default and selected suites checked with PHP and Valgrind prefixes")

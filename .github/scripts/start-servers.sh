@@ -46,10 +46,18 @@ start_server tls --port 0 --tls-port 6378 --tls-auth-clients no \
     --tls-cert-file "$state/server.crt" --tls-key-file "$state/server.key" \
     --tls-ca-cert-file "$state/server.crt"
 
+cluster_args=()
+REDISCLI_AUTH=phpredis wait_for --user phpredis PING
+if REDISCLI_AUTH=phpredis "$cli" --user phpredis CONFIG GET cluster-bus-port-protected-mode |
+    grep -q '^cluster-bus-port-protected-mode$'; then
+    # The test cluster's plaintext bus is bound to loopback only.
+    cluster_args+=(--cluster-bus-port-protected-mode no)
+fi
+
 : > tests/nodes/nodemap
 for port in {7000..7005}; do
     start_server "$port" --port "$port" --cluster-enabled yes \
-        --cluster-config-file nodes.conf
+        --cluster-config-file nodes.conf "${cluster_args[@]}"
     echo "127.0.0.1:$port" >> tests/nodes/nodemap
 done
 
