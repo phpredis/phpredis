@@ -261,6 +261,20 @@ class Redis {
      */
     public const SERIALIZER_JSON = UNKNOWN;
 
+#ifdef HAVE_REDIS_PHPSER
+    /**
+     * Sets the serializer to phpser. Note that PhpRedis must be compiled
+     * with phpser support to use this serializer. When `phpser.key` is set,
+     * values are HMAC-signed and a value that fails verification is returned
+     * as `false`.
+     *
+     * @var int
+     * @cvalue REDIS_SERIALIZER_PHPSER
+     *
+     */
+    public const SERIALIZER_PHPSER = UNKNOWN;
+#endif
+
     /**
      * Disables compression.
      *
@@ -609,7 +623,7 @@ class Redis {
      * $redis = new Redis(['host' => '127.0.0.1', 'port' => 6380]);
      *
      */
-    public function __construct(?array $options = null);
+    public function __construct(#[\SensitiveParameter] ?array $options = null);
 
     /**
      * Destructor to clean up the Redis object.
@@ -1092,6 +1106,14 @@ class Redis {
     public function close(): bool;
 
     /**
+     * Closes and reopens the connection, restoring authentication and the selected database.
+     * Pending transactions and pipelines are discarded. Client options are preserved.
+     *
+     * @throws RedisException if never connected, explicitly closed, or reconnection fails.
+     */
+    public function reconnect(): bool;
+
+    /**
      * Execute Redis COMMAND subcommands.
      *
      * @see https://redis.io/docs/latest/commands/command/
@@ -1154,7 +1176,7 @@ class Redis {
      * }
      */
     public function connect(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null,
-                            int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
+                            int $retry_interval = 0, float $read_timeout = 0, #[\SensitiveParameter] ?array $context = null): bool;
 
     /**
      * Make a copy of a key.
@@ -3195,7 +3217,7 @@ class Redis {
      * $redis->open('127.0.0.1', 6379);
      *
      */
-    public function open(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
+    public function open(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, #[\SensitiveParameter] ?array $context = null): bool;
 
     /**
      * Connects to a Redis server creating or reusing a persistent connection.
@@ -3220,7 +3242,7 @@ class Redis {
      *    echo "Could not connect to Redis: ", $ex->getMessage(), "\n";
      * }
      */
-    public function pconnect(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
+    public function pconnect(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, #[\SensitiveParameter] ?array $context = null): bool;
 
     /**
      * Remove the expiration from a key.
@@ -3368,7 +3390,7 @@ class Redis {
      * $redis->popen('127.0.0.1', 6379, 0.0, 'cache');
      *
      */
-    public function popen(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
+    public function popen(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, #[\SensitiveParameter] ?array $context = null): bool;
 
     /**
      * Set a key with an expiration time in milliseconds.
@@ -4132,7 +4154,7 @@ class Redis {
      * | --------------- | ---- | ----------- |
      * | OPT_MAX_RETRIES | int  | The maximum number of times Redis will attempt to reconnect if it gets disconnected, before throwing an exception. |
      * | OPT_SCAN        | enum | Redis::SCAN_RETRY, or Redis::SCAN_NORETRY.  Whether PhpRedis should automatically SCAN again when zero keys but a nonzero iterator are returned. |
-     * | OPT_SERIALIZER  | enum | Set the automatic data serializer.<br>`Redis::SERIALIZER_NONE`<br>`Redis::SERIALIZER_PHP`<br>`Redis::SERIALIZER_IGBINARY`<br>`Redis::SERIALIZER_MSGPACK`, `Redis::SERIALIZER_JSON`|
+     * | OPT_SERIALIZER  | enum | Set the automatic data serializer.<br>`Redis::SERIALIZER_NONE`<br>`Redis::SERIALIZER_PHP`<br>`Redis::SERIALIZER_IGBINARY`<br>`Redis::SERIALIZER_MSGPACK`, `Redis::SERIALIZER_JSON`<br>`Redis::SERIALIZER_PHPSER`|
      * | OPT_PREFIX | string | A string PhpRedis will use to prefix every key we read or write. |
      * | OPT_READ_TIMEOUT | float | How long PhpRedis will block for a response from Redis before throwing a 'read error on connection' exception. |
      * | OPT_TCP_KEEPALIVE | bool |   Set or disable TCP_KEEPALIVE on the connection. |

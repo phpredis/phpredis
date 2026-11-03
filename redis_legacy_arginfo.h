@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 702da70525cb89e3444713287350a4985fe88567 */
+ * Stub hash: 6a68da5f60754572a412c221e752b43b75c07f4f */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -121,6 +121,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_client, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_close arginfo_class_Redis___destruct
+
+#define arginfo_class_Redis_reconnect arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_command, 0, 0, 0)
 	ZEND_ARG_INFO(0, opt)
@@ -1215,6 +1217,7 @@ ZEND_METHOD(Redis, lmpop);
 ZEND_METHOD(Redis, clearLastError);
 ZEND_METHOD(Redis, client);
 ZEND_METHOD(Redis, close);
+ZEND_METHOD(Redis, reconnect);
 ZEND_METHOD(Redis, command);
 ZEND_METHOD(Redis, config);
 ZEND_METHOD(Redis, connect);
@@ -1512,6 +1515,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, clearLastError, arginfo_class_Redis_clearLastError, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, client, arginfo_class_Redis_client, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, close, arginfo_class_Redis_close, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, reconnect, arginfo_class_Redis_reconnect, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, command, arginfo_class_Redis_command, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, config, arginfo_class_Redis_config, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, connect, arginfo_class_Redis_connect, ZEND_ACC_PUBLIC)
@@ -1958,6 +1962,14 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string *const_SERIALIZER_JSON_name = zend_string_init_interned("SERIALIZER_JSON", sizeof("SERIALIZER_JSON") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_SERIALIZER_JSON_name, &const_SERIALIZER_JSON_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_SERIALIZER_JSON_name);
+#if defined(HAVE_REDIS_PHPSER)
+
+	zval const_SERIALIZER_PHPSER_value;
+	ZVAL_LONG(&const_SERIALIZER_PHPSER_value, REDIS_SERIALIZER_PHPSER);
+	zend_string *const_SERIALIZER_PHPSER_name = zend_string_init_interned("SERIALIZER_PHPSER", sizeof("SERIALIZER_PHPSER") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_SERIALIZER_PHPSER_name, &const_SERIALIZER_PHPSER_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_SERIALIZER_PHPSER_name);
+#endif
 
 	zval const_COMPRESSION_NONE_value;
 	ZVAL_LONG(&const_COMPRESSION_NONE_value, REDIS_COMPRESSION_NONE);

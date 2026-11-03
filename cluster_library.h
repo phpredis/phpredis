@@ -327,17 +327,14 @@ typedef struct clusterDistList {
  * we'll want to re-integrate into one running array, except for the last
  * command execution, in which we'll want to return the value (or add it) */
 typedef struct clusterMultiCtx {
-    /* Our running array */
-    zval *z_multi;
+    /* Shared reference to the running result. */
+    zval z_multi;
 
     /* How many keys did we request for this bit */
     int count;
 
     /* Is this the last entry */
     short last;
-
-    /* Whether the aggregate zval was transferred to a result */
-    zend_bool transferred;
 } clusterMultiCtx;
 
 /* Container for things like MGET, MSET, and MSETNX, which split the command
@@ -367,15 +364,15 @@ typedef struct clusterReply {
 } clusterReply;
 
 /* Direct variant response handler */
-clusterReply *cluster_read_resp(redisCluster *c, int status_strings);
+clusterReply *cluster_read_resp(const redisCluster *c, int status_strings);
 clusterReply *cluster_read_sock_resp(RedisSock *redis_sock,
-    REDIS_REPLY_TYPE type, char *line_reply, long long reply_len);
+    REDIS_REPLY_TYPE type, const char *line_reply, long long reply_len);
 void cluster_free_reply(clusterReply *reply, int free_data);
 
 /* Cluster distribution helpers for WATCH */
 HashTable *cluster_dist_create(void);
 void cluster_dist_free(HashTable *ht);
-int cluster_dist_add_key(redisCluster *c, HashTable *ht, zend_string *key);
+int cluster_dist_add_key(const redisCluster *c, HashTable *ht, zend_string *key);
 
 /* Aggregation for multi commands like MGET, MSET, and MSETNX */
 static zend_always_inline void
@@ -398,9 +395,9 @@ void cluster_multi_add(clusterMultiCmd *mc, const char *data, int data_len);
 void cluster_multi_fini(clusterMultiCmd *mc);
 
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
-unsigned short cluster_hash_key_zval(zval *key);
+unsigned short cluster_hash_key_zval(const zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
-unsigned short cluster_hash_key_zstr(zend_string *key);
+unsigned short cluster_hash_key_zstr(const zend_string *key);
 
 /* Validate and sanitize cluster construction args */
 zend_string** cluster_validate_args(double timeout, double read_timeout,
@@ -432,12 +429,13 @@ cluster_send_rcmd_ex(redisCluster *c, short slot, RedisCmd *cmd)
 }
 
 PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force);
+PHP_REDIS_API int cluster_reconnect(redisCluster *c);
 
 PHP_REDIS_API int cluster_send_exec(redisCluster *c, short slot);
 PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot);
 PHP_REDIS_API int cluster_abort_exec(redisCluster *c);
 
-PHP_REDIS_API short cluster_find_slot(redisCluster *c, const char *host,
+PHP_REDIS_API short cluster_find_slot(const redisCluster *c, const char *host,
     unsigned short port);
 PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, const char *cmd,
     int cmd_len, REDIS_REPLY_TYPE rtype);
@@ -448,20 +446,20 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     int failover, int persistent);
 PHP_REDIS_API void cluster_free(redisCluster *c, int free_ctx);
 PHP_REDIS_API void cluster_free_queue(redisCluster *c);
-PHP_REDIS_API void cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds);
+PHP_REDIS_API void cluster_init_seeds(redisCluster *c, zend_string *const *seeds, uint32_t nseeds);
 REDIS_NODISCARD PHP_REDIS_API int cluster_map_keyspace(redisCluster *c);
 PHP_REDIS_API void cluster_free_node(redisClusterNode *node);
 
 /* Functions for interacting with cached slots maps */
 PHP_REDIS_API redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes);
 PHP_REDIS_API void cluster_cache_free(redisCachedCluster *rcc);
-PHP_REDIS_API void cluster_init_cache(redisCluster *c, redisCachedCluster *rcc);
+PHP_REDIS_API void cluster_init_cache(redisCluster *c, const redisCachedCluster *rcc);
 
 /* Functions to facilitate cluster slot caching */
 
 PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes);
 PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash);
-void cluster_cache_clear(redisCluster *c);
+void cluster_cache_clear(const redisCluster *c);
 
 /*
  * Redis Cluster response handlers.  Our response handlers generally take the

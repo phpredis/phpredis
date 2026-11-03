@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 50774f3658dcf5ba095a2a2965d109f9f822e88f */
+ * Stub hash: 5ac98cea393afb97fd29516e26cde8480b7da2a0 */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisArray___call, 0, 2, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, function_name, IS_STRING, 0)
@@ -187,8 +187,15 @@ static zend_class_entry *register_class_RedisArray(void)
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
 #if (PHP_VERSION_ID >= 80100)
 	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#elif (PHP_VERSION_ID >= 80000)
+	class_entry->ce_flags |= 0;
 #endif
 #endif
+
+
+	zend_string *attribute_name_SensitiveParameter_func___construct_arg1_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 1, attribute_name_SensitiveParameter_func___construct_arg1_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func___construct_arg1_0);
 
 	return class_entry;
 }

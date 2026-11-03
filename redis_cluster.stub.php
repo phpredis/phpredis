@@ -256,6 +256,16 @@ class RedisCluster {
     public function close(): bool;
 
     /**
+     * Closes all node connections, then reopens all known masters and previously
+     * connected replicas, restoring authentication without refreshing topology.
+     * Pending transactions are discarded. Client options are preserved.
+     * If reconnection fails, all node connections are closed.
+     *
+     * @throws RedisClusterException if there are no nodes or reconnection fails.
+     */
+    public function reconnect(): bool;
+
+    /**
      * Execute Redis CLUSTER subcommands on the specified node.
      */
     public function cluster(string|array $key_or_address, string $command, mixed ...$extra_args): mixed;

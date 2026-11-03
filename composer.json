@@ -27,6 +27,10 @@
                 "description": "Enable igbinary serializer support"
             },
             {
+                "name": "enable-redis-phpser",
+                "description": "Enable phpser serializer support"
+            },
+            {
                 "name": "enable-redis-msgpack",
                 "description": "Enable msgpack serializer support"
             },

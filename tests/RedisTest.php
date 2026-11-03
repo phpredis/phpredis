@@ -36,6 +36,8 @@ class Redis_Test extends TestSuite {
             $result['json'] = Redis::SERIALIZER_JSON;
         if (defined('Redis::SERIALIZER_MSGPACK'))
             $result['msgpack'] = Redis::SERIALIZER_MSGPACK;
+        if (defined('Redis::SERIALIZER_PHPSER'))
+            $result['phpser'] = Redis::SERIALIZER_PHPSER;
 
         return $result;
     }
@@ -3687,6 +3689,50 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testHMGetNumericFieldIdentity() {
+        $key = 'hash:numeric-field-identity';
+        $hash = [
+            7 => 'seven', '+7' => 'plus-seven', '07' => 'zero-seven',
+            -7 => 'negative-seven', '-07' => 'negative-zero-seven',
+            0 => 'zero', '-0' => 'negative-zero', '00' => 'double-zero',
+            8 => 'eight', PHP_INT_MIN => 'min', PHP_INT_MAX => 'max',
+        ];
+
+        $this->assertIsInt($this->redis->del($key));
+        $this->assertTrue($this->redis->hMSet($key, $hash));
+
+        /* Fetch aliases separately so a rewritten field cannot hide behind
+         * another requested field. Canonical integer strings keep integer keys. */
+        foreach ($hash as $field => $value) {
+            $this->assertEquals([$field => $value],
+                $this->redis->hMGet($key, [(string)$field]));
+        }
+
+        $fields = array_map('strval', array_keys($hash));
+        $fields = array_merge($fields, ['+8', '08', '-00', 'missing', 7, '07']);
+        $expected = $hash + ['+8' => false, '08' => false, '-00' => false, 'missing' => false];
+
+        /* Distinct spellings must survive together, including when another
+         * spelling exists but the requested field does not. Duplicates collapse. */
+        $this->assertEquals($expected, $this->redis->hMGet($key, $fields));
+
+        $modes = [Redis::MULTI];
+        if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+
+        foreach ($modes as $mode) {
+            $this->redis->multi($mode)
+                ->hMGet($key, $fields)
+                ->hMGet($key, ['07', '+7', '-0', '7']);
+
+            $this->assertEquals([
+                $expected,
+                ['07' => 'zero-seven', '+7' => 'plus-seven', '-0' => 'negative-zero', 7 => 'seven'],
+            ], $this->redis->exec());
+        }
+
+        $this->assertEquals(1, $this->redis->del($key));
+    }
+
     public function testHRandField() {
         if (version_compare($this->version, '6.2.0') < 0)
             $this->MarkTestSkipped();
@@ -5548,6 +5594,70 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
+    public function testSerializerPhpser() {
+        if ( ! defined('Redis::SERIALIZER_PHPSER'))
+            $this->markTestSkipped('Redis::SERIALIZER_PHPSER is not defined');
+
+        $this->checkSerializer(Redis::SERIALIZER_PHPSER);
+
+        // with prefix
+        $this->redis->setOption(Redis::OPT_PREFIX, 'test:');
+        $this->checkSerializer(Redis::SERIALIZER_PHPSER);
+        $this->redis->setOption(Redis::OPT_PREFIX, '');
+
+        /* With phpser.key set, a value that fails verification or decoding
+           comes back as false and never as the raw bytes stored in Redis.
+           Without a key, phpser falls back to the raw bytes like igbinary
+           and the PHP serializer, so counters and foreign writes stay
+           readable. */
+        $signed = strlen((string)ini_get('phpser.key')) > 0;
+        $value = ['a' => 1, 'b' => [true, null, 1.5]];
+        $keys = ['phpser-raw', 'phpser-empty', 'phpser-plain', 'phpser-tampered',
+                 'phpser-context', 'phpser-incr'];
+
+        $this->redis->del($keys);
+
+        $this->redis->set('phpser-raw', 'not a phpser value');
+        $this->redis->set('phpser-empty', '');
+        $this->redis->set('phpser-plain', phpser_serialize($value));
+        $this->redis->set('phpser-incr', 5);
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHPSER);
+        $this->assertEquals(6, $this->redis->incr('phpser-incr'));
+        $this->assertTrue($this->redis->set('phpser-tampered', $value));
+        $this->assertEquals($value, $this->redis->get('phpser-tampered'));
+
+        $this->assertThrowsMatch(NULL, function () {
+            @$this->redis->_unserialize('not a phpser value');
+        }, '/Invalid serialized data/');
+
+        if ($signed) {
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+            $payload = $this->redis->get('phpser-tampered');
+            $payload[0] = chr(ord($payload[0]) ^ 1);
+            $this->redis->set('phpser-tampered', $payload);
+            $this->redis->set('phpser-context', phpser_serialize_keyed($value, 'memcached'));
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHPSER);
+
+            foreach ($keys as $key) {
+                $this->assertFalse(@$this->redis->get($key));
+            }
+            $this->assertEquals(array_fill(0, count($keys), false),
+                                @$this->redis->mGet($keys));
+        } else {
+            $this->assertEquals('not a phpser value', $this->redis->get('phpser-raw'));
+            $this->assertEquals('', $this->redis->get('phpser-empty'));
+            $this->assertEquals('6', $this->redis->get('phpser-incr'));
+            $this->assertEquals($value, $this->redis->get('phpser-plain'));
+            $this->assertEquals(['not a phpser value', '', '6', $value],
+                $this->redis->mGet(['phpser-raw', 'phpser-empty', 'phpser-incr',
+                                    'phpser-plain']));
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        $this->redis->del($keys);
+    }
+
     private function checkSerializer($mode) {
         $this->redis->del('key');
         $this->assertEquals(Redis::SERIALIZER_NONE, $this->redis->getOption(Redis::OPT_SERIALIZER));   // default
@@ -6550,6 +6660,132 @@ class Redis_Test extends TestSuite {
         $this->assertFalse(@$this->redis->config('set', [0, 1, 2]));
     }
 
+    public function testReconnect() {
+        $class = $this->getRedisClass();
+        $key = uniqid('reconnect:', true);
+
+        foreach ([false, true] as $persistent) {
+            $client = new $class;
+            $connect = $persistent ? 'pconnect' : 'connect';
+            $this->assertTrue($client->$connect($this->getHost(), $this->getPort()));
+            if ($this->getAuth())
+                $this->assertTrue($client->auth($this->getAuth()));
+
+            try {
+                foreach ([3, 0, 5] as $db) {
+                    $this->assertTrue($client->select($db));
+                    $this->assertTrue($client->set($key, 'db' . $db));
+                    $id = $client->client('id');
+                    $this->assertTrue($client->reconnect());
+                    $this->assertTrue($client->isConnected());
+                    $this->assertNotEquals($id, $client->client('id'));
+                    $this->assertEquals($db, $client->getDbNum());
+                    $this->assertEquals('db' . $db, $client->get($key));
+                    $client->del($key);
+                }
+            } finally {
+                $client->close();
+            }
+        }
+    }
+
+    public function testReconnectNotConnected() {
+        $class = $this->getRedisClass();
+        $client = new $class;
+        $this->assertThrowsMatch($client, function ($client) {
+            $client->reconnect();
+        }, '/^Not connected$/');
+        $this->redis->close();
+        $this->assertThrowsMatch($this->redis, function ($client) {
+            $client->reconnect();
+        }, '/^Not connected$/');
+    }
+
+    public function testReconnectDiscardsQueue() {
+        $client = $this->redis;
+        $key = uniqid('reconnect-queue:', true);
+        $modes = $this->havePipeline() ? [Redis::MULTI, Redis::PIPELINE,
+                                         Redis::MULTI | Redis::PIPELINE] : [Redis::MULTI];
+        $client->setOption(Redis::OPT_PREFIX, 'reconnect:');
+        $client->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        if ($this->havePipeline())
+            $client->select(3);
+        try {
+            foreach ($modes as $mode) {
+                $client->set($key, ['before']);
+                $client->watch($key);
+                $client->multi($mode & Redis::PIPELINE ? Redis::PIPELINE : Redis::MULTI);
+                if ($mode === (Redis::MULTI | Redis::PIPELINE))
+                    $client->multi();
+                $client->set($key, ['queued']);
+                if ($this->havePipeline())
+                    $client->select(5)->select(0);
+                $this->assertTrue($client->reconnect());
+                if ($this->havePipeline())
+                    $this->assertEquals(3, $client->getDbNum());
+                $this->assertEquals('reconnect:', $client->getOption(Redis::OPT_PREFIX));
+                $this->assertEquals(Redis::SERIALIZER_PHP, $client->getOption(Redis::OPT_SERIALIZER));
+                $this->assertEquals(['before'], $client->get($key));
+                $this->assertTrue($client->set($key, ['after']));
+                $this->assertEquals([['after']], $client->multi()->get($key)->exec());
+            }
+        } finally {
+            $client->del($key);
+            $client->setOption(Redis::OPT_PREFIX, '');
+            $client->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+            if ($this->havePipeline())
+                $client->select(0);
+        }
+    }
+
+    public function testReconnectPooledConnection() {
+        if (!ini_get('redis.pconnect.pooling_enabled'))
+            $this->markTestSkipped('Requires connection pooling');
+
+        $class = $this->getRedisClass();
+        $client = new $class;
+        $other = new $class;
+        $pool = uniqid('reconnect-pool:', true);
+        foreach ([$client, $other] as $redis) {
+            $this->assertTrue($redis->pconnect($this->getHost(), $this->getPort(), 0, $pool));
+            if ($this->getAuth())
+                $this->assertTrue($redis->auth($this->getAuth()));
+        }
+        unset($redis);
+        $ids = [$client->client('id'), $other->client('id')];
+        $this->assertTrue($other->client('setname', 'must-not-be-reused'));
+        unset($other);
+
+        $this->assertTrue($client->reconnect());
+        $this->assertFalse(in_array($client->client('id'), $ids));
+        $this->assertFalse($client->client('getname'));
+        $client->close();
+    }
+
+    public function testReconnectFailure() {
+        if (!$this->minVersionCheck('6.0') || $this->is_keydb)
+            $this->markTestSkipped('Requires Redis ACLs');
+
+        $user = uniqid('reconnect-user-');
+        $client = $this->newInstance();
+        try {
+            $this->assertTrue($this->redis->acl('SETUSER', $user, 'on', '>before', '~*', '+@all'));
+            $this->assertTrue($client->auth([$user, 'before']));
+            $this->assertTrue($this->redis->acl('SETUSER', $user, 'resetpass', '>after'));
+            $this->assertThrowsMatch($client, function ($client) {
+                $client->reconnect();
+            });
+            $this->assertFalse($client->isConnected());
+
+            $this->assertTrue($this->redis->acl('SETUSER', $user, 'resetpass', '>before'));
+            $this->assertTrue($client->reconnect());
+            $this->assertTrue($client->ping());
+        } finally {
+            $client->close();
+            $this->redis->acl('DELUSER', $user);
+        }
+    }
+
     public function testReconnectSelect() {
         $key = 'reconnect-select';
         $value = 'Has been set!';
@@ -6768,9 +7004,38 @@ class Redis_Test extends TestSuite {
         $this->assertFalse($this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, 55555));
 
         foreach ([Redis::OPT_BACKOFF_BASE, Redis::OPT_BACKOFF_CAP] as $option) {
-            foreach ([500, 750] as $value) {
-                $this->redis->setOption($option, $value);
+            $limit = intdiv(PHP_INT_MAX, 1000);
+            foreach ([0, 500, 750, $limit] as $value) {
+                $this->assertTrue($this->redis->setOption($option, $value));
                 $this->assertEquals($value, $this->redis->getOption($option));
+            }
+
+            foreach ([-1, $limit + 1, PHP_INT_MAX] as $value) {
+                $this->assertFalse($this->redis->setOption($option, $value));
+                $this->assertEquals($limit, $this->redis->getOption($option));
+            }
+
+            $this->redis->setOption($option, 750);
+        }
+    }
+
+    public function testBackoffConstructorOptions() {
+        $class = $this->getRedisClass();
+        $limit = intdiv(PHP_INT_MAX, 1000);
+
+        foreach (['base' => Redis::OPT_BACKOFF_BASE, 'cap' => Redis::OPT_BACKOFF_CAP] as $name => $option) {
+            foreach ([0, 750, $limit] as $value) {
+                $redis = new $class(['backoff' => [$name => $value]]);
+                $this->assertEquals($value, $redis->getOption($option));
+            }
+
+            foreach ([-1, $limit + 1, PHP_INT_MAX] as $value) {
+                $ex = null;
+                try {
+                    new $class(['backoff' => [$name => $value]]);
+                } catch (Exception | ValueError $ex) {
+                }
+                $this->assertTrue($ex !== null);
             }
         }
     }
@@ -7186,6 +7451,27 @@ class Redis_Test extends TestSuite {
         $this->assertGT(0, $skips);
         $this->assertEquals(0., $p_score);
         $this->assertEquals(0, $p_count);
+    }
+
+    public function testScanCursorType() {
+        $clusterClass = $this->getRedisClusterClass();
+        foreach (['scan', 'sscan', 'hscan', 'zscan'] as $method) {
+            foreach ([[], new stdClass, true, false, 1.5] as $cursor) {
+                $original = $cursor;
+                try {
+                    if ($method !== 'scan') {
+                        $this->redis->$method('key', $cursor);
+                    } else if ($this->redis instanceof $clusterClass) {
+                        $this->redis->scan($cursor, $this->redis->_masters()[0]);
+                    } else {
+                        $this->redis->scan($cursor);
+                    }
+                    $this->assert('Invalid scan cursor accepted');
+                } catch (TypeError $e) {
+                    $this->assertEquals($original, $cursor);
+                }
+            }
+        }
     }
 
     /* Make sure we capture errors when scanning */
@@ -9049,6 +9335,18 @@ class Redis_Test extends TestSuite {
         }  catch (Exception $e) {
             $this->assertStringContains('timed out', $e->getMessage());
         }
+    }
+
+    public function testLastErrorAfterFailedConnect() {
+        $class = $this->getRedisClass();
+        $redis = new $class();
+
+        $this->assertThrowsMatch($redis, function ($redis) {
+            $redis->connect('/nonexistent/phpredis.sock');
+        });
+
+        $this->assertNull($redis->getLastError());
+        $this->assertTrue($redis->clearLastError());
     }
 
     /* Regression test for GitHub PR #2802). Make sure we don't leak the

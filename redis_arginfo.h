@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 702da70525cb89e3444713287350a4985fe88567 */
+ * Stub hash: 6a68da5f60754572a412c221e752b43b75c07f4f */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -127,6 +127,8 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_client, 0, 1, IS_MIX
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_close arginfo_class_Redis_clearLastError
+
+#define arginfo_class_Redis_reconnect arginfo_class_Redis_clearLastError
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_command, 0, 0, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, opt, IS_STRING, 1, "null")
@@ -1389,6 +1391,7 @@ ZEND_METHOD(Redis, lmpop);
 ZEND_METHOD(Redis, clearLastError);
 ZEND_METHOD(Redis, client);
 ZEND_METHOD(Redis, close);
+ZEND_METHOD(Redis, reconnect);
 ZEND_METHOD(Redis, command);
 ZEND_METHOD(Redis, config);
 ZEND_METHOD(Redis, connect);
@@ -1686,6 +1689,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, clearLastError, arginfo_class_Redis_clearLastError, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, client, arginfo_class_Redis_client, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, close, arginfo_class_Redis_close, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, reconnect, arginfo_class_Redis_reconnect, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, command, arginfo_class_Redis_command, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, config, arginfo_class_Redis_config, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, connect, arginfo_class_Redis_connect, ZEND_ACC_PUBLIC)
@@ -1979,6 +1983,8 @@ static zend_class_entry *register_class_Redis(void)
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
 #if (PHP_VERSION_ID >= 80100)
 	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#elif (PHP_VERSION_ID >= 80000)
+	class_entry->ce_flags |= 0;
 #endif
 #endif
 
@@ -2135,6 +2141,14 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string *const_SERIALIZER_JSON_name = zend_string_init_interned("SERIALIZER_JSON", sizeof("SERIALIZER_JSON") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_SERIALIZER_JSON_name, &const_SERIALIZER_JSON_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_SERIALIZER_JSON_name);
+#if defined(HAVE_REDIS_PHPSER)
+
+	zval const_SERIALIZER_PHPSER_value;
+	ZVAL_LONG(&const_SERIALIZER_PHPSER_value, REDIS_SERIALIZER_PHPSER);
+	zend_string *const_SERIALIZER_PHPSER_name = zend_string_init_interned("SERIALIZER_PHPSER", sizeof("SERIALIZER_PHPSER") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_SERIALIZER_PHPSER_name, &const_SERIALIZER_PHPSER_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_SERIALIZER_PHPSER_name);
+#endif
 
 	zval const_COMPRESSION_NONE_value;
 	ZVAL_LONG(&const_COMPRESSION_NONE_value, REDIS_COMPRESSION_NONE);
@@ -2331,13 +2345,33 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string_release(const_OPT_BACKOFF_CAP_name);
 
 
+	zend_string *attribute_name_SensitiveParameter_func___construct_arg0_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 0, attribute_name_SensitiveParameter_func___construct_arg0_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func___construct_arg0_0);
+
 	zend_string *attribute_name_SensitiveParameter_func_auth_arg0_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
 	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "auth", sizeof("auth") - 1), 0, attribute_name_SensitiveParameter_func_auth_arg0_0, 0);
 	zend_string_release(attribute_name_SensitiveParameter_func_auth_arg0_0);
 
+	zend_string *attribute_name_SensitiveParameter_func_connect_arg6_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "connect", sizeof("connect") - 1), 6, attribute_name_SensitiveParameter_func_connect_arg6_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_connect_arg6_0);
+
 	zend_string *attribute_name_SensitiveParameter_func_migrate_arg7_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
 	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "migrate", sizeof("migrate") - 1), 7, attribute_name_SensitiveParameter_func_migrate_arg7_0, 0);
 	zend_string_release(attribute_name_SensitiveParameter_func_migrate_arg7_0);
+
+	zend_string *attribute_name_SensitiveParameter_func_open_arg6_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "open", sizeof("open") - 1), 6, attribute_name_SensitiveParameter_func_open_arg6_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_open_arg6_0);
+
+	zend_string *attribute_name_SensitiveParameter_func_pconnect_arg6_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "pconnect", sizeof("pconnect") - 1), 6, attribute_name_SensitiveParameter_func_pconnect_arg6_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_pconnect_arg6_0);
+
+	zend_string *attribute_name_SensitiveParameter_func_popen_arg6_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "popen", sizeof("popen") - 1), 6, attribute_name_SensitiveParameter_func_popen_arg6_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_popen_arg6_0);
 
 	return class_entry;
 }
