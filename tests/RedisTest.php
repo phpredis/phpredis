@@ -7394,63 +7394,49 @@ class Redis_Test extends TestSuite {
 
         $this->redis->del('zset');
 
-        [$t_score, $p_score, $p_count] = [0, 0, 0];
+        $expected = $expected_pmem = [];
         $members = [];
         for ($i = 0; $i < 2000; $i++) {
+            $member = $i < 10 ? "pmem:$i" : "mem:$i";
             $members[] = $i;
-            if ($i < 10) {
-                $members[] = "pmem:$i";
-                $p_score += $i;
-                $p_count++;
-            } else {
-                $members[] = "mem:$i";
-            }
-
-            $t_score += $i;
+            $members[] = $member;
+            $expected[$member] = (float)$i;
+            if ($i < 10)
+                $expected_pmem[$member] = (float)$i;
         }
         $this->redis->zadd('zset', ...$members);
 
         // Scan them all
         $it = NULL;
+        $actual = [];
         while ($keys = $this->redis->zscan('zset', $it)) {
-            foreach ($keys as $mem => $f_score) {
-                $t_score -= $f_score;
-                $i--;
-            }
+            // SCAN may return the same member in multiple batches.
+            $actual += $keys;
         }
 
-        $this->assertEquals(0, $i);
-        $this->assertEquals(0., $t_score);
+        $this->assertEqualsCanonicalizing($expected, $actual, true);
 
         // Just scan 'pmem' members
         $it = NULL;
-        $p_score_old = $p_score;
-        $p_count_old = $p_count;
+        $actual = [];
         while ($keys = $this->redis->zscan('zset', $it, '*pmem*')) {
-            foreach ($keys as $mem => $f_score) {
-                $p_score -= $f_score;
-                $p_count -= 1;
-            }
+            $actual += $keys;
         }
-        $this->assertEquals(0., $p_score);
-        $this->assertEquals(0, $p_count);
+        $this->assertEqualsCanonicalizing($expected_pmem, $actual, true);
 
         // Turn off retrying and we should get some empty results
         $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
-        [$skips, $p_score, $p_count] = [0, $p_score_old, $p_count_old];
+        $skips = 0;
 
         $it = NULL;
+        $actual = [];
         while (($keys = $this->redis->zscan('zset', $it, '*pmem*')) !== FALSE) {
             if (count($keys) == 0) $skips++;
-            foreach ($keys as $mem => $f_score) {
-                $p_score -= $f_score;
-                $p_count -= 1;
-            }
+            $actual += $keys;
         }
         // We should still get all the keys, just with several empty results
         $this->assertGT(0, $skips);
-        $this->assertEquals(0., $p_score);
-        $this->assertEquals(0, $p_count);
+        $this->assertEqualsCanonicalizing($expected_pmem, $actual, true);
     }
 
     public function testScanCursorType() {
