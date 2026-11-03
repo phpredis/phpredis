@@ -179,6 +179,95 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  redis-unstable:
+    name: Redis unstable (PHP 8.5, allowed to fail)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    continue-on-error: true
+    env:
+      TEST_PHP_ARGS: -e
+      PHPREDIS_TEST_SUITES: Redis RedisCluster
+    steps:
+      - name: Checkout PhpRedis
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Check test orchestration
+        run: python3 .github/scripts/test-runner.py
+
+      - name: Install PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: json, igbinary, msgpack, :redis
+          coverage: none
+          tools: none
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update --allow-releaseinfo-change-label
+          sudo apt-get install -y --no-install-recommends libzstd-dev liblz4-dev libssl-dev
+
+      - name: Checkout Redis unstable
+        id: redis-source
+        run: |
+          git clone --depth 1 --branch unstable https://github.com/redis/redis.git "$RUNNER_TEMP/redis-src"
+          sha=$(git -C "$RUNNER_TEMP/redis-src" rev-parse HEAD)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Redis unstable commit: $sha" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cache Redis unstable
+        id: redis-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/redis-unstable
+          key: redis-unstable-ubuntu-22.04-${{ runner.arch }}-${{ steps.redis-source.outputs.sha }}-tls-v1
+
+      - name: Build Redis unstable
+        if: steps.redis-cache.outputs.cache-hit != 'true'
+        run: make -C "$RUNNER_TEMP/redis-src" -j"$(nproc)" BUILD_TLS=yes PREFIX="$RUNNER_TEMP/redis-unstable" install
+
+      - name: Add Redis unstable to PATH
+        run: echo "$RUNNER_TEMP/redis-unstable/bin" >> "$GITHUB_PATH"
+
+      - name: Build phpredis
+        run: |
+          phpize
+          ./configure \
+            --enable-redis-lzf \
+            --enable-redis-zstd \
+            --enable-redis-igbinary \
+            --enable-redis-msgpack \
+            --enable-redis-lz4 \
+            --with-liblz4
+          make -j"$(nproc)"
+          sudo make install
+          echo 'extension = redis.so' | sudo tee "$(php-config --ini-dir)"/90-redis.ini
+
+      - name: Attempt to shutdown default server
+        run: redis-cli SHUTDOWN NOSAVE || true
+
+      - name: Start test servers
+        run: |
+          redis-server --version | tee -a "$GITHUB_STEP_SUMMARY"
+          bash .github/scripts/start-servers.sh redis
+
+      - name: Run Redis and RedisCluster tests
+        run: bash .github/scripts/run-tests.sh php
+
+      - name: Upload diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: redis-unstable-php-8.5
+          path: |
+            config.log
+            ${{ runner.temp }}/phpredis-tests/**/*.log
+            ${{ runner.temp }}/phpredis-servers/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   macos:
     runs-on: macos-latest
     timeout-minutes: 30
