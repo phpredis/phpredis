@@ -6,8 +6,9 @@ mode=${1:?Expected a test command}
 logs="${RUNNER_TEMP:?}/phpredis-tests/$mode"
 mkdir -p "$logs"
 status=0
+read -r -a suites <<< "${PHPREDIS_TEST_SUITES:-Redis RedisArray RedisCluster RedisSentinel}"
 
-for suite in Redis RedisArray RedisCluster RedisSentinel; do
+for suite in "${suites[@]}"; do
     args=(--class "$suite" --auth phpredis --nocolors)
     if [[ $suite != RedisSentinel ]]; then
         args+=(--user phpredis)
