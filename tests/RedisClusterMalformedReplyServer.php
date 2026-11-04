@@ -1,0 +1,243 @@
+<?php
+
+/* Emit malformed RESP and routing failures to test cluster recovery. */
+
+function readLineFromClient($client) {
+    $line = @fgets($client);
+    return $line === false ? false : rtrim($line, "\r\n");
+}
+
+function readBytesFromClient($client, $length) {
+    $result = '';
+
+    while (strlen($result) < $length) {
+        $chunk = @fread($client, $length - strlen($result));
+        if ($chunk === false || $chunk === '') {
+            return false;
+        }
+        $result .= $chunk;
+    }
+
+    return $result;
+}
+
+function readCommandFromClient($client) {
+    $header = readLineFromClient($client);
+    if ($header === false) {
+        return false;
+    }
+    if ($header === '' || $header[0] !== '*') {
+        return false;
+    }
+
+    $command = [];
+    for ($i = 0, $argc = (int)substr($header, 1); $i < $argc; $i++) {
+        $bulk = readLineFromClient($client);
+        if ($bulk === false || $bulk === '' || $bulk[0] !== '$') {
+            return false;
+        }
+
+        $length = (int)substr($bulk, 1);
+        $argument = readBytesFromClient($client, $length);
+        if ($argument === false || readBytesFromClient($client, 2) !== "\r\n") {
+            return false;
+        }
+        $command[] = $argument;
+    }
+
+    return $command;
+}
+
+function writeToClient($client, $response) {
+    for ($offset = 0, $length = strlen($response); $offset < $length;) {
+        $written = @fwrite($client, substr($response, $offset));
+        if ($written === false || $written === 0) {
+            return false;
+        }
+        $offset += $written;
+    }
+
+    return true;
+}
+
+$scenario = $argv[1] ?? '';
+if (!in_array($scenario, [
+    'pipeline', 'multi', 'multi-framing', 'partial-slots', 'cache-auth', 'failover-partial-slots',
+    'eof-header', 'eof-body', 'send-failure', 'cache-refresh', 'failed-reconnect'
+], true)) {
+    exit(1);
+}
+
+$errno = $errstr = null;
+$server = @stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+if ($server === false) {
+    fwrite(STDERR, "$errstr ($errno)\n");
+    exit(1);
+}
+
+$address = stream_socket_get_name($server, false);
+$port = (int)substr(strrchr($address, ':'), 1);
+echo $port, "\n";
+flush();
+
+$slots = "*1\r\n*3\r\n:0\r\n:16383\r\n*2\r\n" .
+         "$9\r\n127.0.0.1\r\n:$port\r\n";
+if ($scenario === 'send-failure') {
+    /* Reserve then close an endpoint that will reject the second node's write. */
+    $closed = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+    if ($closed === false) exit(1);
+    $address = stream_socket_get_name($closed, false);
+    $closedPort = (int)substr(strrchr($address, ':'), 1);
+    fclose($closed);
+    $sendSlots = "*2\r\n*3\r\n:0\r\n:8191\r\n*2\r\n$9\r\n127.0.0.1\r\n:$port\r\n" .
+                 "*3\r\n:8192\r\n:16383\r\n*2\r\n$9\r\n127.0.0.1\r\n:$closedPort\r\n";
+}
+$replicaServer = null;
+if ($scenario === 'failover-partial-slots') {
+    /* Reserve a distinct replica endpoint so MOVED enters the failover remap. */
+    $replicaServer = @stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+    if ($replicaServer === false) {
+        fwrite(STDERR, "$errstr ($errno)\n");
+        exit(1);
+    }
+    $address = stream_socket_get_name($replicaServer, false);
+    $replicaPort = (int)substr(strrchr($address, ':'), 1);
+    $slots = "*1\r\n*4\r\n:0\r\n:16383\r\n*2\r\n$9\r\n127.0.0.1\r\n:$port\r\n" .
+             "*2\r\n$9\r\n127.0.0.1\r\n:$replicaPort\r\n";
+}
+$malformed = "*3\r\n$3\r\none\r\n$3\r\ntwo\r\n$5\r\nthree\r\n";
+$pipelineConnection = null;
+$pipelineQueuedGetPending = false;
+$refreshPending = false;
+$reconnectPending = $reconnectRejected = false;
+$connectionId = 0;
+$slotsRequests = $writes = $getReplies = 0;
+$deadline = microtime(true) + 15;
+
+while (microtime(true) < $deadline) {
+    $client = @stream_socket_accept($server, 1);
+    if ($client === false) {
+        continue;
+    }
+
+    $connectionId++;
+    $inMulti = false;
+    $authenticated = false;
+    stream_set_timeout($client, 5);
+
+    while (($command = readCommandFromClient($client)) !== false) {
+        $verb = strtoupper($command[0] ?? '');
+
+        if ($scenario === 'failed-reconnect' && $verb === 'PING' && !$reconnectPending) {
+            /* Leave the directed socket at EOF, then fail its next reconnect. */
+            $reconnectPending = true;
+            writeToClient($client, "+PONG\r\n");
+            break;
+        } else if ($scenario === 'failed-reconnect' && $verb === 'AUTH' &&
+                   $reconnectPending && !$reconnectRejected)
+        {
+            $reconnectRejected = true;
+            writeToClient($client, "-WRONGPASS simulated reconnect failure\r\n");
+            break;
+        } else if ($scenario === 'cache-auth' && $verb === 'AUTH') {
+            $authenticated = $command === ['AUTH', 'pipeline-user', 'secret'];
+            writeToClient($client, $authenticated ? "+OK\r\n" : "-WRONGPASS invalid credentials\r\n");
+        } else if ($scenario === 'cache-auth' && !$authenticated) {
+            writeToClient($client, "-NOAUTH Authentication required\r\n");
+        } else if ($verb === 'CLUSTER') {
+            $slotsRequests++;
+            /* A valid but incomplete map must not retain freed node pointers. */
+            $partial = $refreshPending &&
+                in_array($scenario, ['partial-slots', 'failover-partial-slots'], true);
+            writeToClient($client, $partial
+                ? "*1\r\n*3\r\n:0\r\n:0\r\n*2\r\n$9\r\n127.0.0.1\r\n:$port\r\n"
+                : ($scenario === 'send-failure' && !$refreshPending ? $sendSlots : $slots));
+        } else if ($scenario === 'cache-refresh' && $verb === 'EVAL') {
+            if (strpos($command[1], 'ASK') !== false) {
+                writeToClient($client, "-ASK 0 127.0.0.1:$port\r\n");
+            } else if (strpos($command[1], 'TRYAGAIN') !== false) {
+                writeToClient($client, "-TRYAGAIN fixture failure\r\n");
+            } else {
+                writeToClient($client, "-CLUSTERDOWN fixture failure\r\n");
+            }
+        } else if ($scenario === 'cache-refresh' && $verb === 'INCR') {
+            writeToClient($client, "-ERR fixture failure\r\n");
+        } else if ($scenario === 'cache-refresh' && $verb === 'GET') {
+            $value = (string)$slotsRequests;
+            writeToClient($client, '$' . strlen($value) . "\r\n$value\r\n");
+        } else if ($scenario === 'send-failure' && $verb === 'SET') {
+            $writes++;
+            $refreshPending = true;
+            $pipelineConnection = $connectionId;
+            writeToClient($client, "+OK\r\n");
+        } else if ($scenario === 'send-failure' && $verb === 'GET') {
+            $value = $connectionId === $pipelineConnection ? 'reused' : (string)$writes;
+            writeToClient($client, '$' . strlen($value) . "\r\n$value\r\n");
+        } else if (in_array($scenario, ['eof-header', 'eof-body'], true) &&
+                   $verb === 'GET' && $pipelineConnection === null)
+        {
+            if (++$getReplies === 1) {
+                writeToClient($client, "$6\r\nactual\r\n");
+            } else {
+                $pipelineConnection = $connectionId;
+                if ($scenario === 'eof-body') writeToClient($client, "$6\r\nac");
+                break;
+            }
+        } else if ($scenario === 'failover-partial-slots' && $verb === 'GET' && !$refreshPending) {
+            $refreshPending = true;
+            $slot = (int)$argv[2];
+            writeToClient($client, "-MOVED $slot 127.0.0.1:$replicaPort\r\n");
+            /* Retire this connection so the fixture can serve the seed remap. */
+            break;
+        } else if (in_array($scenario, ['partial-slots', 'cache-auth'], true) && $verb === 'EVAL') {
+            $refreshPending = true;
+            writeToClient($client, "-CLUSTERDOWN simulated failure\r\n");
+        } else if ($scenario === 'pipeline' && $verb === 'LMPOP') {
+            $pipelineConnection = $connectionId;
+            $pipelineQueuedGetPending = true;
+            writeToClient($client, $malformed);
+        } else if (in_array($scenario, ['multi', 'multi-framing'], true) && $verb === 'MULTI') {
+            $pipelineConnection = $connectionId;
+            $inMulti = true;
+            writeToClient($client, "+OK\r\n");
+        } else if ($inMulti && ($verb === 'LMPOP' || $verb === 'GET')) {
+            writeToClient($client, "+QUEUED\r\n");
+        } else if ($inMulti && $verb === 'EXEC') {
+            $inMulti = false;
+            if ($scenario === 'multi-framing') {
+                writeToClient($client, "*1\r\n$5\r\nstale\r\n");
+            } else {
+                writeToClient($client, "*2\r\n" . $malformed . "$5\r\nstale\r\n");
+            }
+        } else if ($scenario === 'pipeline' && $verb === 'GET' &&
+                   $connectionId === $pipelineConnection &&
+                   $pipelineQueuedGetPending)
+        {
+            $pipelineQueuedGetPending = false;
+            writeToClient($client, "$5\r\nstale\r\n");
+        } else if ($verb === 'GET') {
+            $reused = $connectionId === $pipelineConnection;
+            writeToClient($client, $reused
+                ? "$6\r\nreused\r\n"
+                : "$6\r\nactual\r\n");
+
+            if ($pipelineConnection !== null && !$reused) {
+                fclose($client);
+                fclose($server);
+                exit(0);
+            }
+        } else {
+            writeToClient($client, "+OK\r\n");
+        }
+    }
+
+    fclose($client);
+    if ($scenario === 'failed-reconnect' && $reconnectPending && !$reconnectRejected) {
+        echo "disconnected\n";
+        flush();
+    }
+}
+
+fclose($server);
+if ($replicaServer) fclose($replicaServer);
+exit(1);
