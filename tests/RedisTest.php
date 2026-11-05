@@ -9713,17 +9713,19 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(0, $this->redis->delex('captain', ['ifne' => 'picard']));
         $this->assertEquals(1, $this->redis->delex('captain', ['ifeq' => 'picard']));
 
-        $this->assertTrue($this->redis->set('captain', 'Sisko'));
-        $digest = $this->redis->digest('captain');
-        $this->assertEquals(0, $this->redis->delex('captain', ['ifdne' => $digest]));
-        $this->assertEquals(1, $this->redis->delex('captain', ['ifdeq' => $digest]));
+        if ( ! $this->is_valkey) {
+            $this->assertTrue($this->redis->set('captain', 'Sisko'));
+            $digest = $this->redis->digest('captain');
+            $this->assertEquals(0, $this->redis->delex('captain', ['ifdne' => $digest]));
+            $this->assertEquals(1, $this->redis->delex('captain', ['ifdeq' => $digest]));
 
-        $this->assertTrue($this->redis->set('captain', 'Janeway'));
-        $this->assertEquals(1, $this->redis->delex('captain'));
+            $this->assertTrue($this->redis->set('captain', 'Janeway'));
+            $this->assertEquals(1, $this->redis->delex('captain'));
 
-        foreach ([[], null] as $arg) {
-            $this->assertTrue($this->redis->set('captain', 'Archer'));
-            $this->assertEquals(1, $this->redis->delex('captain', $arg));
+            foreach ([[], null] as $arg) {
+                $this->assertTrue($this->redis->set('captain', 'Archer'));
+                $this->assertEquals(1, $this->redis->delex('captain', $arg));
+            }
         }
     }
 
