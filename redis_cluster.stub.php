@@ -157,6 +157,11 @@ class RedisCluster {
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): RedisCluster|int|false;
 
     /**
+     * @see \Redis::bitrangeintarray()
+     */
+    public function bitrangeintarray(string $key, int $start, int $end, ?array $options = null): RedisCluster|array|false;
+
+    /**
      * @see \Redis::blPop()
      */
     public function blpop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): RedisCluster|array|null|false;

@@ -15,6 +15,7 @@
  * @method RedisArray|int|false bitcount(string $key, int $start = 0, int $end = -1, bool $bybit = false)
  * @method RedisArray|int|false bitop(string $operation, string $deskey, string $srckey, string ...$other_keys)
  * @method RedisArray|int|false bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false)
+ * @method RedisArray|array|false bitrangeintarray(string $key, int $start, int $end, ?array $options = null)
  * @method RedisArray|array|null|false blPop(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args)
  * @method RedisArray|array|null|false brPop(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args)
  * @method RedisArray|string|false brpoplpush(string $src, string $dst, int|float $timeout)
