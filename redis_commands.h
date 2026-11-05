@@ -111,6 +111,7 @@ RedisCmd *redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 RedisCmd *redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_bitrangeintarray_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);

@@ -881,6 +881,23 @@ class Redis {
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): Redis|int|false;
 
     /**
+     * Return absolute bit offsets in an inclusive range (Redis 8.12+).
+     * Bounds use BYTE units by default; negative bounds count from the end.
+     * Options accept 'BYTE', 'BIT', 'ZEROS', and 'LIMIT' => count (zero returns []).
+     * The last unit wins. BYTE limits finish the last byte, returning up to seven extra offsets.
+     *
+     * @param string     $key     The string or bitmap key to read.
+     * @param int        $start   The inclusive start of the range.
+     * @param int        $end     The inclusive end of the range.
+     * @param array|null $options Range units, result limit, and whether to return zero bits.
+     *
+     * @return Redis|array|false Ascending bit offsets, or an empty array for an empty range or missing key.
+     *
+     * @example $redis->bitrangeintarray('bitmap', 0, -1, ['BIT', 'LIMIT' => 10]);
+     */
+    public function bitrangeintarray(string $key, int $start, int $end, ?array $options = null): Redis|array|false;
+
+    /**
      * Pop an element off the beginning of a Redis list or lists, potentially blocking up to a specified
      * timeout.  This method may be called in two distinct ways, of which examples are provided below.
      *
