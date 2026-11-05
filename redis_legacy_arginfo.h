@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6a68da5f60754572a412c221e752b43b75c07f4f */
+ * Stub hash: 7f74eb418e5979bdcad96d4b8911110c63b9b26a */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -72,6 +72,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitpos, 0, 0, 2)
 	ZEND_ARG_INFO(0, start)
 	ZEND_ARG_INFO(0, end)
 	ZEND_ARG_INFO(0, bybit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitrangeintarray, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, start)
+	ZEND_ARG_INFO(0, end)
+	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_blPop, 0, 0, 2)
@@ -1093,12 +1100,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zPopMin arginfo_class_Redis_lPop
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRange, 0, 0, 3)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, start)
-	ZEND_ARG_INFO(0, end)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_zRange arginfo_class_Redis_bitrangeintarray
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRangeByLex, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
@@ -1108,7 +1110,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRangeByLex, 0, 0, 3)
 	ZEND_ARG_INFO(0, count)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRangeByScore arginfo_class_Redis_zRange
+#define arginfo_class_Redis_zRangeByScore arginfo_class_Redis_bitrangeintarray
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zrangestore, 0, 0, 4)
 	ZEND_ARG_INFO(0, dstkey)
@@ -1205,6 +1207,7 @@ ZEND_METHOD(Redis, waitaof);
 ZEND_METHOD(Redis, bitcount);
 ZEND_METHOD(Redis, bitop);
 ZEND_METHOD(Redis, bitpos);
+ZEND_METHOD(Redis, bitrangeintarray);
 ZEND_METHOD(Redis, blPop);
 ZEND_METHOD(Redis, brPop);
 ZEND_METHOD(Redis, brpoplpush);
@@ -1503,6 +1506,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, bitcount, arginfo_class_Redis_bitcount, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitop, arginfo_class_Redis_bitop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitpos, arginfo_class_Redis_bitpos, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, bitrangeintarray, arginfo_class_Redis_bitrangeintarray, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, blPop, arginfo_class_Redis_blPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, brPop, arginfo_class_Redis_brPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, brpoplpush, arginfo_class_Redis_brpoplpush, ZEND_ACC_PUBLIC)

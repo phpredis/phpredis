@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6a68da5f60754572a412c221e752b43b75c07f4f */
+ * Stub hash: 7f74eb418e5979bdcad96d4b8911110c63b9b26a */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -77,6 +77,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_bitpos, 0, 2, Re
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, start, IS_LONG, 0, "0")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, end, IS_LONG, 0, "-1")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, bybit, _IS_BOOL, 0, "false")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_bitrangeintarray, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_blPop, 0, 2, Redis, MAY_BE_ARRAY|MAY_BE_NULL|MAY_BE_FALSE)
@@ -1379,6 +1386,7 @@ ZEND_METHOD(Redis, waitaof);
 ZEND_METHOD(Redis, bitcount);
 ZEND_METHOD(Redis, bitop);
 ZEND_METHOD(Redis, bitpos);
+ZEND_METHOD(Redis, bitrangeintarray);
 ZEND_METHOD(Redis, blPop);
 ZEND_METHOD(Redis, brPop);
 ZEND_METHOD(Redis, brpoplpush);
@@ -1677,6 +1685,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, bitcount, arginfo_class_Redis_bitcount, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitop, arginfo_class_Redis_bitop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitpos, arginfo_class_Redis_bitpos, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, bitrangeintarray, arginfo_class_Redis_bitrangeintarray, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, blPop, arginfo_class_Redis_blPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, brPop, arginfo_class_Redis_brPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, brpoplpush, arginfo_class_Redis_brpoplpush, ZEND_ACC_PUBLIC)

@@ -3063,6 +3063,66 @@ RedisCmd *redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     return cmd;
 }
 
+/* BITRANGEINTARRAY key start end [BYTE | BIT] [LIMIT count] [ZEROS] */
+RedisCmd *redis_bitrangeintarray_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
+{
+    zend_string *key, *name;
+    zend_long start, end, limit = -1;
+    zend_bool bybit = 0, zeros = 0;
+    HashTable *options = NULL;
+    RedisCmd *cmd;
+    zval *zv;
+
+    ZEND_PARSE_PARAMETERS_START(3, 4)
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(start)
+        Z_PARAM_LONG(end)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(options)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    if (options) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(options, name, zv) {
+            ZVAL_DEREF(zv);
+            if (name && zend_string_equals_literal_ci(name, "LIMIT")) {
+                if (Z_TYPE_P(zv) == IS_LONG) {
+                    limit = Z_LVAL_P(zv);
+                } else if (Z_TYPE_P(zv) != IS_STRING ||
+                           is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv),
+                                             &limit, NULL, 0) != IS_LONG) {
+                    limit = -1;
+                }
+                if (limit < 0) {
+                    php_error_docref(NULL, E_WARNING, "LIMIT must be a non-negative integer");
+                    return NULL;
+                }
+            } else if (!name && Z_TYPE_P(zv) == IS_STRING &&
+                       zend_string_equals_literal_ci(Z_STR_P(zv), "BIT")) {
+                bybit = 1;
+            } else if (!name && Z_TYPE_P(zv) == IS_STRING &&
+                       zend_string_equals_literal_ci(Z_STR_P(zv), "BYTE")) {
+                bybit = 0;
+            } else if (!name && Z_TYPE_P(zv) == IS_STRING &&
+                       zend_string_equals_literal_ci(Z_STR_P(zv), "ZEROS")) {
+                zeros = 1;
+            } else {
+                php_error_docref(NULL, E_WARNING, "Invalid BITRANGEINTARRAY option");
+                return NULL;
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    cmd = redis_cmd_fmt(redis_sock, "BITRANGEINTARRAY", "Kll", key, start, end);
+    redis_cmd_cat_literal_if(cmd, bybit, "BIT");
+    if (limit >= 0) {
+        redis_cmd_cat_literal(cmd, "LIMIT");
+        redis_cmd_cat_long(cmd, limit);
+    }
+    redis_cmd_cat_literal_if(cmd, zeros, "ZEROS");
+
+    return cmd;
+}
+
 /* BITOP */
 RedisCmd *redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     zend_string *op, *dstkey, *srckey;

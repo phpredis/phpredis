@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 360bca96f4284093ff238218a50b19a97d529112 */
+ * Stub hash: bb39ae8c77a57b9585e30045e532abd4e8f06df5 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -86,6 +86,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_bitpos, 0, 0, 2)
 	ZEND_ARG_INFO(0, start)
 	ZEND_ARG_INFO(0, end)
 	ZEND_ARG_INFO(0, bybit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_bitrangeintarray, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, start)
+	ZEND_ARG_INFO(0, end)
+	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_blpop, 0, 0, 2)
@@ -996,12 +1003,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zpopmin arginfo_class_RedisCluster_zpopmax
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zrange, 0, 0, 3)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, start)
-	ZEND_ARG_INFO(0, end)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_zrange arginfo_class_RedisCluster_bitrangeintarray
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zrangestore, 0, 0, 4)
 	ZEND_ARG_INFO(0, dstkey)
@@ -1021,7 +1023,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zrangebylex, 0, 0, 3)
 	ZEND_ARG_INFO(0, count)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_zrangebyscore arginfo_class_RedisCluster_zrange
+#define arginfo_class_RedisCluster_zrangebyscore arginfo_class_RedisCluster_bitrangeintarray
 
 #define arginfo_class_RedisCluster_zrank arginfo_class_RedisCluster_hexists
 
@@ -1091,6 +1093,7 @@ ZEND_METHOD(RedisCluster, bgsave);
 ZEND_METHOD(RedisCluster, bitcount);
 ZEND_METHOD(RedisCluster, bitop);
 ZEND_METHOD(RedisCluster, bitpos);
+ZEND_METHOD(RedisCluster, bitrangeintarray);
 ZEND_METHOD(RedisCluster, blpop);
 ZEND_METHOD(RedisCluster, brpop);
 ZEND_METHOD(RedisCluster, brpoplpush);
@@ -1361,6 +1364,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, bitcount, arginfo_class_RedisCluster_bitcount, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bitop, arginfo_class_RedisCluster_bitop, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bitpos, arginfo_class_RedisCluster_bitpos, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, bitrangeintarray, arginfo_class_RedisCluster_bitrangeintarray, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, blpop, arginfo_class_RedisCluster_blpop, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, brpop, arginfo_class_RedisCluster_brpop, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, brpoplpush, arginfo_class_RedisCluster_brpoplpush, ZEND_ACC_PUBLIC)

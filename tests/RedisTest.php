@@ -297,6 +297,117 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testBitRangeIntArray() {
+        $key = 'bitrangeintarray';
+        if (empty($this->rawCommandArray($key, ['COMMAND', 'INFO', 'BITRANGEINTARRAY'])[0]))
+            $this->markTestSkipped('Requires BITRANGEINTARRAY');
+
+        $ones = [0, 7, 8, 9, 10, 11, 12, 13, 14, 15, 25, 30];
+        $cases = [
+            [$ones, 0, -1, null],
+            [$ones, PHP_INT_MIN, PHP_INT_MAX, []],
+            [[], PHP_INT_MAX, -1, []],
+            [[], 2, 1, []],
+            [[], -10, -20, []],
+            [[0, 7], -20, -10, []],
+            [[25, 30], -1, -1, []],
+            [[25, 30], -8, -1, ['BIT']],
+            [[7, 8, 9], 7, 9, ['BYTE', 'bit']],
+            [[0, 7], 0, 0, ['BIT', 'byte']],
+            [range(1, 6), 1, 7, ['BIT', 'zeros']],
+            [range(16, 23), 2, 2, ['ZEROS']],
+            [[], 4, PHP_INT_MAX, ['ZEROS']],
+            [[], 0, -1, ['LIMIT' => 0]],
+            [[0, 7], 0, -1, ['LIMIT' => 1]],
+            [range(8, 15), 1, -1, ['LIMIT' => 1]],
+            [[0], 0, -1, ['BIT', 'LIMIT' => 1]],
+            [[0, 7], 0, -1, ['limit' => '1', 'LIMIT' => 2, 'BIT']],
+            [range(16, 23), 2, -1, ['ZEROS', 'LIMIT' => 1]],
+            [[16], 16, -1, ['ZEROS', 'LIMIT' => 1, 'BIT']],
+            [$ones, 0, -1, ['LIMIT' => PHP_INT_MAX]],
+        ];
+
+        $prefix = $this->redis->getOption(Redis::OPT_PREFIX);
+        $this->redis->setOption(Redis::OPT_PREFIX, 'bitrange-prefix:');
+        try {
+            $this->assertTrue($this->redis->set($key, "\x81\xff\x00\x42"));
+            $this->assertEquals($ones, $this->redis->bitrangeintarray($key, 0, -1));
+            foreach ($cases as [$expected, $start, $end, $options]) {
+                $this->assertEquals($expected, $this->redis->bitrangeintarray($key, $start, $end, $options));
+            }
+
+            $limit = '1';
+            $unit = 'BIT';
+            $this->assertEquals([0], $this->redis->bitrangeintarray($key, 0, -1,
+                                                                  [&$unit, 'LIMIT' => &$limit]));
+
+            foreach ($this->getSerializers() as $serializer) {
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+                $this->assertEquals($ones, $this->redis->bitrangeintarray($key, 0, -1));
+            }
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+
+            $modes = $this->haveMulti() ? [Redis::MULTI] : [];
+            if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+            foreach ($modes as $mode) {
+                $this->redis->multi($mode);
+                $this->assertEquals($this->redis, $this->redis->bitrangeintarray($key, 0, -1, ['BIT', 'LIMIT' => 2]));
+                $this->assertEquals($this->redis, $this->redis->bitrangeintarray($key, 2, 2, ['ZEROS']));
+                $this->assertEquals([[0, 7], range(16, 23)], $this->redis->exec());
+            }
+
+            $this->redis->set($key, '');
+            $this->assertEquals([], $this->redis->bitrangeintarray($key, 0, -1));
+            $this->assertEquals([], $this->redis->bitrangeintarray($key, 0, -1, ['ZEROS']));
+            $this->redis->del($key);
+            $this->assertEquals([], $this->redis->bitrangeintarray($key, 0, -1));
+            $this->assertEquals([], $this->redis->bitrangeintarray($key, 0, -1, ['ZEROS']));
+
+            // SETBIT also exercises native bitmaps when the server enables them.
+            $this->redis->setBit($key, 520, 1);
+            $this->redis->setBit($key, 527, 1);
+            $this->assertEquals([520, 527], $this->redis->bitrangeintarray($key, 0, -1));
+            $this->assertEquals([527], $this->redis->bitrangeintarray($key, 521, 527, ['BIT']));
+            $this->redis->del($key);
+
+            $this->redis->hset($key, 'field', 'value');
+            $this->assertFalse($this->redis->bitrangeintarray($key, 0, -1, ['LIMIT' => 0]));
+            $this->assertStringContains('WRONGTYPE', $this->redis->getLastError());
+            $this->redis->clearLastError();
+        } finally {
+            $this->redis->del($key);
+            $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        }
+    }
+
+    public function testBitRangeIntArrayInvalidOptions() {
+        $key = 'bitrangeintarray';
+        if (empty($this->rawCommandArray($key, ['COMMAND', 'INFO', 'BITRANGEINTARRAY'])[0]))
+            $this->markTestSkipped('Requires BITRANGEINTARRAY');
+
+        $cases = [];
+        foreach ([-1, 'x', [], true, null, 1.5, '1.5', (string)PHP_INT_MAX . '0'] as $limit)
+            $cases[] = [['LIMIT' => $limit], 'LIMIT must be a non-negative integer'];
+        foreach ([['NOPE'], [true], ['BIT' => true], ['LIMIT', 1]] as $options)
+            $cases[] = [$options, 'Invalid BITRANGEINTARRAY option'];
+
+        foreach ($cases as [$options, $error]) {
+            $warnings = [];
+            set_error_handler(function ($severity, $message) use (&$warnings) {
+                $warnings[] = $message;
+                return true;
+            }, E_WARNING);
+            try {
+                $this->assertFalse($this->redis->bitrangeintarray($key, 0, -1, $options));
+                $this->assertEquals(1, count($warnings));
+                $this->assertStringContains($error, $warnings[0] ?? '');
+            } finally {
+                restore_error_handler();
+            }
+        }
+    }
+
     public function testBitop() {
         if ( ! $this->minVersionCheck('2.6.0'))
             $this->markTestSkipped();

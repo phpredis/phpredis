@@ -1750,6 +1750,7 @@ REDIS_METHOD(auth, redis_auth_cmd, redis_boolean_response);
 REDIS_METHOD(bitcount, redis_bitcount_cmd, redis_long_response);
 REDIS_METHOD(bitop, redis_bitop_cmd, redis_long_response);
 REDIS_METHOD(bitpos, redis_bitpos_cmd, redis_long_response);
+REDIS_METHOD(bitrangeintarray, redis_bitrangeintarray_cmd, redis_read_variant_reply);
 REDIS_METHOD(brpoplpush, redis_brpoplpush_cmd, redis_string_response);
 REDIS_METHOD(client, redis_client_cmd, redis_client_response);
 REDIS_METHOD(command, redis_command_cmd, redis_command_response);

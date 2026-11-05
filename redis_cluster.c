@@ -1617,6 +1617,10 @@ PHP_METHOD(RedisCluster, bitpos) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, bitrangeintarray) {
+    CLUSTER_PROCESS_CMD(bitrangeintarray, cluster_variant_resp, 1);
+}
+
 /* {{{ proto string Redis::lget(string key, long index) */
 PHP_METHOD(RedisCluster, lget) {
     CLUSTER_PROCESS_KW_CMD("LINDEX", redis_key_long_cmd, cluster_bulk_resp, 1);
