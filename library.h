@@ -258,6 +258,13 @@ void redis_conf_string(const HashTable *ht, const char *key, size_t keylen, zend
 void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret, int copy, int dtor);
 void redis_conf_auth(const HashTable *ht, const char *key, size_t keylen, zend_string **user, zend_string **pass);
 
+/* A NULL read can just be a nil element. Tell that apart from a read that
+ * failed, after which there's no point reading any more of the reply. */
+static inline zend_bool redis_sock_read_failed(const RedisSock *redis_sock) {
+    return EG(exception) || redis_sock->stream == NULL ||
+           redis_sock->status == REDIS_SOCK_STATUS_FAILED;
+}
+
 /* Replies nest by recursing, so a bogus reply could overflow the C stack. Real
  * replies are nowhere near this deep. This matches Relay and hiredis. */
 #define REDIS_REPLY_MAX_DEPTH 1024
