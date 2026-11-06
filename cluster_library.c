@@ -166,7 +166,8 @@ void cluster_free_reply(clusterReply *reply, int free_data) {
 
 static int
 cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
-                                 clusterReply **element, int status_strings)
+                                 clusterReply **element, int status_strings,
+                                 int depth)
 {
     int i;
     size_t sz;
@@ -208,8 +209,14 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
             case TYPE_MULTIBULK:
                 r->elements = r->len;
                 if (r->elements > 0) {
+                    if (depth >= REDIS_REPLY_MAX_DEPTH) {
+                        redis_reply_depth_exceeded(sock);
+                        return FAILURE;
+                    }
                     r->element = ecalloc(r->len, sizeof(*r->element));
-                    if (cluster_multibulk_resp_recursive(sock, r->elements, r->element, status_strings) < 0) {
+                    if (cluster_multibulk_resp_recursive(sock, r->elements, r->element,
+                                                         status_strings, depth + 1) < 0)
+                    {
                         return FAILURE;
                     }
                 }
@@ -285,7 +292,7 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
             r->elements = len;
             if (r->elements > 0) {
                 r->element = ecalloc(len, sizeof(clusterReply*));
-                if (cluster_multibulk_resp_recursive(redis_sock, len, r->element, line_reply != NULL) < 0) {
+                if (cluster_multibulk_resp_recursive(redis_sock, len, r->element, line_reply != NULL, 1) < 0) {
                     cluster_free_reply(r, 1);
                     return NULL;
                 }
