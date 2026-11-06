@@ -3753,6 +3753,11 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_array_init_reply(&z_multi_result, numElems);
         for (i = 0; i < numElems; ++i) {
             if ((line = redis_sock_read(redis_sock, &len)) == NULL) {
+                if (redis_sock_read_failed(redis_sock)) {
+                    zval_ptr_dtor_nogc(&z_multi_result);
+                    REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+                    return FAILURE;
+                }
                 add_next_index_bool(&z_multi_result, 0);
                 continue;
             }
@@ -3887,9 +3892,7 @@ redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
     for (i = 0; i < count; ++i) {
         if ((zstr = redis_sock_read_zstr(redis_sock)) == NULL) {
             add_next_index_bool(z_tab, 0);
-            if (EG(exception) || redis_sock->stream == NULL ||
-                redis_sock->status == REDIS_SOCK_STATUS_FAILED
-            ) {
+            if (redis_sock_read_failed(redis_sock)) {
                 return FAILURE;
             }
             continue;
