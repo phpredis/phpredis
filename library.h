@@ -187,6 +187,7 @@ PHP_REDIS_API int redis_acl_log_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 PHP_REDIS_API int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, long *reply_info);
 PHP_REDIS_API int redis_read_variant_bulk(RedisSock *redis_sock, long size, zval *z_ret);
 PHP_REDIS_API int redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int status_strings, zval *z_ret);
+PHP_REDIS_API void redis_reply_depth_exceeded(RedisSock *redis_sock);
 PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_read_raw_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
@@ -256,6 +257,10 @@ void redis_conf_int(const HashTable *ht, const char *key, int keylen, int *ival)
 void redis_conf_string(const HashTable *ht, const char *key, size_t keylen, zend_string **sval);
 void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret, int copy, int dtor);
 void redis_conf_auth(const HashTable *ht, const char *key, size_t keylen, zend_string **user, zend_string **pass);
+
+/* Replies nest by recursing, so a bogus reply could overflow the C stack. Real
+ * replies are nowhere near this deep. This matches Relay and hiredis. */
+#define REDIS_REPLY_MAX_DEPTH 1024
 
 /* Server supplied element counts are only a sizing hint. Cap the preallocation
  * so a bogus count can't trigger a huge (fatal) allocation before any elements
