@@ -2405,14 +2405,18 @@ redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
                 add_assoc_zval_ex(z_ret, key, len, &zv);
                 efree(key);
                 key = NULL;
-            } else {
-                add_next_index_zval(z_ret, &zv);
+            } else if (add_next_index_zval(z_ret, &zv) == FAILURE) {
+                /* An earlier key can take the array's last integer index */
+                zval_ptr_dtor_nogc(&zv);
             }
             break;
         default:
             goto failure;
         }
     }
+
+    /* An odd number of elements leaves a key without a value */
+    if (key) efree(key);
 
     return SUCCESS;
 
@@ -2730,8 +2734,10 @@ redis_read_acl_log_reply(RedisSock *redis_sock, zval *zret, long count) {
             return FAILURE;
 
         array_init_size(&zsub, nsub > 0 ? nsub : 0);
-        if (redis_mbulk_reply_zipped_raw_variant(redis_sock, &zsub, nsub) == FAILURE)
+        if (redis_mbulk_reply_zipped_raw_variant(redis_sock, &zsub, nsub) == FAILURE) {
+            zval_ptr_dtor_nogc(&zsub);
             return FAILURE;
+        }
 
         add_next_index_zval(zret, &zsub);
     }
@@ -2758,8 +2764,10 @@ redis_read_acl_getuser_reply(RedisSock *redis_sock, zval *zret, long count) {
         }
 
         if (type == TYPE_BULK) {
-            if (!(val = redis_sock_read_bulk_reply(redis_sock, (int)vlen)))
+            if (!(val = redis_sock_read_bulk_reply(redis_sock, (int)vlen))) {
+                efree(key);
                 return FAILURE;
+            }
             add_assoc_stringl_ex(zret, key, klen, val, vlen);
             efree(val);
         } else {
@@ -4549,9 +4557,14 @@ redis_unserialize(const RedisSock *redis_sock, const char *val, int val_len,
         case REDIS_SERIALIZER_PHP:
             PHP_VAR_UNSERIALIZE_INIT(var_hash);
 
+            /* A failed parse can leave a partially built value behind */
+            ZVAL_UNDEF(z_ret);
             ret = php_var_unserialize(z_ret, (const unsigned char **)&val,
                                       (const unsigned char *)val + val_len,
                                        &var_hash);
+            if (!ret) {
+                zval_ptr_dtor(z_ret);
+            }
 
             PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
             break;
