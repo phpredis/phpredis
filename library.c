@@ -2356,8 +2356,9 @@ failure:
     return -1;
 }
 
-PHP_REDIS_API int
-redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
+static int
+redis_read_xinfo_response_depth(RedisSock *redis_sock, zval *z_ret, int elements,
+                                int depth)
 {
     zval zv;
     int i, len = 0;
@@ -2396,8 +2397,12 @@ redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
             }
             break;
         case TYPE_MULTIBULK:
+            if (depth >= REDIS_REPLY_MAX_DEPTH) {
+                redis_reply_depth_exceeded(redis_sock);
+                goto failure;
+            }
             redis_array_init_reply(&zv, li);
-            if (redis_read_xinfo_response(redis_sock, &zv, li) != SUCCESS) {
+            if (redis_read_xinfo_response_depth(redis_sock, &zv, li, depth + 1) != SUCCESS) {
                 zval_ptr_dtor_nogc(&zv);
                 goto failure;
             }
@@ -2423,6 +2428,12 @@ redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
 failure:
     if (key) efree(key);
     return FAILURE;
+}
+
+PHP_REDIS_API int
+redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
+{
+    return redis_read_xinfo_response_depth(redis_sock, z_ret, elements, 1);
 }
 
 PHP_REDIS_API int
@@ -4695,6 +4706,14 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
     return 0;
 }
 
+/* We've stopped partway through a reply, so the connection can't be reused */
+PHP_REDIS_API void
+redis_reply_depth_exceeded(RedisSock *redis_sock)
+{
+    redis_sock_disconnect(redis_sock, 1, 1);
+    REDIS_THROW_EXCEPTION("protocol error, reply nesting depth exceeded", 0);
+}
+
 PHP_REDIS_API int
 redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
                       long *reply_info)
@@ -4817,13 +4836,14 @@ redis_read_variant_bulk(RedisSock *redis_sock, long size, zval *z_ret
     return 0;
 }
 
-PHP_REDIS_API int
-redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int status_strings,
-                               zval *z_ret)
+static int
+redis_read_multibulk_depth(RedisSock *redis_sock, long long elements, int status_strings,
+                           zval *z_ret, int depth)
 {
     long reply_info;
     REDIS_REPLY_TYPE reply_type;
     zval z_subelem;
+    int res;
 
     // Iterate while we have elements
     while(elements > 0) {
@@ -4857,11 +4877,17 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
                 if (reply_info < 0 && redis_sock->null_mbulk_as_null) {
                     add_next_index_null(z_ret);
                 } else {
-                    redis_array_init_reply(&z_subelem, reply_info);
-                    if (reply_info > 0) {
-                        redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_subelem);
+                    if (depth >= REDIS_REPLY_MAX_DEPTH) {
+                        redis_reply_depth_exceeded(redis_sock);
+                        return FAILURE;
                     }
+                    redis_array_init_reply(&z_subelem, reply_info);
+                    res = redis_read_multibulk_depth(redis_sock, reply_info, status_strings,
+                                                     &z_subelem, depth + 1);
                     add_next_index_zval(z_ret, &z_subelem);
+                    if (res != SUCCESS) {
+                        return FAILURE;
+                    }
                 }
                 break;
             default:
@@ -4874,6 +4900,13 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
     }
 
     return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int status_strings,
+                               zval *z_ret)
+{
+    return redis_read_multibulk_depth(redis_sock, elements, status_strings, z_ret, 1);
 }
 
 static int
