@@ -43,6 +43,9 @@ static int redis_phpser_signed(void) {
 
 #ifdef HAVE_REDIS_ZSTD
 #include <zstd.h>
+
+/* The zstd format's maximum decoded block size */
+#define REDIS_ZSTD_BLOCK_MAX (128 * 1024)
 #endif
 
 #ifdef HAVE_REDIS_LZ4
@@ -368,6 +371,29 @@ redis_error_throw(const RedisSock *redis_sock)
     }
 }
 
+/* Parse the length following a RESP '$' or '*' type byte. Since a bad length
+ * means we can't frame the rest of the stream, any malformed or out of range
+ * value disconnects and throws. */
+static int
+redis_sock_parse_len(RedisSock *redis_sock, const char *str, long long max,
+                     long long *len)
+{
+    char *endptr;
+
+    errno = 0;
+    *len = strtoll(str, &endptr, 10);
+    if (endptr != str && *endptr == '\0' && errno != ERANGE &&
+        *len >= -1 && *len <= max)
+    {
+        return SUCCESS;
+    }
+
+    redis_sock_disconnect(redis_sock, 1, 1);
+    zend_throw_exception_ex(redis_exception_ce, 0,
+        "protocol error, invalid reply length");
+    return FAILURE;
+}
+
 static int
 read_mbulk_header(RedisSock *redis_sock, int *nelem)
 {
@@ -387,15 +413,12 @@ read_mbulk_header(RedisSock *redis_sock, int *nelem)
     }
 
     {
-        char *endptr;
         long long n;
 
-        errno = 0;
-        n = strtoll(line + 1, &endptr, 10);
-        if (endptr == line + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+        if (redis_sock_parse_len(redis_sock, line + 1, INT_MAX, &n) < 0) {
             return FAILURE;
         }
-        *nelem = (int)n;
+        *nelem = n;
     }
 
     return SUCCESS;
@@ -791,10 +814,98 @@ redis_sock_read_multibulk_reply_zval(RedisSock *redis_sock, zval *z_tab)
         ZVAL_NULL(z_tab);
         return NULL;
     }
-    array_init_size(z_tab, numElems > 0 ? numElems : 0);
+    redis_array_init_reply(z_tab, numElems);
     redis_mbulk_reply_loop(redis_sock, z_tab, numElems, UNSERIALIZE_ALL);
 
     return z_tab;
+}
+
+/* Bulk lengths come from the server. Preallocate at most this much and grow
+ * only as payload actually arrives, so a bogus length can't trigger an absurd
+ * up-front allocation, which is a fatal error in the Zend allocator. */
+#define REDIS_BULK_PREALLOC_MAX (1 << 20)
+
+static zend_always_inline char *
+redis_bulk_resize(void **buf, size_t size, zend_bool zstr)
+{
+    if (zstr) {
+        *buf = *buf ? zend_string_realloc(*buf, size, 0) : zend_string_alloc(size, 0);
+        return ZSTR_VAL((zend_string *)*buf);
+    }
+
+    return *buf = erealloc(*buf, size);
+}
+
+/* Read a bulk payload and its CRLF terminator, returning either an owned
+ * zend_string or an emalloc'd buffer (per zstr) with the payload NUL
+ * terminated. On failure, throws and returns NULL. Framing errors disconnect,
+ * since the rest of the stream can no longer be parsed. */
+static zend_always_inline void *
+redis_sock_read_bulk_payload(RedisSock *redis_sock, int bytes, zend_bool zstr)
+{
+    size_t offset = 0, capacity, nbytes;
+    void *buf = NULL;
+    char *data;
+    ssize_t got;
+
+    if (bytes < 0 || bytes > INT_MAX - 2) {
+        redis_sock_disconnect(redis_sock, 1, 1);
+        zend_throw_exception_ex(redis_exception_ce, 0,
+            "protocol error, invalid bulk length: %d", bytes);
+        return NULL;
+    }
+
+    if (-1 == redis_check_eof(redis_sock, 1, 0)) {
+        return NULL;
+    }
+
+    /* + 2 for \r\n */
+    nbytes = bytes + 2;
+    capacity = MIN(nbytes, REDIS_BULK_PREALLOC_MAX);
+    data = redis_bulk_resize(&buf, capacity, zstr);
+
+    /* Consume bulk string */
+    while (offset < nbytes) {
+        if (offset == capacity) {
+            capacity = MIN(nbytes, capacity * 2);
+            data = redis_bulk_resize(&buf, capacity, zstr);
+        }
+
+        got = redis_sock_read_raw(redis_sock, data + offset, capacity - offset);
+        if (got <= 0)
+            break;
+
+        offset += got;
+    }
+
+    if (offset < nbytes) {
+        /* Error, EOF, or timeout part way through the payload */
+        redis_sock_disconnect(redis_sock, 1, 1);
+        REDIS_THROW_EXCEPTION("socket error on read socket", 0);
+        goto failure;
+    }
+
+    if (data[bytes] != '\r' || data[bytes + 1] != '\n') {
+        redis_sock_disconnect(redis_sock, 1, 1);
+        REDIS_THROW_EXCEPTION("protocol error, invalid bulk terminator", 0);
+        goto failure;
+    }
+
+    /* Null terminate reply string */
+    data[bytes] = '\0';
+    if (zstr) {
+        ZSTR_LEN((zend_string *)buf) = bytes;
+    }
+
+    return buf;
+
+failure:
+    if (zstr) {
+        zend_string_efree(buf);
+    } else {
+        efree(buf);
+    }
+    return NULL;
 }
 
 /**
@@ -803,47 +914,11 @@ redis_sock_read_multibulk_reply_zval(RedisSock *redis_sock, zval *z_tab)
 PHP_REDIS_API char *
 redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
 {
-    int offset = 0, nbytes;
-    char *reply;
-    ssize_t got;
-
-    if (bytes < -1 || bytes > INT_MAX - 2) {
-        zend_throw_exception_ex(redis_exception_ce, 0,
-            "protocol error, invalid bulk length: %d", bytes);
+    if (bytes == -1) {
         return NULL;
     }
 
-    if (-1 == bytes || -1 == redis_check_eof(redis_sock, 1, 0)) {
-        return NULL;
-    }
-
-    /* + 2 for \r\n */
-    nbytes = bytes + 2;
-
-    /* Allocate memory for string */
-    reply = emalloc(nbytes);
-
-    /* Consume bulk string */
-    while (offset < nbytes) {
-        got = redis_sock_read_raw(redis_sock, reply + offset, nbytes - offset);
-        if (got <= 0)
-            break;
-
-        offset += got;
-    }
-
-    /* Protect against reading too few bytes */
-    if (offset < nbytes) {
-        /* Error or EOF */
-        REDIS_THROW_EXCEPTION("socket error on read socket", 0);
-        efree(reply);
-        return NULL;
-    }
-
-    /* Null terminate reply string */
-    reply[bytes] = '\0';
-
-    return reply;
+    return redis_sock_read_bulk_payload(redis_sock, bytes, 0);
 }
 
 /**
@@ -870,15 +945,12 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
             return NULL;
         case '$':
             {
-                char *endptr;
                 long long n;
 
-                errno = 0;
-                n = strtoll(inbuf + 1, &endptr, 10);
-                if (endptr == inbuf + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+                if (redis_sock_parse_len(redis_sock, inbuf + 1, INT_MAX - 2, &n) < 0) {
                     return NULL;
                 }
-                *buf_len = (int)n;
+                *buf_len = n;
             }
             return redis_sock_read_bulk_reply(redis_sock, *buf_len);
 
@@ -1452,7 +1524,7 @@ redis_read_lpos_response(zval *zdst, RedisSock *redis_sock, char reply_type,
         if (reply_type != TYPE_MULTIBULK)
             return FAILURE;
 
-        array_init_size(zdst, elements > 0 ? elements : 0);
+        redis_array_init_reply(zdst, elements);
 
         for (i = 0;  i < elements; ++i) {
             if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &len) < 0) {
@@ -1678,7 +1750,7 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (numElems < 1) {
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
-        array_init_size(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
+        redis_array_init_reply(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
 
         /* Grab our key, value, key, value array */
         redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, unserialize);
@@ -1736,7 +1808,7 @@ redis_read_mpop_response(RedisSock *redis_sock, zval *zdst, int elements,
     add_next_index_stringl(zdst, key, keylen);
     efree(key);
 
-    array_init_size(&zele, elements);
+    redis_array_init_reply(&zele, elements);
 
     if (ctx.mode == REDIS_CTX_WITHSCORES) {
         int i;
@@ -1797,12 +1869,12 @@ redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
         return SUCCESS;
     }
 
-    array_init_size(zdst, elements > 0 ? elements : 0);
+    redis_array_init_reply(zdst, elements);
 
     if (with_aux_data == 0) {
         redis_mbulk_reply_loop(redis_sock, zdst, elements, UNSERIALIZE_NONE);
     } else {
-        array_init_size(&z_multi_result, elements > 0 ? elements : 0);
+        redis_array_init_reply(&z_multi_result, elements);
 
         if (redis_read_multibulk_recursive(redis_sock, elements, 0,
                                            &z_multi_result) == FAILURE)
@@ -1881,8 +1953,12 @@ int redis_client_trackinginfo_reply(INTERNAL_FUNCTION_PARAMETERS,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
-    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    redis_array_init_reply(&z_ret, numElems);
+    if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
     array_zip_values_and_scores(redis_sock, &z_ret, 0);
 
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
@@ -1928,7 +2004,7 @@ redis_hello_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (read_mbulk_header(redis_sock, &numElems) < 0)
         goto fail;
 
-    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
+    redis_array_init_reply(&z_ret, numElems);
 
     if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS ||
         array_zip_values_recursive(&z_ret) != SUCCESS)
@@ -2015,8 +2091,12 @@ redis_function_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
-    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    redis_array_init_reply(&z_ret, numElems);
+    if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
     array_zip_values_recursive(&z_ret);
 
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
@@ -2055,8 +2135,12 @@ redis_command_info_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, numElems > 0 ? numElems : 0);
-    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    redis_array_init_reply(&z_ret, numElems);
+    if (redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret) != SUCCESS) {
+        zval_ptr_dtor_nogc(&z_ret);
+        REDIS_RESPONSE_ERROR(redis_sock, z_tab);
+        return FAILURE;
+    }
     REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
 
     return SUCCESS;
@@ -2111,7 +2195,7 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret) {
         if (fields < 0) {
             add_assoc_null_ex(z_ret, id, idlen);
         } else {
-            array_init_size(&z_message, fields > 0 ? fields : 0);
+            redis_array_init_reply(&z_message, fields);
             if (redis_mbulk_reply_loop(redis_sock, &z_message, fields, UNSERIALIZE_VALS) < 0) {
                 zval_ptr_dtor_nogc(&z_message);
                 efree(id);
@@ -2138,7 +2222,7 @@ redis_xrange_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return -1;
     }
 
-    array_init_size(&z_messages, messages > 0 ? messages : 0);
+    redis_array_init_reply(&z_messages, messages);
 
     if (redis_read_stream_messages(redis_sock, messages, &z_messages) < 0)
     {
@@ -2172,7 +2256,7 @@ redis_read_stream_messages_multi(RedisSock *redis_sock, int count,
             return -1;
         }
 
-        array_init_size(&z_messages, messages > 0 ? messages : 0);
+        redis_array_init_reply(&z_messages, messages);
 
         if (redis_read_stream_messages(redis_sock, messages, &z_messages) < 0)
             goto failure;
@@ -2201,7 +2285,7 @@ redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (streams == -1 && redis_sock->null_mbulk_as_null) {
         ZVAL_NULL(&z_rv);
     } else {
-        array_init_size(&z_rv, streams > 0 ? streams : 0);
+        redis_array_init_reply(&z_rv, streams);
         if (redis_read_stream_messages_multi(redis_sock, streams, &z_rv) < 0)
             goto cleanup;
     }
@@ -2248,7 +2332,7 @@ redis_read_xclaim_ids(RedisSock *redis_sock, int count, zval *rv) {
                 return -1;
             }
 
-            array_init_size(&z_msg, fields > 0 ? fields : 0);
+            redis_array_init_reply(&z_msg, fields);
 
             if (redis_mbulk_reply_loop(redis_sock, &z_msg, fields, UNSERIALIZE_VALS) < 0) {
                 zval_ptr_dtor_nogc(&z_msg);
@@ -2294,7 +2378,7 @@ redis_read_xclaim_reply(RedisSock *redis_sock, int count, int is_xautoclaim,
         messages = count;
     }
 
-    array_init_size(&z_msgs, messages > 0 ? messages : 0);
+    redis_array_init_reply(&z_msgs, messages);
 
     if (redis_read_xclaim_ids(redis_sock, messages, &z_msgs) < 0)
         goto failure;
@@ -2396,7 +2480,7 @@ redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
             }
             break;
         case TYPE_MULTIBULK:
-            array_init_size(&zv, li > 0 ? li : 0);
+            redis_array_init_reply(&zv, li);
             if (redis_read_xinfo_response(redis_sock, &zv, li) != SUCCESS) {
                 zval_ptr_dtor_nogc(&zv);
                 goto failure;
@@ -2477,7 +2561,7 @@ redis_vinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, count / 2);
+    redis_array_init_reply(&z_ret, count / 2);
 
     if (redis_read_vinfo_response(redis_sock, &z_ret, count) != SUCCESS) {
         zval_ptr_dtor_nogc(&z_ret);
@@ -2545,7 +2629,7 @@ redis_vemb_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    array_init_size(&z_ret, count);
+    redis_array_init_reply(&z_ret, count);
 
     if (redis_read_vemb_response(redis_sock, &z_ret, count) != SUCCESS) {
         zval_ptr_dtor_nogc(&z_ret);
@@ -2566,13 +2650,13 @@ redis_read_vlinks_response(RedisSock *redis_sock, zval *z_ret,
     zval z_ele;
     int links;
 
-    array_init_size(z_ret, elements);
+    redis_array_init_reply(z_ret, elements);
 
     for (i = 0; i < elements; i++) {
         if (read_mbulk_header(redis_sock, &links) < 0)
             return FAILURE;
 
-        array_init_size(&z_ele, links > 0 ? links : 0);
+        redis_array_init_reply(&z_ele, links);
         redis_mbulk_reply_loop(redis_sock, &z_ele, links, UNSERIALIZE_KEYS);
 
         if (ctx.mode == REDIS_CTX_WITHSCORES) {
@@ -2680,7 +2764,7 @@ redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int elements;
 
     if (read_mbulk_header(redis_sock, &elements) == SUCCESS) {
-        array_init_size(&z_ret, elements > 0 ? elements : 0);
+        redis_array_init_reply(&z_ret, elements);
         if (redis_read_xinfo_response(redis_sock, &z_ret, elements) == SUCCESS) {
             REDIS_RETURN_ZVAL(redis_sock, z_tab, z_ret);
             return SUCCESS;
@@ -2729,7 +2813,7 @@ redis_read_acl_log_reply(RedisSock *redis_sock, zval *zret, long count) {
         if (read_mbulk_header(redis_sock, &nsub) < 0 || nsub % 2 != 0)
             return FAILURE;
 
-        array_init_size(&zsub, nsub > 0 ? nsub : 0);
+        redis_array_init_reply(&zsub, nsub);
         if (redis_mbulk_reply_zipped_raw_variant(redis_sock, &zsub, nsub) == FAILURE)
             return FAILURE;
 
@@ -2763,7 +2847,7 @@ redis_read_acl_getuser_reply(RedisSock *redis_sock, zval *zret, long count) {
             add_assoc_stringl_ex(zret, key, klen, val, vlen);
             efree(val);
         } else {
-            array_init_size(&zv, vlen > 0 ? vlen : 0);
+            redis_array_init_reply(&zv, vlen);
             redis_mbulk_reply_loop(redis_sock, &zv, (int)vlen, UNSERIALIZE_NONE);
             add_assoc_zval_ex(zret, key, klen, &zv);
         }
@@ -2784,7 +2868,7 @@ int redis_acl_custom_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     long len;
 
     if (redis_read_reply_type(redis_sock, &type, &len) == 0 && type == TYPE_MULTIBULK) {
-        array_init_size(&zret, len > 0 ? len : 0);
+        redis_array_init_reply(&zret, len);
 
         res = cb(redis_sock, &zret, len);
         if (res == FAILURE) {
@@ -3675,7 +3759,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     } else if (numElems < 1) {
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
-        array_init_size(&z_multi_result, numElems);
+        redis_array_init_reply(&z_multi_result, numElems);
         redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, UNSERIALIZE_ALL);
     }
 
@@ -3702,7 +3786,7 @@ redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (numElems < 1) {
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
-        array_init_size(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
+        redis_array_init_reply(&z_multi_result, numElems); /* pre-allocate array for multi's results. */
         redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, UNSERIALIZE_NONE);
     }
 
@@ -3727,7 +3811,7 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (numElems < 1) {
         ZVAL_EMPTY_ARRAY(&z_multi_result);
     } else {
-        array_init_size(&z_multi_result, numElems);
+        redis_array_init_reply(&z_multi_result, numElems);
         for (i = 0; i < numElems; ++i) {
             if ((line = redis_sock_read(redis_sock, &len)) == NULL) {
                 add_next_index_bool(&z_multi_result, 0);
@@ -3750,43 +3834,7 @@ redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 static zend_string *
 redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
 {
-    size_t offset = 0, nbytes;
-    zend_string *zstr;
-    ssize_t got;
-
-    if (bytes < 0 || bytes > INT_MAX - 2) {
-        zend_throw_exception_ex(redis_exception_ce, 0,
-            "protocol error, invalid bulk length: %d", bytes);
-        return NULL;
-    }
-
-    if (-1 == redis_check_eof(redis_sock, 1, 0)) {
-        return NULL;
-    }
-
-    /* Over-allocate by two so the trailing \r\n lands in the same buffer as
-     * the body; the reported length is trimmed back to the payload below. */
-    nbytes = bytes + 2;
-    zstr = zend_string_alloc(nbytes, 0);
-
-    while (offset < nbytes) {
-        got = redis_sock_read_raw(redis_sock, ZSTR_VAL(zstr) + offset, nbytes - offset);
-        if (got <= 0)
-            break;
-
-        offset += got;
-    }
-
-    if (offset < nbytes) {
-        REDIS_THROW_EXCEPTION("socket error on read socket", 0);
-        zend_string_release(zstr);
-        return NULL;
-    }
-
-    ZSTR_LEN(zstr) = bytes;
-    ZSTR_VAL(zstr)[bytes] = '\0';
-
-    return zstr;
+    return redis_sock_read_bulk_payload(redis_sock, bytes, 1);
 }
 
 /* A zend_string-returning counterpart to redis_sock_read, used by the
@@ -3810,18 +3858,14 @@ redis_sock_read_zstr(RedisSock *redis_sock)
             return NULL;
         case '$':
             {
-                char *endptr;
                 long long n;
 
-                errno = 0;
-                n = strtoll(inbuf + 1, &endptr, 10);
-                if (endptr == inbuf + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+                if (redis_sock_parse_len(redis_sock, inbuf + 1, INT_MAX - 2, &n) < 0 ||
+                    n == -1)
+                {
                     return NULL;
                 }
-                if (n == -1) {
-                    return NULL;
-                }
-                return redis_sock_read_bulk_zstr(redis_sock, (int)n);
+                return redis_sock_read_bulk_zstr(redis_sock, n);
             }
         case '*':
             /* For null multi-bulk replies (like timeouts from brpoplpush): */
@@ -4230,21 +4274,27 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
             {
                 char *data = NULL;
                 uint32_t res;
-                int i;
+                size_t capacity;
+                const size_t max_capacity = MIN((size_t)UINT_MAX, SIZE_MAX - 1);
 
-                if (len == 0)
+                /* liblzf takes unsigned int lengths. Leave room for our NUL. */
+                if (len == 0 || len > UINT_MAX)
                     break;
 
                 /* Grow our buffer until we succeed or get a non E2BIG error */
-                errno = E2BIG;
-                for (i = 2; errno == E2BIG; i *= 2) {
-                    data = safe_erealloc(data, len, i, 1);
-                    if ((res = lzf_decompress(src, len, data, len * i)) > 0) {
+                capacity = len > max_capacity / 2 ? max_capacity : len * 2;
+                for (;;) {
+                    data = erealloc(data, capacity + 1);
+                    errno = 0;
+                    if ((res = lzf_decompress(src, len, data, capacity)) > 0) {
                         data[res] = '\0';
                         *dst = data;
                         *dstlen = res;
                         return 1;
                     }
+                    if (errno != E2BIG || capacity == max_capacity)
+                        break;
+                    capacity = capacity > max_capacity / 2 ? max_capacity : capacity * 2;
                 }
 
                 efree(data);
@@ -4260,6 +4310,12 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
 
                 zlen = ZSTD_getFrameContentSize(src, len);
                 if (zlen == ZSTD_CONTENTSIZE_ERROR || zlen == ZSTD_CONTENTSIZE_UNKNOWN || zlen > INT_MAX)
+                    break;
+
+                /* Every zstd block has a 3 byte header and decodes to at most
+                 * 128KB, so larger claims are corrupt. Reject them before
+                 * allocating. */
+                if (zlen / REDIS_ZSTD_BLOCK_MAX >= len / 3 + 1)
                     break;
 
                 data = emalloc(zlen + 1);
@@ -4297,7 +4353,9 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
                 memcpy(&datalen, copy, sizeof(int));
                 copy += sizeof(int); copylen -= sizeof(int);
 
-                if (datalen <= 0)
+                /* Each LZ4 input byte decodes to at most 255 output bytes, so
+                 * larger claims are corrupt. Reject them before allocating. */
+                if (datalen <= 0 || (size_t)(datalen - 1) / 255 >= copylen)
                     break;
 
                 /* Make sure our CRC matches (TODO:  Maybe issue a docref error?) */
@@ -4712,7 +4770,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         }
 
         /* Set our size response */
-        {
+        if (*reply_type == TYPE_INT) {
             char *endptr;
 
             errno = 0;
@@ -4720,15 +4778,16 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
             if (endptr == inbuf || errno == ERANGE) {
                 return -1;
             }
-        }
+        } else {
+            /* Validate lengths before callers narrow them to int or allocate. */
+            long long n;
 
-        /* Validate lengths before callers narrow them to int or allocate. */
-        if ((*reply_type == TYPE_BULK && (*reply_info < -1 || *reply_info > INT_MAX - 2)) ||
-            (*reply_type == TYPE_MULTIBULK && (*reply_info < -1 || *reply_info > INT_MAX)))
-        {
-            zend_throw_exception_ex(redis_exception_ce, 0,
-                "protocol error, invalid reply length");
-            return -1;
+            if (redis_sock_parse_len(redis_sock, inbuf,
+                    *reply_type == TYPE_BULK ? INT_MAX - 2 : INT_MAX, &n) < 0)
+            {
+                return -1;
+            }
+            *reply_info = n;
         }
     } else {
         /* Always initialize to prevent UB */
@@ -4787,16 +4846,15 @@ redis_read_variant_bulk(RedisSock *redis_sock, long size, zval *z_ret
 
     bytes = size;
 
-    // Attempt to read the bulk reply
-    char *bulk_resp = redis_sock_read_bulk_reply(redis_sock, bytes);
+    /* Read straight into a zend_string to avoid a copy */
+    zend_string *bulk_resp = bytes == -1 ? NULL : redis_sock_read_bulk_zstr(redis_sock, bytes);
 
     /* Set our reply to FALSE on failure, and the string on success */
     if(bulk_resp == NULL) {
         ZVAL_FALSE(z_ret);
         return -1;
     }
-    ZVAL_STRINGL(z_ret, bulk_resp, bytes);
-    efree(bulk_resp);
+    ZVAL_STR(z_ret, bulk_resp);
     return 0;
 }
 
@@ -4807,6 +4865,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
     long reply_info;
     REDIS_REPLY_TYPE reply_type;
     zval z_subelem;
+    int res = SUCCESS;
 
     // Iterate while we have elements
     while(elements > 0) {
@@ -4814,17 +4873,20 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
         if(redis_read_reply_type(redis_sock, &reply_type, &reply_info
                                 ) < 0)
         {
+            /* We're part way through a reply, so the stream is unusable */
+            redis_sock_disconnect(redis_sock, 1, 1);
             zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, couldn't parse MULTI-BULK response\n");
             return FAILURE;
         }
 
-        // Switch on our reply-type byte
+        /* Nested failures leave the stream unparseable, so stop reading.
+         * Partial elements are still added so z_ret owns them. */
         switch(reply_type) {
             case TYPE_ERR:
             case TYPE_LINE:
-                redis_read_variant_line(redis_sock, reply_type, status_strings,
-                                        &z_subelem);
+                res = redis_read_variant_line(redis_sock, reply_type, status_strings,
+                                              &z_subelem);
                 add_next_index_zval(z_ret, &z_subelem);
                 break;
             case TYPE_INT:
@@ -4832,24 +4894,35 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int st
                 add_next_index_long(z_ret, reply_info);
                 break;
             case TYPE_BULK:
-                // Init a zval for our bulk response, read and add it
-                redis_read_variant_bulk(redis_sock, reply_info, &z_subelem);
+                /* Init a zval for our bulk response, read and add it. A nil
+                 * bulk is reported as a failure but is a valid element. */
+                if (redis_read_variant_bulk(redis_sock, reply_info, &z_subelem) < 0 &&
+                    reply_info != -1)
+                {
+                    res = FAILURE;
+                }
                 add_next_index_zval(z_ret, &z_subelem);
                 break;
             case TYPE_MULTIBULK:
                 if (reply_info < 0 && redis_sock->null_mbulk_as_null) {
                     add_next_index_null(z_ret);
                 } else {
-                    array_init_size(&z_subelem, reply_info > 0 ? reply_info : 0);
+                    redis_array_init_reply(&z_subelem, reply_info);
                     if (reply_info > 0) {
-                        redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_subelem);
+                        res = redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_subelem);
                     }
                     add_next_index_zval(z_ret, &z_subelem);
                 }
                 break;
             default:
-                // Stop the compiler from whinging
-                break;
+                redis_sock_disconnect(redis_sock, 1, 1);
+                zend_throw_exception_ex(redis_exception_ce, 0,
+                    "protocol error, got '%c' as reply-type byte", reply_type);
+                return FAILURE;
+        }
+
+        if (res < 0) {
+            return FAILURE;
         }
 
         /* Decrement our element counter */
@@ -4889,7 +4962,7 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             break;
         case TYPE_MULTIBULK:
             if (reply_info > -1) {
-                array_init_size(&z_ret, reply_info);
+                redis_array_init_reply(&z_ret, reply_info);
                 res = redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_ret);
             } else {
                 if (null_mbulk_as_null) {
