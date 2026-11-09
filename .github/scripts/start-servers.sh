@@ -60,7 +60,8 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
     -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' \
     -keyout "$state/server.key" -out "$state/server.crt"
 if [[ $backend == dragonfly ]]; then
-    start_server tls --port 6378 --tls \
+    # Dragonfly's TLS startup check does not recognize passwords in the ACL file.
+    start_server tls --port 6378 --tls --requirepass=phpredis \
         --tls_cert_file "$state/server.crt" --tls_key_file "$state/server.key"
 else
     start_server tls --port 0 --tls-port 6378 --tls-auth-clients no \
