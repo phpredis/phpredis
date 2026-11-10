@@ -19,9 +19,11 @@ for suite in "${suites[@]}"; do
     else
         result=FAIL
         status=1
-        echo "::error::$mode: $suite failed"
     fi
     echo "::endgroup::"
+    if [[ $result == FAIL ]]; then
+        echo "::error::$mode: $suite failed (see $suite log above)"
+    fi
     echo "- $mode / $suite: $result" >> "$GITHUB_STEP_SUMMARY"
 done
 
