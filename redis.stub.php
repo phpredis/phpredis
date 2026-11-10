@@ -898,6 +898,35 @@ class Redis {
     public function bitrangeintarray(string $key, int $start, int $end, ?array $options = null): Redis|array|false;
 
     /**
+     * Manage Redis 8.12 key eviction protection.
+     *
+     * SET and CLEAR require a directive (NO-EVICT) and return 1 when changed or 0 otherwise.
+     * GET takes no directive and returns the active flags. Missing keys are server errors.
+     * SCAN requires a directive and a null key. It returns a lazy RedisBlessScanIterator of
+     * key names, starting at cursor zero. Keys retain their prefixes and, as with SCAN, may
+     * be returned more than once. Iteration errors throw.
+     * SCAN requires atomic mode both when creating the iterator and fetching pages.
+     * Options accepts ['COUNT' => positive integer] for SCAN only.
+     *
+     * @param string          $command   GET, SET, CLEAR or SCAN.
+     * @param string|int|null $key       Required for SET, CLEAR and GET; omit for SCAN.
+     * @param string|null     $directive The flag to set, clear or scan for (e.g. NO-EVICT).
+     * @param array|null      $options   ['COUNT' => int] for SCAN.
+     *
+     * @return Redis|int|array|RedisBlessScanIterator|false
+     *
+     * @see https://redis.io/docs/latest/commands/bless/
+     *
+     * @example
+     * $redis->bless('SET', 'session:42', 'NO-EVICT');
+     * $redis->bless('GET', 'session:42');
+     * foreach ($redis->bless('SCAN', null, 'NO-EVICT', ['COUNT' => 100]) as $key) {
+     *     echo "$key\n";
+     * }
+     */
+    public function bless(string $command, string|int|null $key = null, ?string $directive = null, ?array $options = null): mixed;
+
+    /**
      * Pop an element off the beginning of a Redis list or lists, potentially blocking up to a specified
      * timeout.  This method may be called in two distinct ways, of which examples are provided below.
      *
@@ -6137,5 +6166,27 @@ class Redis {
 }
 
 
+
+/**
+ * Lazy iterator returned by `Redis::bless('SCAN', ...)` and `RedisCluster::bless('SCAN', ...)`.
+ *
+ * @not-serializable
+ */
+final class RedisBlessScanIterator implements Iterator {
+    /** Returns the current key name, or `null` when the scan has finished. */
+    public function current(): mixed;
+
+    /** Returns the position of the current key, or `null` when the scan has finished. */
+    public function key(): mixed;
+
+    /** Moves to the next key. */
+    public function next(): void;
+
+    /** Restarts the scan if any keys have been consumed. */
+    public function rewind(): void;
+
+    /** Returns whether there is a current key, fetching pages as needed. */
+    public function valid(): bool;
+}
 
 class RedisException extends RuntimeException {}

@@ -26,6 +26,21 @@ RedisCmd *redis_build_script_cmd(int argc, zval *z_args);
 
 typedef RedisCmd * redis_cmd_cb(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 
+/* Validated BLESS arguments. Everything is borrowed from the call frame. */
+typedef struct redisBlessArgs {
+    zend_string *op;
+    zval *key;              /* GET/SET/CLEAR only */
+    zend_string *directive; /* NULL for GET */
+    zend_long count;        /* SCAN COUNT, or 0 */
+    zval *node;             /* RedisCluster SCAN key_or_address */
+    zend_bool scan;
+} redisBlessArgs;
+
+zend_string *redis_bless_op(INTERNAL_FUNCTION_PARAMETERS);
+int redis_bless_parse(INTERNAL_FUNCTION_PARAMETERS, zend_bool cluster, redisBlessArgs *args);
+void redis_bless_scan_init(zval *dst, zval *client, zend_bool cluster,
+                           const redisBlessArgs *args, zval *node);
+
 typedef RedisCmd * redis_kw_cmd_cb(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                    const char *kw, size_t kw_len);
 
@@ -113,6 +128,8 @@ RedisCmd *redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_bitrangeintarray_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_bless_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_cluster_bless_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
