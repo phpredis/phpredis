@@ -71,6 +71,11 @@ class Redis_Test extends TestSuite {
                isset($info['keydb']) || isset($info['mvcc_depth']);
     }
 
+    protected function detectDragonfly($info) {
+        return is_array($info) && (isset($info['dragonfly_version']) ||
+               ($info['executable'] ?? '') === 'dragonfly');
+    }
+
     protected function detectValkey($info) {
         return is_array($info) &&
                (($info['server_name'] ?? NULL) === 'valkey' ||
@@ -100,6 +105,7 @@ class Redis_Test extends TestSuite {
         $this->version = $info['redis_version'] ?? '0.0.0';
         $this->valkey_version = $info['valkey_version'] ?? '0.0.0';
 
+        $this->is_dragonfly = $this->detectDragonfly($info);
         $this->is_keydb = $this->detectKeyDB($info);
         $this->is_valkey = $this->detectValKey($info);
     }
@@ -465,10 +471,11 @@ class Redis_Test extends TestSuite {
 
         $this->redis->setBit('key', 0x7fffffff, 1);
         $this->assertEquals(1, $this->redis->getBit('key', 0x7fffffff));
+        $this->redis->del('key');
     }
 
     public function testLcs() {
-        if ( ! $this->minVersionCheck('7.0.0') || $this->is_keydb)
+        if ( ! $this->minVersionCheck('7.0.0') || $this->is_keydb || $this->is_dragonfly)
             $this->markTestSkipped();
 
         $key1 = '{lcs}1'; $key2 = '{lcs}2';
@@ -814,7 +821,9 @@ class Redis_Test extends TestSuite {
 
     public function testRandomKey() {
         $this->redis->set('randomkey-test', 'value');
-        $this->assertKeyExists($this->redis->randomKey());
+        $k = $this->redis->randomKey();
+        $this->assertIsString($k);
+        $this->assertKeyExists($k);
         $this->redis->del('randomkey-test');
     }
 
@@ -1033,6 +1042,8 @@ class Redis_Test extends TestSuite {
     public function testExpireAtWithLong() {
         if (PHP_INT_SIZE != 8)
             $this->markTestSkipped('64 bits only');
+        if ($this->is_dragonfly)
+            $this->markTestSkipped('Dragonfly caps expiry values at 2^28 - 1 seconds');
 
         $large_expiry = 3153600000;
         $this->redis->del('key');
@@ -1161,6 +1172,12 @@ class Redis_Test extends TestSuite {
         $this->redis->del('{idle}notakey');
 
         $this->assertTrue($this->redis->mset(['{idle}1' => 'beep', '{idle}2' => 'boop']));
+
+        if ($this->is_dragonfly) {
+            $this->assertEquals(2, $this->redis->touch('{idle}1', '{idle}2', '{idle}notakey'));
+            return;
+        }
+
         if ($this->minVersionCheck('5.0.0')) {
             /* Seed idle time instead of waiting for the server's LRU clock. */
             foreach (['{idle}1', '{idle}2'] as $key) {
@@ -2634,6 +2651,9 @@ class Redis_Test extends TestSuite {
 
         if (version_compare($this->version, '5.0.0') >= 0) {
             $this->assertGT(0, $this->redis->client('id'));
+            if ($this->is_dragonfly)
+                return;
+
             if (version_compare($this->version, '6.0.0') >= 0) {
                 $this->assertEquals(-1, $this->redis->client('getredir'));
                 $this->assertTrue($this->redis->client('tracking', 'on', ['optin' => true]));
@@ -2672,7 +2692,7 @@ class Redis_Test extends TestSuite {
 
     public function testWait() {
         // Closest we can check based on redis commit history
-        if (version_compare($this->version, '2.9.11') < 0)
+        if (version_compare($this->version, '2.9.11') < 0 || ! $this->haveCommand('WAIT'))
             $this->markTestSkipped();
 
         // We could have slaves here, so determine that
@@ -2724,18 +2744,20 @@ class Redis_Test extends TestSuite {
                 'total_commands_processed',
                 'role'
             ];
-            if (version_compare($this->version, '2.5.0') < 0) {
-                array_push($keys,
-                    'changes_since_last_save',
-                    'bgsave_in_progress',
-                    'last_save_time'
-                );
-            } else {
-                array_push($keys,
-                    'rdb_changes_since_last_save',
-                    'rdb_bgsave_in_progress',
-                    'rdb_last_save_time'
-                );
+            if ( ! $this->is_dragonfly) {
+                if (version_compare($this->version, '2.5.0') < 0) {
+                    array_push($keys,
+                        'changes_since_last_save',
+                        'bgsave_in_progress',
+                        'last_save_time'
+                    );
+                } else {
+                    array_push($keys,
+                        'rdb_changes_since_last_save',
+                        'rdb_bgsave_in_progress',
+                        'rdb_last_save_time'
+                    );
+                }
             }
 
             foreach ($keys as $k) {
@@ -2773,7 +2795,9 @@ class Redis_Test extends TestSuite {
         $this->assertArrayKey($hello, 'server');
         $this->assertArrayKey($hello, 'version');
 
-        $this->assertEquals($hello['server'], $this->redis->serverName());
+        $server = $this->is_dragonfly ? 'dragonfly' : $hello['server'];
+
+        $this->assertEquals($server, $this->redis->serverName());
         $this->assertEquals($hello['version'], $this->redis->serverVersion());
 
         $info = $this->redis->info();
@@ -2782,7 +2806,7 @@ class Redis_Test extends TestSuite {
         $cmd1 = $info['total_commands_processed'];
 
         /* Shouldn't hit the server */
-        $this->assertEquals($hello['server'], $this->redis->serverName());
+        $this->assertEquals($server, $this->redis->serverName());
         $this->assertEquals($hello['version'], $this->redis->serverVersion());
 
         $info = $this->redis->info();
@@ -2806,6 +2830,9 @@ class Redis_Test extends TestSuite {
         $this->assertIsArray($info);
 
         foreach ($info as $k => $value) {
+            if ($this->is_dragonfly && strpos($k, 'unknown_') === 0)
+                continue;
+
             $this->assertStringContains('cmdstat_', $k);
         }
     }
@@ -2816,7 +2843,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSwapDB() {
-        if (version_compare($this->version, '4.0.0') < 0)
+        if (version_compare($this->version, '4.0.0') < 0 || ! $this->haveCommand('SWAPDB'))
             $this->markTestSkipped();
 
         $this->assertTrue($this->redis->swapdb(0, 1));
@@ -3585,6 +3612,10 @@ class Redis_Test extends TestSuite {
             $this->MarkTestSkipped();
             return;
         }
+        if ($this->is_dragonfly) {
+            $this->MarkTestSkipped('Dragonfly returns an array when COUNT is omitted');
+            return;
+        }
         $this->redis->del('key');
         $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
         $this->assertInArray($this->redis->zRandMember('key'), ['a', 'b', 'c', 'd', 'e']);
@@ -3888,6 +3919,9 @@ class Redis_Test extends TestSuite {
     }
 
     public function testObject() {
+        if ($this->is_dragonfly)
+            $this->markTestSkipped();
+
         /* Version 3.0.0 (represented as >= 2.9.0 in redis info)  and moving
          * forward uses 'embstr' instead of 'raw' for small string values */
         if (version_compare($this->version, '2.9.0') < 0) {
@@ -3951,8 +3985,10 @@ class Redis_Test extends TestSuite {
         $zkey = '{reply-ctx}:zset';
         $hkey = '{reply-ctx}:hash';
         $skey = '{reply-ctx}:string';
+        // shortcut: Dragonfly needs COUNT until its scalar ZRANDMEMBER reply is fixed.
+        $zrand_args = $this->is_dragonfly ? [$zkey, ['count' => 1]] : [$zkey];
         $calls = [
-            ['zRandMember', [$zkey]],
+            ['zRandMember', $zrand_args],
             ['hMGet', [$hkey, ['field', 'missing']]], // Owned context between modes.
             ['zRandMember', [$zkey, ['count' => 1]]],
             ['zRandMember', [$zkey, ['count' => 1, 'withscores' => true]]],
@@ -3963,7 +3999,7 @@ class Redis_Test extends TestSuite {
             ['zRange', [$zkey, 0, -1, true]],
             ['hMGet', [$skey, ['field']]], // Error with an owned context.
             ['zRange', [$skey, 0, -1, true]], // Error with a mode context.
-            ['zRandMember', [$zkey]], // Verify parsing resumes after errors.
+            ['zRandMember', $zrand_args], // Verify parsing resumes after errors.
         ];
 
         $this->redis->del($zkey, $hkey, $skey);
@@ -3993,12 +4029,13 @@ class Redis_Test extends TestSuite {
         // Aborted transactions must release both modes and owned payloads.
         $other = $this->newInstance();
         $this->redis->watch($skey);
-        $this->redis->multi()->hMGet($hkey, ['field'])->zRandMember($zkey);
+        $this->redis->multi()->hMGet($hkey, ['field'])->zRandMember(...$zrand_args);
         $other->set($skey, 'changed');
         $cluster_class = $this->getRedisClusterClass();
         $aborted = $this->redis instanceof $cluster_class ? [false, false] : false;
         $this->assertEquals($aborted, $this->redis->exec());
-        $this->assertEquals('member', $this->redis->zRandMember($zkey));
+        $this->assertEquals($this->is_dragonfly ? ['member'] : 'member',
+                            $this->redis->zRandMember(...$zrand_args));
         $this->redis->del($zkey, $hkey, $skey);
     }
 
@@ -6222,7 +6259,8 @@ class Redis_Test extends TestSuite {
 
         /* Ensure we can set an IDLETIME */
         $this->assertTrue($this->redis->restore('foo', 0, $d_bar, ['REPLACE', 'IDLETIME' => 200]));
-        $this->assertGT(100, $this->redis->object('idletime', 'foo'));
+        if ( ! $this->is_dragonfly)
+            $this->assertGT(100, $this->redis->object('idletime', 'foo'));
 
         /* We can't neccissarily check this depending on LRU policy, but at least attempt to use
            the FREQ option */
@@ -6329,16 +6367,24 @@ class Redis_Test extends TestSuite {
         $nested_script = "
             return {
                 1,2,3, {
-                    redis.call('get', '{eval-key}-str1'),
-                    redis.call('get', '{eval-key}-str2'),
-                    redis.call('lrange', 'not-any-kind-of-list', 0, -1),
+                    redis.call('get', KEYS[1]),
+                    redis.call('get', KEYS[2]),
+                    redis.call('lrange', KEYS[3], 0, -1),
                     {
-                        redis.call('zrange', '{eval-key}-zset', 0, -1),
-                        redis.call('lrange', '{eval-key}-list', 0, -1)
+                        redis.call('zrange', KEYS[4], 0, -1),
+                        redis.call('lrange', KEYS[5], 0, -1)
                     }
                 }
             }
         ";
+
+        $nested_args = [
+            '{eval-key}-str1',
+            '{eval-key}-str2',
+            '{eval-key}-nolist',
+            '{eval-key}-zset',
+            '{eval-key}-list',
+        ];
 
         $expected = [
             1, 2, 3, [
@@ -6353,7 +6399,7 @@ class Redis_Test extends TestSuite {
         ];
 
         // Now run our script, and check our values against each other
-        $eval_result = $this->redis->eval($nested_script, ['{eval-key}-str1', '{eval-key}-str2', '{eval-key}-zset', '{eval-key}-list'], 4);
+        $eval_result = $this->redis->eval($nested_script, $nested_args, count($nested_args));
         $this->assertEquals($expected, $eval_result);
 
         /*
@@ -6368,7 +6414,7 @@ class Redis_Test extends TestSuite {
         foreach ($modes as $mode) {
             $this->redis->multi($mode);
             for ($i = 0; $i < $num_scripts; $i++) {
-                $this->redis->eval($nested_script, ['{eval-key}-dummy'], 1);
+                $this->redis->eval($nested_script, $nested_args, count($nested_args));
             }
             $replies = $this->redis->exec();
 
@@ -6703,14 +6749,14 @@ class Redis_Test extends TestSuite {
     public function testReplyLiteral() {
         $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
         $this->assertTrue($this->redis->rawCommand('set', 'foo', 'bar'));
-        $this->assertTrue($this->redis->eval("return redis.call('set', 'foo', 'bar')", [], 0));
+        $this->assertTrue($this->redis->eval("return redis.call('set', KEYS[1], 'bar')", ['foo'], 1));
 
         $rv = $this->redis->eval("return {redis.call('set', KEYS[1], 'bar'), redis.call('ping')}", ['foo'], 1);
         $this->assertEquals([true, true], $rv);
 
         $this->redis->setOption(Redis::OPT_REPLY_LITERAL, true);
         $this->assertEquals('OK', $this->redis->rawCommand('set', 'foo', 'bar'));
-        $this->assertEquals('OK', $this->redis->eval("return redis.call('set', 'foo', 'bar')", [], 0));
+        $this->assertEquals('OK', $this->redis->eval("return redis.call('set', KEYS[1], 'bar')", ['foo'], 1));
 
         // Nested
         $rv = $this->redis->eval("return {redis.call('set', KEYS[1], 'bar'), redis.call('ping')}", ['foo'], 1);
@@ -6791,6 +6837,9 @@ class Redis_Test extends TestSuite {
         }
 
         if ( ! $this->minVersionCheck('7.0.0'))
+            return;
+
+        if ($this->is_dragonfly)
             return;
 
         /* Test getting multiple values */
@@ -6915,7 +6964,7 @@ class Redis_Test extends TestSuite {
 
         $this->assertTrue($client->reconnect());
         $this->assertFalse(in_array($client->client('id'), $ids));
-        $this->assertFalse($client->client('getname'));
+        $this->assertNotEquals('must-not-be-reused', $client->client('getname'));
         $client->close();
     }
 
@@ -6960,7 +7009,8 @@ class Redis_Test extends TestSuite {
         $this->assertTrue($this->redis->client('setname', $key));
         $clients = array_column($this->redis->client('list'), 'addr', 'name');
         $other = $this->newInstance();
-        $this->assertTrue($other->client('kill', $clients[$key]));
+        // Dragonfly returns an integer for the legacy CLIENT KILL form.
+        $this->assertTrue(in_array($other->rawCommand('CLIENT', 'KILL', $clients[$key]), [true, 1], true));
 
         // Make sure we're still using the same DB.
         $this->assertKeyEquals($value, $key);
@@ -7198,8 +7248,11 @@ class Redis_Test extends TestSuite {
     }
 
     public function testHashExpiration() {
-        if ( ! $this->haveCommand('HEXPIRE'))
-            $this->markTestSkipped();
+        foreach (['HEXPIRE', 'HPEXPIRE', 'HEXPIREAT', 'HPEXPIREAT', 'HTTL',
+                  'HPTTL', 'HEXPIRETIME', 'HPEXPIRETIME', 'HPERSIST'] as $cmd) {
+            if ( ! $this->haveCommand($cmd))
+                $this->markTestSkipped("$cmd is not supported");
+        }
 
         $hexpire_cmds = [
             'hexpire'    => 10,
@@ -7856,6 +7909,12 @@ class Redis_Test extends TestSuite {
         $this->addCities('gk');
 
         $this->assertEquals(['Chico'], $this->redis->geosearch('gk', 'Chico', 1, 'm'));
+        $this->assertValidate($this->redis->geosearch('gk', 'Chico', 1, 'm', ['withhash']), function ($v) {
+            $this->assertArrayKey($v, 'Chico', 'is_array');
+            $this->assertEquals(count($v['Chico']), 1);
+            $this->assertArrayKey($v['Chico'], 0, 'is_int');
+            return true;
+        });
         $this->assertValidate($this->redis->geosearch('gk', 'Chico', 1, 'm', ['withcoord', 'withdist', 'withhash']), function ($v) {
             $this->assertArrayKey($v, 'Chico', 'is_array');
             $this->assertIsArray($v['Chico'], 3);
@@ -7892,7 +7951,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testGeoSearchStore() {
-        if ( ! $this->minVersionCheck('6.2.0'))
+        if ( ! $this->minVersionCheck('6.2.0') || ! $this->haveCommand('GEOSEARCHSTORE'))
             $this->markTestSkipped();
 
         $this->addCities('{gk}src');
@@ -8084,6 +8143,9 @@ class Redis_Test extends TestSuite {
         $this->assertNull($this->redis->getLastError());
 
         if ( ! $this->minVersionCheck('7.0.0'))
+            return;
+
+        if ($this->is_dragonfly)
             return;
 
         /* ENTRIESREAD */
@@ -8910,7 +8972,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testAcl() {
-        if ( ! $this->minVersionCheck('6.0'))
+        if ( ! $this->minVersionCheck('6.0') || $this->is_dragonfly)
             $this->markTestSkipped();
 
         /* ACL USERS/SETUSER */
@@ -9539,7 +9601,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testReset() {
-        if (version_compare($this->version, '6.2.0') < 0)
+        if (version_compare($this->version, '6.2.0') < 0 || ! $this->haveCommand('RESET'))
             $this->markTestSkipped();
 
         $this->assertTrue($this->redis->multi()->select(2)->set('foo', 'bar')->reset());
@@ -9569,6 +9631,14 @@ class Redis_Test extends TestSuite {
         $this->assertIsArray($commands);
         $this->assertEquals(count($commands), $this->redis->command('count'));
 
+        $info = $this->redis->command('info', 'GET');
+        $this->assertIsArray($info, 1);
+        $this->assertEquals('get', strtolower($info[0][0]));
+        $this->assertInArray('readonly', $info[0][2]);
+
+        if ($this->is_dragonfly)
+            return;
+
         if ( ! $this->is_keydb && $this->minVersionCheck('7.0')) {
             $infos = $this->redis->command('info');
             $this->assertIsArray($infos, count($commands));
@@ -9592,7 +9662,10 @@ class Redis_Test extends TestSuite {
     }
 
     public function testFunction() {
-        if (version_compare($this->version, '7.0') < 0)
+        if ($this->is_dragonfly)
+            $this->markTestSkipped('Dragonfly does not support Redis function libraries');
+
+        if (version_compare($this->version, '7.0') < 0 || ! $this->haveCommand('FUNCTION'))
             $this->markTestSkipped();
 
         $this->assertTrue($this->redis->function('flush', 'sync'));
@@ -9613,7 +9686,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testWaitAOF() {
-        if ( ! $this->minVersionCheck('7.2.0'))
+        if ( ! $this->minVersionCheck('7.2.0') || ! $this->haveCommand('WAITAOF'))
             $this->markTestSkipped();
 
         $res = $this->execWaitAOF();
