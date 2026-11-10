@@ -2927,17 +2927,15 @@ class Redis_Test extends TestSuite {
         $this->assertEquals($server, $this->redis->serverName());
         $this->assertEquals($hello['version'], $this->redis->serverVersion());
 
-        $info = $this->redis->info();
-
-        $this->assertArrayKey($info, 'total_commands_processed', 'is_int');
-        $cmd1 = $info['total_commands_processed'];
+        /* Count only this connection's traffic; Sentinel also sends commands. */
+        $getBytes = method_exists($this->redis, 'getTransferredBytes') ? 'getTransferredBytes' : 'getBytes';
+        $bytes = $this->redis->$getBytes();
 
         /* Shouldn't hit the server */
         $this->assertEquals($server, $this->redis->serverName());
         $this->assertEquals($hello['version'], $this->redis->serverVersion());
 
-        $info = $this->redis->info();
-        $this->assertArrayKeyEquals($info, 'total_commands_processed', 1 + $cmd1);
+        $this->assertEquals($bytes, $this->redis->$getBytes());
     }
 
     public function testServerInfoOldRedis() {

@@ -33,6 +33,13 @@ with tempfile.TemporaryDirectory() as directory:
                 capture_output=True, text=True,
             )
             assert result.returncode == (failure in selected), result.stdout + result.stderr
+            errors = [line for line in result.stdout.splitlines() if line.startswith("::error::")]
+            if failure in selected:
+                error = f"::error::{command[0]}: {failure} failed (see {failure} log above)"
+                assert errors == [error], result.stdout
+                assert f"::endgroup::\n{error}\n" in result.stdout, result.stdout
+            else:
+                assert not errors, result.stdout
             assert summary.read_text().splitlines() == [
                 f"- {command[0]} / {suite}: {'FAIL' if suite == failure else 'PASS'}"
                 for suite in selected
