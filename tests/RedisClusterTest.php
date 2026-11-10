@@ -375,6 +375,9 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testDirectedCommandsRejectUncoveredSlot() {
+        if ($this->is_dragonfly)
+            $this->markTestSkipped('Dragonfly does not support CLUSTER DELSLOTS');
+
         $class = $this->getRedisClusterClass();
         for ($i = 0; $i < 256; $i++) {
             $key = "{uncovered-directed-$i}key";
@@ -673,6 +676,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Regression test for directed commands in MULTI mode */
     public function testDirectedCommandsInMulti() {
+        if ($this->is_dragonfly)
+            $this->markTestSkipped('Dragonfly does not allow FLUSHDB/FLUSHALL in MULTI');
+
         $key = __METHOD__;
 
         $result = $this->redis
@@ -727,6 +733,10 @@ class Redis_Cluster_Test extends Redis_Test {
         /* We should be in there */
         $this->assertIsString($addr);
 
+        // shortcut: resume self-kill coverage when Dragonfly replies before closing the connection.
+        if ($this->is_dragonfly)
+            return;
+
         /* Kill our own client! */
         $this->assertTrue($this->redis->client($key, 'kill', $addr));
 
@@ -739,7 +749,8 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertIsArray($time, 2);
         foreach ([0, 1] as $key) {
             $this->assertArrayKey($time, $key, function ($value) {
-                return is_string($value) && preg_match('/^[0-9]+$/D', $value);
+                return (is_string($value) || ($this->is_dragonfly && is_int($value))) &&
+                       preg_match('/^[0-9]+$/D', $value);
             });
         }
     }
@@ -1027,6 +1038,33 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    public function testWatchMultipleSlotsOnSameNode() {
+        $key = uniqid('watch-slots:', true);
+        $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
+        $node = $this->redis->cluster($key, 'MYID');
+        for ($i = 0; $i < 1000; $i++) {
+            $other_key = "$key:$i";
+            if ($this->redis->cluster($other_key, 'KEYSLOT', $other_key) !== $slot &&
+                $this->redis->cluster($other_key, 'MYID') === $node)
+                break;
+        }
+        $this->assertLT(1000, $i);
+
+        $client = $this->newInstance();
+        $client->setOption(Redis::OPT_READ_TIMEOUT, 1);
+        try {
+            $this->assertTrue($client->watch($other_key));
+            // PING routes by slot without adding a second keyed command to Redis's transaction.
+            $client->multi()->ping($key)->get($other_key);
+            $this->redis->set($other_key, 'changed');
+            $this->assertEquals([false, false], $client->exec());
+            $this->assertEquals(['changed'], $client->multi()->get($other_key)->exec());
+        } finally {
+            $client->close();
+            $this->redis->del($key, $other_key);
+        }
+    }
+
     public function testDistributedMultiResults() {
         foreach ([['{a}:1', '{a}:2'], ['{a}:1', '{b}:2', '{a}:3']] as $keys) {
             $values = array_fill_keys($keys, 'value');
@@ -1088,6 +1126,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $this->assertIsArray($info);
         foreach ($info as $k => $value) {
+            if ($this->is_dragonfly && strpos($k, 'unknown_') === 0)
+                continue;
+
             $this->assertStringContains('cmdstat_', $k);
         }
     }
