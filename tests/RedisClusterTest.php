@@ -51,6 +51,26 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
     public function testConnectDatabaseSelect() { $this->markTestSkipped(); }
+    /* BLESS SCAN cursors are per node, so RedisCluster needs a key or node */
+    protected function blessScan(?string $directive, ?array $options = null, $node = 'bless') {
+        return $this->redis->bless('SCAN', null, $directive, $options, $node);
+    }
+
+    protected function blessScanAll(string $directive, ?array $options = null): array {
+        $keys = [];
+        foreach ($this->redis->_masters() as $master) {
+            $scan = $this->blessScan($directive, $options, $master);
+            $keys = array_merge($keys, iterator_to_array($scan, false));
+        }
+
+        return $keys;
+    }
+
+    public function testBlessScanRequiresNode() {
+        $this->assertFalse(@$this->redis->bless('SCAN', null, 'NO-EVICT'));
+        $this->assertFalse(@$this->redis->bless('GET', 'key', null, null, 'key'));
+    }
+
     public function testReconnectPooledConnection() {
         if (!ini_get('redis.pconnect.pooling_enabled'))
             $this->markTestSkipped('Requires connection pooling');

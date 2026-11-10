@@ -413,6 +413,158 @@ class Redis_Test extends TestSuite {
             }
         }
     }
+    /* Returns a BLESS SCAN iterator. RedisCluster also needs a key or node. */
+    protected function blessScan(?string $directive, ?array $options = null, $node = 'bless') {
+        return $this->redis->bless('SCAN', null, $directive, $options);
+    }
+
+    /* Every key BLESS SCAN finds. RedisCluster scans every primary. */
+    protected function blessScanAll(string $directive, ?array $options = null): array {
+        return iterator_to_array($this->blessScan($directive, $options), false);
+    }
+
+    public function testBless() {
+        if ( ! $this->haveCommand('BLESS'))
+            $this->markTestSkipped();
+
+        foreach ([123, "bless\0key"] as $key) {
+            $this->redis->set((string)$key, 'value');
+            foreach ([false, true] as $multi) {
+                if ($multi)
+                    $this->redis->multi();
+
+                $res = [
+                    $this->redis->bless('get', $key),
+                    $this->redis->bless('set', $key, 'no-evict'),
+                    $this->redis->bless('SET', $key, 'NO-EVICT'),
+                    $this->redis->bless('GET', $key),
+                    $this->redis->bless('clear', $key, 'NO-EVICT'),
+                    $this->redis->bless('CLEAR', $key, 'NO-EVICT'),
+                    $this->redis->bless('GET', $key),
+                ];
+
+                if ($multi) {
+                    $this->assertEquals(array_fill(0, 7, $this->redis), $res);
+                    $res = $this->redis->exec();
+                }
+
+                $this->assertEquals([[], 1, 0, ['NO-EVICT'], 1, 0, []], $res);
+            }
+            $this->assertEquals('value', $this->redis->get((string)$key));
+            $this->redis->del((string)$key);
+        }
+
+        $this->redis->del('bless-missing');
+        $this->assertFalse(@$this->redis->bless('GET', 'bless-missing'));
+        $this->assertFalse(@$this->redis->bless('SET', 'bless-missing', 'NO-EVICT'));
+    }
+
+    public function testBlessScan() {
+        if ( ! $this->haveCommand('BLESS'))
+            $this->markTestSkipped();
+
+        $prefix = uniqid('bless-scan:') . ':';
+        $keys = array_map('strval', range(1, 20));
+
+        $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+        try {
+            foreach ($keys as $key) {
+                $this->redis->set($key, 'value');
+                $this->assertEquals(1, $this->redis->bless('SET', $key, 'NO-EVICT'));
+            }
+            $this->redis->set('unblessed', 'value');
+
+            /* Keys keep their prefix, and SCAN may return duplicates */
+            $found = array_unique($this->blessScanAll('NO-EVICT', ['COUNT' => 1]));
+            $found = array_filter($found, function ($key) use ($prefix) {
+                return strpos($key, $prefix) === 0;
+            });
+            $this->assertEqualsCanonicalizing(array_map(function ($key) use ($prefix) {
+                return $prefix . $key;
+            }, $keys), array_values($found));
+        } finally {
+            $this->redis->del(array_merge($keys, ['unblessed']));
+            $this->redis->setOption(Redis::OPT_PREFIX, '');
+        }
+    }
+
+    public function testBlessScanIterator() {
+        if ( ! $this->haveCommand('BLESS'))
+            $this->markTestSkipped();
+
+        $this->redis->set('bless-iter', 'value');
+        $this->redis->bless('SET', 'bless-iter', 'NO-EVICT');
+
+        try {
+            $scan = $this->blessScan('NO-EVICT', null, 'bless-iter');
+            $this->assertTrue($scan instanceof Iterator);
+
+            /* Iterating twice rewinds to cursor zero */
+            $keys = iterator_to_array($scan);
+            $this->assertInArray('bless-iter', $keys);
+            $this->assertEquals($keys, iterator_to_array($scan));
+            $this->assertFalse($scan->valid());
+            $this->assertEquals(null, $scan->current());
+            $this->assertEquals(null, $scan->key());
+
+            /* Works as a generator delegate */
+            $delegate = function ($it) { yield from $it; };
+            $this->assertEquals(array_values($keys),
+                                iterator_to_array($delegate($scan), false));
+
+            $this->assertNotSerializable($scan);
+            foreach (['clone', 'new'] as $op) {
+                try {
+                    $class = get_class($scan);
+                    $op == 'clone' ? clone $scan : new $class();
+                    $this->assert("Expected $op to throw");
+                } catch (Error $e) {
+                    $this->assertTrue(true);
+                }
+            }
+        } finally {
+            $this->redis->del('bless-iter');
+        }
+
+        /* Server errors are thrown while iterating */
+        $scan = $this->blessScan('invalid', null, 'bless-iter');
+        $this->assertThrowsMatch($scan, function ($scan) {
+            iterator_to_array($scan);
+        });
+        $this->assertFalse($scan->valid());
+
+        /* SCAN needs atomic mode both to create and fetch pages */
+        foreach ([false, true] as $deferred) {
+            $scan = $deferred ? $this->blessScan('NO-EVICT', null, 'bless-iter') : null;
+            $this->redis->multi();
+            $this->assertThrowsMatch($scan, function ($scan) {
+                $scan ? $scan->valid() : $this->blessScan('NO-EVICT', null, 'bless-iter');
+            }, '/atomic mode/');
+            $this->redis->discard();
+        }
+    }
+
+    public function testBlessInvalidArgs() {
+        foreach ([['GET'], ['GET', null], ['SET', null, 'NO-EVICT'], ['SCAN', 0, 'NO-EVICT'],
+                  ['INVALID', 'key'], ['SET', 'key'], ['CLEAR', 'key'], ['SCAN'],
+                  ['GET', 'key', 'NO-EVICT'], ['SET', 'key', 'NO-EVICT', ['COUNT' => 1]],
+                  ['SCAN', null, 'NO-EVICT', ['MATCH' => '*']],
+                  ['SCAN', null, 'NO-EVICT', ['COUNT' => 0]],
+                  ['SCAN', null, 'NO-EVICT', ['COUNT' => []]]] as $args)
+        {
+            $this->assertFalse(@$this->redis->bless(...$args));
+        }
+
+        foreach ([false, 1.5, [], new stdClass()] as $key) {
+            try {
+                $this->redis->bless('GET', $key);
+                $this->assert('Expected TypeError');
+            } catch (TypeError $e) {
+                $this->assertStringContains('$key', $e->getMessage());
+            }
+        }
+    }
+
 
     public function testBitop() {
         if ( ! $this->minVersionCheck('2.6.0'))
