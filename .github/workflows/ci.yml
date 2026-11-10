@@ -103,7 +103,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends valgrind libzstd-dev liblz4-dev libssl-dev
 
       - name: Install Redis
-        if: matrix.server == 'redis'
+        # Dragonfly uses Redis Sentinel; MYID requires Redis >= 6.2.
+        if: matrix.server == 'redis' || matrix.server == 'dragonfly'
         env:
           REDIS_PPA_URI: "packages.redis.io/deb"
           REDIS_PPA_KEY: "packages.redis.io/gpg"
