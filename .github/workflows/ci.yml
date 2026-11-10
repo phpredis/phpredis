@@ -176,7 +176,6 @@ jobs:
       # Keep collecting memory diagnostics even if a regular suite failed.
       - name: Run tests using valgrind
         if: ${{ !cancelled() && steps.servers.outcome == 'success' }}
-        continue-on-error: true
         run: |
           bash .github/scripts/run-tests.sh valgrind \
             --suppressions=tests/vg.supp --error-exitcode=1 php
