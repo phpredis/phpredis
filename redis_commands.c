@@ -2777,6 +2777,119 @@ RedisCmd *redis_increx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     return cmd;
 }
 
+/* Only peek at the operation; redis_bless_parse enforces the real signature. */
+zend_string *redis_bless_op(INTERNAL_FUNCTION_PARAMETERS) {
+    zend_string *op;
+
+    ZEND_PARSE_PARAMETERS_START(1, -1)
+        Z_PARAM_STR(op)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    return op;
+}
+
+/* BLESS GET key | BLESS SET|CLEAR key directive | BLESS SCAN cursor directive [COUNT n]
+ * RedisCluster additionally takes a key_or_address, which SCAN requires. */
+int redis_bless_parse(INTERNAL_FUNCTION_PARAMETERS, zend_bool cluster, redisBlessArgs *args)
+{
+    HashTable *options = NULL;
+    zend_string *name;
+    zval *value;
+    zend_bool get;
+
+    memset(args, 0, sizeof(*args));
+
+    ZEND_PARSE_PARAMETERS_START(1, cluster ? 5 : 4)
+        Z_PARAM_STR(args->op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(args->key)
+        Z_PARAM_STR_OR_NULL(args->directive)
+        Z_PARAM_ARRAY_HT_OR_NULL(options)
+        Z_PARAM_ZVAL_OR_NULL(args->node)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (args->key && Z_TYPE_P(args->key) != IS_STRING && Z_TYPE_P(args->key) != IS_LONG) {
+        zend_type_error("%s::bless(): Argument #2 ($key) must be of type string|int|null",
+                        cluster ? "RedisCluster" : "Redis");
+        return FAILURE;
+    }
+
+    args->scan = zend_string_equals_literal_ci(args->op, "SCAN");
+    get = zend_string_equals_literal_ci(args->op, "GET");
+
+    if (!args->scan && !get && !zend_string_equals_literal_ci(args->op, "SET") &&
+        !zend_string_equals_literal_ci(args->op, "CLEAR"))
+    {
+        php_error_docref(NULL, E_WARNING, "Unknown BLESS operation '%s'", ZSTR_VAL(args->op));
+        return FAILURE;
+    }
+    if (args->scan ? args->key != NULL : args->key == NULL) {
+        php_error_docref(NULL, E_WARNING, "BLESS %s %s a key", ZSTR_VAL(args->op),
+                         args->scan ? "does not accept" : "requires");
+        return FAILURE;
+    }
+    if (get ? args->directive != NULL : args->directive == NULL) {
+        php_error_docref(NULL, E_WARNING, "BLESS %s %s a directive", ZSTR_VAL(args->op),
+                         get ? "does not accept" : "requires");
+        return FAILURE;
+    }
+    if (!args->scan && ((options && zend_hash_num_elements(options)) || args->node)) {
+        php_error_docref(NULL, E_WARNING, "Options and key_or_address are only supported for BLESS SCAN");
+        return FAILURE;
+    }
+    if (cluster && args->scan && (args->node == NULL ||
+        (Z_TYPE_P(args->node) != IS_STRING && Z_TYPE_P(args->node) != IS_ARRAY)))
+    {
+        php_error_docref(NULL, E_WARNING, "BLESS SCAN requires a key_or_address string or array");
+        return FAILURE;
+    }
+
+    if (options) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(options, name, value) {
+            ZVAL_DEREF(value);
+            if (name == NULL || !zend_string_equals_literal_ci(name, "COUNT")) {
+                php_error_docref(NULL, E_WARNING, "Unknown BLESS SCAN option");
+                return FAILURE;
+            }
+            if (Z_TYPE_P(value) != IS_LONG || Z_LVAL_P(value) < 1) {
+                php_error_docref(NULL, E_WARNING, "COUNT must be a positive integer");
+                return FAILURE;
+            }
+            args->count = Z_LVAL_P(value);
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    return SUCCESS;
+}
+
+/* GET, SET and CLEAR. SCAN never gets here, it's handled by RedisBlessScanIterator. */
+static RedisCmd *
+redis_bless_cmd_ex(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zend_bool cluster)
+{
+    redisBlessArgs args;
+    RedisCmd *cmd;
+
+    if (redis_bless_parse(INTERNAL_FUNCTION_PARAM_PASSTHRU, cluster, &args) != SUCCESS)
+        return NULL;
+
+    ZEND_ASSERT(!args.scan);
+
+    cmd = redis_cmd_create_literal(redis_sock, "BLESS");
+    redis_cmd_cat_zstr(cmd, args.op);
+    redis_cmd_cat_key_zval(cmd, args.key);
+    redis_cmd_cat_zstr_if(cmd, args.directive != NULL, args.directive);
+
+    return cmd;
+}
+
+RedisCmd *redis_bless_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    return redis_bless_cmd_ex(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 0);
+}
+
+RedisCmd *redis_cluster_bless_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    return redis_bless_cmd_ex(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1);
+}
+
 typedef enum xdelExMode {
     REDIS_XDELEX_NONE,
     REDIS_XDELEX_KEEPREF,

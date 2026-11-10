@@ -161,6 +161,14 @@ class RedisCluster {
     public function bitrangeintarray(string $key, int $start, int $end, ?array $options = null): RedisCluster|array|false;
 
     /**
+     * @see \Redis::bless()
+     *
+     * SCAN additionally requires `$key_or_address` and stays on the node it selects.
+     * SET, CLEAR and GET route by key; `$key_or_address` is only accepted for SCAN.
+     */
+    public function bless(string $command, string|int|null $key = null, ?string $directive = null, ?array $options = null, array|string|null $key_or_address = null): mixed;
+
+    /**
      * @see \Redis::blPop()
      */
     public function blpop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): RedisCluster|array|null|false;

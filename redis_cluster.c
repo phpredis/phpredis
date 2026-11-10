@@ -3500,6 +3500,50 @@ PHP_METHOD(RedisCluster, rawcommand) {
 }
 /* }}} */
 
+/* {{{ proto mixed RedisCluster::bless(string $command, string|int|null $key = null,
+ *                                    ?string $directive = null, ?array $options = null,
+ *                                    array|string|null $key_or_address = null) */
+PHP_METHOD(RedisCluster, bless) {
+    redisCluster *c = GET_CONTEXT();
+    redisBlessArgs args;
+    RedisSock *sock;
+    zend_string *op;
+    zval node;
+    short slot;
+
+    if ((op = redis_bless_op(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL)
+        RETURN_FALSE;
+
+    if (!zend_string_equals_literal_ci(op, "SCAN")) {
+        CLUSTER_PROCESS_CMD(cluster_bless, cluster_variant_raw_resp, 0);
+        return;
+    }
+
+    if (redis_bless_parse(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1, &args) != SUCCESS)
+        RETURN_FALSE;
+
+    if (!cluster_is_atomic(c)) {
+        CLUSTER_THROW_EXCEPTION("BLESS SCAN requires atomic mode", 0);
+        RETURN_FALSE;
+    }
+
+    if ((slot = cluster_cmd_get_slot(c, args.node)) < 0)
+        RETURN_FALSE;
+
+    if (c->master[slot] == NULL || (sock = c->master[slot]->sock) == NULL) {
+        CLUSTER_THROW_EXCEPTION("Slot is not covered by any node", 0);
+        RETURN_FALSE;
+    }
+
+    /* Cursors are per node, so pin the scan to this node's address */
+    array_init(&node);
+    add_next_index_str(&node, zend_string_copy(sock->host));
+    add_next_index_long(&node, sock->port);
+
+    redis_bless_scan_init(return_value, getThis(), 1, &args, &node);
+}
+/* }}} */
+
 /* {{{ proto array RedisCluster::command()
  *     proto array RedisCluster::command('INFO', string cmd)
  *     proto array RedisCluster::command('GETKEYS', array cmd_args) */
