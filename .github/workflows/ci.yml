@@ -158,12 +158,14 @@ jobs:
           sudo make install
           echo 'extension = redis.so' | sudo tee "$(php-config --ini-dir)"/90-redis.ini
 
-      - name: Attempt to shutdown default server
+      - name: Stop default servers
         run: |
+          # SHUTDOWN alone lets systemd restart Redis and race our test server.
+          if systemctl cat redis-server >/dev/null 2>&1; then
+            sudo systemctl stop redis-server
+          fi
           if [ "${{ matrix.server }}" = dragonfly ]; then
-            sudo systemctl stop dragonfly redis-server || true
-          else
-            ${{ matrix.server }}-cli SHUTDOWN NOSAVE || true
+            sudo systemctl stop dragonfly
           fi
 
       - name: Start standalone, TLS, cluster and Sentinel servers
@@ -268,8 +270,11 @@ jobs:
           sudo make install
           echo 'extension = redis.so' | sudo tee "$(php-config --ini-dir)"/90-redis.ini
 
-      - name: Attempt to shutdown default server
-        run: ${{ matrix.server }}-cli SHUTDOWN NOSAVE || true
+      - name: Stop default Redis server
+        run: |
+          if systemctl cat redis-server >/dev/null 2>&1; then
+            sudo systemctl stop redis-server
+          fi
 
       - name: Start test servers
         run: |

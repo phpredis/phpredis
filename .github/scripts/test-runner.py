@@ -13,7 +13,13 @@ suites = ["Redis", "RedisArray", "RedisCluster", "RedisSentinel"]
 with tempfile.TemporaryDirectory() as directory:
     root = Path(directory)
     php = root / "php"
-    php.write_text('#!/bin/bash\necho "$*"\n[[ $3 != "$FAIL_SUITE" ]]\n')
+    php.write_text('''#!/bin/bash
+echo "$*"
+if [[ $3 == "$FAIL_SUITE" ]]; then
+    [[ -z $FAIL_DETAIL ]] || echo "$FAIL_DETAIL" >&2
+    exit 23
+fi
+''')
     php.chmod(0o755)
     valgrind = root / "valgrind"
     valgrind.write_text('#!/bin/bash\n[[ $1 == --error-exitcode=1 ]] || exit 2\nshift\nexec "$@"\n')
@@ -21,7 +27,9 @@ with tempfile.TemporaryDirectory() as directory:
     commands = (["php"], ["valgrind", "--error-exitcode=1", "php"])
     for command, selection in product(commands, ("", "Redis RedisCluster")):
         selected = selection.split() if selection else suites
-        for failure in ["", *suites]:
+        reasons = ("", "Uncaught exception 'WRONGPASS' (testPing) at RedisTest.php:187",
+                   "==42== Invalid read of size 8")
+        for failure, reason in product(["", *suites], reasons):
             shutil.rmtree(root / "phpredis-tests", ignore_errors=True)
             summary = root / "summary"
             summary.write_text("")
@@ -29,19 +37,20 @@ with tempfile.TemporaryDirectory() as directory:
                 ["bash", str(runner), *command],
                 env={**os.environ, "PATH": f"{root}:{os.environ['PATH']}",
                      "RUNNER_TEMP": directory, "GITHUB_STEP_SUMMARY": str(summary),
-                     "FAIL_SUITE": failure, "PHPREDIS_TEST_SUITES": selection},
+                     "FAIL_SUITE": failure, "FAIL_DETAIL": reason,
+                     "PHPREDIS_TEST_SUITES": selection},
                 capture_output=True, text=True,
             )
             assert result.returncode == (failure in selected), result.stdout + result.stderr
             errors = [line for line in result.stdout.splitlines() if line.startswith("::error::")]
+            detail = f"{command[0]}: {failure} failed (exit 23). {reason or f'See {failure} log above'}"
             if failure in selected:
-                error = f"::error::{command[0]}: {failure} failed (see {failure} log above)"
-                assert errors == [error], result.stdout
-                assert f"::endgroup::\n{error}\n" in result.stdout, result.stdout
+                assert errors == ["::error::" + detail], result.stdout
+                assert f"::endgroup::\n::error::{detail}\n" in result.stdout, result.stdout
             else:
                 assert not errors, result.stdout
             assert summary.read_text().splitlines() == [
-                f"- {command[0]} / {suite}: {'FAIL' if suite == failure else 'PASS'}"
+                f"- {detail}" if suite == failure else f"- {command[0]} / {suite}: PASS"
                 for suite in selected
             ]
             logs = root / "phpredis-tests" / command[0]
@@ -50,6 +59,8 @@ with tempfile.TemporaryDirectory() as directory:
                 expected = f"tests/TestRedis.php --class {suite} --auth phpredis --nocolors"
                 if suite != "RedisSentinel":
                     expected += " --user phpredis"
+                if suite == failure and reason:
+                    expected += "\n" + reason
                 log = root / "phpredis-tests" / command[0] / f"{suite}.log"
                 assert log.read_text().strip() == expected
 
