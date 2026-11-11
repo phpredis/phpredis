@@ -14,17 +14,19 @@ for suite in "${suites[@]}"; do
         args+=(--user phpredis)
     fi
     echo "::group::$mode: $suite"
-    if "$@" tests/TestRedis.php "${args[@]}" 2>&1 | tee "$logs/$suite.log"; then
-        result=PASS
-    else
-        result=FAIL
-        status=1
-    fi
+    code=0
+    "$@" tests/TestRedis.php "${args[@]}" 2>&1 | tee "$logs/$suite.log" || code=${PIPESTATUS[0]}
     echo "::endgroup::"
-    if [[ $result == FAIL ]]; then
-        echo "::error::$mode: $suite failed (see $suite log above)"
+    if (( code == 0 )); then
+        echo "- $mode / $suite: PASS" >> "$GITHUB_STEP_SUMMARY"
+        continue
     fi
-    echo "- $mode / $suite: $result" >> "$GITHUB_STEP_SUMMARY"
+    status=1
+    # Surface the first fatal line so flaky failures are diagnosable from the annotation.
+    reason=$(grep -m 1 -E '^(Uncaught |Assertion failed:|(PHP )?Fatal error:|==[0-9]+== (Invalid |Use of uninitialised|Conditional jump|ERROR SUMMARY: [1-9]))' "$logs/$suite.log" || true)
+    detail="$mode: $suite failed (exit $code). ${reason:-See $suite log above}"
+    echo "::error::${detail//'%'/'%25'}"
+    echo "- $detail" >> "$GITHUB_STEP_SUMMARY"
 done
 
 exit "$status"
