@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
 backend=${1:?Expected redis, valkey or dragonfly}
 server="$backend-server"
@@ -11,6 +11,11 @@ fi
 state="${RUNNER_TEMP:?}/phpredis-servers"
 acl="$PWD/tests/users.acl"
 mkdir -p "$state" tests/nodes
+trap 'status=$?
+    echo "::error::Server setup failed at line $LINENO (exit $status): $BASH_COMMAND" >&2
+    tail -n 40 "$state"/*/server.log >&2 || true
+    exit "$status"
+' ERR
 
 start_server() {
     local name=$1
@@ -30,10 +35,13 @@ start_server() {
 }
 
 wait_for() {
-    local start=$SECONDS
-    until "$cli" "$@" 2>&1 | grep -qE '^(PONG|cluster_state:ok)'; do
+    local start=$SECONDS response
+    # A failed AUTH can still be followed by PONG from an unauthenticated server.
+    until response=$("$cli" "$@" 2>&1) &&
+        { [[ $response == PONG ]] || [[ $response =~ ^cluster_state:ok($|[[:space:]]) ]]; }; do
         if (( SECONDS - start >= 30 )); then
             echo "Timed out waiting for $cli $*" >&2
+            printf '%s\n' "$response" >&2
             return 1
         fi
         sleep .5
