@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="index, follow, all" />
+    <title>RedisBlessScanIterator | PhpRedis API</title>
+
+                <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css">
+        <link rel="stylesheet" type="text/css" href="css/doctum.css">
+        <link rel="stylesheet" type="text/css" href="fonts/doctum-font.css">
+        <script src="js/jquery-3.5.1.slim.min.js"></script>
+        <script async defer src="doctum.js"></script>
+        <script async defer src="js/bootstrap.min.js"></script>
+        <script async defer src="js/autocomplete.min.js"></script>
+        <meta name="MobileOptimized" content="width">
+        <meta name="HandheldFriendly" content="true">
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+    <link rel="stylesheet" type="text/css" href="css/highlight-github.min.css">
+    <script defer src="js/highlight.min.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+            if (!window.hljs) {
+                return;
+            }
+
+            function ensureCustomClassesAreBuiltIn() {
+                var classesToAdd = ['Redis', 'RedisCluster', 'RedisArray'];
+
+                if (!hljs.getLanguage) {
+                    return;
+                }
+
+                var phpLanguage = hljs.getLanguage('php');
+                if (!phpLanguage || !phpLanguage.keywords) {
+                    return;
+                }
+
+                var builtIns = phpLanguage.keywords.built_in;
+                if (!builtIns) {
+                    phpLanguage.keywords.built_in = classesToAdd.join(' ');
+                    return;
+                }
+
+                if (Array.isArray(builtIns)) {
+                    classesToAdd.forEach(function (className) {
+                        if (builtIns.indexOf(className) === -1) {
+                            builtIns.push(className);
+                        }
+                    });
+                    return;
+                }
+
+                if (typeof builtIns === 'string') {
+                    classesToAdd.forEach(function (className) {
+                        if (builtIns.indexOf(className) === -1) {
+                            builtIns += ' ' + className;
+                        }
+                    });
+                    phpLanguage.keywords.built_in = builtIns;
+                }
+            }
+
+            function collectLinkMetadata(container, typeText) {
+                var anchors = container.querySelectorAll('a');
+                var lastIndex = 0;
+                var meta = [];
+
+                for (var i = 0; i < anchors.length; i++) {
+                    var anchor = anchors[i];
+                    var text = anchor.textContent.trim();
+                    if (!text) {
+                        continue;
+                    }
+
+                    var href = anchor.getAttribute('href');
+                    var start = typeText.indexOf(text, lastIndex);
+
+                    if (start === -1) {
+                        start = typeText.indexOf(text);
+                        if (start === -1) {
+                            continue;
+                        }
+                    }
+
+                    meta.push({
+                        start: start,
+                        end: start + text.length,
+                        href: href
+                    });
+
+                    lastIndex = start + text.length;
+                }
+
+                return meta;
+            }
+
+            function findTextPosition(container, targetIndex) {
+                var walker = document.createTreeWalker(
+                    container,
+                    NodeFilter.SHOW_TEXT,
+                    null
+                );
+
+                var currentIndex = 0;
+                var currentNode;
+
+                while ((currentNode = walker.nextNode())) {
+                    var nextIndex = currentIndex + currentNode.textContent.length;
+
+                    if (targetIndex <= nextIndex) {
+                        return {
+                            node: currentNode,
+                            offset: targetIndex - currentIndex
+                        };
+                    }
+
+                    currentIndex = nextIndex;
+                }
+
+                return null;
+            }
+
+            function restoreLinks(codeElement, meta) {
+                var sorted = meta.slice().sort(function (a, b) {
+                    return b.start - a.start;
+                });
+
+                for (var i = 0; i < sorted.length; i++) {
+                    var info = sorted[i];
+                    var startPos = findTextPosition(codeElement, info.start);
+                    var endPos = findTextPosition(codeElement, info.end);
+
+                    if (!startPos || !endPos) {
+                        continue;
+                    }
+
+                    var range = document.createRange();
+                    range.setStart(startPos.node, startPos.offset);
+                    range.setEnd(endPos.node, endPos.offset);
+
+                    var anchor = document.createElement('a');
+                    anchor.setAttribute('href', info.href);
+                    anchor.appendChild(range.extractContents());
+                    range.insertNode(anchor);
+                    range.detach();
+                }
+            }
+
+            function highlightAndRestore(codeElement, metadata) {
+                hljs.highlightElement(codeElement);
+
+                if (metadata && metadata.length) {
+                    restoreLinks(codeElement, metadata);
+                }
+            }
+
+            ensureCustomClassesAreBuiltIn();
+
+            var exampleBlocks = document.querySelectorAll('pre.examples');
+            exampleBlocks.forEach(function (block) {
+                if (!block.dataset.language) {
+                    block.dataset.language = 'php';
+                }
+                block.classList.add('language-php');
+                hljs.highlightElement(block);
+            });
+
+            var signatureBlocks = document.querySelectorAll('code.method-signature');
+            signatureBlocks.forEach(function (block) {
+                if (!block.classList.contains('language-php')) {
+                    block.classList.add('language-php');
+                }
+                hljs.highlightElement(block);
+            });
+
+            var phpCodeBlocks = document.querySelectorAll('pre code.language-php');
+            phpCodeBlocks.forEach(function (block) {
+                if (block.classList.contains('method-signature')) {
+                    return;
+                }
+
+                if (block.closest('pre.examples')) {
+                    return;
+                }
+
+                if (block.parentElement && !block.parentElement.classList.contains('language-php')) {
+                    block.parentElement.classList.add('language-php');
+                }
+
+                hljs.highlightElement(block);
+            });
+
+            highlightReturnTypes();
+            highlightMethodParameters();
+            highlightApiIndex();
+
+            function highlightReturnTypes() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var containers = document.querySelectorAll('.return-value-content');
+                containers.forEach(function (container) {
+                    var table = container.querySelector('table');
+                    if (!table) {
+                        return;
+                    }
+
+                    table.querySelectorAll('tr').forEach(function (row) {
+                        var typeCell = row.querySelector('td');
+                        if (!typeCell || typeCell.querySelector('code.return-type')) {
+                            return;
+                        }
+
+                        var typeText = typeCell.textContent.trim();
+                        if (!typeText) {
+                            return;
+                        }
+
+                        var linkMeta = collectLinkMetadata(typeCell, typeText);
+                        var code = document.createElement('code');
+                        code.className = 'return-type language-php';
+                        code.textContent = typeText;
+
+                        typeCell.innerHTML = '';
+                        typeCell.appendChild(code);
+
+                        highlightAndRestore(code, linkMeta);
+                    });
+                });
+            }
+
+            function highlightMethodParameters() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var headings = document.querySelectorAll('.tags > h4');
+                headings.forEach(function (heading) {
+                    if (!heading.textContent || heading.textContent.trim() !== 'Parameters') {
+                        return;
+                    }
+
+                    var table = heading.nextElementSibling;
+                    while (table && table.tagName !== 'TABLE') {
+                        table = table.nextElementSibling;
+                    }
+
+                    if (!table) {
+                        return;
+                    }
+
+                    table.querySelectorAll('tr').forEach(function (row) {
+                        var cells = row.querySelectorAll('td');
+                        if (!cells.length) {
+                            return;
+                        }
+
+                        enhanceParameterCell(cells[0], 'parameter-type');
+
+                        if (cells.length > 1) {
+                            enhanceParameterCell(cells[1], 'parameter-name');
+                        }
+                    });
+                });
+
+                function enhanceParameterCell(cell, className) {
+                    if (!cell || cell.querySelector('code.' + className)) {
+                        return;
+                    }
+
+                    var cellText = cell.textContent.trim();
+                    if (!cellText) {
+                        return;
+                    }
+
+                    var meta = collectLinkMetadata(cell, cellText);
+                    var code = document.createElement('code');
+                    code.className = className + ' language-php';
+                    code.textContent = cellText;
+
+                    cell.innerHTML = '';
+                    cell.appendChild(code);
+
+                    highlightAndRestore(code, meta);
+                }
+            }
+
+            function highlightApiIndex() {
+                if (!document.createTreeWalker || !window.NodeFilter) {
+                    return;
+                }
+
+                var potentialContainers = document.querySelectorAll('.container-fluid.underlined');
+                var containers = [];
+                var anchorSelector = '.row .col-md-8 > a[href^="#method_"]';
+
+                for (var i = 0; i < potentialContainers.length; i++) {
+                    var candidate = potentialContainers[i];
+                    if (!candidate.querySelector(anchorSelector)) {
+                        continue;
+                    }
+
+                    var heading = candidate.previousElementSibling;
+                    if (heading && heading.tagName === 'H2' && heading.textContent && heading.textContent.trim() === 'Methods') {
+                        containers.push(candidate);
+                    }
+                }
+
+                if (!containers.length) {
+                    return;
+                }
+
+                for (var j = 0; j < containers.length; j++) {
+                    var container = containers[j];
+                    var rows = container.querySelectorAll('.row');
+
+                    for (var k = 0; k < rows.length; k++) {
+                        var row = rows[k];
+                        enhanceTypeCell(row.querySelector('.col-md-2.type'));
+                        enhanceSignatureCell(row.querySelector('.col-md-8'));
+                    }
+                }
+
+                function enhanceTypeCell(typeCell) {
+                    if (!typeCell || typeCell.querySelector('code.method-index-type')) {
+                        return;
+                    }
+
+                    var typeText = typeCell.textContent.trim();
+                    if (!typeText) {
+                        return;
+                    }
+
+                    var meta = collectLinkMetadata(typeCell, typeText);
+
+                    var code = document.createElement('code');
+                    code.className = 'method-index-type language-php';
+                    code.textContent = typeText;
+
+                    typeCell.innerHTML = '';
+                    typeCell.appendChild(code);
+
+                    highlightAndRestore(code, meta);
+                }
+
+                function enhanceSignatureCell(signatureCell) {
+                    if (!signatureCell || signatureCell.querySelector('code.method-index-signature')) {
+                        return;
+                    }
+
+                    var descriptionStart = null;
+                    for (var i = 0; i < signatureCell.children.length; i++) {
+                        var child = signatureCell.children[i];
+                        if (child.tagName === 'P') {
+                            descriptionStart = child;
+                            break;
+                        }
+                    }
+
+                    var nodesToProcess = [];
+                    var current = signatureCell.firstChild;
+                    while (current && current !== descriptionStart) {
+                        nodesToProcess.push(current);
+                        current = current.nextSibling;
+                    }
+
+                    if (!nodesToProcess.length) {
+                        return;
+                    }
+
+                    var signatureText = '';
+                    for (var j = 0; j < nodesToProcess.length; j++) {
+                        signatureText += nodesToProcess[j].textContent || '';
+                    }
+                    signatureText = signatureText.replace(/\s+/g, ' ').trim();
+
+                    if (!signatureText) {
+                        return;
+                    }
+
+                    var tempWrapper = document.createElement('div');
+                    for (var k = 0; k < nodesToProcess.length; k++) {
+                        tempWrapper.appendChild(nodesToProcess[k].cloneNode(true));
+                    }
+
+                    var meta = collectLinkMetadata(tempWrapper, signatureText);
+
+                    for (var l = 0; l < nodesToProcess.length; l++) {
+                        if (nodesToProcess[l].parentNode === signatureCell) {
+                            signatureCell.removeChild(nodesToProcess[l]);
+                        }
+                    }
+
+                    var code = document.createElement('code');
+                    code.className = 'method-index-signature language-php';
+                    code.textContent = signatureText;
+
+                    signatureCell.insertBefore(code, descriptionStart);
+
+                    highlightAndRestore(code, meta);
+                }
+            }
+        });
+    </script>
+
+
+        <link rel="search"
+          type="application/opensearchdescription+xml"
+          href="https://phpredis.github.io/opensearch.xml"
+          title="PhpRedis API (develop)" />
+    </head>
+
+    <body id="class" data-name="class:RedisBlessScanIterator" data-root-path="" data-search-index-url="doctum-search.json">
+            <div id="content">
+        <div id="left-column">
+                <div id="control-panel">
+                <div class="search-bar hidden" id="search-progress-bar-container">
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" id="search-progress-bar"
+                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+            </div>
+        </div>
+        <form id="search-form" action="search.html">
+            <span class="icon icon-search"></span>
+            <input name="search"
+                   id="doctum-search-auto-complete"
+                   class="typeahead form-control"
+                   type="search"
+                   placeholder="Search"
+                   spellcheck="false"
+                   autocorrect="off"
+                   autocomplete="off"
+                   autocapitalize="off">
+            <div class="auto-complete-results" id="auto-complete-results"></div>
+        </form>
+    </div>
+
+                <div id="api-tree"></div>
+
+        </div>
+        <div id="right-column">
+                <nav id="site-nav" class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-elements">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html">PhpRedis API</a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar-elements">
+                <ul class="nav navbar-nav">
+                    <li><a href="classes.html">Classes</a></li>
+                    <li><a href="interfaces.html">Interfaces</a></li>
+                    <li><a href="traits.html">Traits</a></li>
+                    <li><a href="doc-index.html">Index</a></li>
+                    <li><a href="search.html">Search</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+                            <div id="page-content">
+    <div class="page-header">
+        <h1>RedisBlessScanIterator    
+            </h1>
+    </div>
+
+    
+    <p>final         class
+    <strong>RedisBlessScanIterator</strong>        implements        <a target="_blank" rel="noopener" href="https://www.php.net/Iterator">Iterator</a>        (<a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php">View source</a>)
+</p>
+
+        
+    
+        
+
+            <div class="description">
+            <p><p>Lazy iterator returned by <code>Redis::bless('SCAN', ...)</code> and <code>RedisCluster::bless('SCAN', ...)</code>.</p></p>                    </div>
+            
+        
+    
+    
+            <h2>Methods</h2>
+
+            <div class="container-fluid underlined">
+                    <div class="row">
+                <div class="col-md-2 type">
+                    mixed
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_current">current</a>()
+        
+                                            <p><p>Returns the current key name, or <code>null</code> when the scan has finished.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    mixed
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_key">key</a>()
+        
+                                            <p><p>Returns the position of the current key, or <code>null</code> when the scan has finished.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    void
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_next">next</a>()
+        
+                                            <p><p>Moves to the next key.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    void
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_rewind">rewind</a>()
+        
+                                            <p><p>Restarts the scan if any keys have been consumed.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    bool
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_valid">valid</a>()
+        
+                                            <p><p>Returns whether there is a current key, fetching pages as needed.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+            </div>
+
+
+        <h2>Details</h2>
+
+            <div id="method-details">
+                    <div class="method-item">
+                                                                                        
+    <h3 id="method_current">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L6177">at line 6177</a></div>
+        <code class="method-signature language-php">mixed current()</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p><p>Returns the current key name, or <code>null</code> when the scan has finished.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>mixed</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
+    <h3 id="method_key">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L6180">at line 6180</a></div>
+        <code class="method-signature language-php">mixed key()</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p><p>Returns the position of the current key, or <code>null</code> when the scan has finished.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>mixed</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
+    <h3 id="method_next">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L6183">at line 6183</a></div>
+        <code class="method-signature language-php">void next()</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p><p>Moves to the next key.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>void</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
+    <h3 id="method_rewind">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L6186">at line 6186</a></div>
+        <code class="method-signature language-php">void rewind()</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p><p>Restarts the scan if any keys have been consumed.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>void</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
+    <h3 id="method_valid">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L6189">at line 6189</a></div>
+        <code class="method-signature language-php">bool valid()</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p><p>Returns whether there is a current key, fetching pages as needed.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>bool</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+            </div>
+
+    
+</div><div id="footer">
+        Generated by <a href="https://github.com/code-lts/doctum">Doctum, a API Documentation generator and fork of Sami</a>.</div></div>
+    </div>
+    </body>
+
+</html>
