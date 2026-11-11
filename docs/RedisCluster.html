@@ -757,6 +757,28 @@ replica(s).</p></em></p>
             </div>
                     <div class="row">
                 <div class="col-md-2 type">
+                    RedisCluster|array|false
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_bitrangeintarray">bitrangeintarray</a>(string $key, int $start, int $end, array|null $options = null)
+        
+                                            <p class="no-description">No description</p>
+                                    </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    mixed
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_bless">bless</a>(string $command, string|int|null $key = null, string|null $directive = null, array|null $options = null, array|string|null $key_or_address = null)
+        
+                                            <p class="no-description">No description</p>
+                                    </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
                     RedisCluster|array|null|false
                 </div>
                 <div class="col-md-8">
@@ -926,6 +948,17 @@ replica(s).</p></em></p>
         
                                             <p class="no-description">No description</p>
                                     </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    bool
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_reconnect">reconnect</a>()
+        
+                                            <p><p>Closes all node connections, then reopens all known masters and previously
+connected replicas, restoring authentication without refreshing topology.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -1856,6 +1889,17 @@ only sent to Redis for the 'SET' operation.</p></p>                </div>
                 </div>
                 <div class="col-md-8">
                     <a href="#method_incrbyfloat">incrbyfloat</a>(string $key, float $value)
+        
+                                            <p class="no-description">No description</p>
+                                    </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    RedisCluster|array|false
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_increx">increx</a>(string $key, int|float|null $value = null, array|null $options = null)
         
                                             <p class="no-description">No description</p>
                                     </div>
@@ -3336,10 +3380,10 @@ to that section.</p></p>                </div>
             </div>
                     <div class="row">
                 <div class="col-md-2 type">
-                    RedisCluster|bool|array
+                    RedisCluster|array|false
                 </div>
                 <div class="col-md-8">
-                    <a href="#method_zrevrangebylex">zrevrangebylex</a>(string $key, string $min, string $max, array|null $options = null)
+                    <a href="#method_zrevrangebylex">zrevrangebylex</a>(string $key, string $max, string $min, int $offset = -1, int $count = -1)
         
                                             <p class="no-description">No description</p>
                                     </div>
@@ -3475,7 +3519,7 @@ to that section.</p></p>                </div>
                     <div class="method-item">
                                                                                         
     <h3 id="method___construct">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L57">at line 57</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L58">at line 58</a></div>
         <code class="method-signature language-php">__construct(string|null $name, array|null $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, mixed $auth = null, array|null $context = null)</code>
     </h3>
     <div class="details">    
@@ -3538,7 +3582,7 @@ to that section.</p></p>                </div>
                     <div class="method-item">
                                                                                         
     <h3 id="method__compress">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L62">at line 62</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L63">at line 63</a></div>
         <code class="method-signature language-php">string _compress(string $value)</code>
     </h3>
     <div class="details">    
@@ -3594,7 +3638,7 @@ Redis::_compress</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__uncompress">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L67">at line 67</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L68">at line 68</a></div>
         <code class="method-signature language-php">string _uncompress(string $value)</code>
     </h3>
     <div class="details">    
@@ -3650,7 +3694,7 @@ Redis::_uncompress</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__serialize">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L72">at line 72</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L73">at line 73</a></div>
         <code class="method-signature language-php">bool|string _serialize(mixed $value)</code>
     </h3>
     <div class="details">    
@@ -3706,7 +3750,7 @@ Redis::_serialize</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__unserialize">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L77">at line 77</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L78">at line 78</a></div>
         <code class="method-signature language-php">mixed _unserialize(string $value)</code>
     </h3>
     <div class="details">    
@@ -3762,7 +3806,7 @@ Redis::_unserialize</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__pack">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L82">at line 82</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L83">at line 83</a></div>
         <code class="method-signature language-php">string _pack(mixed $value)</code>
     </h3>
     <div class="details">    
@@ -3818,7 +3862,7 @@ Redis::_pack</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__digest">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L87">at line 87</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L88">at line 88</a></div>
         <code class="method-signature language-php">string _digest(mixed $value)</code>
     </h3>
     <div class="details">    
@@ -3874,7 +3918,7 @@ Redis::_digest</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__unpack">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L92">at line 92</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L93">at line 93</a></div>
         <code class="method-signature language-php">mixed _unpack(string $value)</code>
     </h3>
     <div class="details">    
@@ -3930,7 +3974,7 @@ Redis::_unpack</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__prefix">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L97">at line 97</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L98">at line 98</a></div>
         <code class="method-signature language-php">bool|string _prefix(string $key)</code>
     </h3>
     <div class="details">    
@@ -3986,7 +4030,7 @@ Redis::_prefix</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__masters">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L99">at line 99</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L100">at line 100</a></div>
         <code class="method-signature language-php">array _masters()</code>
     </h3>
     <div class="details">    
@@ -4020,7 +4064,7 @@ Redis::_prefix</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method__redir">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L101">at line 101</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L102">at line 102</a></div>
         <code class="method-signature language-php">string|null _redir()</code>
     </h3>
     <div class="details">    
@@ -4054,7 +4098,7 @@ Redis::_prefix</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_acl">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L106">at line 106</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L107">at line 107</a></div>
         <code class="method-signature language-php">mixed acl(string|array $key_or_address, string $subcmd, string ...$args)</code>
     </h3>
     <div class="details">    
@@ -4120,7 +4164,7 @@ Redis::acl</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_append">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L111">at line 111</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L112">at line 112</a></div>
         <code class="method-signature language-php">RedisCluster|bool|int append(string $key, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -4181,7 +4225,7 @@ Redis::append</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_bgrewriteaof">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L116">at line 116</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L117">at line 117</a></div>
         <code class="method-signature language-php">RedisCluster|bool bgrewriteaof(string|array $key_or_address)</code>
     </h3>
     <div class="details">    
@@ -4237,7 +4281,7 @@ Redis::bgrewriteaof</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_wait">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L121">at line 121</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L122">at line 122</a></div>
         <code class="method-signature language-php">RedisCluster|int|false wait(string|array $key_or_address, int $numreplicas, int $timeout)</code>
     </h3>
     <div class="details">    
@@ -4303,7 +4347,7 @@ Redis::wait</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_waitaof">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L126">at line 126</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L127">at line 127</a></div>
         <code class="method-signature language-php">RedisCluster|array|false waitaof(string|array $key_or_address, int $numlocal, int $numreplicas, int $timeout)</code>
     </h3>
     <div class="details">    
@@ -4374,7 +4418,7 @@ Redis::waitaof</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_bgsave">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L132">at line 132</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L133">at line 133</a></div>
         <code class="method-signature language-php">RedisCluster|bool bgsave(string|array $key_or_address)</code>
     </h3>
     <div class="details">    
@@ -4430,7 +4474,7 @@ Redis::bgSave</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_bitcount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L137">at line 137</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L138">at line 138</a></div>
         <code class="method-signature language-php">RedisCluster|bool|int bitcount(string $key, int $start = 0, int $end = -1, bool $bybit = false)</code>
     </h3>
     <div class="details">    
@@ -4501,7 +4545,7 @@ Redis::bitcount</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_bitop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L142">at line 142</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L143">at line 143</a></div>
         <code class="method-signature language-php">RedisCluster|bool|int bitop(string $operation, string $deskey, string $srckey, string ...$otherkeys)</code>
     </h3>
     <div class="details">    
@@ -4572,7 +4616,7 @@ Redis::bitop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_bitpos">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L156">at line 156</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L157">at line 157</a></div>
         <code class="method-signature language-php">RedisCluster|int|false bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false)</code>
     </h3>
     <div class="details">    
@@ -4646,8 +4690,156 @@ were 0 and end were 2, Redis would search the first three bits.</p></td>
             </div>
                     <div class="method-item">
                                                                                         
+    <h3 id="method_bitrangeintarray">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L162">at line 162</a></div>
+        <code class="method-signature language-php">RedisCluster|array|false bitrangeintarray(string $key, int $start, int $end, array|null $options = null)</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p class="no-description">No description</p>
+                    
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>string</td>
+                <td>$key</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int</td>
+                <td>$start</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int</td>
+                <td>$end</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>array|null</td>
+                <td>$options</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>RedisCluster|array|false</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="Redis.html#method_bitrangeintarray">
+Redis::bitrangeintarray</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
+    <h3 id="method_bless">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L170">at line 170</a></div>
+        <code class="method-signature language-php">mixed bless(string $command, string|int|null $key = null, string|null $directive = null, array|null $options = null, array|string|null $key_or_address = null)</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p class="no-description">No description</p>
+                    
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>string</td>
+                <td>$command</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>string|int|null</td>
+                <td>$key</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>string|null</td>
+                <td>$directive</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>array|null</td>
+                <td>$options</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>array|string|null</td>
+                <td>$key_or_address</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>mixed</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="Redis.html#method_bless">
+Redis::bless</a>
+                                    </td>
+                <td>SCAN additionally requires `$key_or_address` and stays on the node it selects.
+SET, CLEAR and GET route by key; `$key_or_address` is only accepted for SCAN.</td>
+            </tr>
+            </table>
+
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
     <h3 id="method_blpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L161">at line 161</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L175">at line 175</a></div>
         <code class="method-signature language-php">RedisCluster|array|null|false blpop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args)</code>
     </h3>
     <div class="details">    
@@ -4713,7 +4905,7 @@ Redis::blPop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_brpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L166">at line 166</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L180">at line 180</a></div>
         <code class="method-signature language-php">RedisCluster|array|null|false brpop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args)</code>
     </h3>
     <div class="details">    
@@ -4779,7 +4971,7 @@ Redis::brPop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_brpoplpush">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L171">at line 171</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L185">at line 185</a></div>
         <code class="method-signature language-php">mixed brpoplpush(string $srckey, string $deskey, int $timeout)</code>
     </h3>
     <div class="details">    
@@ -4845,7 +5037,7 @@ Redis::brpoplpush</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lmove">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L178">at line 178</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L192">at line 192</a></div>
         <code class="method-signature language-php">RedisCluster|string|false lmove(string $src, string $dst, string $wherefrom, string $whereto)</code>
     </h3>
     <div class="details">    
@@ -4915,7 +5107,7 @@ Redis::lMove</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lmovem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L197">at line 197</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L211">at line 211</a></div>
         <code class="method-signature language-php">RedisCluster|array|false lmovem(string $src, string $dst, string $wherefrom, string $whereto, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -4998,7 +5190,7 @@ $redis-&gt;lMovem(&#039;{lists}:numbers&#039;, &#039;{lists}:odds&#039;, Redis::
                     <div class="method-item">
                                                                                         
     <h3 id="method_blmovem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L202">at line 202</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L216">at line 216</a></div>
         <code class="method-signature language-php">RedisCluster|array|false blmovem(string $src, string $dst, string $wherefrom, string $whereto, float $timeout, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -5079,7 +5271,7 @@ Redis::blmovem</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_blmove">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L210">at line 210</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L224">at line 224</a></div>
         <code class="method-signature language-php">RedisCluster|string|false blmove(string $src, string $dst, string $wherefrom, string $whereto, float $timeout)</code>
     </h3>
     <div class="details">    
@@ -5154,7 +5346,7 @@ Redis::blmove</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_bzpopmax">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L215">at line 215</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L229">at line 229</a></div>
         <code class="method-signature language-php">array bzpopmax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args)</code>
     </h3>
     <div class="details">    
@@ -5220,7 +5412,7 @@ Redis::bzPopMax</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_bzpopmin">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L220">at line 220</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L234">at line 234</a></div>
         <code class="method-signature language-php">array bzpopmin(string|array $key, string|int $timeout_or_key, mixed ...$extra_args)</code>
     </h3>
     <div class="details">    
@@ -5286,7 +5478,7 @@ Redis::bzPopMin</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_bzmpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L225">at line 225</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L239">at line 239</a></div>
         <code class="method-signature language-php">RedisCluster|array|null|false bzmpop(float $timeout, array $keys, string $from, int $count = 1)</code>
     </h3>
     <div class="details">    
@@ -5357,7 +5549,7 @@ Redis::bzmpop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zmpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L230">at line 230</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L244">at line 244</a></div>
         <code class="method-signature language-php">RedisCluster|array|null|false zmpop(array $keys, string $from, int $count = 1)</code>
     </h3>
     <div class="details">    
@@ -5423,7 +5615,7 @@ Redis::zmpop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_blmpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L235">at line 235</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L249">at line 249</a></div>
         <code class="method-signature language-php">RedisCluster|array|null|false blmpop(float $timeout, array $keys, string $from, int $count = 1)</code>
     </h3>
     <div class="details">    
@@ -5494,7 +5686,7 @@ Redis::blmpop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lmpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L240">at line 240</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L254">at line 254</a></div>
         <code class="method-signature language-php">RedisCluster|array|null|false lmpop(array $keys, string $from, int $count = 1)</code>
     </h3>
     <div class="details">    
@@ -5560,7 +5752,7 @@ Redis::lmpop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_clearlasterror">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L245">at line 245</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L259">at line 259</a></div>
         <code class="method-signature language-php">bool clearlasterror()</code>
     </h3>
     <div class="details">    
@@ -5606,7 +5798,7 @@ Redis::clearLastError</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_client">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L250">at line 250</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L264">at line 264</a></div>
         <code class="method-signature language-php">array|string|bool client(string|array $key_or_address, string $subcommand, string|null $arg = null)</code>
     </h3>
     <div class="details">    
@@ -5672,7 +5864,7 @@ Redis::client</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_close">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L255">at line 255</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L269">at line 269</a></div>
         <code class="method-signature language-php">bool close()</code>
     </h3>
     <div class="details">    
@@ -5717,8 +5909,52 @@ Redis::close</a>
             </div>
                     <div class="method-item">
                                                                                         
+    <h3 id="method_reconnect">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L279">at line 279</a></div>
+        <code class="method-signature language-php">bool reconnect()</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p><p>Closes all node connections, then reopens all known masters and previously
+connected replicas, restoring authentication without refreshing topology.</p></p>                <p><p>Pending transactions are discarded. Client options are preserved.
+If reconnection fails, all node connections are closed.</p></p>        
+        </div>
+        <div class="tags">
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>bool</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+                            <h4>Exceptions</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><a href="RedisClusterException.html">RedisClusterException</a></td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
     <h3 id="method_cluster">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L260">at line 260</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L284">at line 284</a></div>
         <code class="method-signature language-php">mixed cluster(string|array $key_or_address, string $command, mixed ...$extra_args)</code>
     </h3>
     <div class="details">    
@@ -5771,7 +6007,7 @@ Redis::close</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_command">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L265">at line 265</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L289">at line 289</a></div>
         <code class="method-signature language-php">mixed command(mixed ...$extra_args)</code>
     </h3>
     <div class="details">    
@@ -5827,7 +6063,7 @@ Redis::command</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_config">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L270">at line 270</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L294">at line 294</a></div>
         <code class="method-signature language-php">mixed config(string|array $key_or_address, string $subcommand, mixed ...$extra_args)</code>
     </h3>
     <div class="details">    
@@ -5893,7 +6129,7 @@ Redis::config</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_dbsize">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L275">at line 275</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L299">at line 299</a></div>
         <code class="method-signature language-php">RedisCluster|int dbsize(string|array $key_or_address)</code>
     </h3>
     <div class="details">    
@@ -5949,7 +6185,7 @@ Redis::dbSize</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_copy">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L280">at line 280</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L304">at line 304</a></div>
         <code class="method-signature language-php">RedisCluster|bool copy(string $src, string $dst, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -6014,7 +6250,7 @@ Redis::dbSize</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_decr">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L285">at line 285</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L309">at line 309</a></div>
         <code class="method-signature language-php">RedisCluster|int|false decr(string $key, int $by = 1)</code>
     </h3>
     <div class="details">    
@@ -6075,7 +6311,7 @@ Redis::decr</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_decrby">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L290">at line 290</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L314">at line 314</a></div>
         <code class="method-signature language-php">RedisCluster|int|false decrby(string $key, int $value)</code>
     </h3>
     <div class="details">    
@@ -6136,7 +6372,7 @@ Redis::decrBy</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_decrbyfloat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L295">at line 295</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L319">at line 319</a></div>
         <code class="method-signature language-php">float decrbyfloat(string $key, float $value)</code>
     </h3>
     <div class="details">    
@@ -6184,7 +6420,7 @@ Redis::decrBy</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_del">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L300">at line 300</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L324">at line 324</a></div>
         <code class="method-signature language-php">RedisCluster|int|false del(array|string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -6245,7 +6481,7 @@ Redis::del</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_delex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L310">at line 310</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L334">at line 334</a></div>
         <code class="method-signature language-php">RedisCluster|int|false delex(string $key, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -6293,7 +6529,7 @@ Redis::del</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_delifeq">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L320">at line 320</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L344">at line 344</a></div>
         <code class="method-signature language-php">RedisCluster|int|false delifeq(string $key, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -6342,7 +6578,7 @@ specific to Valkey &gt;= 9.0.</p></p>
                     <div class="method-item">
                                                                                         
     <h3 id="method_discard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L325">at line 325</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L349">at line 349</a></div>
         <code class="method-signature language-php">bool discard()</code>
     </h3>
     <div class="details">    
@@ -6388,7 +6624,7 @@ Redis::discard</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_dump">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L330">at line 330</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L354">at line 354</a></div>
         <code class="method-signature language-php">RedisCluster|string|false dump(string $key)</code>
     </h3>
     <div class="details">    
@@ -6444,7 +6680,7 @@ Redis::dump</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_echo">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L335">at line 335</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L359">at line 359</a></div>
         <code class="method-signature language-php">RedisCluster|string|false echo(string|array $key_or_address, string $msg)</code>
     </h3>
     <div class="details">    
@@ -6505,7 +6741,7 @@ Redis::echo</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_eval">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L340">at line 340</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L364">at line 364</a></div>
         <code class="method-signature language-php">mixed eval(string $script, array $args = [], int $num_keys = 0)</code>
     </h3>
     <div class="details">    
@@ -6571,7 +6807,7 @@ Redis::eval</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_eval_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L345">at line 345</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L369">at line 369</a></div>
         <code class="method-signature language-php">mixed eval_ro(string $script, array $args = [], int $num_keys = 0)</code>
     </h3>
     <div class="details">    
@@ -6637,7 +6873,7 @@ Redis::eval_ro</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_evalsha">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L350">at line 350</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L374">at line 374</a></div>
         <code class="method-signature language-php">mixed evalsha(string $script_sha, array $args = [], int $num_keys = 0)</code>
     </h3>
     <div class="details">    
@@ -6703,7 +6939,7 @@ Redis::evalsha</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_evalsha_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L355">at line 355</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L379">at line 379</a></div>
         <code class="method-signature language-php">mixed evalsha_ro(string $script_sha, array $args = [], int $num_keys = 0)</code>
     </h3>
     <div class="details">    
@@ -6769,7 +7005,7 @@ Redis::evalsha_ro</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_exec">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L360">at line 360</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L384">at line 384</a></div>
         <code class="method-signature language-php">array|false exec()</code>
     </h3>
     <div class="details">    
@@ -6815,7 +7051,7 @@ Redis::exec</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_exists">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L365">at line 365</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L389">at line 389</a></div>
         <code class="method-signature language-php">RedisCluster|int|bool exists(mixed $key, mixed ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -6876,7 +7112,7 @@ Redis::exists</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_touch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L370">at line 370</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L394">at line 394</a></div>
         <code class="method-signature language-php">RedisCluster|int|bool touch(mixed $key, mixed ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -6937,7 +7173,7 @@ Redis::touch</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_expire">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L375">at line 375</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L399">at line 399</a></div>
         <code class="method-signature language-php">RedisCluster|bool expire(string $key, int $timeout, string|null $mode = null)</code>
     </h3>
     <div class="details">    
@@ -7003,7 +7239,7 @@ Redis::expire</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_expireat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L380">at line 380</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L404">at line 404</a></div>
         <code class="method-signature language-php">RedisCluster|bool expireat(string $key, int $timestamp, string|null $mode = null)</code>
     </h3>
     <div class="details">    
@@ -7069,7 +7305,7 @@ Redis::expireAt</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_expiretime">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L385">at line 385</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L409">at line 409</a></div>
         <code class="method-signature language-php">RedisCluster|int|false expiretime(string $key)</code>
     </h3>
     <div class="details">    
@@ -7125,7 +7361,7 @@ Redis::expiretime</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_pexpiretime">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L390">at line 390</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L414">at line 414</a></div>
         <code class="method-signature language-php">RedisCluster|int|false pexpiretime(string $key)</code>
     </h3>
     <div class="details">    
@@ -7181,7 +7417,7 @@ Redis::pexpiretime</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_flushall">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L395">at line 395</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L419">at line 419</a></div>
         <code class="method-signature language-php">RedisCluster|bool flushall(string|array $key_or_address, bool $async = false)</code>
     </h3>
     <div class="details">    
@@ -7242,7 +7478,7 @@ Redis::flushAll</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_flushdb">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L400">at line 400</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L424">at line 424</a></div>
         <code class="method-signature language-php">RedisCluster|bool flushdb(string|array $key_or_address, bool $async = false)</code>
     </h3>
     <div class="details">    
@@ -7303,7 +7539,7 @@ Redis::flushDB</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_geoadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L405">at line 405</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L429">at line 429</a></div>
         <code class="method-signature language-php">RedisCluster|int|false geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples_and_options)</code>
     </h3>
     <div class="details">    
@@ -7379,7 +7615,7 @@ Redis::geoadd</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_geodist">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L410">at line 410</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L434">at line 434</a></div>
         <code class="method-signature language-php">RedisCluster|float|false geodist(string $key, string $src, string $dest, string|null $unit = null)</code>
     </h3>
     <div class="details">    
@@ -7450,7 +7686,7 @@ Redis::geodist</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_geohash">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L415">at line 415</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L439">at line 439</a></div>
         <code class="method-signature language-php">RedisCluster|array|false geohash(string $key, string $member, string ...$other_members)</code>
     </h3>
     <div class="details">    
@@ -7516,7 +7752,7 @@ Redis::geohash</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_geopos">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L420">at line 420</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L444">at line 444</a></div>
         <code class="method-signature language-php">RedisCluster|array|false geopos(string $key, string $member, string ...$other_members)</code>
     </h3>
     <div class="details">    
@@ -7582,7 +7818,7 @@ Redis::geopos</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_georadius">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L425">at line 425</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L449">at line 449</a></div>
         <code class="method-signature language-php">mixed georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -7663,7 +7899,7 @@ Redis::georadius</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_georadius_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L430">at line 430</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L454">at line 454</a></div>
         <code class="method-signature language-php">mixed georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -7744,7 +7980,7 @@ Redis::georadius_ro</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_georadiusbymember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L435">at line 435</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L459">at line 459</a></div>
         <code class="method-signature language-php">mixed georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -7820,7 +8056,7 @@ Redis::georadiusbymember</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_georadiusbymember_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L440">at line 440</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L464">at line 464</a></div>
         <code class="method-signature language-php">mixed georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -7896,7 +8132,7 @@ Redis::georadiusbymember_ro</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_geosearch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L445">at line 445</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L469">at line 469</a></div>
         <code class="method-signature language-php">RedisCluster|array geosearch(string $key, array|string $position, array|int|float $shape, string $unit, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -7971,7 +8207,7 @@ Redis::georadiusbymember_ro</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_geosearchstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L450">at line 450</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L474">at line 474</a></div>
         <code class="method-signature language-php">RedisCluster|array|int|false geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -8051,7 +8287,7 @@ Redis::georadiusbymember_ro</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_get">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L455">at line 455</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L479">at line 479</a></div>
         <code class="method-signature language-php">mixed get(string $key)</code>
     </h3>
     <div class="details">    
@@ -8107,7 +8343,7 @@ Redis::get</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getdel">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L460">at line 460</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L484">at line 484</a></div>
         <code class="method-signature language-php">mixed getdel(string $key)</code>
     </h3>
     <div class="details">    
@@ -8163,7 +8399,7 @@ Redis::getDel</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getWithMeta">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L465">at line 465</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L489">at line 489</a></div>
         <code class="method-signature language-php">RedisCluster|array|false getWithMeta(string $key)</code>
     </h3>
     <div class="details">    
@@ -8219,7 +8455,7 @@ Redis::getWithMeta</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L470">at line 470</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L494">at line 494</a></div>
         <code class="method-signature language-php">RedisCluster|string|false getex(string $key, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -8280,7 +8516,7 @@ Redis::getEx</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getbit">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L475">at line 475</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L499">at line 499</a></div>
         <code class="method-signature language-php">RedisCluster|int|false getbit(string $key, int $value)</code>
     </h3>
     <div class="details">    
@@ -8341,7 +8577,7 @@ Redis::getBit</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getlasterror">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L480">at line 480</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L504">at line 504</a></div>
         <code class="method-signature language-php">string|null getlasterror()</code>
     </h3>
     <div class="details">    
@@ -8387,7 +8623,7 @@ Redis::getLastError</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getmode">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L485">at line 485</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L509">at line 509</a></div>
         <code class="method-signature language-php">int getmode()</code>
     </h3>
     <div class="details">    
@@ -8433,7 +8669,7 @@ Redis::getMode</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getoption">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L490">at line 490</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L514">at line 514</a></div>
         <code class="method-signature language-php">mixed getoption(int $option)</code>
     </h3>
     <div class="details">    
@@ -8489,7 +8725,7 @@ Redis::getOption</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L495">at line 495</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L519">at line 519</a></div>
         <code class="method-signature language-php">RedisCluster|string|false getrange(string $key, int $start, int $end)</code>
     </h3>
     <div class="details">    
@@ -8555,7 +8791,7 @@ Redis::getRange</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lcs">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L500">at line 500</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L524">at line 524</a></div>
         <code class="method-signature language-php">RedisCluster|string|array|int|false lcs(string $key1, string $key2, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -8621,7 +8857,7 @@ Redis::lcs</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_getset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L505">at line 505</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L529">at line 529</a></div>
         <code class="method-signature language-php">RedisCluster|string|bool getset(string $key, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -8682,7 +8918,7 @@ Redis::getset</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_gettransferredbytes">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L510">at line 510</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L534">at line 534</a></div>
         <code class="method-signature language-php">array|false gettransferredbytes()</code>
     </h3>
     <div class="details">    
@@ -8728,7 +8964,7 @@ Redis::getTransferredBytes</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_cleartransferredbytes">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L515">at line 515</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L539">at line 539</a></div>
         <code class="method-signature language-php">void cleartransferredbytes()</code>
     </h3>
     <div class="details">    
@@ -8774,7 +9010,7 @@ Redis::clearTransferredBytes</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hdel">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L520">at line 520</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L544">at line 544</a></div>
         <code class="method-signature language-php">RedisCluster|int|false hdel(string $key, string $member, string ...$other_members)</code>
     </h3>
     <div class="details">    
@@ -8840,7 +9076,7 @@ Redis::hDel</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hexists">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L525">at line 525</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L549">at line 549</a></div>
         <code class="method-signature language-php">RedisCluster|bool hexists(string $key, string $member)</code>
     </h3>
     <div class="details">    
@@ -8901,7 +9137,7 @@ Redis::hExists</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hget">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L530">at line 530</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L554">at line 554</a></div>
         <code class="method-signature language-php">mixed hget(string $key, string $member)</code>
     </h3>
     <div class="details">    
@@ -8962,7 +9198,7 @@ Redis::hGet</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hgetall">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L535">at line 535</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L559">at line 559</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hgetall(string $key)</code>
     </h3>
     <div class="details">    
@@ -9018,7 +9254,7 @@ Redis::hGetAll</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hgetWithMeta">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L540">at line 540</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L564">at line 564</a></div>
         <code class="method-signature language-php">mixed hgetWithMeta(string $key, string $member)</code>
     </h3>
     <div class="details">    
@@ -9079,7 +9315,7 @@ Redis::hGetWithMeta</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hincrby">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L545">at line 545</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L569">at line 569</a></div>
         <code class="method-signature language-php">RedisCluster|int|false hincrby(string $key, string $member, int $value)</code>
     </h3>
     <div class="details">    
@@ -9145,7 +9381,7 @@ Redis::hIncrBy</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hincrbyfloat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L550">at line 550</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L574">at line 574</a></div>
         <code class="method-signature language-php">RedisCluster|float|false hincrbyfloat(string $key, string $member, float $value)</code>
     </h3>
     <div class="details">    
@@ -9211,7 +9447,7 @@ Redis::hIncrByFloat</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hkeys">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L555">at line 555</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L579">at line 579</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hkeys(string $key)</code>
     </h3>
     <div class="details">    
@@ -9267,7 +9503,7 @@ Redis::hKeys</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hlen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L560">at line 560</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L584">at line 584</a></div>
         <code class="method-signature language-php">RedisCluster|int|false hlen(string $key)</code>
     </h3>
     <div class="details">    
@@ -9323,7 +9559,7 @@ Redis::hLen</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hmget">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L565">at line 565</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L589">at line 589</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hmget(string $key, array $keys)</code>
     </h3>
     <div class="details">    
@@ -9384,7 +9620,7 @@ Redis::hMget</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hgetex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L570">at line 570</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L594">at line 594</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hgetex(string $key, array $fields, string|array|null $expiry = null)</code>
     </h3>
     <div class="details">    
@@ -9450,7 +9686,7 @@ Redis::hgetex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hsetex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L575">at line 575</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L599">at line 599</a></div>
         <code class="method-signature language-php">RedisCluster|int|false hsetex(string $key, array $fields, array|null $expiry = null)</code>
     </h3>
     <div class="details">    
@@ -9516,7 +9752,7 @@ Redis::hsetex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hgetdel">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L580">at line 580</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L604">at line 604</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hgetdel(string $key, array $fields)</code>
     </h3>
     <div class="details">    
@@ -9577,7 +9813,7 @@ Redis::hgetdel</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_himport">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L589">at line 589</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L613">at line 613</a></div>
         <code class="method-signature language-php">RedisCluster|bool|int himport(string $op, string $hash, string|null $fieldset = null, array $fields = [])</code>
     </h3>
     <div class="details">    
@@ -9649,7 +9885,7 @@ Redis::himport</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hmset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L594">at line 594</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L618">at line 618</a></div>
         <code class="method-signature language-php">RedisCluster|bool hmset(string $key, array $key_values)</code>
     </h3>
     <div class="details">    
@@ -9710,7 +9946,7 @@ Redis::hMset</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hscan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L599">at line 599</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L623">at line 623</a></div>
         <code class="method-signature language-php">array|bool hscan(string $key, null|int|string $iterator, string|null $pattern = null, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -9781,7 +10017,7 @@ Redis::hscan</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_expiremember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L604">at line 604</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L628">at line 628</a></div>
         <code class="method-signature language-php">RedisCluster|int|false expiremember(string $key, string $field, int $ttl, string|null $unit = null)</code>
     </h3>
     <div class="details">    
@@ -9852,7 +10088,7 @@ Redis::expiremember</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_expirememberat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L609">at line 609</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L633">at line 633</a></div>
         <code class="method-signature language-php">RedisCluster|int|false expirememberat(string $key, string $field, int $timestamp)</code>
     </h3>
     <div class="details">    
@@ -9918,7 +10154,7 @@ Redis::expirememberat</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hrandfield">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L614">at line 614</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L638">at line 638</a></div>
         <code class="method-signature language-php">RedisCluster|string|array hrandfield(string $key, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -9978,7 +10214,7 @@ Redis::expirememberat</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L619">at line 619</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L643">at line 643</a></div>
         <code class="method-signature language-php">RedisCluster|int|false hset(string $key, string $member, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -10044,7 +10280,7 @@ Redis::hSet</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hsetnx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L624">at line 624</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L648">at line 648</a></div>
         <code class="method-signature language-php">RedisCluster|bool hsetnx(string $key, string $member, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -10110,7 +10346,7 @@ Redis::hSetNx</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hstrlen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L629">at line 629</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L653">at line 653</a></div>
         <code class="method-signature language-php">RedisCluster|int|false hstrlen(string $key, string $field)</code>
     </h3>
     <div class="details">    
@@ -10171,7 +10407,7 @@ Redis::hStrLen</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hexpire">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L634">at line 634</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L658">at line 658</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hexpire(string $key, int $ttl, array $fields, string|null $mode = NULL)</code>
     </h3>
     <div class="details">    
@@ -10242,7 +10478,7 @@ Redis::hexpire</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hpexpire">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L640">at line 640</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L664">at line 664</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hpexpire(string $key, int $ttl, array $fields, string|null $mode = NULL)</code>
     </h3>
     <div class="details">    
@@ -10313,7 +10549,7 @@ Redis::hpexpire</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hexpireat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L646">at line 646</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L670">at line 670</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hexpireat(string $key, int $time, array $fields, string|null $mode = NULL)</code>
     </h3>
     <div class="details">    
@@ -10384,7 +10620,7 @@ Redis::hexpireat</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hpexpireat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L652">at line 652</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L676">at line 676</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hpexpireat(string $key, int $mstime, array $fields, string|null $mode = NULL)</code>
     </h3>
     <div class="details">    
@@ -10455,7 +10691,7 @@ Redis::hpexpireat</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_httl">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L658">at line 658</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L682">at line 682</a></div>
         <code class="method-signature language-php">RedisCluster|array|false httl(string $key, array $fields)</code>
     </h3>
     <div class="details">    
@@ -10516,7 +10752,7 @@ Redis::httl</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hpttl">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L663">at line 663</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L687">at line 687</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hpttl(string $key, array $fields)</code>
     </h3>
     <div class="details">    
@@ -10577,7 +10813,7 @@ Redis::hpttl</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hexpiretime">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L668">at line 668</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L692">at line 692</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hexpiretime(string $key, array $fields)</code>
     </h3>
     <div class="details">    
@@ -10638,7 +10874,7 @@ Redis::hexpiretime</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hpexpiretime">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L673">at line 673</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L697">at line 697</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hpexpiretime(string $key, array $fields)</code>
     </h3>
     <div class="details">    
@@ -10699,7 +10935,7 @@ Redis::hpexpiretime</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hpersist">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L678">at line 678</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L702">at line 702</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hpersist(string $key, array $fields)</code>
     </h3>
     <div class="details">    
@@ -10760,7 +10996,7 @@ Redis::hpersist</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_hvals">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L683">at line 683</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L707">at line 707</a></div>
         <code class="method-signature language-php">RedisCluster|array|false hvals(string $key)</code>
     </h3>
     <div class="details">    
@@ -10816,7 +11052,7 @@ Redis::hVals</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_incr">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L688">at line 688</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L712">at line 712</a></div>
         <code class="method-signature language-php">RedisCluster|int|false incr(string $key, int $by = 1)</code>
     </h3>
     <div class="details">    
@@ -10877,7 +11113,7 @@ Redis::incr</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_incrby">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L693">at line 693</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L717">at line 717</a></div>
         <code class="method-signature language-php">RedisCluster|int|false incrby(string $key, int $value)</code>
     </h3>
     <div class="details">    
@@ -10938,7 +11174,7 @@ Redis::incrBy</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_incrbyfloat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L698">at line 698</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L722">at line 722</a></div>
         <code class="method-signature language-php">RedisCluster|float|false incrbyfloat(string $key, float $value)</code>
     </h3>
     <div class="details">    
@@ -10998,8 +11234,74 @@ Redis::incrByFloat</a>
             </div>
                     <div class="method-item">
                                                                                         
+    <h3 id="method_increx">
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L727">at line 727</a></div>
+        <code class="method-signature language-php">RedisCluster|array|false increx(string $key, int|float|null $value = null, array|null $options = null)</code>
+    </h3>
+    <div class="details">    
+    
+            
+
+        <div class="method-description">
+                            <p class="no-description">No description</p>
+                    
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>string</td>
+                <td>$key</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int|float|null</td>
+                <td>$value</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>array|null</td>
+                <td>$options</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4 class="return-value-header">Return Value</h4>
+
+                <div class="return-value-content">
+                        <table class="table table-condensed">
+        <tr>
+            <td>RedisCluster|array|false</td>
+            <td></td>
+        </tr>
+    </table>
+
+                </div>
+            
+            
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="Redis.html#method_incrEx">
+Redis::incrEx</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                                                                                        
     <h3 id="method_info">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L716">at line 716</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L745">at line 745</a></div>
         <code class="method-signature language-php">RedisCluster|array|false info(string|array $key_or_address, string ...$sections)</code>
     </h3>
     <div class="details">    
@@ -11062,7 +11364,7 @@ which cluster node we want to send the command to.</p></td>
                     <div class="method-item">
                                                                                         
     <h3 id="method_keys">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L721">at line 721</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L750">at line 750</a></div>
         <code class="method-signature language-php">RedisCluster|array|false keys(string $pattern)</code>
     </h3>
     <div class="details">    
@@ -11118,7 +11420,7 @@ Redis::keys</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lastsave">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L726">at line 726</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L755">at line 755</a></div>
         <code class="method-signature language-php">RedisCluster|int|false lastsave(string|array $key_or_address)</code>
     </h3>
     <div class="details">    
@@ -11174,7 +11476,7 @@ Redis::lastSave</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lget">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L731">at line 731</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L760">at line 760</a></div>
         <code class="method-signature language-php">RedisCluster|string|bool lget(string $key, int $index)</code>
     </h3>
     <div class="details">    
@@ -11235,7 +11537,7 @@ Redis::lindex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lindex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L736">at line 736</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L765">at line 765</a></div>
         <code class="method-signature language-php">mixed lindex(string $key, int $index)</code>
     </h3>
     <div class="details">    
@@ -11296,7 +11598,7 @@ Redis::lindex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_linsert">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L741">at line 741</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L770">at line 770</a></div>
         <code class="method-signature language-php">RedisCluster|int|false linsert(string $key, string $pos, mixed $pivot, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -11367,7 +11669,7 @@ Redis::lInsert</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_llen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L746">at line 746</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L775">at line 775</a></div>
         <code class="method-signature language-php">RedisCluster|int|bool llen(string $key)</code>
     </h3>
     <div class="details">    
@@ -11423,7 +11725,7 @@ Redis::lLen</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L751">at line 751</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L780">at line 780</a></div>
         <code class="method-signature language-php">RedisCluster|bool|string|array lpop(string $key, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -11484,7 +11786,7 @@ Redis::lPop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lpos">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L756">at line 756</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L785">at line 785</a></div>
         <code class="method-signature language-php">RedisCluster|null|bool|int|array lpos(string $key, mixed $value, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -11550,7 +11852,7 @@ Redis::lPos</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lpush">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L761">at line 761</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L790">at line 790</a></div>
         <code class="method-signature language-php">RedisCluster|int|bool lpush(string $key, mixed $value, mixed ...$other_values)</code>
     </h3>
     <div class="details">    
@@ -11616,7 +11918,7 @@ Redis::lPush</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lpushx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L766">at line 766</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L795">at line 795</a></div>
         <code class="method-signature language-php">RedisCluster|int|bool lpushx(string $key, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -11677,7 +11979,7 @@ Redis::lPushx</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L771">at line 771</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L800">at line 800</a></div>
         <code class="method-signature language-php">RedisCluster|array|false lrange(string $key, int $start, int $end)</code>
     </h3>
     <div class="details">    
@@ -11743,7 +12045,7 @@ Redis::lrange</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lrem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L776">at line 776</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L805">at line 805</a></div>
         <code class="method-signature language-php">RedisCluster|int|bool lrem(string $key, mixed $value, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -11809,7 +12111,7 @@ Redis::lrem</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_lset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L781">at line 781</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L810">at line 810</a></div>
         <code class="method-signature language-php">RedisCluster|bool lset(string $key, int $index, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -11875,7 +12177,7 @@ Redis::lSet</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_ltrim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L786">at line 786</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L815">at line 815</a></div>
         <code class="method-signature language-php">RedisCluster|bool ltrim(string $key, int $start, int $end)</code>
     </h3>
     <div class="details">    
@@ -11941,7 +12243,7 @@ Redis::ltrim</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_mget">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L791">at line 791</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L820">at line 820</a></div>
         <code class="method-signature language-php">RedisCluster|array|false mget(array $keys)</code>
     </h3>
     <div class="details">    
@@ -11997,7 +12299,7 @@ Redis::mget</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_mset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L796">at line 796</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L825">at line 825</a></div>
         <code class="method-signature language-php">RedisCluster|bool mset(array $key_values)</code>
     </h3>
     <div class="details">    
@@ -12053,7 +12355,7 @@ Redis::mset</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_msetnx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L801">at line 801</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L830">at line 830</a></div>
         <code class="method-signature language-php">RedisCluster|array|false msetnx(array $key_values)</code>
     </h3>
     <div class="details">    
@@ -12109,7 +12411,7 @@ Redis::msetnx</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_msetex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L806">at line 806</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L835">at line 835</a></div>
         <code class="method-signature language-php">Redis|int|false msetex(array $key_vals, int|float|array|null $expiry = null)</code>
     </h3>
     <div class="details">    
@@ -12170,7 +12472,7 @@ Redis::msetex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_multi">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L811">at line 811</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L840">at line 840</a></div>
         <code class="method-signature language-php">RedisCluster|bool multi(int $value = Redis::MULTI)</code>
     </h3>
     <div class="details">    
@@ -12214,7 +12516,7 @@ Redis::msetex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_object">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L816">at line 816</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L845">at line 845</a></div>
         <code class="method-signature language-php">RedisCluster|int|string|false object(string $subcommand, string $key)</code>
     </h3>
     <div class="details">    
@@ -12275,7 +12577,7 @@ Redis::object</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_persist">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L821">at line 821</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L850">at line 850</a></div>
         <code class="method-signature language-php">RedisCluster|bool persist(string $key)</code>
     </h3>
     <div class="details">    
@@ -12331,7 +12633,7 @@ Redis::persist</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_pexpire">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L826">at line 826</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L855">at line 855</a></div>
         <code class="method-signature language-php">RedisCluster|bool pexpire(string $key, int $timeout, string|null $mode = null)</code>
     </h3>
     <div class="details">    
@@ -12397,7 +12699,7 @@ Redis::pexpire</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_pexpireat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L831">at line 831</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L860">at line 860</a></div>
         <code class="method-signature language-php">RedisCluster|bool pexpireat(string $key, int $timestamp, string|null $mode = null)</code>
     </h3>
     <div class="details">    
@@ -12463,7 +12765,7 @@ Redis::pexpireAt</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_pfadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L837">at line 837</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L866">at line 866</a></div>
         <code class="method-signature language-php">RedisCluster|bool pfadd(string $key, array $elements)</code>
     </h3>
     <div class="details">    
@@ -12524,7 +12826,7 @@ Redis::pfadd</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_pfcount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L842">at line 842</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L871">at line 871</a></div>
         <code class="method-signature language-php">RedisCluster|int|false pfcount(string $key)</code>
     </h3>
     <div class="details">    
@@ -12580,7 +12882,7 @@ Redis::pfcount</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_pfmerge">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L847">at line 847</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L876">at line 876</a></div>
         <code class="method-signature language-php">RedisCluster|bool pfmerge(string $key, array $keys)</code>
     </h3>
     <div class="details">    
@@ -12641,7 +12943,7 @@ Redis::pfmerge</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_ping">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L862">at line 862</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L891">at line 891</a></div>
         <code class="method-signature language-php">mixed ping(string|array $key_or_address, string|null $message = null)</code>
     </h3>
     <div class="details">    
@@ -12703,7 +13005,7 @@ Redis::ping</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_psetex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L867">at line 867</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L896">at line 896</a></div>
         <code class="method-signature language-php">RedisCluster|bool psetex(string $key, int $timeout, string $value)</code>
     </h3>
     <div class="details">    
@@ -12769,7 +13071,7 @@ Redis::psetex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_psubscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L872">at line 872</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L901">at line 901</a></div>
         <code class="method-signature language-php">void psubscribe(array $patterns, callable $callback)</code>
     </h3>
     <div class="details">    
@@ -12830,7 +13132,7 @@ Redis::psubscribe</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_pttl">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L877">at line 877</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L906">at line 906</a></div>
         <code class="method-signature language-php">RedisCluster|int|false pttl(string $key)</code>
     </h3>
     <div class="details">    
@@ -12886,7 +13188,7 @@ Redis::pttl</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_publish">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L882">at line 882</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L911">at line 911</a></div>
         <code class="method-signature language-php">RedisCluster|bool|int publish(string $channel, string $message)</code>
     </h3>
     <div class="details">    
@@ -12947,7 +13249,7 @@ Redis::publish</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_pubsub">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L887">at line 887</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L916">at line 916</a></div>
         <code class="method-signature language-php">mixed pubsub(string|array $key_or_address, string ...$values)</code>
     </h3>
     <div class="details">    
@@ -13008,7 +13310,7 @@ Redis::pubsub</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_punsubscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L892">at line 892</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L921">at line 921</a></div>
         <code class="method-signature language-php">bool|array punsubscribe(string $pattern, string ...$other_patterns)</code>
     </h3>
     <div class="details">    
@@ -13069,7 +13371,7 @@ Redis::punsubscribe</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_randomkey">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L897">at line 897</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L926">at line 926</a></div>
         <code class="method-signature language-php">RedisCluster|bool|string randomkey(string|array $key_or_address)</code>
     </h3>
     <div class="details">    
@@ -13125,7 +13427,7 @@ Redis::randomKey</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_rawcommand">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L902">at line 902</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L931">at line 931</a></div>
         <code class="method-signature language-php">mixed rawcommand(string|array $key_or_address, string $command, mixed ...$args)</code>
     </h3>
     <div class="details">    
@@ -13191,7 +13493,7 @@ Redis::rawcommand</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_rename">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L907">at line 907</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L936">at line 936</a></div>
         <code class="method-signature language-php">RedisCluster|bool rename(string $key_src, string $key_dst)</code>
     </h3>
     <div class="details">    
@@ -13252,7 +13554,7 @@ Redis::rename</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_renamenx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L912">at line 912</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L941">at line 941</a></div>
         <code class="method-signature language-php">RedisCluster|bool renamenx(string $key, string $newkey)</code>
     </h3>
     <div class="details">    
@@ -13313,7 +13615,7 @@ Redis::renameNx</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_restore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L917">at line 917</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L946">at line 946</a></div>
         <code class="method-signature language-php">RedisCluster|bool restore(string $key, int $timeout, string $value, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -13384,7 +13686,7 @@ Redis::restore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_role">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L922">at line 922</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L951">at line 951</a></div>
         <code class="method-signature language-php">mixed role(string|array $key_or_address)</code>
     </h3>
     <div class="details">    
@@ -13440,7 +13742,7 @@ Redis::role</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_rpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L927">at line 927</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L956">at line 956</a></div>
         <code class="method-signature language-php">RedisCluster|bool|string|array rpop(string $key, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -13501,7 +13803,7 @@ Redis::rPop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_rpoplpush">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L932">at line 932</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L961">at line 961</a></div>
         <code class="method-signature language-php">RedisCluster|bool|string rpoplpush(string $src, string $dst)</code>
     </h3>
     <div class="details">    
@@ -13562,7 +13864,7 @@ Redis::rpoplpush</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_rpush">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L937">at line 937</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L966">at line 966</a></div>
         <code class="method-signature language-php">RedisCluster|int|false rpush(string $key, mixed ...$elements)</code>
     </h3>
     <div class="details">    
@@ -13623,7 +13925,7 @@ Redis::rPush</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_rpushx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L942">at line 942</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L971">at line 971</a></div>
         <code class="method-signature language-php">RedisCluster|bool|int rpushx(string $key, string $value)</code>
     </h3>
     <div class="details">    
@@ -13684,7 +13986,7 @@ Redis::rPushx</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L947">at line 947</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L976">at line 976</a></div>
         <code class="method-signature language-php">RedisCluster|int|false sadd(string $key, mixed $value, mixed ...$other_values)</code>
     </h3>
     <div class="details">    
@@ -13750,7 +14052,7 @@ Redis::sAdd</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_saddarray">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L952">at line 952</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L981">at line 981</a></div>
         <code class="method-signature language-php">RedisCluster|bool|int saddarray(string $key, array $values)</code>
     </h3>
     <div class="details">    
@@ -13811,7 +14113,7 @@ Redis::sAddArray</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_save">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L957">at line 957</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L986">at line 986</a></div>
         <code class="method-signature language-php">RedisCluster|bool save(string|array $key_or_address)</code>
     </h3>
     <div class="details">    
@@ -13867,7 +14169,7 @@ Redis::save</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_scan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L962">at line 962</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L991">at line 991</a></div>
         <code class="method-signature language-php">bool|array scan(null|int|string $iterator, string|array $key_or_address, string|null $pattern = null, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -13938,7 +14240,7 @@ Redis::scan</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_scard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L967">at line 967</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L996">at line 996</a></div>
         <code class="method-signature language-php">RedisCluster|int|false scard(string $key)</code>
     </h3>
     <div class="details">    
@@ -13994,7 +14296,7 @@ Redis::scard</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_script">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L972">at line 972</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1001">at line 1001</a></div>
         <code class="method-signature language-php">mixed script(string|array $key_or_address, mixed ...$args)</code>
     </h3>
     <div class="details">    
@@ -14055,7 +14357,7 @@ Redis::script</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sdiff">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L977">at line 977</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1006">at line 1006</a></div>
         <code class="method-signature language-php">RedisCluster|array|false sdiff(string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -14116,7 +14418,7 @@ Redis::sDiff</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sdiffstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L982">at line 982</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1011">at line 1011</a></div>
         <code class="method-signature language-php">RedisCluster|int|false sdiffstore(string $dst, string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -14182,7 +14484,7 @@ Redis::sDiffStore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_set">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L987">at line 987</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1016">at line 1016</a></div>
         <code class="method-signature language-php">RedisCluster|string|bool set(string $key, mixed $value, mixed $options = null)</code>
     </h3>
     <div class="details">    
@@ -14247,7 +14549,7 @@ Redis::sDiffStore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_setbit">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L992">at line 992</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1021">at line 1021</a></div>
         <code class="method-signature language-php">RedisCluster|int|false setbit(string $key, int $offset, bool $onoff)</code>
     </h3>
     <div class="details">    
@@ -14313,7 +14615,7 @@ Redis::setBit</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_setex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L997">at line 997</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1026">at line 1026</a></div>
         <code class="method-signature language-php">RedisCluster|bool setex(string $key, int $expire, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -14379,7 +14681,7 @@ Redis::setex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_setnx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1002">at line 1002</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1031">at line 1031</a></div>
         <code class="method-signature language-php">RedisCluster|bool setnx(string $key, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -14440,7 +14742,7 @@ Redis::setnx</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_setoption">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1007">at line 1007</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1036">at line 1036</a></div>
         <code class="method-signature language-php">bool setoption(int $option, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -14501,7 +14803,7 @@ Redis::setOption</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_setrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1012">at line 1012</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1041">at line 1041</a></div>
         <code class="method-signature language-php">RedisCluster|int|false setrange(string $key, int $offset, string $value)</code>
     </h3>
     <div class="details">    
@@ -14567,7 +14869,7 @@ Redis::setRange</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sinter">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1017">at line 1017</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1046">at line 1046</a></div>
         <code class="method-signature language-php">RedisCluster|array|false sinter(array|string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -14628,7 +14930,7 @@ Redis::sInter</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sintercard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1022">at line 1022</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1051">at line 1051</a></div>
         <code class="method-signature language-php">RedisCluster|int|false sintercard(array $keys, int $limit = -1)</code>
     </h3>
     <div class="details">    
@@ -14689,7 +14991,7 @@ Redis::sintercard</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sunioncard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1027">at line 1027</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1056">at line 1056</a></div>
         <code class="method-signature language-php">RedisCluster|int|false sunioncard(array $keys, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -14750,7 +15052,7 @@ Redis::sunioncard</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sdiffcard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1032">at line 1032</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1061">at line 1061</a></div>
         <code class="method-signature language-php">RedisCluster|int|false sdiffcard(array $keys, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -14811,7 +15113,7 @@ Redis::sdiffcard</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sinterstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1037">at line 1037</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1066">at line 1066</a></div>
         <code class="method-signature language-php">RedisCluster|int|false sinterstore(array|string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -14872,7 +15174,7 @@ Redis::sInterStore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sismember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1042">at line 1042</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1071">at line 1071</a></div>
         <code class="method-signature language-php">RedisCluster|bool sismember(string $key, mixed $value)</code>
     </h3>
     <div class="details">    
@@ -14933,7 +15235,7 @@ Redis::sismember</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_smismember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1047">at line 1047</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1076">at line 1076</a></div>
         <code class="method-signature language-php">RedisCluster|array|false smismember(string $key, string $member, string ...$other_members)</code>
     </h3>
     <div class="details">    
@@ -14999,7 +15301,7 @@ Redis::sMisMember</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_slowlog">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1052">at line 1052</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1081">at line 1081</a></div>
         <code class="method-signature language-php">mixed slowlog(string|array $key_or_address, mixed ...$args)</code>
     </h3>
     <div class="details">    
@@ -15060,7 +15362,7 @@ Redis::slowlog</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_smembers">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1057">at line 1057</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1086">at line 1086</a></div>
         <code class="method-signature language-php">RedisCluster|array|false smembers(string $key)</code>
     </h3>
     <div class="details">    
@@ -15116,7 +15418,7 @@ Redis::sMembers</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_smove">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1062">at line 1062</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1091">at line 1091</a></div>
         <code class="method-signature language-php">RedisCluster|bool smove(string $src, string $dst, string $member)</code>
     </h3>
     <div class="details">    
@@ -15182,7 +15484,7 @@ Redis::sMove</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sort">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1067">at line 1067</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1096">at line 1096</a></div>
         <code class="method-signature language-php">RedisCluster|array|bool|int|string sort(string $key, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -15243,7 +15545,7 @@ Redis::sort</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sort_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1072">at line 1072</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1101">at line 1101</a></div>
         <code class="method-signature language-php">RedisCluster|array|bool|int|string sort_ro(string $key, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -15304,7 +15606,7 @@ Redis::sort_ro</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_spop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1077">at line 1077</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1106">at line 1106</a></div>
         <code class="method-signature language-php">RedisCluster|string|array|false spop(string $key, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -15365,7 +15667,7 @@ Redis::sPop</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_srandmember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1082">at line 1082</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1111">at line 1111</a></div>
         <code class="method-signature language-php">RedisCluster|string|array|false srandmember(string $key, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -15426,7 +15728,7 @@ Redis::sRandMember</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_srem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1087">at line 1087</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1116">at line 1116</a></div>
         <code class="method-signature language-php">RedisCluster|int|false srem(string $key, mixed $value, mixed ...$other_values)</code>
     </h3>
     <div class="details">    
@@ -15492,7 +15794,7 @@ Redis::srem</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sscan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1092">at line 1092</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1121">at line 1121</a></div>
         <code class="method-signature language-php">array|false sscan(string $key, null|int|string $iterator, string|null $pattern = null, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -15563,7 +15865,7 @@ Redis::sscan</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_strlen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1097">at line 1097</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1126">at line 1126</a></div>
         <code class="method-signature language-php">RedisCluster|int|false strlen(string $key)</code>
     </h3>
     <div class="details">    
@@ -15619,7 +15921,7 @@ Redis::strlen</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_subscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1102">at line 1102</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1131">at line 1131</a></div>
         <code class="method-signature language-php">void subscribe(array $channels, callable $cb)</code>
     </h3>
     <div class="details">    
@@ -15680,7 +15982,7 @@ Redis::subscribe</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sunion">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1107">at line 1107</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1136">at line 1136</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array sunion(string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -15741,7 +16043,7 @@ Redis::sUnion</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_sunionstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1112">at line 1112</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1141">at line 1141</a></div>
         <code class="method-signature language-php">RedisCluster|int|false sunionstore(string $dst, string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -15807,7 +16109,7 @@ Redis::sUnionStore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_time">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1117">at line 1117</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1146">at line 1146</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array time(string|array $key_or_address)</code>
     </h3>
     <div class="details">    
@@ -15863,7 +16165,7 @@ Redis::time</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_ttl">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1122">at line 1122</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1151">at line 1151</a></div>
         <code class="method-signature language-php">RedisCluster|int|false ttl(string $key)</code>
     </h3>
     <div class="details">    
@@ -15919,7 +16221,7 @@ Redis::ttl</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_type">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1127">at line 1127</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1156">at line 1156</a></div>
         <code class="method-signature language-php">RedisCluster|int|false type(string $key)</code>
     </h3>
     <div class="details">    
@@ -15975,7 +16277,7 @@ Redis::type</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_unsubscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1132">at line 1132</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1161">at line 1161</a></div>
         <code class="method-signature language-php">bool|array unsubscribe(array $channels)</code>
     </h3>
     <div class="details">    
@@ -16031,7 +16333,7 @@ Redis::unsubscribe</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_unlink">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1137">at line 1137</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1166">at line 1166</a></div>
         <code class="method-signature language-php">RedisCluster|int|false unlink(array|string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -16092,7 +16394,7 @@ Redis::unlink</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_unwatch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1142">at line 1142</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1171">at line 1171</a></div>
         <code class="method-signature language-php">bool unwatch()</code>
     </h3>
     <div class="details">    
@@ -16138,7 +16440,7 @@ Redis::unwatch</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_watch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1147">at line 1147</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1176">at line 1176</a></div>
         <code class="method-signature language-php">RedisCluster|bool watch(string $key, string ...$other_keys)</code>
     </h3>
     <div class="details">    
@@ -16199,7 +16501,7 @@ Redis::watch</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1152">at line 1152</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1181">at line 1181</a></div>
         <code class="method-signature language-php">RedisCluster|int|false vadd(string $key, array $values, mixed $element, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -16270,7 +16572,7 @@ Redis::vadd</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vsim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1157">at line 1157</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1186">at line 1186</a></div>
         <code class="method-signature language-php">RedisCluster|array|false vsim(string $key, mixed $member, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -16336,7 +16638,7 @@ Redis::vsim</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vcard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1162">at line 1162</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1191">at line 1191</a></div>
         <code class="method-signature language-php">RedisCluster|int|false vcard(string $key)</code>
     </h3>
     <div class="details">    
@@ -16392,7 +16694,7 @@ Redis::vcard</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vdim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1167">at line 1167</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1196">at line 1196</a></div>
         <code class="method-signature language-php">RedisCluster|int|false vdim(string $key)</code>
     </h3>
     <div class="details">    
@@ -16448,7 +16750,7 @@ Redis::vdim</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vinfo">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1172">at line 1172</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1201">at line 1201</a></div>
         <code class="method-signature language-php">RedisCluster|array|false vinfo(string $key)</code>
     </h3>
     <div class="details">    
@@ -16504,7 +16806,7 @@ Redis::vinfo</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vismember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1182">at line 1182</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1211">at line 1211</a></div>
         <code class="method-signature language-php">RedisCluster|bool vismember(string $key, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -16552,7 +16854,7 @@ Redis::vinfo</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vemb">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1187">at line 1187</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1216">at line 1216</a></div>
         <code class="method-signature language-php">RedisCluster|array|false vemb(string $key, mixed $member, bool $raw = false)</code>
     </h3>
     <div class="details">    
@@ -16618,7 +16920,7 @@ Redis::vemb</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vrandmember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1192">at line 1192</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1221">at line 1221</a></div>
         <code class="method-signature language-php">RedisCluster|array|string|false vrandmember(string $key, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -16679,7 +16981,7 @@ Redis::vrandmember</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1204">at line 1204</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1233">at line 1233</a></div>
         <code class="method-signature language-php">RedisCluster|array|false vrange(string $key, string $min, string $max, int $count = -1)</code>
     </h3>
     <div class="details">    
@@ -16737,7 +17039,7 @@ Redis::vrandmember</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vrem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1210">at line 1210</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1239">at line 1239</a></div>
         <code class="method-signature language-php">RedisCluster|int|false vrem(string $key, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -16798,7 +17100,7 @@ Redis::vrem</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vlinks">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1215">at line 1215</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1244">at line 1244</a></div>
         <code class="method-signature language-php">RedisCluster|array|false vlinks(string $key, mixed $member, bool $withscores = false)</code>
     </h3>
     <div class="details">    
@@ -16864,7 +17166,7 @@ Redis::vlinks</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vgetattr">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1220">at line 1220</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1249">at line 1249</a></div>
         <code class="method-signature language-php">RedisCluster|array|string|false vgetattr(string $key, mixed $member, bool $decode = true)</code>
     </h3>
     <div class="details">    
@@ -16930,7 +17232,7 @@ Redis::vgetattr</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_vsetattr">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1225">at line 1225</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1254">at line 1254</a></div>
         <code class="method-signature language-php">RedisCluster|int|false vsetattr(string $key, mixed $member, array|string $attributes)</code>
     </h3>
     <div class="details">    
@@ -16996,7 +17298,7 @@ Redis::vsetattr</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_gcra">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1230">at line 1230</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1259">at line 1259</a></div>
         <code class="method-signature language-php">RedisCluster|array|false gcra(string $key, int $maxBurst, int $requestsPerPeriod, int $period, int $tokens = 0)</code>
     </h3>
     <div class="details">    
@@ -17072,7 +17374,7 @@ Redis::gcra</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xack">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1237">at line 1237</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1266">at line 1266</a></div>
         <code class="method-signature language-php">RedisCluster|int|false xack(string $key, string $group, array $ids)</code>
     </h3>
     <div class="details">    
@@ -17138,7 +17440,7 @@ Redis::xack</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1242">at line 1242</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1271">at line 1271</a></div>
         <code class="method-signature language-php">RedisCluster|string|false xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false)</code>
     </h3>
     <div class="details">    
@@ -17214,7 +17516,7 @@ Redis::xadd</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xclaim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1247">at line 1247</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1276">at line 1276</a></div>
         <code class="method-signature language-php">RedisCluster|string|array|false xclaim(string $key, string $group, string $consumer, int $min_iddle, array $ids, array $options)</code>
     </h3>
     <div class="details">    
@@ -17295,7 +17597,7 @@ Redis::xclaim</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xdel">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1252">at line 1252</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1281">at line 1281</a></div>
         <code class="method-signature language-php">RedisCluster|int|false xdel(string $key, array $ids)</code>
     </h3>
     <div class="details">    
@@ -17356,7 +17658,7 @@ Redis::xdel</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xdelex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1257">at line 1257</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1286">at line 1286</a></div>
         <code class="method-signature language-php">RedisCluster|array|false xdelex(string $key, array $ids, string|null $mode = null)</code>
     </h3>
     <div class="details">    
@@ -17422,7 +17724,7 @@ Redis::xdelex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xgroup">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1262">at line 1262</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1291">at line 1291</a></div>
         <code class="method-signature language-php">mixed xgroup(string $operation, string|null $key = null, string|null $group = null, string|null $id_or_consumer = null, bool $mkstream = false, int $entries_read = -2)</code>
     </h3>
     <div class="details">    
@@ -17503,7 +17805,7 @@ Redis::xgroup</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xautoclaim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1268">at line 1268</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1297">at line 1297</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false)</code>
     </h3>
     <div class="details">    
@@ -17589,7 +17891,7 @@ Redis::xautoclaim</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xinfo">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1273">at line 1273</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1302">at line 1302</a></div>
         <code class="method-signature language-php">mixed xinfo(string $operation, string|null $arg1 = null, string|null $arg2 = null, int $count = -1)</code>
     </h3>
     <div class="details">    
@@ -17660,7 +17962,7 @@ Redis::xinfo</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xlen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1278">at line 1278</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1307">at line 1307</a></div>
         <code class="method-signature language-php">RedisCluster|int|false xlen(string $key)</code>
     </h3>
     <div class="details">    
@@ -17716,7 +18018,7 @@ Redis::xlen</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xpending">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1283">at line 1283</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1312">at line 1312</a></div>
         <code class="method-signature language-php">RedisCluster|array|false xpending(string $key, string $group, string|null $start = null, string|null $end = null, int $count = -1, string|null $consumer = null)</code>
     </h3>
     <div class="details">    
@@ -17797,7 +18099,7 @@ Redis::xpending</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1288">at line 1288</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1317">at line 1317</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array xrange(string $key, string $start, string $end, int $count = -1)</code>
     </h3>
     <div class="details">    
@@ -17868,7 +18170,7 @@ Redis::xrange</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xread">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1293">at line 1293</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1322">at line 1322</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array xread(array $streams, int $count = -1, int $block = -1)</code>
     </h3>
     <div class="details">    
@@ -17934,7 +18236,7 @@ Redis::xread</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xreadgroup">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1298">at line 1298</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1327">at line 1327</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array xreadgroup(string $group, string $consumer, array $streams, int $count = 1, int $block = 1)</code>
     </h3>
     <div class="details">    
@@ -18010,7 +18312,7 @@ Redis::xreadgroup</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xrevrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1303">at line 1303</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1332">at line 1332</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array xrevrange(string $key, string $start, string $end, int $count = -1)</code>
     </h3>
     <div class="details">    
@@ -18081,7 +18383,7 @@ Redis::xrevrange</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_xtrim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1308">at line 1308</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1337">at line 1337</a></div>
         <code class="method-signature language-php">RedisCluster|int|false xtrim(string $key, int $maxlen, bool $approx = false, bool $minid = false, int $limit = -1)</code>
     </h3>
     <div class="details">    
@@ -18157,7 +18459,7 @@ Redis::xtrim</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1313">at line 1313</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1342">at line 1342</a></div>
         <code class="method-signature language-php">RedisCluster|int|float|false zadd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems)</code>
     </h3>
     <div class="details">    
@@ -18223,7 +18525,7 @@ Redis::zAdd</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zcard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1318">at line 1318</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1347">at line 1347</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zcard(string $key)</code>
     </h3>
     <div class="details">    
@@ -18279,7 +18581,7 @@ Redis::zCard</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zcount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1323">at line 1323</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1352">at line 1352</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zcount(string $key, string $start, string $end)</code>
     </h3>
     <div class="details">    
@@ -18345,7 +18647,7 @@ Redis::zCount</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zincrby">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1328">at line 1328</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1357">at line 1357</a></div>
         <code class="method-signature language-php">RedisCluster|float|false zincrby(string $key, float $value, string $member)</code>
     </h3>
     <div class="details">    
@@ -18411,7 +18713,7 @@ Redis::zIncrBy</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zinterstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1333">at line 1333</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1362">at line 1362</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zinterstore(string $dst, array $keys, array|null $weights = null, string|null $aggregate = null)</code>
     </h3>
     <div class="details">    
@@ -18482,7 +18784,7 @@ Redis::zinterstore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zintercard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1338">at line 1338</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1367">at line 1367</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zintercard(array $keys, int $limit = -1)</code>
     </h3>
     <div class="details">    
@@ -18543,7 +18845,7 @@ Redis::zintercard</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zlexcount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1343">at line 1343</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1372">at line 1372</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zlexcount(string $key, string $min, string $max)</code>
     </h3>
     <div class="details">    
@@ -18609,7 +18911,7 @@ Redis::zLexCount</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zpopmax">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1348">at line 1348</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1377">at line 1377</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array zpopmax(string $key, int|null $value = null)</code>
     </h3>
     <div class="details">    
@@ -18670,7 +18972,7 @@ Redis::zPopMax</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zpopmin">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1353">at line 1353</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1382">at line 1382</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array zpopmin(string $key, int|null $value = null)</code>
     </h3>
     <div class="details">    
@@ -18731,7 +19033,7 @@ Redis::zPopMin</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1358">at line 1358</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1387">at line 1387</a></div>
         <code class="method-signature language-php">RedisCluster|array|bool zrange(string $key, mixed $start, mixed $end, array|bool|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -18802,7 +19104,7 @@ Redis::zRange</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrangestore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1363">at line 1363</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1392">at line 1392</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zrangestore(string $dstkey, string $srckey, int $start, int $end, array|bool|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -18878,7 +19180,7 @@ Redis::zrangestore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrandmember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1369">at line 1369</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1398">at line 1398</a></div>
         <code class="method-signature language-php">RedisCluster|string|array zrandmember(string $key, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -18938,7 +19240,7 @@ Redis::zrangestore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrangebylex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1374">at line 1374</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1403">at line 1403</a></div>
         <code class="method-signature language-php">RedisCluster|array|false zrangebylex(string $key, string $min, string $max, int $offset = -1, int $count = -1)</code>
     </h3>
     <div class="details">    
@@ -19014,7 +19316,7 @@ Redis::zRangeByLex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrangebyscore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1379">at line 1379</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1408">at line 1408</a></div>
         <code class="method-signature language-php">RedisCluster|array|false zrangebyscore(string $key, string $start, string $end, array $options = [])</code>
     </h3>
     <div class="details">    
@@ -19085,7 +19387,7 @@ Redis::zRangeByScore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1384">at line 1384</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1413">at line 1413</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zrank(string $key, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -19146,7 +19448,7 @@ Redis::zRank</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1389">at line 1389</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1418">at line 1418</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zrem(string $key, string $value, string ...$other_values)</code>
     </h3>
     <div class="details">    
@@ -19212,7 +19514,7 @@ Redis::zRem</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zremrangebylex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1394">at line 1394</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1423">at line 1423</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zremrangebylex(string $key, string $min, string $max)</code>
     </h3>
     <div class="details">    
@@ -19278,7 +19580,7 @@ Redis::zRemRangeByLex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zremrangebyrank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1399">at line 1399</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1428">at line 1428</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zremrangebyrank(string $key, string $min, string $max)</code>
     </h3>
     <div class="details">    
@@ -19344,7 +19646,7 @@ Redis::zRemRangeByRank</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zremrangebyscore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1404">at line 1404</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1433">at line 1433</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zremrangebyscore(string $key, string $min, string $max)</code>
     </h3>
     <div class="details">    
@@ -19410,7 +19712,7 @@ Redis::zRemRangeByScore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrevrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1409">at line 1409</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1438">at line 1438</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array zrevrange(string $key, string $min, string $max, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -19481,8 +19783,8 @@ Redis::zRevRange</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrevrangebylex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1414">at line 1414</a></div>
-        <code class="method-signature language-php">RedisCluster|bool|array zrevrangebylex(string $key, string $min, string $max, array|null $options = null)</code>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1443">at line 1443</a></div>
+        <code class="method-signature language-php">RedisCluster|array|false zrevrangebylex(string $key, string $max, string $min, int $offset = -1, int $count = -1)</code>
     </h3>
     <div class="details">    
     
@@ -19503,17 +19805,22 @@ Redis::zRevRange</a>
             </tr>
                     <tr>
                 <td>string</td>
-                <td>$min</td>
-                <td></td>
-            </tr>
-                    <tr>
-                <td>string</td>
                 <td>$max</td>
                 <td></td>
             </tr>
                     <tr>
-                <td>array|null</td>
-                <td>$options</td>
+                <td>string</td>
+                <td>$min</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int</td>
+                <td>$offset</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int</td>
+                <td>$count</td>
                 <td></td>
             </tr>
             </table>
@@ -19524,7 +19831,7 @@ Redis::zRevRange</a>
                 <div class="return-value-content">
                         <table class="table table-condensed">
         <tr>
-            <td>RedisCluster|bool|array</td>
+            <td>RedisCluster|array|false</td>
             <td></td>
         </tr>
     </table>
@@ -19552,7 +19859,7 @@ Redis::zRevRangeByLex</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrevrangebyscore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1419">at line 1419</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1448">at line 1448</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array zrevrangebyscore(string $key, string $min, string $max, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -19623,7 +19930,7 @@ Redis::zRevRangeByScore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zrevrank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1424">at line 1424</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1453">at line 1453</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zrevrank(string $key, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -19684,7 +19991,7 @@ Redis::zRevRank</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zscan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1429">at line 1429</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1458">at line 1458</a></div>
         <code class="method-signature language-php">RedisCluster|bool|array zscan(string $key, null|int|string $iterator, string|null $pattern = null, int $count = 0)</code>
     </h3>
     <div class="details">    
@@ -19755,7 +20062,7 @@ Redis::zscan</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zscore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1434">at line 1434</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1463">at line 1463</a></div>
         <code class="method-signature language-php">RedisCluster|float|false zscore(string $key, mixed $member)</code>
     </h3>
     <div class="details">    
@@ -19816,7 +20123,7 @@ Redis::zScore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zmscore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1439">at line 1439</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1468">at line 1468</a></div>
         <code class="method-signature language-php">RedisCluster|array|false zmscore(string $key, mixed $member, mixed ...$other_members)</code>
     </h3>
     <div class="details">    
@@ -19881,7 +20188,7 @@ Redis::zScore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zunionstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1444">at line 1444</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1473">at line 1473</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zunionstore(string $dst, array $keys, array|null $weights = null, string|null $aggregate = null)</code>
     </h3>
     <div class="details">    
@@ -19952,7 +20259,7 @@ Redis::zunionstore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zinter">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1449">at line 1449</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1478">at line 1478</a></div>
         <code class="method-signature language-php">RedisCluster|array|false zinter(array $keys, array|null $weights = null, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -20017,7 +20324,7 @@ Redis::zunionstore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zdiffstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1454">at line 1454</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1483">at line 1483</a></div>
         <code class="method-signature language-php">RedisCluster|int|false zdiffstore(string $dst, array $keys)</code>
     </h3>
     <div class="details">    
@@ -20077,7 +20384,7 @@ Redis::zunionstore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zunion">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1459">at line 1459</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1488">at line 1488</a></div>
         <code class="method-signature language-php">RedisCluster|array|false zunion(array $keys, array|null $weights = null, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -20142,7 +20449,7 @@ Redis::zunionstore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_zdiff">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1464">at line 1464</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1493">at line 1493</a></div>
         <code class="method-signature language-php">RedisCluster|array|false zdiff(array $keys, array|null $options = null)</code>
     </h3>
     <div class="details">    
@@ -20202,7 +20509,7 @@ Redis::zunionstore</a>
                     <div class="method-item">
                                                                                         
     <h3 id="method_digest">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1469">at line 1469</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis_cluster.stub.php#L1498">at line 1498</a></div>
         <code class="method-signature language-php">RedisCluster|string|false digest(string $key)</code>
     </h3>
     <div class="details">    
