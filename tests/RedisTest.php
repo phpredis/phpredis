@@ -2032,6 +2032,33 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
+    public function testSortStoreLiteralDestination() {
+        $prefix = $this->redis->getOption(Redis::OPT_PREFIX);
+        $modes = [Redis::ATOMIC, Redis::MULTI];
+        if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+
+        try {
+            foreach ($modes as $mode) {
+                foreach (['{sort-store}:dst', 'compat:{sort-store}:dst'] as $dst) {
+                    $this->redis->setOption(Redis::OPT_PREFIX, '');
+                    $this->redis->del($dst, 'compat:' . $dst, 'compat:{sort-store}:src');
+                    $this->redis->setOption(Redis::OPT_PREFIX, 'compat:');
+                    $this->redis->rPush('{sort-store}:src', '2', '1');
+                    if ($mode != Redis::ATOMIC) $this->redis->multi($mode);
+                    $result = $this->redis->sort('{sort-store}:src', ['store' => $dst]);
+                    if ($mode != Redis::ATOMIC) $result = $this->redis->exec()[0];
+                    $this->assertEquals(2, $result);
+                    $this->redis->setOption(Redis::OPT_PREFIX, '');
+                    $this->assertEquals(['1', '2'], $this->redis->lRange($dst, 0, -1));
+                    $this->assertKeyMissing('compat:' . $dst);
+                    $this->redis->del($dst, 'compat:{sort-store}:src');
+                }
+            }
+        } finally {
+            $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+        }
+    }
+
     public function testSortAsc() {
         $this->setupSort();
         // sort by age and get IDs
@@ -6763,6 +6790,56 @@ class Redis_Test extends TestSuite {
         // They should all exist
         $result = $this->redis->script('exists', $s1_sha, $s2_sha, $s3_sha);
         $this->assertTrue(is_array($result) && count(array_filter($result)) == 3);
+    }
+
+    public function testCommandStringConversion() {
+        $precision = ini_get('precision');
+        $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
+        $false = false;
+        $double = 1.2345678901234567;
+        $values = [false, true, null, 42, $double, &$false, &$double];
+        $args = array_merge(['{conversion}:key'], $values);
+        $modes = [Redis::ATOMIC, Redis::MULTI];
+        if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+
+        try {
+            foreach ([5, 14, 17] as $digits) {
+                ini_set('precision', $digits);
+                $expected = array_map('strval', $values);
+                foreach ([Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP] as $serializerMode) {
+                    $this->redis->setOption(Redis::OPT_SERIALIZER, $serializerMode);
+                    foreach ($modes as $mode) {
+                        if ($mode != Redis::ATOMIC) $this->redis->multi($mode);
+                        $result = $this->redis->eval('return ARGV', $args, 1);
+                        if ($mode != Redis::ATOMIC) $result = $this->redis->exec()[0];
+                        $this->assertEquals($expected, $result);
+                    }
+                }
+
+                $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+                $key = '{conversion}:hash';
+                foreach ([false, $double] as $field) {
+                    $this->redis->del($key);
+                    $this->redis->hSet($key, 'untouched', 'keep');
+                    $this->assertEquals(1, $this->redis->hSet($key, $field, 'value'));
+                    $this->assertEquals('value', $this->redis->hGet($key, (string)$field));
+                    $this->assertEquals(1, $this->redis->hDel($key, $field));
+                    $this->assertEquals(['untouched' => 'keep'], $this->redis->hGetAll($key));
+                }
+                $this->redis->del($key);
+
+                /* Explicit numeric arguments retain their full precision. */
+                $this->assertEquals('1.2345678901234567',
+                    $this->rawCommandArray('{conversion}:key', ['ECHO', $double]));
+                $this->redis->del('{conversion}:zset');
+                $this->redis->zAdd('{conversion}:zset', $double, 'member');
+                $this->assertEquals($double, $this->redis->zScore('{conversion}:zset', 'member'));
+                $this->redis->del('{conversion}:zset');
+            }
+        } finally {
+            ini_set('precision', $precision);
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+        }
     }
 
     public function testEval() {

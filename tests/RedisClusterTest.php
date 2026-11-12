@@ -516,6 +516,33 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
+    public function testSortStoreLiteralSlot() {
+        $prefix = $this->redis->getOption(Redis::OPT_PREFIX);
+        try {
+            $this->redis->setOption(Redis::OPT_PREFIX, '');
+            $this->redis->del('{sort-slot}:src', '{other-slot}:dst');
+            $this->redis->rPush('{sort-slot}:src', '2', '1');
+            /* Prefixing the destination would incorrectly put it in the source slot. */
+            $this->redis->setOption(Redis::OPT_PREFIX, '{sort-slot}:');
+            $warnings = [];
+            set_error_handler(function ($severity, $message) use (&$warnings) {
+                $warnings[] = $message;
+                return true;
+            }, E_WARNING);
+            try {
+                $this->assertFalse($this->redis->sort('src', ['store' => '{other-slot}:dst']));
+                $this->assertEquals(1, count($warnings));
+            } finally {
+                restore_error_handler();
+            }
+            $this->redis->setOption(Redis::OPT_PREFIX, '');
+            $this->assertKeyMissing('{other-slot}:dst');
+            $this->redis->del('{sort-slot}:src');
+        } finally {
+            $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+        }
+    }
+
     public function testDBSize() {
         for ($i = 0; $i < 10; $i++) {
             $key = "key:$i";

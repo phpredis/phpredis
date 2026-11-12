@@ -22,6 +22,8 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Preserve 6.x string conversion for command arguments, including false values and PHP floating-point precision
+- Preserve literal SORT STORE destinations in 6.x while retaining cluster slot validation
 - Preserve SET conditional flags and comparison options, and restore expiry validation in SET and MSETEX
   [caa71011](https://github.com/phpredis/phpredis/commit/caa7101191a4dbede8f620ec3e42fce4dfd51685)
 - Preserve the 6.3.0 RedisCluster return declarations for compatibility with existing subclasses

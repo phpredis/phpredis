@@ -346,19 +346,14 @@ void redis_cmd_cat_zval_zstr(RedisCmd *cmd, zval *zv) {
     zend_string *zstr, *tmp;
 
     switch (Z_TYPE_P(zv)) {
-        case IS_FALSE:
-            redis_cmd_cat_str(cmd, ZEND_STRL("0"));
-            return;
         case IS_TRUE:
             redis_cmd_cat_str(cmd, ZEND_STRL("1"));
             return;
         case IS_LONG:
             redis_cmd_cat_long(cmd, Z_LVAL_P(zv));
             return;
-        case IS_DOUBLE:
-            redis_cmd_cat_double(cmd, Z_DVAL_P(zv));
-            return;
         default:
+            /* Preserve 6.x PHP string conversion, including false and precision. */
             zstr = zval_get_tmp_string(zv, &tmp);
             redis_cmd_cat_zstr(cmd, zstr);
             zend_tmp_string_release(tmp);

@@ -4290,8 +4290,16 @@ RedisCmd *redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
          (zv = zend_hash_str_find(opts, ZEND_STRL("STORE"))) != NULL) &&
         Z_TYPE_P(zv) == IS_STRING)
     {
+        /* SORT STORE destinations are literal in 6.x, including for slot checks. */
+        if (redis_sock->type == REDIS_SOCK_CLUSTER &&
+            cmd->slot != cluster_hash_key(Z_STRVAL_P(zv), Z_STRLEN_P(zv)))
+        {
+            redis_crosslot_warning();
+            redis_cmd_free(cmd);
+            return NULL;
+        }
         redis_cmd_cat_literal(cmd, "STORE");
-        redis_cmd_try_cat_key_zval(cmd, zv);
+        redis_cmd_cat_zstr(cmd, Z_STR_P(zv));
     }
 
     // GET option
