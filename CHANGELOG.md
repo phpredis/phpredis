@@ -22,6 +22,8 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Preserve SET conditional flags and comparison options, and restore expiry validation in SET and MSETEX
+  [caa71011](https://github.com/phpredis/phpredis/commit/caa7101191a4dbede8f620ec3e42fce4dfd51685)
 - Preserve the 6.3.0 RedisCluster return declarations for compatibility with existing subclasses
   [1da3b6d8](https://github.com/phpredis/phpredis/commit/1da3b6d801c2fd98ec6149edeb2d6f5f076f7e16)
 - Keep object serialization and custom restoration hooks compatible with 6.x while initializing RedisCluster routing safely before its constructor runs
