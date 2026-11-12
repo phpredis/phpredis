@@ -5,6 +5,520 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [Unreleased]
+
+Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection APIs, an optional phpser serializer, and persistent connections for ZTS builds. They also improve protocol validation, cluster reliability, session handling, and performance.
+
+### Sponsors :sparkling_heart:
+
+- [A-VISION Advisering en Begeleiding B.V.](https://github.com/A-VISION-BV)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Boring Observability](https://github.com/boring-o11y)
+- [Geoffrey Hoffman](https://github.com/phpguru)
+- [Open LMS](https://github.com/open-lms-open-source)
+- [Salvatore Sanfilippo](https://github.com/antirez)
+- [Scott Helme](https://github.com/ScottHelme)
+- [Ty](https://github.com/karock)
+
+## Fixed
+
+- Preserve pipeline reply callbacks when reconnecting
+  [d54431d1](https://github.com/phpredis/phpredis/commit/d54431d11dc547bb9d56a08c09ec6f9d71abfd1c)
+  ([rechl](https://github.com/rechl))
+- Fix persistent connection pool liveness checks and reconnect handling
+  [146ec813](https://github.com/phpredis/phpredis/commit/146ec813ea7ca85c9e3a7cff2caf977096e16acf)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Re-send `READONLY` after reconnecting to a cluster replica
+  [3606328d](https://github.com/phpredis/phpredis/commit/3606328d96d4450abd1b0a0dc5d2f05454ca53fb)
+  ([Etienne Zannelli](https://github.com/e-zannelli))
+- Clear the cluster slot cache when nodes are unreachable
+  [52e90650](https://github.com/phpredis/phpredis/commit/52e90650b10893e294ec0bceba697ab8a23c469a)
+  ([Victor Kislov](https://github.com/primis-victork))
+- Handle `RedisCluster` directed commands on uncovered slots
+  [1351c824](https://github.com/phpredis/phpredis/commit/1351c824c679dc7b711d441beba091b64bf08565)
+  ([Ebubekir Yiğit](https://github.com/ebubekiryigit))
+- Fix `RedisCluster` directed commands in `MULTI` mode and reject `UNWATCH` during a transaction
+  [e13d5d0c](https://github.com/phpredis/phpredis/commit/e13d5d0c61c7c128788682c5503fc9118e6a87e7),
+  [a1d93cab](https://github.com/phpredis/phpredis/commit/a1d93cabb18eef6200095bc551067fb63356c36d)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix cluster transaction result bookkeeping across slots belonging to the same master
+  [a283471e](https://github.com/phpredis/phpredis/commit/a283471eb5aaf2c26781dc6f4338f0a56ccd95c4)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix use-after-free defects and result ownership in cluster multi-key commands
+  [2ef32c52](https://github.com/phpredis/phpredis/commit/2ef32c5244f924fad4d7527e36f808e7b364f90f),
+  [ff9dede9](https://github.com/phpredis/phpredis/commit/ff9dede940be3a05052c02b15cc50c1a43d9360b)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix use-after-free and double-free paths when parsing malformed cluster replies
+  [b29f5c85](https://github.com/phpredis/phpredis/commit/b29f5c85b29378bf101fda26ab3afe182e71f599),
+  [a14fdeca](https://github.com/phpredis/phpredis/commit/a14fdeca390c0f8616712d9291f2bf5a8c35717d)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Validate pub/sub reply element types before using them as strings
+  [cd04e21d](https://github.com/phpredis/phpredis/commit/cd04e21df94cf192bd1dd2ed1c465f8fdabe799d),
+  [e2a4f90d](https://github.com/phpredis/phpredis/commit/e2a4f90df7e6fc05616e933475326a4bccbeb7f8)
+  ([Raphael Paez](mailto:raphael.paez@softplan.com.br))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Validate scan cursor types, configured node lists, and RedisArray reply values
+  [57ddfefe](https://github.com/phpredis/phpredis/commit/57ddfefe67abd3504587e11d05978b5f29d97966)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Harden RESP length parsing, detect EOF correctly, and guard against bulk length overflow
+  [5c6e2d2b](https://github.com/phpredis/phpredis/commit/5c6e2d2b3cd16ad29effb7036a9984339fc5bd0c),
+  [c67d3e49](https://github.com/phpredis/phpredis/commit/c67d3e493fad38e2e5751382764071636e393371),
+  [7b2fdc6d](https://github.com/phpredis/phpredis/commit/7b2fdc6de13df0007c441c5d26e44567adc0f810),
+  [1f02e67d](https://github.com/phpredis/phpredis/commit/1f02e67d83b0916536a6c9d57d6dfd63e1a66327)
+  ([Ilia Alshanetsky](https://github.com/iliaal))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Reject malformed protocol replies and stop reading after failures instead of looping indefinitely
+  [ea3ea564](https://github.com/phpredis/phpredis/commit/ea3ea564d0a51c94a1ea0b99d3af41553f9bbc2c),
+  [2298a200](https://github.com/phpredis/phpredis/commit/2298a200d3102f364678165d929e1305bc7a9f7a),
+  [80093d53](https://github.com/phpredis/phpredis/commit/80093d53b154ebc83f013a97edec48f12cad0e00),
+  [4bdcf155](https://github.com/phpredis/phpredis/commit/4bdcf1552bbf41fd349eeebd49260ed8e71dc4af),
+  [a6b7befd](https://github.com/phpredis/phpredis/commit/a6b7befd6b196ea09778d9b4a48458480d77d6b8),
+  [753a2d6d](https://github.com/phpredis/phpredis/commit/753a2d6d6752edf741ad97e885e23320c1be0e96),
+  [e5d2f8d6](https://github.com/phpredis/phpredis/commit/e5d2f8d625bd464134af313ab328d6a4f13b680c)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Validate CRLF terminators and handle short reads in standalone and cluster replies
+  [a0ded702](https://github.com/phpredis/phpredis/commit/a0ded7027a1222a89acb35c0b7743608cea7e07d),
+  [6e136252](https://github.com/phpredis/phpredis/commit/6e1362520a0d8d6ce5a7d5212c16c8fd22d8fcc3),
+  [00c0f963](https://github.com/phpredis/phpredis/commit/00c0f963945803a991a7c865255d7192d0507df1)
+  ([EJ-Research](https://github.com/EJ-Research))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Limit nested reply depth, cap array preallocation from server-supplied counts, and fix malformed-reply leaks
+  [690a1098](https://github.com/phpredis/phpredis/commit/690a10987c7e23cc52c76a0b54c587b50ca03b05),
+  [01791f23](https://github.com/phpredis/phpredis/commit/01791f234c3fe00d40b48c5642b2b502e571a100),
+  [34c3fd9f](https://github.com/phpredis/phpredis/commit/34c3fd9fce0ed335bfcb6bf534659fecc9a020fe)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Harden `CLUSTER SLOTS` and redirection parsing, including oversized hostnames
+  [fbf5affa](https://github.com/phpredis/phpredis/commit/fbf5affa14a7193fe6d6519339285361b2647274),
+  [bb9e8769](https://github.com/phpredis/phpredis/commit/bb9e87695b9535d92a3fada820f166f46e7752a6),
+  [8b1280f3](https://github.com/phpredis/phpredis/commit/8b1280f3cd440dc741482c355d35eace4787de49)
+  ([Ilia Alshanetsky](https://github.com/iliaal))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Validate array replies for cluster scans and `XCLAIM`
+  [f98c0837](https://github.com/phpredis/phpredis/commit/f98c0837e571303c877779fe36c0874d0d6817e9),
+  [c97d754f](https://github.com/phpredis/phpredis/commit/c97d754f27cd516eb7596ef0629322b62182c935)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Discard connections after failed or incomplete writes
+  [48a46c71](https://github.com/phpredis/phpredis/commit/48a46c71104ac17d0688ab25f2b86e8fa2c6c406)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix `GEOSEARCHSTORE` reply handling
+  [4e093bb0](https://github.com/phpredis/phpredis/commit/4e093bb0dc447ee8eb17a8f154d36556ea0b3412)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Preserve integer geohashes in `GEOSEARCH` metadata and validate the reply structure
+  [a283471e](https://github.com/phpredis/phpredis/commit/a283471eb5aaf2c26781dc6f4338f0a56ccd95c4)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Handle inline multibulk values and propagate raw reply read failures correctly
+  [a283471e](https://github.com/phpredis/phpredis/commit/a283471eb5aaf2c26781dc6f4338f0a56ccd95c4)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Route `FLUSHDB` and `FLUSHALL` to cluster primaries even when replica reads are enabled
+  [b30ced74](https://github.com/phpredis/phpredis/commit/b30ced74c311b8975aa395da89c103f171c88b01)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix crashes when setting `RedisCluster` TCP keepalive and handle missing sockets in `setOption`
+  [997d5645](https://github.com/phpredis/phpredis/commit/997d564521b3b95866c7747a971c4e357d8046e4),
+  [cb4acc7d](https://github.com/phpredis/phpredis/commit/cb4acc7dec293053a9e8943badfd0858342f5586)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Use the correct option size when setting `SO_KEEPALIVE`
+  [09d3dbf1](https://github.com/phpredis/phpredis/commit/09d3dbf1046b4b3aa4f590137d30f6af026af2a2)
+  ([pkramme](https://github.com/pkramme))
+- Allow `getLastError()` and `clearLastError()` after a failed connection without throwing
+  [fc948db8](https://github.com/phpredis/phpredis/commit/fc948db86a7ac75b43fe71c333cd74710fa88c79)
+  ([Nicolas Grekas](https://github.com/nicolas-grekas))
+- Accept `null` for `$seeds` in `RedisCluster::__construct`
+  [409508af](https://github.com/phpredis/phpredis/commit/409508afa219852f0128387417112641c66c9ce3)
+  ([derrickschoen](https://github.com/derrickschoen))
+- Preserve numeric-string hash field names and use the correct format for `zend_long` values
+  [7c1c1259](https://github.com/phpredis/phpredis/commit/7c1c1259742425a09ac5c7c53f64270e07171db0),
+  [fe67b8cb](https://github.com/phpredis/phpredis/commit/fe67b8cb3310a83d98040c0971d52c0d1bd24f53),
+  [b8b29687](https://github.com/phpredis/phpredis/commit/b8b29687c18bb9249a73136f6df46f03895d602e)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  ([arshidkv12](https://github.com/arshidkv12))
+- Handle deserialized non-string members when pairing sorted-set values and scores
+  [cab05051](https://github.com/phpredis/phpredis/commit/cab0505155e51601bf70ff9a5b1e42ca7f58188e)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Preserve `INFO` strings that would overflow when parsed as exponent-form numbers
+  [e9e338b5](https://github.com/phpredis/phpredis/commit/e9e338b567338703deb58fa24ec55a705a28e3e5)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Handle PHP serialization failures for anonymous classes
+  [b83af641](https://github.com/phpredis/phpredis/commit/b83af6417b4cb174014d466eb8f14fce707a912a)
+  ([arshidkv12](https://github.com/arshidkv12))
+- Validate LZ4 decompressed lengths and NUL-terminate decompression buffers for PHP unserializers
+  [2bf673c6](https://github.com/phpredis/phpredis/commit/2bf673c64f66de514b733259ff952ddf653199d2),
+  [cf95cd0a](https://github.com/phpredis/phpredis/commit/cf95cd0a79be69943292d34e7ec1d700cd06761d)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Reject invalid vector attributes in `VSETATTR`
+  [234d1e7c](https://github.com/phpredis/phpredis/commit/234d1e7cda01f6bc79be36c9b7dabedc26358597)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Prevent backoff option overflow and handle empty keys when prefixing
+  [a2936256](https://github.com/phpredis/phpredis/commit/a29362563aa88883b39d717d597ff21bbba82309)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Prevent crashes by disabling cloning of `Redis`, `RedisArray`, and `RedisCluster` objects
+  [6e214c16](https://github.com/phpredis/phpredis/commit/6e214c169862af80e0215de068afc6e5c8aa7c40)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Avoid persistent connection ID collisions and fix a connection pool memory leak
+  [730dec06](https://github.com/phpredis/phpredis/commit/730dec06b60adab297ca2acc24b69b77bae9bf2d),
+  [d90cfdb6](https://github.com/phpredis/phpredis/commit/d90cfdb6bdcab41da67df581786e291d985f601b)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Prevent undefined behavior in weighted session server selection and overflow in cluster session key lengths
+  [025b0e97](https://github.com/phpredis/phpredis/commit/025b0e9772c1c2381965156306b78766b39cf50f),
+  [ae74b64b](https://github.com/phpredis/phpredis/commit/ae74b64be743a1aaf8d66f627dd984fcaa0862f8)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Report missing session servers and improve session compression errors
+  [bf2047e0](https://github.com/phpredis/phpredis/commit/bf2047e0674bfb3634a602cd7fd62cf23daf7eaa),
+  [453c4788](https://github.com/phpredis/phpredis/commit/453c4788d689669e3ca48752e86a37186be586c0)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix PHP 8.6 compatibility for session handlers, INI APIs, and `bin2hex`
+  [b8b765e6](https://github.com/phpredis/phpredis/commit/b8b765e610f89c44da6143f9a636a9d989d3fd82),
+  [9a170831](https://github.com/phpredis/phpredis/commit/9a170831254c9743386df54b6d81f2d3364949f6),
+  [78c1c690](https://github.com/phpredis/phpredis/commit/78c1c690e94e88b7a9eb5c964e4c1aff51979c0f),
+  [e3273a90](https://github.com/phpredis/phpredis/commit/e3273a90fe0521de4c35a7410e186be68b70dff6),
+  [dd15a7dd](https://github.com/phpredis/phpredis/commit/dd15a7dd90738e840ce43b5815ddbff7fe6d123b),
+  [f5460cc2](https://github.com/phpredis/phpredis/commit/f5460cc2510d10bc85514ef2744ba6ed5969f5e5)
+  ([Rasmus Lerdorf](https://github.com/rlerdorf))
+  ([michael-grunder](https://github.com/michael-grunder))
+  ([Andy Postnikov](https://github.com/andypost))
+  ([Remi Collet](https://github.com/remicollet))
+- Fix compiler attribute detection
+  [b192b0e4](https://github.com/phpredis/phpredis/commit/b192b0e454256eac36e840f0760aa3330878c778)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Correct RedisCluster return types and the `zrevrangebylex` signature
+  [6c1fbf86](https://github.com/phpredis/phpredis/commit/6c1fbf86ae56ace773d4931ce852f6bdacf3df67),
+  [2716bea7](https://github.com/phpredis/phpredis/commit/2716bea73385fa688dc2a08d8c623a1d8c9f9407)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Correct `XDELEX` return types in Redis, RedisCluster, and RedisArray stubs
+  [9f4302c0](https://github.com/phpredis/phpredis/commit/9f4302c0ccd81d5546db6ee29ea694f79c04d9c5),
+  [8dcaedae](https://github.com/phpredis/phpredis/commit/8dcaedae0f0164f63fdfdbcd2da3c1b73e96c37f)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  ([michael-grunder](https://github.com/michael-grunder))
+
+## Added
+
+- Implement `BLESS` key eviction protection commands, including a lazy `RedisBlessScanIterator` for `BLESS SCAN`
+  [4751fdf8](https://github.com/phpredis/phpredis/commit/4751fdf8d2a496ab692333ed17deac8b3b6ac43c)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `INCREX` for `Redis` and `RedisCluster`
+  [90fabdf9](https://github.com/phpredis/phpredis/commit/90fabdf91447440b066fca3099836bdd1945c9e1),
+  [7c186d94](https://github.com/phpredis/phpredis/commit/7c186d94a5fbabbee14f79cdcc44398feb80b55f)
+  ([Simon Hammes](https://github.com/simonhammes))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `BITRANGEINTARRAY`
+  [9222d5cc](https://github.com/phpredis/phpredis/commit/9222d5cc346b4439888c9b084d63551c2852d68c)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add `reconnect()` to `Redis` and `RedisCluster`
+  [a72ec1ab](https://github.com/phpredis/phpredis/commit/a72ec1ababf789778a9953b8511c99119d742b75)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add optional `Redis::SERIALIZER_PHPSER` support, including signing with `phpser.key`
+  [b3e890b7](https://github.com/phpredis/phpredis/commit/b3e890b786b7e2b9626b87cbc8fe636d8b7ba5fe)
+  ([Ilia Alshanetsky](https://github.com/iliaal))
+- Support `AGGREGATE COUNT` in `ZUNION[STORE]` and `ZINTER[STORE]`
+  [810984b5](https://github.com/phpredis/phpredis/commit/810984b5a5aedc37e3ff3c19e33af8dc08c8290f)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `HIMPORT`
+  [55f28493](https://github.com/phpredis/phpredis/commit/55f28493a0223b120efd71ba642cb0115f306bfd)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `LMOVEM` and `BLMOVEM`
+  [7419002a](https://github.com/phpredis/phpredis/commit/7419002a165dca58e84fb79eab6cef6c9c9a4f1d)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `SUNIONCARD` and `SDIFFCARD`
+  [533de1fe](https://github.com/phpredis/phpredis/commit/533de1fe5e9a4ec5dfd2b9da7435d11177d906f4),
+  [e2141f88](https://github.com/phpredis/phpredis/commit/e2141f88c5c2634c8532591927f0b68870212430)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `GCRA` with the `TOKENS` option
+  [10b77a42](https://github.com/phpredis/phpredis/commit/10b77a42d6bea489a7ccca04adbbeb627c14dcbc),
+  [5b197316](https://github.com/phpredis/phpredis/commit/5b197316497b9eb350770a84fad045185f3e015e)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `MSETEX` for `Redis` and `RedisCluster`
+  [86eabb86](https://github.com/phpredis/phpredis/commit/86eabb86eb4efad7bd3daf5735b4205ba6e13231),
+  [41922b67](https://github.com/phpredis/phpredis/commit/41922b6740f605869f3a0832d0cece90bef8fc8e)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `XDELEX` and `XACKDEL`
+  [635d87d5](https://github.com/phpredis/phpredis/commit/635d87d535e15626b8df5493bfa15bd1a7a661d9),
+  [23cc7859](https://github.com/phpredis/phpredis/commit/23cc785989878d420539a02bdaab44e467bfe486)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `DELEX`
+  [00c62de2](https://github.com/phpredis/phpredis/commit/00c62de277e8c93ba6c18bfe9b713478ac49dd75),
+  [93cb9211](https://github.com/phpredis/phpredis/commit/93cb921158da4d1342a5ca291dcf4d68a54a2048)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `DIGEST` and the local `_digest()` helper, requiring PHP 8.1 or newer for local hashing
+  [e2dd13ce](https://github.com/phpredis/phpredis/commit/e2dd13ce7b756ffd358939b1f557f4b4b00abf6e),
+  [107cc7aa](https://github.com/phpredis/phpredis/commit/107cc7aacb88597c8bfe9492387a9d0cb8417c71)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Implement `WAIT` for `RedisCluster` and share command handling with `WAITAOF`
+  [4de4f727](https://github.com/phpredis/phpredis/commit/4de4f727a46c5f4c28f46354c2ec04021a92f8e1)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add `redis.session.lock_release_cmd` to select Lua, `DELEX`, or `DELIFEQ` for session lock release
+  [e39d9b74](https://github.com/phpredis/phpredis/commit/e39d9b74f48463f7b0fe4a5d2fc8f9b6cde4afc2)
+  ([michael-grunder](https://github.com/michael-grunder))
+
+## Changed
+
+- Enable persistent connections in ZTS builds, with connections reused per thread
+  [b37b2316](https://github.com/phpredis/phpredis/commit/b37b23169cf4790442b9f007d3c88a893af2df5f)
+  ([Kevin Dunglas](https://github.com/dunglas))
+- Disallow serialization of `Redis`, `RedisArray`, `RedisCluster`, and `RedisSentinel` objects, including on PHP versions before 8.1
+  [befb08c0](https://github.com/phpredis/phpredis/commit/befb08c05f5841b5c3fea515a7efd20b5363e962),
+  [bac00154](https://github.com/phpredis/phpredis/commit/bac00154b1f528b2d0ca42d2726d2cc31d145e3b)
+  ([Nicolas Grekas](https://github.com/nicolas-grekas))
+- Mark connection options and context arguments as `#[\SensitiveParameter]`
+  [671e726e](https://github.com/phpredis/phpredis/commit/671e726e7d87916ffc1c8c8dbbb20c355bcd731a)
+  ([Nicolas Grekas](https://github.com/nicolas-grekas))
+- Use cryptographically random session lock secrets
+  [b112875b](https://github.com/phpredis/phpredis/commit/b112875b70545df684931e71a7d3b4f6901ea62a)
+  ([Ilia Alshanetsky](https://github.com/iliaal))
+- Rework TLS context ownership and allocation for connections and cluster nodes
+  [b97951cd](https://github.com/phpredis/phpredis/commit/b97951cddc68e8d195198d1d0b911573953ffa4d)
+  ([michael-grunder](https://github.com/michael-grunder))
+
+## Documentation
+
+- Add RedisArray method annotations and correct PHPDoc parameter, return, nullable, and variadic types
+  [8597d3d7](https://github.com/phpredis/phpredis/commit/8597d3d793f335b8bdc0f268407bf7322717dcf7),
+  [5afa8eb7](https://github.com/phpredis/phpredis/commit/5afa8eb7e0fd51ec9901c83e72915aeca7f9ddba),
+  [9c9d0286](https://github.com/phpredis/phpredis/commit/9c9d0286f420f4569378f1c5a3e1d7c00bad49f8),
+  [b742bb8b](https://github.com/phpredis/phpredis/commit/b742bb8bdb05456f4b8aea80020492b00213f1da),
+  [6aea98f6](https://github.com/phpredis/phpredis/commit/6aea98f632ade32e99dfefba22dc122fe3190062),
+  [26a73f46](https://github.com/phpredis/phpredis/commit/26a73f46d1648cbee1daf023c0ad3316c65c11f2),
+  [481f12f8](https://github.com/phpredis/phpredis/commit/481f12f84c9be756ac19440efb159f859398205c),
+  [8894de5a](https://github.com/phpredis/phpredis/commit/8894de5a0b0db65415436b101e53c11b9b4759f2)
+  ([Michael Telgmann](https://github.com/mitelg))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Document TLS options and clarify that `connect()` throws on failure
+  [c28430e5](https://github.com/phpredis/phpredis/commit/c28430e5f6066a86583751fc4315397ae7a84c41),
+  [6efd549a](https://github.com/phpredis/phpredis/commit/6efd549a1a6d28228fa29484e342ba79e9d45f46)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Document session `read_timeout` and the default `persistent` setting
+  [0340599b](https://github.com/phpredis/phpredis/commit/0340599b90cd106cf3259c30c3a6c1166dba5903),
+  [c99c8634](https://github.com/phpredis/phpredis/commit/c99c86349aac32ebe1396a57da750f3b39b7ad61)
+  ([Sowmya Mallur](https://github.com/Dot2892))
+  ([林博仁 Buo-ren Lin](https://github.com/brlin-tw))
+- Explain transactions inside pipelines and their reply formats
+  [8ef2ee92](https://github.com/phpredis/phpredis/commit/8ef2ee9283bda3b660ab23f2c66d06b3d509dbf8)
+  ([g](https://github.com/gopi-ar))
+- Document `WAIT` and `WAITAOF`
+  [cd4cf653](https://github.com/phpredis/phpredis/commit/cd4cf653df04f02d9ed9d0492195f78dedb2791a)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Document `UNSUBSCRIBE` and `PUNSUBSCRIBE`
+  [6b481b6f](https://github.com/phpredis/phpredis/commit/6b481b6f66d9e69e11370eaf234381ae0b9bbd2a)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Document class constants, backoff algorithms, and cluster failover strategies
+  [49919b0e](https://github.com/phpredis/phpredis/commit/49919b0ec507d73f7a4d388efdb8d858579bbe69),
+  [26cf6d94](https://github.com/phpredis/phpredis/commit/26cf6d9494cb13a1228ede4fcdd595a7c24e801a),
+  [8ef349a2](https://github.com/phpredis/phpredis/commit/8ef349a2d9ac04cab26bf74c13053a8299d82702),
+  [0981c2b7](https://github.com/phpredis/phpredis/commit/0981c2b7d76b7d4e085196cc28fb60c0db728185)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Expand helper method documentation and examples, and correct stub wording and types
+  [d6437f5e](https://github.com/phpredis/phpredis/commit/d6437f5e95df1edc4396e2b4e69fe0899342502a),
+  [abce1655](https://github.com/phpredis/phpredis/commit/abce1655b96719126b2d926a42ae29b743ad18c9),
+  [c17f475c](https://github.com/phpredis/phpredis/commit/c17f475caa0cbdfc5a58777c59085113f7c25add),
+  [399346e5](https://github.com/phpredis/phpredis/commit/399346e51a4b8c6bff0d8c2125a776131062955c),
+  [f23da62a](https://github.com/phpredis/phpredis/commit/f23da62a9b5c27e20195627b692fc31e7713c218),
+  [806b7b3f](https://github.com/phpredis/phpredis/commit/806b7b3f79ace4159c69c748a85144dbb8848997),
+  [1f3fb179](https://github.com/phpredis/phpredis/commit/1f3fb179cd2a3bd156169d2bdc19d118a6f70815)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Link API methods to Redis and Valkey command references
+  [a46700cf](https://github.com/phpredis/phpredis/commit/a46700cfc89d643856c72444cf57e444a33184f0),
+  [76286d88](https://github.com/phpredis/phpredis/commit/76286d88a9c1d7776c7cb89ef707806948c903ca)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add syntax highlighting to generated API documentation and build it from `develop`
+  [10c0bf0f](https://github.com/phpredis/phpredis/commit/10c0bf0fcfa3ff93065ace2fbcbd3cbcdc9f3fb0),
+  [1297c48c](https://github.com/phpredis/phpredis/commit/1297c48c1473f7cba74d511b6cd57ceb640e9ca7),
+  [e460a859](https://github.com/phpredis/phpredis/commit/e460a8595af666c5106cf4a9ff4d363f59a9610f),
+  [4cf670fe](https://github.com/phpredis/phpredis/commit/4cf670fed3608470a5b10463596525dce736a7f7),
+  [ae69e47a](https://github.com/phpredis/phpredis/commit/ae69e47a08955305a319623ed7954c149c9c2765),
+  [d45c4d29](https://github.com/phpredis/phpredis/commit/d45c4d294c8d00358c63d4dcd8edf1eb37f008e7),
+  [9edc2425](https://github.com/phpredis/phpredis/commit/9edc24257913d6effcdbec7cdfdc22db01b0054d),
+  [38e56d57](https://github.com/phpredis/phpredis/commit/38e56d573858f713e12c3f699c77910c6091b686),
+  [5fe08621](https://github.com/phpredis/phpredis/commit/5fe0862109fc085fef3801114d3ab1136e332a4b),
+  [d5b1576e](https://github.com/phpredis/phpredis/commit/d5b1576e272baea1724210d640ef48e3e8e41c0f)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Refresh generated API documentation, including new commands and iterator documentation
+  [ecdc290b](https://github.com/phpredis/phpredis/commit/ecdc290bba19c48d27fc14f1fa74d2187c791a7b),
+  [9e9ccbd4](https://github.com/phpredis/phpredis/commit/9e9ccbd441686ce252aa86d9c9d4a18346620542),
+  [d4600a28](https://github.com/phpredis/phpredis/commit/d4600a284639968f705c0264dc855188093c5298),
+  [df243455](https://github.com/phpredis/phpredis/commit/df243455e656c2fb5023e905b10511e33b754196),
+  [f5ed1704](https://github.com/phpredis/phpredis/commit/f5ed17048bde7c9e8ada04005b0773bbd99e5abf),
+  [e6d0d119](https://github.com/phpredis/phpredis/commit/e6d0d119385457323c83cf8182dcc7f2b99624e7),
+  [4e79159e](https://github.com/phpredis/phpredis/commit/4e79159e7bb2b3ac312c602084b235a27c1c1325),
+  [39472124](https://github.com/phpredis/phpredis/commit/3947212448da38813567d99b011aa8f758fab662),
+  [362ee55c](https://github.com/phpredis/phpredis/commit/362ee55c8d5365c3f991794c978eca9205d822c9)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Mention Dragonfly support in the README
+  [2b71a968](https://github.com/phpredis/phpredis/commit/2b71a9688f7cf1c9169894a34b7c218212f2eeae)
+  ([michael-grunder](https://github.com/michael-grunder))
+
+## Tests/CI
+
+- Allow multiple test filters and exclusions, and print commands for rerunning tests
+  [07f620e7](https://github.com/phpredis/phpredis/commit/07f620e767739676fa34f75a48a2a7d8d3aa2d0c),
+  [a2b98330](https://github.com/phpredis/phpredis/commit/a2b983304a272e1190f8ae1dab7ed870e356fc7d),
+  [2343369b](https://github.com/phpredis/phpredis/commit/2343369b47a9e601252134e6930635ce38a3cc4e)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Improve test diagnostics, fail-fast assertions, and compatibility with subclasses
+  [4baad44b](https://github.com/phpredis/phpredis/commit/4baad44bcfd7dc710b9eae78e6652b0cdc1f0d50),
+  [4a02f3dd](https://github.com/phpredis/phpredis/commit/4a02f3dda635c3d9faa5117166618106c444bfd5),
+  [2a0569ec](https://github.com/phpredis/phpredis/commit/2a0569ece7045cfa492813168418842a17a0d206),
+  [b0d534e1](https://github.com/phpredis/phpredis/commit/b0d534e1ca0b183c80925eed0b1699894dc4d806),
+  [43d72dad](https://github.com/phpredis/phpredis/commit/43d72dad29e1b6e47d2bd856974546288c2c3db6),
+  [c92c0422](https://github.com/phpredis/phpredis/commit/c92c04220cbb1c034fbfbd0610c1dc935111b045),
+  [506715fe](https://github.com/phpredis/phpredis/commit/506715fea41f0935907ac5f416c8e3bcc1abbe14),
+  [e037b7ca](https://github.com/phpredis/phpredis/commit/e037b7ca9566376357d9cd3463e64df7f0229e82),
+  [10ae0080](https://github.com/phpredis/phpredis/commit/10ae0080a333e86adf1ad850d5728b619473d62e)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Reduce timing-test delays and make expiration assertions less sensitive to scheduling
+  [09d496b2](https://github.com/phpredis/phpredis/commit/09d496b239410852ef8027767d6fd2190b2ed9b6),
+  [53ba9b4b](https://github.com/phpredis/phpredis/commit/53ba9b4b761084fa9111c9820c38366c671bac1c),
+  [c7227339](https://github.com/phpredis/phpredis/commit/c7227339790df2c04b66a9b9bb4d45e7d21af808),
+  [e5f0df63](https://github.com/phpredis/phpredis/commit/e5f0df635abdc99500693877a351458f38d086bc),
+  [777f7377](https://github.com/phpredis/phpredis/commit/777f7377674a8f5d23a7ba739d165daeebc13e47),
+  [7ae4014c](https://github.com/phpredis/phpredis/commit/7ae4014c5adb3e1b5857e1f5d42ffcac125e621d)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix session and replication test races, and use explicit exit codes for session helpers
+  [bccd60d4](https://github.com/phpredis/phpredis/commit/bccd60d451afce60e38d84ee31b5f1909ec670d9),
+  [531b17e5](https://github.com/phpredis/phpredis/commit/531b17e5cfe0b67111f3977a60ee25d5cb96ed69),
+  [3c65094e](https://github.com/phpredis/phpredis/commit/3c65094e1e0e581b1bd6f80499ba67cd5ec5f8df),
+  [4bccf599](https://github.com/phpredis/phpredis/commit/4bccf5995e716518ea4bdd5b34266cfdbe270e4f)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix flaky `EXISTS` coverage with deterministic keys
+  [82bf96c3](https://github.com/phpredis/phpredis/commit/82bf96c3c059161e0a91e61dc120b76430149769)
+  ([武田 憲太郎](https://github.com/KentarouTakeda))
+- Add numeric-string hash field regression coverage across execution modes
+  [6f42a349](https://github.com/phpredis/phpredis/commit/6f42a3493d84dddef715b117fd9810ab2b92e2ec),
+  [0ef13108](https://github.com/phpredis/phpredis/commit/0ef13108fae91acbe8c2754bb2f777b749e0a8eb)
+  ([michael-grunder](https://github.com/michael-grunder))
+  ([Till Krüss](https://github.com/tillkruss))
+- Add `MSETEX` tests and fix expiry assertions
+  [bd4989e0](https://github.com/phpredis/phpredis/commit/bd4989e004bee119e70f7ed253e9e1faad9007a1),
+  [a033e40b](https://github.com/phpredis/phpredis/commit/a033e40b7b0fc5e0ea3786ed0df39e32deac2f38),
+  [074b7c7f](https://github.com/phpredis/phpredis/commit/074b7c7ff8c73e252afc0ecb49264a281c2b1e29)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add `XDELEX` tests
+  [8b4cfb72](https://github.com/phpredis/phpredis/commit/8b4cfb725f0468a076e8d57a4310bdab8185a1c2)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Improve serialization tests
+  [f5835a62](https://github.com/phpredis/phpredis/commit/f5835a622a3042e671de82c114902fd9ee60cf57),
+  [1844cc57](https://github.com/phpredis/phpredis/commit/1844cc5733e09917aa0dbb3624d5fe9c020d8dce)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix `_digest()` tests on PHP versions before 8.1 and avoid deprecated `is_long()` on PHP 8.6
+  [0debad4c](https://github.com/phpredis/phpredis/commit/0debad4c833d0fd9bac5b4763c5ed840e0483f5e),
+  [57b584f6](https://github.com/phpredis/phpredis/commit/57b584f676a504842d86c4dafb6b8f9abaf21ba2)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Account for duplicate `ZSCAN` results in scan tests
+  [33ee649c](https://github.com/phpredis/phpredis/commit/33ee649c73aa02a836b99e2a284bb897c024f24a)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Skip unsupported `DELEX` options when testing Valkey
+  [88050422](https://github.com/phpredis/phpredis/commit/880504222c3f4330ff09bd8026af8e4b34beddb6)
+  ([Remi Collet](https://github.com/remicollet))
+- Add PHP 8.5 to macOS and Windows CI, and fix the Homebrew configuration path
+  [ac54591d](https://github.com/phpredis/phpredis/commit/ac54591d1e140e33fdc681088548ba438cbceda1),
+  [a6313d1b](https://github.com/phpredis/phpredis/commit/a6313d1bda6fb25bc53d8ef3b6d7dd67e05503aa)
+  ([Emre Çalışkan](https://github.com/thecaliskan))
+- Migrate Windows CI to `php/php-windows-builder`, use commit SHAs, and make binaries discoverable by PIE
+  [8f8272db](https://github.com/phpredis/phpredis/commit/8f8272dbf1629979b63fe98c439cd5b1e5a0ec34),
+  [f14ce600](https://github.com/phpredis/phpredis/commit/f14ce6007bf7576b0ca4f043b10ab303b3328126),
+  [de2e1b39](https://github.com/phpredis/phpredis/commit/de2e1b390d90fface0be8455704935bec6648d61)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Refactor CI jobs, install dependencies with PIE, and bound server startup waits
+  [60eb01c4](https://github.com/phpredis/phpredis/commit/60eb01c4dcffa5e322f117a1ca5298035f08ae06),
+  [a01dec12](https://github.com/phpredis/phpredis/commit/a01dec12636499566f47b4a5c70c438490433b89),
+  [e5c0ef7c](https://github.com/phpredis/phpredis/commit/e5c0ef7cc48f230b4939e14d3e56f17b804bea56),
+  [7119dce1](https://github.com/phpredis/phpredis/commit/7119dce1e05b1e1103dfa448d167f4c33e9127fa)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Replace KeyDB coverage with Dragonfly and test Valkey and Redis unstable builds
+  [8b222585](https://github.com/phpredis/phpredis/commit/8b2225852c4db8e6031e0e0978750f6f4e53a5a3),
+  [a283471e](https://github.com/phpredis/phpredis/commit/a283471eb5aaf2c26781dc6f4338f0a56ccd95c4),
+  [b7c382c8](https://github.com/phpredis/phpredis/commit/b7c382c82c83df3831efebfd7dc36cd7a9f6d864),
+  [959dee1c](https://github.com/phpredis/phpredis/commit/959dee1ca9ed55500cf90365419f8232eca3a99c)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Require Valgrind runs to pass and fix a flaky Sentinel test
+  [a00d952d](https://github.com/phpredis/phpredis/commit/a00d952d384a6c3546abec336fcb7278f38bafa8),
+  [060a2c5e](https://github.com/phpredis/phpredis/commit/060a2c5e48727e8d390cb764718aa1e041b3671d)
+  ([michael-grunder](https://github.com/michael-grunder))
+
+## Internal/Performance
+
+- Introduce `RedisCmd` command construction and migrate standalone, cluster, and session command builders
+  [2c5ef192](https://github.com/phpredis/phpredis/commit/2c5ef192575023bff372a08c3cc726e8c8df1ded),
+  [4f3090f0](https://github.com/phpredis/phpredis/commit/4f3090f037432bb95e0a20bec45ed50075e9d961),
+  [875c088b](https://github.com/phpredis/phpredis/commit/875c088bbab416007e3ae66f6beec06bb0fb8fa5),
+  [939c8fed](https://github.com/phpredis/phpredis/commit/939c8fed6546b76d9c05f1b03229c4cf86a70ea4),
+  [e81506bd](https://github.com/phpredis/phpredis/commit/e81506bdad664bdc0bd910f9b05bc9fd3cf730eb),
+  [b12a64fe](https://github.com/phpredis/phpredis/commit/b12a64fe7509c08ddbcb0ebbe6b913f4ee06a622)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Switch to the Fast Parameter Parsing API
+  [c2d2254e](https://github.com/phpredis/phpredis/commit/c2d2254e56b6223c03087a4aa0902289147adb30)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Read multibulk strings directly into `zend_string` buffers and pre-size reply arrays
+  [0c1b8b22](https://github.com/phpredis/phpredis/commit/0c1b8b2232bf0e0811b564a12e8f4e192909a18f),
+  [da514c71](https://github.com/phpredis/phpredis/commit/da514c71bb460499f8e5f48ac2c56b3d1a4cc491),
+  [798aa657](https://github.com/phpredis/phpredis/commit/798aa6578403d91a250e753269bdddedbe1615d0)
+  ([Ilia Alshanetsky](https://github.com/iliaal))
+- Remove a redundant liveness probe when reading bulk replies
+  [640ed13f](https://github.com/phpredis/phpredis/commit/640ed13fcc81fbccc632872ff00da2edfd2087ff)
+  ([Ilia Alshanetsky](https://github.com/iliaal))
+- Skip clock reads when no cluster timeout is set
+  [44f49442](https://github.com/phpredis/phpredis/commit/44f494428b3f8ddbd0d1640c6da43fe4fc2d4121)
+  ([Ilia Alshanetsky](https://github.com/iliaal))
+- Avoid per-command and per-key allocations in cluster writes and RedisArray hashing, and redundant zero-filling during key prefixing
+  [9623a663](https://github.com/phpredis/phpredis/commit/9623a663201917ab0e22864811990b14c212b3e2),
+  [8b746bfc](https://github.com/phpredis/phpredis/commit/8b746bfc7842d73735c8695e4849f17c33612047),
+  [b9320359](https://github.com/phpredis/phpredis/commit/b9320359e8903a15bfc55402bf842fa077e08dca)
+  ([Ilia Alshanetsky](https://github.com/iliaal))
+- Modernize Zend API usage and array traversal, and replace legacy aliases
+  [8e1c2789](https://github.com/phpredis/phpredis/commit/8e1c2789a4e192907f20ce8ffbf4390b7ac4f649),
+  [d24528e1](https://github.com/phpredis/phpredis/commit/d24528e190437a47b53582f5d0b246266546db3e),
+  [7d4fa613](https://github.com/phpredis/phpredis/commit/7d4fa6137c0bbea8cc3357a7fed45757c558fee6),
+  [3401462e](https://github.com/phpredis/phpredis/commit/3401462e00fc48c45466287eb88552462930c13a),
+  [cd2a3963](https://github.com/phpredis/phpredis/commit/cd2a39635a30c6b27dd4758f982d8898a610da13),
+  [5acaba93](https://github.com/phpredis/phpredis/commit/5acaba930407118e8f2aa10b02f4fdd629d1d5fd)
+  ([Niels Dossche](https://github.com/ndossche))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Consolidate scan handling
+  [e64055bd](https://github.com/phpredis/phpredis/commit/e64055bd35083e7b8d21728bfbc5306c4a64dc0d)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Consolidate key prefixing
+  [cd7996fb](https://github.com/phpredis/phpredis/commit/cd7996fbaf3e37d485be2ce8410fafd38376260a)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Improve cluster WATCH bookkeeping and cleanup on failures
+  [4736b167](https://github.com/phpredis/phpredis/commit/4736b1679e50feb1efaee2d77a38cd8cc10f4de8)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Refactor command contexts and replace function-like macros with typed helpers
+  [2ce9d949](https://github.com/phpredis/phpredis/commit/2ce9d949365a49fc63dfd01d234fc5c081d3bce5),
+  [bc947026](https://github.com/phpredis/phpredis/commit/bc9470264343d1d96f1ae0f54d41d4f15cdc1192),
+  [910c925f](https://github.com/phpredis/phpredis/commit/910c925f3bbce0c81f40015ed74dcfb42dd0f1cc),
+  [5377f588](https://github.com/phpredis/phpredis/commit/5377f588f16774d3c19bb083b9272902e87eac07),
+  [a9dd268a](https://github.com/phpredis/phpredis/commit/a9dd268adb90dce82047a64fae65ce1a41a2591f),
+  [10e81b33](https://github.com/phpredis/phpredis/commit/10e81b337dd7e0ff140459012c0aa0f321dc28e1),
+  [d9aea09e](https://github.com/phpredis/phpredis/commit/d9aea09e4c0bbd9dc452f99bbf3c535a181a2769)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Improve const-correctness, remove unnecessary casts, and restrict internal function linkage
+  [7090338f](https://github.com/phpredis/phpredis/commit/7090338f206d5bfeb0ebe93b3432224575ddaa64),
+  [e87e1668](https://github.com/phpredis/phpredis/commit/e87e1668b181e674a993a385770025edd1889a71),
+  [34e9a4ae](https://github.com/phpredis/phpredis/commit/34e9a4aec0de9c482a29790f3243ce5923da2ba2),
+  [4366a579](https://github.com/phpredis/phpredis/commit/4366a579e52a35a6150e2c0e61c1c3a89c6f8484),
+  [887c5b19](https://github.com/phpredis/phpredis/commit/887c5b19688689b42db66a657ae3630bb0e7cb06)
+  ([Simon Hammes](https://github.com/simonhammes))
+  ([michael-grunder](https://github.com/michael-grunder))
+- Modernize session handling and remove obsolete code and fields
+  [738cedd2](https://github.com/phpredis/phpredis/commit/738cedd28455e15ad7ccd1b4f58e7d3b613dff5d),
+  [741abf09](https://github.com/phpredis/phpredis/commit/741abf09ecad578608822dbd465f6ca6df078778),
+  [b58ca169](https://github.com/phpredis/phpredis/commit/b58ca169406f1373ef665c4da2e24b83256f95ae),
+  [976e2384](https://github.com/phpredis/phpredis/commit/976e2384d924de10b3acc3aaf6c115af83c81cbe),
+  [0017df83](https://github.com/phpredis/phpredis/commit/0017df839739356edc4cdd3e6e4f1a2d174cf55d),
+  [33a78a45](https://github.com/phpredis/phpredis/commit/33a78a45dbe95c5c39632dc29b5b52f4b1da5dd2),
+  [4af1e20a](https://github.com/phpredis/phpredis/commit/4af1e20a83a99001de1e4b141fab1232e0663e06),
+  [d596a239](https://github.com/phpredis/phpredis/commit/d596a2398fab54e0fb39a986f87fd28eeed2122f)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add `--enable-redis-sanitizers` and `--enable-redis-analyzer` build options
+  [288e231b](https://github.com/phpredis/phpredis/commit/288e231bf01bdefefc55e9f7565a851547b407c1),
+  [5fea4648](https://github.com/phpredis/phpredis/commit/5fea4648225120191ab642a358c0cf21420b82b3)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add agent development instructions and ignore generated dependency and vendor files
+  [ea8a8672](https://github.com/phpredis/phpredis/commit/ea8a86727e3ff1b1b660b06f0162a8cd1bb974ba),
+  [c8b79b16](https://github.com/phpredis/phpredis/commit/c8b79b168663f3c3e1aa960fc99e3df39676c357),
+  [b30fe1d1](https://github.com/phpredis/phpredis/commit/b30fe1d1c70d28ef4bacb702cc29e06ee88c2460),
+  [9b17434e](https://github.com/phpredis/phpredis/commit/9b17434e3dfc2e80e2ca87fc5e4bb6a0fdba0b4d)
+  ([michael-grunder](https://github.com/michael-grunder))
+
 # [6.3.0RC1] - 2025-10-15 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/6.3.0RC1), [PECL](https://pecl.php.net/package/redis/6.3.0RC1))
 
 This release introduces support for dozens of new commands, including hash field expiration, Valkey’s DELIFEQ, and Redis vector set operations. It also delivers numerous bug fixes and performance improvements.
