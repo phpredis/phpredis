@@ -22,6 +22,8 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Keep object serialization and custom restoration hooks compatible with 6.x while initializing RedisCluster routing safely before its constructor runs
+  [d1302a61](https://github.com/phpredis/phpredis/commit/d1302a61560440ca4d1ff6a9c08beb2fcdb0bfa0)
 - Preserve pipeline reply callbacks when reconnecting
   [d54431d1](https://github.com/phpredis/phpredis/commit/d54431d11dc547bb9d56a08c09ec6f9d71abfd1c)
   ([rechl](https://github.com/rechl))
@@ -254,10 +256,6 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 - Enable persistent connections in ZTS builds, with connections reused per thread
   [b37b2316](https://github.com/phpredis/phpredis/commit/b37b23169cf4790442b9f007d3c88a893af2df5f)
   ([Kevin Dunglas](https://github.com/dunglas))
-- Disallow serialization of `Redis`, `RedisArray`, `RedisCluster`, and `RedisSentinel` objects, including on PHP versions before 8.1
-  [befb08c0](https://github.com/phpredis/phpredis/commit/befb08c05f5841b5c3fea515a7efd20b5363e962),
-  [bac00154](https://github.com/phpredis/phpredis/commit/bac00154b1f528b2d0ca42d2726d2cc31d145e3b)
-  ([Nicolas Grekas](https://github.com/nicolas-grekas))
 - Mark connection options and context arguments as `#[\SensitiveParameter]`
   [671e726e](https://github.com/phpredis/phpredis/commit/671e726e7d87916ffc1c8c8dbbb20c355bcd731a)
   ([Nicolas Grekas](https://github.com/nicolas-grekas))
@@ -392,10 +390,6 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
   ([michael-grunder](https://github.com/michael-grunder))
 - Add `XDELEX` tests
   [8b4cfb72](https://github.com/phpredis/phpredis/commit/8b4cfb725f0468a076e8d57a4310bdab8185a1c2)
-  ([michael-grunder](https://github.com/michael-grunder))
-- Improve serialization tests
-  [f5835a62](https://github.com/phpredis/phpredis/commit/f5835a622a3042e671de82c114902fd9ee60cf57),
-  [1844cc57](https://github.com/phpredis/phpredis/commit/1844cc5733e09917aa0dbb3624d5fe9c020d8dce)
   ([michael-grunder](https://github.com/michael-grunder))
 - Fix `_digest()` tests on PHP versions before 8.1 and avoid deprecated `is_long()` on PHP 8.6
   [0debad4c](https://github.com/phpredis/phpredis/commit/0debad4c833d0fd9bac5b4763c5ed840e0483f5e),
