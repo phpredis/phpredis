@@ -29,6 +29,13 @@ RedisArray, and RedisSentinel APIs.
   trying more than one formulation. This can be done with `objdump -d` or by
   using specific compiler flags, such as `-S`.
 
+### Commit messages
+
+When committing code, hard-wrap commit message bodies at 80 characters rather
+than relying on display wrapping. Explicit line breaks render more consistently
+across platforms, matching the wrapping often provided by Git editor plugins
+in Vim and Neovim.
+
 ### C style guide
 
 - Do not add casts unless they are required for correctness, ABI compatibility,
