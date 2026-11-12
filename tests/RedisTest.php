@@ -268,6 +268,45 @@ class Redis_Test extends TestSuite {
             $this->assertArrayKeyEquals($result, $channel, 0);
         }
 
+        $commands = ['SUBSCRIBE' => 'NUMSUB'];
+        if ( ! $this->is_dragonfly && $this->haveCommand('SSUBSCRIBE'))
+            $commands['SSUBSCRIBE'] = 'SHARDNUMSUB';
+
+        $modes = $this->haveMulti() ? [Redis::MULTI] : [];
+        if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+
+        foreach ($commands as $subscribe => $numsub) {
+            $subscribers = [];
+            try {
+                foreach ([1, 12] as $count) {
+                    while (count($subscribers) < $count) {
+                        // Relay disallows SUBSCRIBE via rawCommand; use PhpRedis for the fixture.
+                        $subscriber = new Redis([
+                            'host' => $this->getHost(),
+                            'port' => $this->getPort(),
+                        ]);
+                        $subscribers[] = $subscriber;
+                        if ($this->getAuth())
+                            $this->assertTrue($subscriber->auth($this->getAuth()));
+                        // Read the acknowledgement without entering a subscription loop.
+                        $this->assertEquals([strtolower($subscribe), $c1, 1],
+                            $subscriber->rawCommand($subscribe, $c1));
+                    }
+
+                    $expected = [$c1 => $count, $c2 => 0];
+                    $this->assertEquals($expected, $this->redis->pubsub($numsub, [$c1, $c2]));
+                    foreach ($modes as $mode) {
+                        $this->assertEquals([$expected], $this->redis->multi($mode)
+                            ->pubsub($numsub, [$c1, $c2])->exec());
+                    }
+                }
+            } finally {
+                foreach ($subscribers as $subscriber) {
+                    $subscriber->close();
+                }
+            }
+        }
+
         // PUBSUB NUMPAT
         $result = $this->redis->pubsub('numpat');
         $this->assertIsInt($result);
