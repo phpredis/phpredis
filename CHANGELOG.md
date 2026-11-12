@@ -22,8 +22,10 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Preserve the 6.3.0 RedisCluster return declarations for compatibility with existing subclasses
+  [96e2320c](https://github.com/phpredis/phpredis/commit/96e2320c66661f3f0765db41aadaf85147697262)
 - Keep object serialization and custom restoration hooks compatible with 6.x while initializing RedisCluster routing safely before its constructor runs
-  [d1302a61](https://github.com/phpredis/phpredis/commit/d1302a61560440ca4d1ff6a9c08beb2fcdb0bfa0)
+  [6ec8114e](https://github.com/phpredis/phpredis/commit/6ec8114e715359fe4bdb3a8339ae098a7b4b96fc)
 - Preserve pipeline reply callbacks when reconnecting
   [d54431d1](https://github.com/phpredis/phpredis/commit/d54431d11dc547bb9d56a08c09ec6f9d71abfd1c)
   ([rechl](https://github.com/rechl))
@@ -181,10 +183,8 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 - Fix compiler attribute detection
   [b192b0e4](https://github.com/phpredis/phpredis/commit/b192b0e454256eac36e840f0760aa3330878c778)
   ([michael-grunder](https://github.com/michael-grunder))
-- Correct RedisCluster return types and the `zrevrangebylex` signature
-  [6c1fbf86](https://github.com/phpredis/phpredis/commit/6c1fbf86ae56ace773d4931ce852f6bdacf3df67),
+- Correct the RedisCluster `zrevrangebylex` signature
   [2716bea7](https://github.com/phpredis/phpredis/commit/2716bea73385fa688dc2a08d8c623a1d8c9f9407)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
   ([michael-grunder](https://github.com/michael-grunder))
 - Correct `XDELEX` return types in Redis, RedisCluster, and RedisArray stubs
   [9f4302c0](https://github.com/phpredis/phpredis/commit/9f4302c0ccd81d5546db6ee29ea694f79c04d9c5),
