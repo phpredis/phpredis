@@ -209,6 +209,8 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
 
     // Allocate our RedisSock we'll use to store prefix/serialization flags
     cluster->flags = ecalloc(1, sizeof(RedisSock));
+    /* Unserialization and subclasses can bypass __construct(). */
+    cluster->flags->type = REDIS_SOCK_CLUSTER;
 
     // Allocate our hash table for seeds
     ALLOC_HASHTABLE(cluster->seeds);
@@ -262,7 +264,6 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     if (context)
         redis_sock_set_context_zval(c->flags, context);
 
-    c->flags->type = REDIS_SOCK_CLUSTER;
     c->flags->timeout = timeout;
     c->flags->read_timeout = read_timeout;
     c->flags->persistent = persistent;

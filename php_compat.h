@@ -157,4 +157,18 @@ zend_array_to_list(HashTable *arr)
 }
 #endif
 
+/* BLESS iterators cannot be restored without their native cursor state. */
+#if PHP_VERSION_ID < 80100
+#include <zend_interfaces.h>
+#endif
+
+static zend_always_inline void
+redis_class_deny_serialization(zend_class_entry *ce)
+{
+#if PHP_VERSION_ID < 80100
+    ce->serialize = zend_class_serialize_deny;
+    ce->unserialize = zend_class_unserialize_deny;
+#endif
+}
+
 #endif // PHP_REDIS_COMPAT_H

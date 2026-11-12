@@ -4,6 +4,97 @@ require_once __DIR__ . '/TestSuite.php';
 require_once __DIR__ . '/SessionHelpers.php';
 
 class Redis_Test extends TestSuite {
+    public function testObjectSerialization() {
+        if ($this->getRedisClass() !== Redis::class)
+            $this->markTestSkipped('PhpRedis 6.x preserves object serialization');
+
+        foreach ([Redis::class, RedisArray::class, RedisCluster::class, RedisSentinel::class] as $class) {
+            $object = (new ReflectionClass($class))->newInstanceWithoutConstructor();
+            $restored = unserialize(serialize($object));
+            $this->assertEquals($class, get_class($restored));
+
+            if ($restored instanceof RedisArray) {
+                $this->assertFalse($restored->_hosts());
+            } elseif ($restored instanceof RedisCluster) {
+                $this->assertEquals([], $restored->_masters());
+            } else {
+                $this->assertThrowsMatch($restored, function ($client) {
+                    $client->ping();
+                });
+            }
+        }
+
+        /* Serializing a connected client must not restore its connection. */
+        $restored = unserialize(serialize($this->redis));
+        $this->assertThrowsMatch($restored, function ($client) {
+            $client->get('serialization-test');
+        });
+    }
+
+    public function testUninitializedCluster() {
+        if ($this->getRedisClusterClass() !== RedisCluster::class)
+            $this->markTestSkipped('PhpRedis 6.x preserves object serialization');
+
+        $object = (new ReflectionClass(RedisCluster::class))->newInstanceWithoutConstructor();
+        foreach ([$object, unserialize(serialize($object))] as $client) {
+            foreach ([Redis::ATOMIC, Redis::MULTI] as $mode) {
+                if ($mode === Redis::MULTI) $client->multi();
+
+                /* Keyed, random-slot, directed, and distributed command paths. */
+                foreach ([
+                    ['get', ['key']],
+                    ['set', ['key', 'value']],
+                    ['eval', ['return 1']],
+                    ['command', []],
+                    ['acl', ['key', 'WHOAMI']],
+                    ['ping', ['key']],
+                    ['info', ['key']],
+                    ['rawCommand', ['key', 'PING']],
+                    ['mget', [['key', 'other-key']]],
+                    ['mset', [['key' => 'value']]],
+                    ['del', ['key']],
+                ] as [$method, $args]) {
+                    $this->assertThrowsMatch($client, function ($client) use ($method, $args) {
+                        $client->$method(...$args);
+                    }, $method === 'get' ? '/slot [0-9]+ is not covered/' : null);
+                }
+
+                if ($mode === Redis::MULTI) $this->assertEquals([], $client->exec());
+            }
+
+            $this->assertThrowsMatch($client, function ($client) {
+                $cursor = null;
+                $client->scan($cursor, 'key');
+            });
+            $this->assertThrowsMatch($client, function ($client) {
+                $client->watch('key');
+            });
+            $this->assertTrue($client->close());
+        }
+    }
+
+    public function testSerializationHooks() {
+        if ($this->getRedisClass() !== Redis::class)
+            $this->markTestSkipped('PhpRedis 6.x preserves custom serialization hooks');
+
+        require_once __DIR__ . '/SerializationHelpers.php';
+
+        $client = unserialize(serialize(new SerializableRedis));
+        $this->assertTrue($client->setOption(Redis::OPT_PREFIX, 'restored:'));
+        $this->assertEquals('restored:key', $client->_prefix('key'));
+        $this->assertFalse($client->isConnected());
+
+        $host = $this->getHost() . ':' . $this->getPort();
+        $array = unserialize(serialize(new SerializableRedisArray([$host], ['lazy_connect' => true])));
+        $this->assertEquals([$host], $array->_hosts());
+
+        /* PING works against the test Redis server without needing a Sentinel. */
+        $options = ['host' => $this->getHost(), 'port' => $this->getPort()];
+        if ($this->getAuth()) $options['auth'] = $this->getAuth();
+        $sentinel = unserialize(serialize(new SerializableRedisSentinel($options)));
+        $this->assertTrue($sentinel->ping());
+    }
+
     /**
      * @var Redis
      */

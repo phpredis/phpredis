@@ -8,6 +8,19 @@ require_once __DIR__ . "/RedisTest.php";
  * where we're validating specific cluster mechanisms
  */
 class Redis_Cluster_Test extends Redis_Test {
+    public function testClusterSerializationHooks() {
+        if ($this->getRedisClusterClass() !== RedisCluster::class)
+            $this->markTestSkipped('PhpRedis 6.x preserves custom serialization hooks');
+
+        require_once __DIR__ . '/SerializationHelpers.php';
+
+        $client = new SerializableRedisCluster(null, self::$seeds, 2, 2, false, $this->getAuth());
+        $restored = unserialize(serialize($client));
+        $this->assertTrue($restored->ping('serialization-test'));
+        $this->assertTrue($client->close());
+        $this->assertTrue($restored->close());
+    }
+
     private $redis_types = [
         Redis::REDIS_STRING,
         Redis::REDIS_SET,
