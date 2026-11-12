@@ -208,7 +208,7 @@
  * @method RedisArray|bool|array xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false)
  * @method RedisArray|array|bool xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options)
  * @method RedisArray|int|false xdel(string $key, array $ids)
- * @method Relay|array|false xdelex(string $key, array $ids, ?string $mode = null)
+ * @method RedisArray|array|false xdelex(string $key, array $ids, ?string $mode = null)
  * @method mixed xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1)
  * @method RedisArray|int|false xlen(string $key)
  * @method RedisArray|array|false xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null)
