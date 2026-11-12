@@ -9424,9 +9424,7 @@ class Redis_Test extends TestSuite {
 
     protected function assertSessionRunnerResult($runner, bool $expect_success = true): void {
         $output = $runner->execFg();
-        $success = $output === 'SUCCESS';
-
-        if ($success !== $expect_success) {
+        if ($runner->getExitCode() !== ($expect_success ? 0 : 1)) {
             $message = $expect_success
                 ? 'External session runner failed'
                 : 'Expected external session runner to fail';
@@ -9667,12 +9665,7 @@ class Redis_Test extends TestSuite {
             ->lockRetries(10);
 
         $st = microtime(true);
-        $ex = $runner2->execFg();
-        if (stripos($ex, 'SUCCESS') !== false) {
-            $this->externalCmdFailure($runner2->getCmd(), $ex,
-                                      'Expected failure but lock was acquired!',
-                                      $runner2->getExitCode());
-        }
+        $this->assertSessionRunnerResult($runner2, false);
         $et = microtime(true);
 
         $this->assertGTE(.15, $et - $st);
