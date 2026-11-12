@@ -1035,6 +1035,76 @@ class Redis_Test extends TestSuite {
         $this->assertEquals('bar', $this->redis->set('foo', 'baz', ['GET']));
     }
 
+    public function testSetOptionFlags() {
+        if (!$this->minVersionCheck('6.2.0'))
+            $this->markTestSkipped();
+
+        foreach (['NX', 'XX', 'GET', 'KEEPTTL'] as $flag) {
+            foreach ([[$flag], ['mode' => $flag], [&$flag], ['mode' => &$flag]] as $options) {
+                $this->redis->set('foo', 'old', ['EX' => 120]);
+                $result = $this->redis->set('foo', 'new', $options);
+                $this->assertEquals($flag == 'NX' ? false : ($flag == 'GET' ? 'old' : true), $result);
+                $this->assertKeyEquals($flag == 'NX' ? 'old' : 'new', 'foo');
+                if ($flag == 'KEEPTTL')
+                    $this->assertBetween($this->redis->ttl('foo'), 110, 120);
+
+                if ($flag == 'XX') {
+                    $this->redis->del('foo');
+                    $this->assertFalse($this->redis->set('foo', 'new', $options));
+                    $this->assertKeyMissing('foo');
+                }
+            }
+        }
+
+        $ttl = '60';
+        $this->assertTrue($this->redis->set('foo', 'new', ['EX' => &$ttl]));
+        $this->assertBetween($this->redis->ttl('foo'), 50, 60);
+    }
+
+    public function testSetInvalidExpiryOptions() {
+        $cases = [];
+        foreach (['EX', 'PX', 'EXAT', 'PXAT'] as $type) {
+            foreach ([true, false, null, [], [1], new stdClass(), 'garbage', 0, -1, 0.5] as $ttl)
+                $cases[] = [[$type => $ttl], 'EXPIRY'];
+            $cases[] = [['KEEPTTL', $type => 60], 'KEEPTTL'];
+            $cases[] = [[$type => 60, 'KEEPTTL'], 'KEEPTTL'];
+        }
+
+        foreach ($cases as [$options, $error]) {
+            $this->redis->set('foo', 'old', ['EX' => 120]);
+            $warnings = [];
+            set_error_handler(function ($severity, $message) use (&$warnings) {
+                $warnings[] = $message;
+                return true;
+            }, E_WARNING);
+            try {
+                $this->assertFalse($this->redis->set('foo', 'new', $options));
+                $this->assertEquals(1, count($warnings));
+                $this->assertStringContains($error, $warnings[0] ?? '');
+            } finally {
+                restore_error_handler();
+            }
+            $this->assertKeyEquals('old', 'foo');
+            $this->assertBetween($this->redis->ttl('foo'), 110, 120);
+        }
+    }
+
+    public function testSetComparisonOptions() {
+        if (!$this->minValkeyVersionCheck('8.1.0') &&
+            ($this->is_valkey || !$this->minVersionCheck('8.4.0')))
+            $this->markTestSkipped();
+
+        foreach ([['unused' => 123], ['GET' => true], ['mode' => 'GET'], ['EX' => 60]] as $extra) {
+            foreach (['different', 'old'] as $expected) {
+                $this->redis->set('foo', 'old');
+                $result = $this->redis->set('foo', 'new', ['IFEQ' => $expected] + $extra);
+                $get = isset($extra['GET']) || isset($extra['mode']);
+                $this->assertEquals($get ? 'old' : $expected == 'old', $result);
+                $this->assertKeyEquals($expected == 'old' ? 'new' : 'old', 'foo');
+            }
+        }
+    }
+
     /* Test Valkey >= 8.1 IFEQ SET option */
     public function testValkeyIfEq() {
         if ( ! $this->is_valkey || ! $this->minVersionCheck('8.1.0'))
@@ -3303,6 +3373,17 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(0, $this->redis->msetex($keys, ['NX']));
         $this->assertGT(0, $this->redis->del(array_keys($keys)));
         $this->assertEquals(1, $this->redis->msetex($keys, ['NX']));
+
+        $nx = 'NX';
+        foreach ([['mode' => 'NX'], [&$nx]] as $options) {
+            $this->assertEquals(0, $this->redis->msetex(['{xxnx}:1' => 'new'], $options));
+            $this->assertKeyEquals('1', '{xxnx}:1');
+        }
+
+        foreach ([['EX' => true], ['KEEPTTL', 'EX' => 60], ['EX' => 60, 'KEEPTTL']] as $options) {
+            $this->assertFalse(@$this->redis->msetex(['{xxnx}:1' => 'new'], $options));
+            $this->assertKeyEquals('1', '{xxnx}:1');
+        }
     }
 
     public function testMsetNX() {

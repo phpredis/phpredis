@@ -2210,8 +2210,6 @@ static zend_bool zstr_to_expiry_type(redisExpiryType *dst, const zend_string *sr
 }
 
 static zend_bool zstr_to_eq_type(redisEqType *dst, const zend_string *src) {
-    *dst = REDIS_IF_NONE;
-
     if (zend_string_equals_literal_ci(src, "IFEQ")) {
         *dst = REDIS_IFEQ;
     } else if (zend_string_equals_literal_ci(src, "IFNE")) {
@@ -2227,20 +2225,29 @@ static zend_bool zstr_to_eq_type(redisEqType *dst, const zend_string *src) {
     return 1;
 }
 
-static void fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
+static int fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
     const zend_string *key;
     zval *zv;
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        ZVAL_DEREF(zv);
         if (key) {
             if (zstr_to_expiry_type(&dst->expiry.type, key)) {
-                dst->expiry.ttl = zval_get_long(zv);
+                if (redis_try_get_expiry(zv, &dst->expiry.ttl) != SUCCESS || dst->expiry.ttl < 1) {
+                    php_error_docref(NULL, E_WARNING,
+                        "EXPIRY is invalid (must be an int, float, or numeric string >= 1)");
+                    return FAILURE;
+                }
+                continue;
             } else if (zstr_to_eq_type(&dst->eq.type, key)) {
                 dst->eq.zval = zv;
+                continue;
             } else if (zend_string_equals_literal_ci(key, "GET")) {
                 dst->get = zend_is_true(zv);
+                continue;
             }
-        } else if (Z_TYPE_P(zv) == IS_STRING) {
+        }
+        if (Z_TYPE_P(zv) == IS_STRING) {
             key = Z_STR_P(zv);
             if (zend_string_equals_literal_ci(key, "NX")) {
                 dst->type = REDIS_SET_NX;
@@ -2249,11 +2256,17 @@ static void fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
             } else if (zend_string_equals_literal_ci(key, "GET")) {
                 dst->get = 1;
             } else if (zend_string_equals_literal_ci(key, "KEEPTTL")) {
-                dst->expiry.type = REDIS_EXPIRY_NONE;
                 dst->expiry.keepttl = 1;
             }
         }
     } ZEND_HASH_FOREACH_END();
+
+    if (dst->expiry.type != REDIS_EXPIRY_NONE && dst->expiry.keepttl) {
+        php_error_docref(NULL, E_WARNING, "KEEPTTL can't be combined with an expiry option");
+        return FAILURE;
+    }
+
+    return SUCCESS;
 }
 
 static int
@@ -2266,8 +2279,7 @@ fill_set_options_zval(redisSetOptions *dst, zval *zv, zend_bool legacy_set) {
         return SUCCESS;
 
     if (Z_TYPE_P(zv) == IS_ARRAY) {
-        fill_set_options_ht(dst, Z_ARRVAL_P(zv));
-        return SUCCESS;
+        return fill_set_options_ht(dst, Z_ARRVAL_P(zv));
     } else if (redis_try_get_expiry(zv, &lval) == SUCCESS && lval > 0) {
         if (!legacy_set)
             dst->expiry.type = REDIS_EXPIRY_EX;
