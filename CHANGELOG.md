@@ -519,6 +519,30 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
   [9b17434e](https://github.com/phpredis/phpredis/commit/9b17434e3dfc2e80e2ca87fc5e4bb6a0fdba0b4d)
   ([michael-grunder](https://github.com/michael-grunder))
 
+# [6.3.0] - 2025-11-06 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/6.3.0), [PECL](https://pecl.php.net/package/redis/6.3.0))
+
+This release introduces support for dozens of new commands, including hash field expiration, Valkey’s DELIFEQ, and Redis vector set commands. It also includes many bug fixes and performance improvements.
+
+### Sponsors :sparkling_heart:
+
+- [A-VISION](https://github.com/A-VISION-BV)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Geoffrey Hoffman](https://github.com/phpguru)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Open LMS](https://openlms.net/)
+- [Relay](https://relay.so)
+- [Salvatore Sanfilippo](https://github.com/antirez)
+- [Ty Karok](https://github.com/karock)
+
+## Fixed
+
+- Cloning our objects should not segfault
+  [770034cc](https://github.com/phpredis/phpredis/commit/770034cc)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix return type for `RedisCluster` `vgetattr` and `vsetattr`
+  [ab593f01](https://github.com/phpredis/phpredis/commit/ab593f01)
+  ([michael-grunder](https://github.com/michael-grunder))
+
 # [6.3.0RC1] - 2025-10-15 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/6.3.0RC1), [PECL](https://pecl.php.net/package/redis/6.3.0RC1))
 
 This release introduces support for dozens of new commands, including hash field expiration, Valkey’s DELIFEQ, and Redis vector set operations. It also delivers numerous bug fixes and performance improvements.

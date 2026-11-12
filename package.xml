@@ -242,6 +242,41 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <changelog>
     <release>
       <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>6.3.0</release>
+        <api>6.2.0</api>
+      </version>
+      <date>2025-11-06</date>
+      <notes>
+    --- Sponsors ---
+
+    A-VISION Advertising - https://github.com/A-VISION-BV
+    Avtandil Kikabidze - https://github.com/akalongman
+    Geoffrey Hoffman - https://github.com/phpguru
+    Object Cache Pro for WordPress - https://objectcache.pro/
+    Open LMS - https://openlms.net/
+    Relay - https://relay.so
+    Salvatore Sanfilippo - https://github.com/antirez
+    Ty Karok - https://github.com/karock
+
+    --- 6.3.0 ---
+
+    This release introduces support for dozens of new commands, including hash
+    field expiration, Valkey’s DELIFEQ, and Redis vector set commands. It also
+    includes many bug fixes and performance improvements.
+
+    Fixed:
+
+    * Cloning our objects should not segfault [770034cc] (michael-grunder)
+    * Fix return type for `RedisCluster` `vgetattr` and `vsetattr`
+      [ab593f01] (michael-grunder)
+</notes>
+    </release>
+    <release>
+      <stability>
         <release>beta</release>
         <api>stable</api>
       </stability>
