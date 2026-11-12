@@ -1613,7 +1613,7 @@ static void array_zip_values_and_scores(const RedisSock *redis_sock, zval *z_tab
             val = zval_get_tmp_string(zv, &aux);
 
             if (decode == SCORE_DECODE_INT && ZSTR_LEN(val) > 0) {
-                ZVAL_LONG(&zele, atoi(ZSTR_VAL(val)+1));
+                ZVAL_LONG(&zele, atoi(ZSTR_VAL(val)));
             } else if (decode == SCORE_DECODE_DOUBLE) {
                 ZVAL_DOUBLE(&zele, atof(ZSTR_VAL(val)));
             } else {
