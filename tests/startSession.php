@@ -1,4 +1,5 @@
 <?php
+// Exit codes: 0 success, 1 session failure, 2 invalid setup.
 error_reporting(E_ERROR | E_WARNING);
 
 $opt = getopt('', [
@@ -24,13 +25,14 @@ $early_refresh = !!($opt['early-refresh'] ?? false);
 
 if ( ! $handler) {
     fprintf(STDERR, "--handler is required\n");
-    exit(1);
+    exit(2);
 } else if ( ! $save_path) {
     fprintf(STDERR, "--save-path is required\n");
-    exit(1);
+    exit(2);
 }
 
-ini_set('session.save_handler', $handler);
+if (ini_set('session.save_handler', $handler) === false)
+    exit(2);
 ini_set('session.save_path', $save_path);
 ini_set('max_execution_time', $max_execution_time);
 ini_set("{$handler}.session.lock_retries", $lock_retries);
@@ -43,14 +45,24 @@ ini_set('session.use_strict_mode', $strict_mode);
 ini_set('redis.session.early_refresh', $early_refresh);
 
 session_id($id);
-$status = session_start();
 
-usleep((int)round($sleep * 1000000));
+// session_write_close() reports write failures through warnings, not its return value.
+set_error_handler(static function ($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+}, E_WARNING);
 
-if ($data) {
-    $_SESSION['redis_test'] = $data;
+try {
+    if (!session_start())
+        exit(1);
+
+    usleep((int)round($sleep * 1000000));
+
+    if ($data) {
+        $_SESSION['redis_test'] = $data;
+    }
+
+    exit(session_write_close() ? 0 : 1);
+} catch (Exception $ex) {
+    fprintf(STDERR, "%s\n", $ex->getMessage());
+    exit(1);
 }
-
-session_write_close();
-
-echo $status ? 'SUCCESS' : 'FAILURE';
