@@ -204,6 +204,7 @@
  * @method RedisArray|bool watch(array|string $key, string ...$other_keys)
  * @method int|false wait(int $numreplicas, int $timeout)
  * @method int|false xack(string $key, string $group, array $ids)
+ * @method RedisArray|array|false xackdel(string $key, string $group, array $ids, ?string $mode = null)
  * @method RedisArray|string|false xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false)
  * @method RedisArray|bool|array xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false)
  * @method RedisArray|array|bool xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options)

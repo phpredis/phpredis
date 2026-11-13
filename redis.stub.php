@@ -4879,6 +4879,23 @@ class Redis {
     public function xack(string $key, string $group, array $ids): int|false;
 
     /**
+     * Acknowledge and conditionally delete one or more stream entries.
+     *
+     * @param string      $key   The stream to modify.
+     * @param string      $group The consumer group to acknowledge entries for.
+     * @param array       $ids   One or more message IDs.
+     * @param string|null $mode  KEEPREF (default) preserves other groups' pending references;
+     *                          DELREF removes them; ACKED deletes only after all groups acknowledge.
+     *
+     * @return Redis|array|false One result per ID: 1 if deleted, -1 if missing,
+     *                          or 2 if acknowledged but retained by ACKED.
+     *                          Returns Redis when queued, or false on failure.
+     *
+     * @see https://redis.io/docs/latest/commands/xackdel/
+     */
+    public function xackdel(string $key, string $group, array $ids, ?string $mode = null): Redis|array|false;
+
+    /**
      * Append a message to a stream.
      *
      * @param string $key        The stream name.

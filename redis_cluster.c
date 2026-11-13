@@ -3339,6 +3339,10 @@ PHP_METHOD(RedisCluster, xack) {
     CLUSTER_PROCESS_CMD(xack, cluster_long_resp, 0);
 }
 
+PHP_METHOD(RedisCluster, xackdel) {
+    CLUSTER_PROCESS_CMD(xackdel, cluster_variant_resp, 0);
+}
+
 /* {{{ proto string RedisCluster::xadd(string key, string id, array field_values) }}} */
 PHP_METHOD(RedisCluster, xadd) {
     CLUSTER_PROCESS_CMD(xadd, cluster_bulk_raw_resp, 0);

@@ -1265,6 +1265,11 @@ class RedisCluster {
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;
 
     /**
+     * @see \Redis::xackdel()
+     */
+    public function xackdel(string $key, string $group, array $ids, ?string $mode = null): RedisCluster|array|false;
+
+    /**
      * @see \Redis::xadd()
      */
     public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false): RedisCluster|string|false;

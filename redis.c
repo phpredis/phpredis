@@ -2124,6 +2124,7 @@ REDIS_METHOD(vsetattr, redis_vsetattr_cmd, redis_long_response);
 REDIS_METHOD(vsim, redis_vsim_cmd, redis_zrange_response);
 REDIS_METHOD(waitaof, redis_waitaof_cmd, redis_read_variant_reply);
 REDIS_METHOD(xack, redis_xack_cmd, redis_long_response);
+REDIS_METHOD(xackdel, redis_xackdel_cmd, redis_read_variant_reply);
 REDIS_METHOD(xadd, redis_xadd_cmd, redis_read_variant_reply);
 REDIS_METHOD(xautoclaim, redis_xautoclaim_cmd, redis_xclaim_reply);
 REDIS_METHOD(xclaim, redis_xclaim_cmd, redis_xclaim_reply);

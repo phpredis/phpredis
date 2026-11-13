@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 8d9b58f98d66dbb7ee73d864de4d45aab384d84c */
+ * Stub hash: b6a3d4771eed1ddc9bd746a0e313ce51fb07b3d8 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -1032,6 +1032,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xack, 0, 
 	ZEND_ARG_TYPE_INFO(0, ids, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xackdel, 0, 3, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, group, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, ids, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mode, IS_STRING, 1, "null")
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xadd, 0, 3, RedisCluster, MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, id, IS_STRING, 0)
@@ -1494,6 +1501,7 @@ ZEND_METHOD(RedisCluster, vgetattr);
 ZEND_METHOD(RedisCluster, vsetattr);
 ZEND_METHOD(RedisCluster, gcra);
 ZEND_METHOD(RedisCluster, xack);
+ZEND_METHOD(RedisCluster, xackdel);
 ZEND_METHOD(RedisCluster, xadd);
 ZEND_METHOD(RedisCluster, xclaim);
 ZEND_METHOD(RedisCluster, xdel);
@@ -1767,6 +1775,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, vsetattr, arginfo_class_RedisCluster_vsetattr, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, gcra, arginfo_class_RedisCluster_gcra, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xack, arginfo_class_RedisCluster_xack, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, xackdel, arginfo_class_RedisCluster_xackdel, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xadd, arginfo_class_RedisCluster_xadd, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xclaim, arginfo_class_RedisCluster_xclaim, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xdel, arginfo_class_RedisCluster_xdel, ZEND_ACC_PUBLIC)
