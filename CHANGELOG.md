@@ -22,6 +22,18 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Preserve SET conditional flags and comparison options, restore expiry validation in SET and MSETEX, and reject KEEPTTL combined with an explicit expiry
+  [4198d14b](https://github.com/phpredis/phpredis/commit/4198d14b360c3d3eb62b0bb8042fb55a0b5d36c8)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Restore SET option value parsing under associative GET keys, preserving NX, XX, and KEEPTTL flags
+  [48dbc1c8](https://github.com/phpredis/phpredis/commit/48dbc1c8f788b5d46493c3ee4887ea58d4549151)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix truncated subscriber counts in `PUBSUB NUMSUB` and `PUBSUB SHARDNUMSUB` replies
+  [82f79a43](https://github.com/phpredis/phpredis/commit/82f79a43d31b276062fa2347b23ec3e27c0b2482)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Correct the `RedisCluster::msetex` return type to allow `RedisCluster` in transactions
+  [9b4f0c28](https://github.com/phpredis/phpredis/commit/9b4f0c28abe0c9ea304d6667aafbe78d85e3df61)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Preserve pipeline reply callbacks when reconnecting
   [d54431d1](https://github.com/phpredis/phpredis/commit/d54431d11dc547bb9d56a08c09ec6f9d71abfd1c)
   ([rechl](https://github.com/rechl))
@@ -230,9 +242,10 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
   [86eabb86](https://github.com/phpredis/phpredis/commit/86eabb86eb4efad7bd3daf5735b4205ba6e13231),
   [41922b67](https://github.com/phpredis/phpredis/commit/41922b6740f605869f3a0832d0cece90bef8fc8e)
   ([michael-grunder](https://github.com/michael-grunder))
-- Implement `XDELEX` and `XACKDEL`
+- Implement `XDELEX` and `XACKDEL` for `Redis`, `RedisCluster`, and `RedisArray`
   [635d87d5](https://github.com/phpredis/phpredis/commit/635d87d535e15626b8df5493bfa15bd1a7a661d9),
-  [23cc7859](https://github.com/phpredis/phpredis/commit/23cc785989878d420539a02bdaab44e467bfe486)
+  [23cc7859](https://github.com/phpredis/phpredis/commit/23cc785989878d420539a02bdaab44e467bfe486),
+  [0191f7bb](https://github.com/phpredis/phpredis/commit/0191f7bb5f3d78c226ed5f7bb7bc0a615fcbc5b0)
   ([michael-grunder](https://github.com/michael-grunder))
 - Implement `DELEX`
   [00c62de2](https://github.com/phpredis/phpredis/commit/00c62de277e8c93ba6c18bfe9b713478ac49dd75),
