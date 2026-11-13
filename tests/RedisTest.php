@@ -1079,7 +1079,8 @@ class Redis_Test extends TestSuite {
             $this->markTestSkipped();
 
         foreach (['NX', 'XX', 'GET', 'KEEPTTL'] as $flag) {
-            foreach ([[$flag], ['mode' => $flag], [&$flag], ['mode' => &$flag]] as $options) {
+            foreach ([[$flag], ['mode' => $flag], [&$flag], ['mode' => &$flag],
+                      ['GET' => $flag], ['get' => &$flag]] as $options) {
                 $this->redis->set('foo', 'old', ['EX' => 120]);
                 $result = $this->redis->set('foo', 'new', $options);
                 $this->assertEquals($flag == 'NX' ? false : ($flag == 'GET' ? 'old' : true), $result);
@@ -1098,6 +1099,25 @@ class Redis_Test extends TestSuite {
         $ttl = '60';
         $this->assertTrue($this->redis->set('foo', 'new', ['EX' => &$ttl]));
         $this->assertBetween($this->redis->ttl('foo'), 50, 60);
+    }
+
+    public function testSetAssociativeGet() {
+        if (!$this->minVersionCheck('6.2.0'))
+            $this->markTestSkipped();
+
+        foreach ([true, false, null, 0, 1, [], [1], new stdClass(), 'unknown'] as $value) {
+            foreach ([['GET' => $value], ['get' => &$value]] as $options) {
+                $this->redis->set('foo', 'old');
+                $this->assertTrue($this->redis->set('foo', 'new', $options));
+                $this->assertKeyEquals('new', 'foo');
+
+                foreach ([['GET'] + $options, $options + ['GET']] as $withGet) {
+                    $this->redis->set('foo', 'old');
+                    $this->assertEquals('old', $this->redis->set('foo', 'new', $withGet));
+                    $this->assertKeyEquals('new', 'foo');
+                }
+            }
+        }
     }
 
     public function testSetInvalidExpiryOptions() {
@@ -1133,11 +1153,11 @@ class Redis_Test extends TestSuite {
             ($this->is_valkey || !$this->minVersionCheck('8.4.0')))
             $this->markTestSkipped();
 
-        foreach ([['unused' => 123], ['GET' => true], ['mode' => 'GET'], ['EX' => 60]] as $extra) {
+        foreach ([['unused' => 123], ['GET' => true], ['GET'], ['mode' => 'GET'], ['EX' => 60]] as $extra) {
             foreach (['different', 'old'] as $expected) {
                 $this->redis->set('foo', 'old');
                 $result = $this->redis->set('foo', 'new', ['IFEQ' => $expected] + $extra);
-                $get = isset($extra['GET']) || isset($extra['mode']);
+                $get = in_array('GET', $extra, true);
                 $this->assertEquals($get ? 'old' : $expected == 'old', $result);
                 $this->assertKeyEquals($expected == 'old' ? 'new' : 'old', 'foo');
             }
@@ -3466,7 +3486,7 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(1, $this->redis->msetex($keys, ['NX']));
 
         $nx = 'NX';
-        foreach ([['mode' => 'NX'], [&$nx]] as $options) {
+        foreach ([['mode' => 'NX'], [&$nx], ['GET' => 'NX'], ['get' => &$nx]] as $options) {
             $this->assertEquals(0, $this->redis->msetex(['{xxnx}:1' => 'new'], $options));
             $this->assertKeyEquals('1', '{xxnx}:1');
         }

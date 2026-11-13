@@ -2242,9 +2242,6 @@ static int fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
             } else if (zstr_to_eq_type(&dst->eq.type, key)) {
                 dst->eq.zval = zv;
                 continue;
-            } else if (zend_string_equals_literal_ci(key, "GET")) {
-                dst->get = zend_is_true(zv);
-                continue;
             }
         }
         if (Z_TYPE_P(zv) == IS_STRING) {
