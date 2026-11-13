@@ -8596,6 +8596,93 @@ class Redis_Test extends TestSuite {
         $this->assertFalse($this->redis->xAck('{s}', 'g1', []));
     }
 
+    public function testXAckDel() {
+        if ( ! $this->haveCommand('XACKDEL'))
+            $this->markTestSkipped();
+
+        $stream = 'xackdel-stream';
+        $missing = '9999999999999-0';
+        $this->redis->setOption(Redis::OPT_PREFIX, 'xackdel:');
+
+        try {
+            foreach ([[], [null], ['KEEPREF'], ['DELREF'], ['ACKED'], ['aCkEd']] as $args) {
+                $ids = $this->addStreamsAndGroups([$stream], 2, ['g1' => 0, 'g2' => 0])[$stream];
+                foreach (['g1', 'g2'] as $group) {
+                    $this->redis->xReadGroup($group, 'consumer', [$stream => '>']);
+                    $this->assertEquals(2, $this->redis->xPending($stream, $group)[0]);
+                }
+
+                $mode = strtoupper($args[0] ?? 'KEEPREF');
+                $status = $mode === 'ACKED' ? 2 : 1;
+                $this->assertEquals([$status, -1, $status],
+                    $this->redis->xackdel($stream, 'g1', [$ids[0], $missing, $ids[1]], ...$args));
+                $this->assertEquals(0, $this->redis->xPending($stream, 'g1')[0]);
+                $this->assertEquals($mode === 'DELREF' ? 0 : 2,
+                    $this->redis->xPending($stream, 'g2')[0]);
+                $this->assertEquals($mode === 'ACKED' ? 2 : 0, $this->redis->xLen($stream));
+
+                if ($mode === 'ACKED') {
+                    $this->assertEquals([1, 1], $this->redis->xackdel($stream, 'g2', $ids, 'ACKED'));
+                    $this->assertEquals(0, $this->redis->xLen($stream));
+                    $this->assertEquals(0, $this->redis->xPending($stream, 'g2')[0]);
+                }
+            }
+
+            $this->redis->del($stream);
+            $this->assertEquals([-1, -1], $this->redis->xackdel($stream, 'g1', $ids));
+        } finally {
+            $this->redis->del($stream);
+            $this->redis->setOption(Redis::OPT_PREFIX, '');
+        }
+    }
+
+    public function testXAckDelValidation() {
+        if ( ! $this->haveCommand('XACKDEL'))
+            $this->markTestSkipped();
+
+        $stream = 'xackdel-validation';
+        $ids = $this->addStreamsAndGroups([$stream], 1, ['group' => 0])[$stream];
+        $this->redis->xReadGroup('group', 'consumer', [$stream => '>']);
+
+        $warnings = [];
+        set_error_handler(function ($severity, $message) use (&$warnings) {
+            $warnings[] = $message;
+            return true;
+        }, E_WARNING);
+        try {
+            $this->assertFalse($this->redis->xackdel($stream, 'group', []));
+            $this->assertEquals(1, $this->redis->xPending($stream, 'group')[0]);
+            $this->assertEquals([1], $this->redis->xackdel($stream, 'group', $ids, 'invalid'));
+            $this->assertEquals(2, count($warnings));
+            $this->assertStringContains('Must pass at least one ID to acknowledge and delete', $warnings[0]);
+            $this->assertStringContains("Invalid mode 'invalid'", $warnings[1]);
+        } finally {
+            restore_error_handler();
+            $this->redis->del($stream);
+        }
+    }
+
+    public function testXAckDelMulti() {
+        if ( ! $this->haveCommand('XACKDEL'))
+            $this->markTestSkipped();
+
+        $modes = $this->haveMulti() ? [Redis::MULTI] : [];
+        if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+
+        $stream = 'xackdel-multi';
+        foreach ($modes as $mode) {
+            $ids = $this->addStreamsAndGroups([$stream], 2, ['group' => 0])[$stream];
+            $this->redis->xReadGroup('group', 'consumer', [$stream => '>']);
+            $this->redis->multi($mode);
+            $this->assertTrue($this->redis === $this->redis->xackdel($stream, 'group', [$ids[0]], null));
+            $this->assertTrue($this->redis === $this->redis->xackdel($stream, 'group', $ids, 'DELREF'));
+            $this->assertEquals([[1], [-1, 1]], $this->redis->exec());
+            $this->assertEquals(0, $this->redis->xLen($stream));
+            $this->assertEquals(0, $this->redis->xPending($stream, 'group')[0]);
+        }
+        $this->redis->del($stream);
+    }
+
     protected function doXReadTest() {
         if ( ! $this->minVersionCheck('5.0'))
             $this->markTestSkipped();
