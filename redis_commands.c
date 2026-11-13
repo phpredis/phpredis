@@ -6160,7 +6160,7 @@ static xdelExMode zstr_to_xdelex_mode(const zend_string *s) {
     else if (zend_string_equals_literal_ci(s, "ACKED"))
         return REDIS_XDELEX_ACKED;
 
-    php_error_docref(NULL, E_WARNING, "Unknown mode '%s'", ZSTR_VAL(s));
+    php_error_docref(NULL, E_WARNING, "Invalid mode '%s'", ZSTR_VAL(s));
 
     return REDIS_XDELEX_NONE;
 }
@@ -6226,11 +6226,12 @@ redis_xackdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
         Z_PARAM_STR(group)
         Z_PARAM_ARRAY_HT(ids)
         Z_PARAM_OPTIONAL
-        Z_PARAM_STR(mode)
+        Z_PARAM_STR_OR_NULL(mode)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     if (zend_hash_num_elements(ids) == 0) {
-        php_error_docref(NULL, E_WARNING, "At least one ID must be specified");
+        php_error_docref(NULL, E_WARNING,
+            "Must pass at least one ID to acknowledge and delete");
         return NULL;
     }
 
