@@ -831,7 +831,7 @@ class RedisCluster {
     /**
      * @see \Redis::msetex()
      */
-    public function msetex(array $key_vals, int|float|array|null $expiry = null): Redis|int|false;
+    public function msetex(array $key_vals, int|float|array|null $expiry = null): RedisCluster|int|false;
 
     /* We only support Redis::MULTI in RedisCluster but take the argument
        so we can test MULTI..EXEC with RedisTest.php and in the event
