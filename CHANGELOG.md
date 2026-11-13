@@ -5,7 +5,7 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased]
+# [6.4.0RC1] - TBD
 
 Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection APIs, an optional phpser serializer, and persistent connections for ZTS builds. They also improve protocol validation, cluster reliability, session handling, and performance.
 

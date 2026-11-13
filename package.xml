@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <package packagerversion="1.4.11" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
 http://pear.php.net/dtd/tasks-1.0.xsd
 http://pear.php.net/dtd/package-2.0
@@ -22,9 +22,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <email>p.yatsukhnenko@gmail.com</email>
     <active>yes</active>
   </lead>
-  <date>2025-10-15</date>
+  <date>2026-11-13</date>
   <version>
-    <release>6.3.0RC1</release>
+    <release>6.4.0RC1</release>
     <api>6.2.0</api>
   </version>
   <stability>
@@ -36,111 +36,274 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     --- Sponsors ---
 
-    A-VISION Advertising - https://github.com/A-VISION-BV
+    A-VISION Advisering en Begeleiding B.V. - https://github.com/A-VISION-BV
     Avtandil Kikabidze - https://github.com/akalongman
+    Boring Observability - https://github.com/boring-o11y
     Geoffrey Hoffman - https://github.com/phpguru
-    Object Cache Pro for WordPress - https://objectcache.pro/
-    Open LMS - https://openlms.net/
-    Relay - https://relay.so)
+    Open LMS - https://github.com/open-lms-open-source
     Salvatore Sanfilippo - https://github.com/antirez
-    Ty Karok - https://github.com/karock
+    Scott Helme - https://github.com/ScottHelme
+    Ty - https://github.com/karock
 
-    --- 6.3.0RC1 ---
+    --- 6.4.0RC1 ---
 
-    This release introduces support for dozens of new commands, including hash
-    field expiration, Valkey’s DELIFEQ, and Redis vector set operations. It also
-    delivers numerous bug fixes and performance improvements.
+    Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection
+    APIs, an optional phpser serializer, and persistent connections for ZTS
+    builds. They also improve protocol validation, cluster reliability, session
+    handling, and performance.
 
     Fixed:
 
-    Fix possible hash field name truncation [834d2b37] (Michael Grunder)
-    Fix a possible segfault during failover [5ebb853e] (rlerdorf)
-    Bump version and fix XGROUP test [f5db01b7, 4517d5f9] remicollet
-    Fix an overflow bug in ZADD on Windows [35df8ad7] (Michael Grunder)
-    Fix errors and a warning [b8de91c9] (Michael Grunder)
-    Fix `RedisCluster` segfault [f61e8cd7] (Michael Grunder)
-    Fix passing NULL for hash expiry argument [ca80ee0e] (Michael Grunder)
-    Fix an off-by-one length calculation error [340f23b0] (Michael Grunder)
-    Fix hset fields handling [6b2f088d] (Pavlo Yatsukhnenko)
-    Fix HSetEx expiry argument handling [7805da75] (Pavlo Yatsukhnenko)
-    Fix the echo liveness check when in sentinel mode [2acab399] (Michael Grunder)
-    Fix double -&gt; int truncation warning [152fdda9] (Michael Grunder)
-    Fix `SIGABRT` in PHP 8.4 with RedisArray [3c64b33f] (Novynn)
-    Fixing segfault in cluster_update_slot [b0ba827b] (Jacob Brown Austin)
-    Fix typo [d0b0c5cf] (Michael Grunder)
-    Fix compiling with PHP 8.5.0 alpha3 and newer [1e6f5477] (wyattoday)
-    Fix error length calculation + UB sanity check [e73130fe] (Michael Grunder)
-    Fix arguments order for `SET` command [f73f5fcc] (Pavlo Yatsukhnenko)
+    * Preserve the unencoded comparison operand for `SET IFEQ` with serializers
+      and compressors enabled [5cd04301] (michael-grunder)
+    * Restore SET option value parsing under associative GET keys, preserving
+      NX, XX, and KEEPTTL flags [355a5c46] (michael-grunder)
+    * Fix truncated subscriber counts in `PUBSUB NUMSUB` and `PUBSUB
+      SHARDNUMSUB` replies [3ed46779] (michael-grunder)
+    * Correct the `RedisCluster::msetex` return type to allow `RedisCluster` in
+      transactions [cceb09d0] (michael-grunder)
+    * Preserve 6.x string conversion for command arguments, including false
+      values and PHP floating-point precision
+    * Preserve literal SORT STORE destinations in 6.x while retaining cluster
+      slot validation
+    * Preserve SET conditional flags and comparison options, and restore expiry
+      validation in SET and MSETEX [ee9779f2]
+    * Preserve the 6.3.0 RedisCluster return declarations for compatibility with
+      existing subclasses [1da3b6d8]
+    * Keep object serialization and custom restoration hooks compatible with 6.x
+      while initializing RedisCluster routing safely before its constructor runs
+      [7aed3011]
+    * Preserve pipeline reply callbacks when reconnecting [d54431d1] (rechl)
+    * Fix persistent connection pool liveness checks and reconnect handling
+      [146ec813] (michael-grunder)
+    * Re-send `READONLY` after reconnecting to a cluster replica [3606328d]
+      (Etienne Zannelli)
+    * Clear the cluster slot cache when nodes are unreachable [52e90650] (Victor
+      Kislov)
+    * Handle `RedisCluster` directed commands on uncovered slots [1351c824]
+      (Ebubekir Yiğit)
+    * Fix `RedisCluster` directed commands in `MULTI` mode and reject `UNWATCH`
+      during a transaction [e13d5d0c], [a1d93cab] (michael-grunder)
+    * Fix cluster transaction result bookkeeping across slots belonging to the
+      same master [a283471e] (michael-grunder)
+    * Fix use-after-free defects and result ownership in cluster multi-key
+      commands [2ef32c52], [ff9dede9] (michael-grunder)
+    * Fix use-after-free and double-free paths when parsing malformed cluster
+      replies [b29f5c85], [a14fdeca] (michael-grunder)
+    * Validate pub/sub reply element types before using them as strings
+      [cd04e21d], [e2a4f90d] (Raphael Paez) (michael-grunder)
+    * Validate scan cursor types, configured node lists, and RedisArray reply
+      values [57ddfefe] (michael-grunder)
+    * Harden RESP length parsing, detect EOF correctly, and guard against bulk
+      length overflow [5c6e2d2b], [c67d3e49], [7b2fdc6d], [1f02e67d] (Ilia
+      Alshanetsky) (michael-grunder)
+    * Reject malformed protocol replies and stop reading after failures instead
+      of looping indefinitely [ea3ea564], [2298a200], [80093d53], [4bdcf155],
+      [a6b7befd], [753a2d6d], [e5d2f8d6] (michael-grunder)
+    * Validate CRLF terminators and handle short reads in standalone and cluster
+      replies [a0ded702], [6e136252], [00c0f963] (EJ-Research) (michael-grunder)
+    * Limit nested reply depth, cap array preallocation from server-supplied
+      counts, and fix malformed-reply leaks [690a1098], [01791f23], [34c3fd9f]
+      (michael-grunder)
+    * Harden `CLUSTER SLOTS` and redirection parsing, including oversized
+      hostnames [fbf5affa], [bb9e8769], [8b1280f3] (Ilia Alshanetsky)
+      (michael-grunder)
+    * Validate array replies for cluster scans and `XCLAIM` [f98c0837],
+      [c97d754f] (michael-grunder)
+    * Discard connections after failed or incomplete writes [48a46c71]
+      (michael-grunder)
+    * Fix `GEOSEARCHSTORE` reply handling [4e093bb0] (michael-grunder)
+    * Preserve integer geohashes in `GEOSEARCH` metadata and validate the reply
+      structure [a283471e] (michael-grunder)
+    * Handle inline multibulk values and propagate raw reply read failures
+      correctly [a283471e] (michael-grunder)
+    * Route `FLUSHDB` and `FLUSHALL` to cluster primaries even when replica
+      reads are enabled [b30ced74] (michael-grunder)
+    * Fix crashes when setting `RedisCluster` TCP keepalive and handle missing
+      sockets in `setOption` [997d5645], [cb4acc7d] (michael-grunder)
+    * Use the correct option size when setting `SO_KEEPALIVE` [09d3dbf1]
+      (pkramme)
+    * Allow `getLastError()` and `clearLastError()` after a failed connection
+      without throwing [fc948db8] (Nicolas Grekas)
+    * Accept `null` for `$seeds` in `RedisCluster::__construct` [409508af]
+      (derrickschoen)
+    * Preserve numeric-string hash field names and use the correct format for
+      `zend_long` values [7c1c1259], [fe67b8cb], [b8b29687] (Pavlo Yatsukhnenko)
+      (arshidkv12)
+    * Handle deserialized non-string members when pairing sorted-set values and
+      scores [cab05051] (michael-grunder)
+    * Preserve `INFO` strings that would overflow when parsed as exponent-form
+      numbers [e9e338b5] (Pavlo Yatsukhnenko)
+    * Handle PHP serialization failures for anonymous classes [b83af641]
+      (arshidkv12)
+    * Validate LZ4 decompressed lengths and NUL-terminate decompression buffers
+      for PHP unserializers [2bf673c6], [cf95cd0a] (michael-grunder)
+    * Reject invalid vector attributes in `VSETATTR` [234d1e7c]
+      (michael-grunder)
+    * Prevent backoff option overflow and handle empty keys when prefixing
+      [a2936256] (michael-grunder)
+    * Prevent crashes by disabling cloning of `Redis`, `RedisArray`, and
+      `RedisCluster` objects [6e214c16] (michael-grunder)
+    * Avoid persistent connection ID collisions and fix a connection pool memory
+      leak [730dec06], [d90cfdb6] (michael-grunder)
+    * Prevent undefined behavior in weighted session server selection and
+      overflow in cluster session key lengths [025b0e97], [ae74b64b]
+      (michael-grunder)
+    * Report missing session servers and improve session compression errors
+      [bf2047e0], [453c4788] (michael-grunder)
+    * Fix PHP 8.6 compatibility for session handlers, INI APIs, and `bin2hex`
+      [b8b765e6], [9a170831], [78c1c690], [e3273a90], [dd15a7dd], [f5460cc2]
+      (Rasmus Lerdorf) (michael-grunder) (Andy Postnikov) (Remi Collet)
+    * Fix compiler attribute detection [b192b0e4] (michael-grunder)
+    * Correct `XDELEX` return types in Redis, RedisCluster, and RedisArray stubs
+      [9f4302c0], [8dcaedae] (Pavlo Yatsukhnenko) (michael-grunder)
 
     Added:
 
-    Add `hgetwithmeta` method [7d3b2e4d] (Pavlo Yatsukhnenko)
-    Add `maxRetries` to `redis_sock_configure` [e9e9e495] (Michael Grunder)
-    Implement vectorset commands [92dd256f, d80b7258, 7f9b1f41, 92716ed0,
-    dc91631b, 1deca628, 96378b70, 0fda9f29, 0ed0fc05, d1d69005, 286fa630,
-    38115dec, c4b2ea6c, 6ce3bd53] (Michael Grunder)
-    Implement `GEOSEARCH[STORE]` `BYPOLYGON` [8d369f4d, f24814a4] (Michael Grunder)
-    Implement Valkey's `DELIFEQ` command [b1b0c191] (Michael Grunder)
-    Add an INI setting returning 5.x legacy behavior -- readonly session on lock
-    failure [8dada174] (arokettu)
-    Implement several hash expiration commands [7350768c] (Michael Grunder)
-    Introduce `Redis::serverName` and `Redis::serverVersion` methods [056c2dbe,
-    cbaf095f, fa3eb006] (Pavlo Yatsukhnenko, Michael Grunder)
-    New option 'database' for Redis class constructor [4f6a3ed1] (JakubOnderka)
-    Implement `HGETEX`, `HSETEX`, `HGETDEL`, and refactor `HMGET` [ce5b0fac]
-    (Michael Grunder)
-    Implement `GETDEL` for `RedisCluster` [d342e4ac] (Michael Grunder)
+    * Implement `BLESS` key eviction protection commands, including a lazy
+      `RedisBlessScanIterator` for `BLESS SCAN` [4751fdf8] (michael-grunder)
+    * Implement `INCREX` for `Redis` and `RedisCluster` [90fabdf9], [7c186d94]
+      (Simon Hammes) (michael-grunder)
+    * Implement `BITRANGEINTARRAY` [9222d5cc] (michael-grunder)
+    * Add `reconnect()` to `Redis` and `RedisCluster` [a72ec1ab]
+      (michael-grunder)
+    * Add optional `Redis::SERIALIZER_PHPSER` support, including signing with
+      `phpser.key` [b3e890b7] (Ilia Alshanetsky)
+    * Support `AGGREGATE COUNT` in `ZUNION[STORE]` and `ZINTER[STORE]`
+      [810984b5] (michael-grunder)
+    * Implement `HIMPORT` [55f28493] (michael-grunder)
+    * Implement `LMOVEM` and `BLMOVEM` [7419002a] (michael-grunder)
+    * Implement `SUNIONCARD` and `SDIFFCARD` [533de1fe], [e2141f88]
+      (michael-grunder)
+    * Implement `GCRA` with the `TOKENS` option [10b77a42], [5b197316]
+      (michael-grunder)
+    * Implement `MSETEX` for `Redis` and `RedisCluster` [86eabb86], [41922b67]
+      (michael-grunder)
+    * Implement `XDELEX` and `XACKDEL` for `Redis`, `RedisCluster`, and
+      `RedisArray` [635d87d5], [23cc7859], [8f1c07ff] (michael-grunder)
+    * Implement `DELEX` [00c62de2], [93cb9211] (michael-grunder)
+    * Implement `DIGEST` and the local `_digest()` helper, requiring PHP 8.1 or
+      newer for local hashing [e2dd13ce], [107cc7aa] (michael-grunder)
+    * Implement `WAIT` for `RedisCluster` and share command handling with
+      `WAITAOF` [4de4f727] (michael-grunder)
+    * Add `redis.session.lock_release_cmd` to select Lua, `DELEX`, or `DELIFEQ`
+      for session lock release [e39d9b74] (michael-grunder)
 
-    ## Changed
+    Changed:
 
-    Check for `dragonfly_version` in `HELLO` response [593ba012] (Michael Grunder)
-    Simplify redis_unpack method calling [0a85bd82] (JakubOnderka)
-    Refactor `getWithMeta` logic [0445e683] (Michael Grunder)
-    cleanup session temp file [3828c929] (remicollet)
-    Make execHello protected [300c5fb2] (Michael Grunder)
+    * Enable persistent connections in ZTS builds, with connections reused per
+      thread [b37b2316] (Kevin Dunglas)
+    * Mark connection options and context arguments as `#[\SensitiveParameter]`
+      [671e726e] (Nicolas Grekas)
+    * Use cryptographically random session lock secrets [b112875b] (Ilia
+      Alshanetsky)
+    * Rework TLS context ownership and allocation for connections and cluster
+      nodes [b97951cd] (michael-grunder)
 
     Documentation:
 
-    Update Relay sponsorship [7a69d73] (Till Kruss)
-    Fix markdown headlines [1d662f56] (Till Kruss)
-    document PECL configure options [2066cfad] (Till Kruss)
-    Improve wording in README about project support [0ac01476] (Till Kruss)
-    Improve install instructions [c0076036] (Remi Collet)
-    Clean up README.md: fix typos, spelling, and grammar errors [09cd4c54] (Copilot)
-    Refine parameter descriptions and examples in README [f9f609e1] (joshtrichards)
-    Link to the correct header [d18db84c] (wyattoday)
-    Update README.md about supported PHP versions. [b7a97e5e] (AkameOuO)
-    Broaden return type for Redis::hGetAll [bfbab892] (mgiuffrida)
+    * Add RedisArray method annotations and correct PHPDoc parameter, return,
+      nullable, and variadic types [8597d3d7], [5afa8eb7], [9c9d0286],
+      [b742bb8b], [6aea98f6], [26a73f46], [481f12f8], [8894de5a] (Michael
+      Telgmann) (michael-grunder)
+    * Document TLS options and clarify that `connect()` throws on failure
+      [c28430e5], [6efd549a] (michael-grunder)
+    * Document session `read_timeout` and the default `persistent` setting
+      [0340599b], [c99c8634] (Sowmya Mallur) (林博仁 Buo-ren Lin)
+    * Explain transactions inside pipelines and their reply formats [8ef2ee92]
+      (g)
+    * Document `WAIT` and `WAITAOF` [cd4cf653] (michael-grunder)
+    * Document `UNSUBSCRIBE` and `PUNSUBSCRIBE` [6b481b6f] (michael-grunder)
+    * Document class constants, backoff algorithms, and cluster failover
+      strategies [49919b0e], [26cf6d94], [8ef349a2], [0981c2b7]
+      (michael-grunder)
+    * Expand helper method documentation and examples, and correct stub wording
+      and types [d6437f5e], [abce1655], [c17f475c], [399346e5], [f23da62a],
+      [806b7b3f], [1f3fb179] (michael-grunder)
+    * Link API methods to Redis and Valkey command references [a46700cf],
+      [76286d88] (michael-grunder)
+    * Add syntax highlighting to generated API documentation and build it from
+      `develop` [10c0bf0f], [1297c48c], [e460a859], [4cf670fe], [ae69e47a],
+      [d45c4d29], [9edc2425], [38e56d57], [5fe08621], [d5b1576e]
+      (michael-grunder)
+    * Refresh generated API documentation, including new commands and iterator
+      documentation [ecdc290b], [9e9ccbd4], [d4600a28], [df243455], [f5ed1704],
+      [e6d0d119], [4e79159e], [39472124], [362ee55c] (michael-grunder)
+    * Mention Dragonfly support in the README [2b71a968] (michael-grunder)
 
     Tests/CI:
 
-    Add a regression test for `EVAL[SHA]` [22a2914b] (Michael Grunder)
-    Rework `HEXPIRE` test inclusion + bump Valkey [b83981aa] (Michael Grunder)
-    Add PHP 8.5 to CI [334937cb] (Pavlo Yatsukhnenko)
-    Attempt to fix flaky GitHub CI tests [80140003] (Michael Grunder)
-    Reorganize tests [807f806f] (Pavlo Yatsukhnenko)
+    * Allow multiple test filters and exclusions, and print commands for
+      rerunning tests [07f620e7], [a2b98330], [2343369b] (michael-grunder)
+    * Improve test diagnostics, fail-fast assertions, and compatibility with
+      subclasses [4baad44b], [4a02f3dd], [2a0569ec], [b0d534e1], [43d72dad],
+      [c92c0422], [506715fe], [e037b7ca], [10ae0080] (michael-grunder)
+    * Reduce timing-test delays and make expiration assertions less sensitive to
+      scheduling [09d496b2], [53ba9b4b], [c7227339], [e5f0df63], [777f7377],
+      [7ae4014c] (michael-grunder)
+    * Fix session and replication test races, and use explicit exit codes for
+      session helpers [bccd60d4], [531b17e5], [3c65094e], [4bccf599]
+      (michael-grunder)
+    * Fix flaky `EXISTS` coverage with deterministic keys [82bf96c3] (武田 憲太郎)
+    * Add numeric-string hash field regression coverage across execution modes
+      [6f42a349], [0ef13108] (michael-grunder) (Till Krüss)
+    * Add `MSETEX` tests and fix expiry assertions [bd4989e0], [a033e40b],
+      [074b7c7f] (michael-grunder)
+    * Add `XDELEX` tests [8b4cfb72] (michael-grunder)
+    * Fix `_digest()` tests on PHP versions before 8.1 and avoid deprecated
+      `is_long()` on PHP 8.6 [0debad4c], [57b584f6] (michael-grunder)
+    * Account for duplicate `ZSCAN` results in scan tests [33ee649c]
+      (michael-grunder)
+    * Skip unsupported `DELEX` options when testing Valkey [88050422] (Remi
+      Collet)
+    * Add PHP 8.5 to macOS and Windows CI, and fix the Homebrew configuration
+      path [ac54591d], [a6313d1b] (Emre Çalışkan)
+    * Migrate Windows CI to `php/php-windows-builder`, use commit SHAs, and make
+      binaries discoverable by PIE [8f8272db], [f14ce600], [de2e1b39] (Pavlo
+      Yatsukhnenko) (michael-grunder)
+    * Refactor CI jobs, install dependencies with PIE, and bound server startup
+      waits [60eb01c4], [a01dec12], [e5c0ef7c], [7119dce1] (michael-grunder)
+    * Replace KeyDB coverage with Dragonfly and test Valkey and Redis unstable
+      builds [8b222585], [a283471e], [b7c382c8], [959dee1c] (michael-grunder)
+    * Require Valgrind runs to pass and fix a flaky Sentinel test [a00d952d],
+      [060a2c5e] (michael-grunder)
 
     Internal/Performance:
 
-    Introduce `[[nodiscard]]` type attribute where supported. [2d963e79] (Michael Grunder)
-    Fix typo (s/sees/seeds/) [25e6d5fc] (xabbuh)
-    Fix an unused variable warning [b48aa0d4] (Michael Grunder)
-    Fix several issues surfaced by `gcc -fanalyze` [8be2306e] (Michael Grunder)
-    Fix dead assignment [d564e8cf] (Michael Grunder)
-    Refactor `redis_replicaof_cmd` [659dc763] (Michael Grunder)
-    Refactor several command handling macros into typesafe static functions
-    [9802fc0e, 8f0931bb, 7c953d45, 950d2bc7, 601ebbff, c3a71631, b0040514,
-    fae89fa9, f880e1f7, b90e27f2, 1db39089] (Michael Grunder)
-    Refactor `EVAL[SHA]` command and add a regression test [6e5faf42]
-    (Michael Grunder)
-    New macros REDIS_RESPONSE_ERROR and REDIS_RETURN_ZVAL [614b86e4]
-    (JakubOnderka)
-    Remove wrapper macro which hides branching logic [58e1a04f] (Michael Grunder)
-    Use continue not break if we get a NULL node [8685c49c] (Michael Grunder)
-    Remove pointless casts [03837f02] (Michael Grunder)
-    Change `int` flags to `zend_bool` since we only use them as booleans
-    [77691947] (Michael Grunder)
-    Remove unused macros + simplify some logic [75acbb09] (Michael Grunder)
+    * Introduce `RedisCmd` command construction and migrate standalone, cluster,
+      and session command builders [2c5ef192], [4f3090f0], [875c088b],
+      [939c8fed], [e81506bd], [b12a64fe] (michael-grunder)
+    * Switch to the Fast Parameter Parsing API [c2d2254e] (Pavlo Yatsukhnenko)
+    * Read multibulk strings directly into `zend_string` buffers and pre-size
+      reply arrays [0c1b8b22], [da514c71], [798aa657] (Ilia Alshanetsky)
+    * Remove a redundant liveness probe when reading bulk replies [640ed13f]
+      (Ilia Alshanetsky)
+    * Skip clock reads when no cluster timeout is set [44f49442] (Ilia
+      Alshanetsky)
+    * Avoid per-command and per-key allocations in cluster writes and RedisArray
+      hashing, and redundant zero-filling during key prefixing [9623a663],
+      [8b746bfc], [b9320359] (Ilia Alshanetsky)
+    * Modernize Zend API usage and array traversal, and replace legacy aliases
+      [8e1c2789], [d24528e1], [7d4fa613], [3401462e], [cd2a3963], [5acaba93]
+      (Niels Dossche) (michael-grunder)
+    * Consolidate scan handling [e64055bd] (michael-grunder)
+    * Consolidate key prefixing [cd7996fb] (michael-grunder)
+    * Improve cluster WATCH bookkeeping and cleanup on failures [4736b167]
+      (michael-grunder)
+    * Refactor command contexts and replace function-like macros with typed
+      helpers [2ce9d949], [bc947026], [910c925f], [5377f588], [a9dd268a],
+      [10e81b33], [d9aea09e] (michael-grunder)
+    * Improve const-correctness, remove unnecessary casts, and restrict internal
+      function linkage [7090338f], [e87e1668], [34e9a4ae], [4366a579],
+      [887c5b19] (Simon Hammes) (michael-grunder)
+    * Modernize session handling and remove obsolete code and fields [738cedd2],
+      [741abf09], [b58ca169], [976e2384], [0017df83], [33a78a45], [4af1e20a],
+      [d596a239] (michael-grunder)
+    * Add `--enable-redis-sanitizers` and `--enable-redis-analyzer` build
+      options [288e231b], [5fea4648] (michael-grunder)
+    * Add agent development instructions and ignore generated dependency and
+      vendor files [ea8a8672], [c8b79b16], [b30fe1d1], [9b17434e]
+      (michael-grunder)
 </notes>
   <contents>
     <dir name="/">
@@ -241,6 +404,290 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <configureoption name="with-liblz4" prompt="use system liblz4?" default="yes"/>
   </extsrcrelease>
   <changelog>
+    <release>
+      <stability>
+        <release>beta</release>
+        <api>stable</api>
+      </stability>
+      <version>
+        <release>6.4.0RC1</release>
+        <api>6.2.0</api>
+      </version>
+      <date>2026-11-13</date>
+      <notes>
+
+    --- Sponsors ---
+
+    A-VISION Advisering en Begeleiding B.V. - https://github.com/A-VISION-BV
+    Avtandil Kikabidze - https://github.com/akalongman
+    Boring Observability - https://github.com/boring-o11y
+    Geoffrey Hoffman - https://github.com/phpguru
+    Open LMS - https://github.com/open-lms-open-source
+    Salvatore Sanfilippo - https://github.com/antirez
+    Scott Helme - https://github.com/ScottHelme
+    Ty - https://github.com/karock
+
+    --- 6.4.0RC1 ---
+
+    Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection
+    APIs, an optional phpser serializer, and persistent connections for ZTS
+    builds. They also improve protocol validation, cluster reliability, session
+    handling, and performance.
+
+    Fixed:
+
+    * Preserve the unencoded comparison operand for `SET IFEQ` with serializers
+      and compressors enabled [5cd04301] (michael-grunder)
+    * Restore SET option value parsing under associative GET keys, preserving
+      NX, XX, and KEEPTTL flags [355a5c46] (michael-grunder)
+    * Fix truncated subscriber counts in `PUBSUB NUMSUB` and `PUBSUB
+      SHARDNUMSUB` replies [3ed46779] (michael-grunder)
+    * Correct the `RedisCluster::msetex` return type to allow `RedisCluster` in
+      transactions [cceb09d0] (michael-grunder)
+    * Preserve 6.x string conversion for command arguments, including false
+      values and PHP floating-point precision
+    * Preserve literal SORT STORE destinations in 6.x while retaining cluster
+      slot validation
+    * Preserve SET conditional flags and comparison options, and restore expiry
+      validation in SET and MSETEX [ee9779f2]
+    * Preserve the 6.3.0 RedisCluster return declarations for compatibility with
+      existing subclasses [1da3b6d8]
+    * Keep object serialization and custom restoration hooks compatible with 6.x
+      while initializing RedisCluster routing safely before its constructor runs
+      [7aed3011]
+    * Preserve pipeline reply callbacks when reconnecting [d54431d1] (rechl)
+    * Fix persistent connection pool liveness checks and reconnect handling
+      [146ec813] (michael-grunder)
+    * Re-send `READONLY` after reconnecting to a cluster replica [3606328d]
+      (Etienne Zannelli)
+    * Clear the cluster slot cache when nodes are unreachable [52e90650] (Victor
+      Kislov)
+    * Handle `RedisCluster` directed commands on uncovered slots [1351c824]
+      (Ebubekir Yiğit)
+    * Fix `RedisCluster` directed commands in `MULTI` mode and reject `UNWATCH`
+      during a transaction [e13d5d0c], [a1d93cab] (michael-grunder)
+    * Fix cluster transaction result bookkeeping across slots belonging to the
+      same master [a283471e] (michael-grunder)
+    * Fix use-after-free defects and result ownership in cluster multi-key
+      commands [2ef32c52], [ff9dede9] (michael-grunder)
+    * Fix use-after-free and double-free paths when parsing malformed cluster
+      replies [b29f5c85], [a14fdeca] (michael-grunder)
+    * Validate pub/sub reply element types before using them as strings
+      [cd04e21d], [e2a4f90d] (Raphael Paez) (michael-grunder)
+    * Validate scan cursor types, configured node lists, and RedisArray reply
+      values [57ddfefe] (michael-grunder)
+    * Harden RESP length parsing, detect EOF correctly, and guard against bulk
+      length overflow [5c6e2d2b], [c67d3e49], [7b2fdc6d], [1f02e67d] (Ilia
+      Alshanetsky) (michael-grunder)
+    * Reject malformed protocol replies and stop reading after failures instead
+      of looping indefinitely [ea3ea564], [2298a200], [80093d53], [4bdcf155],
+      [a6b7befd], [753a2d6d], [e5d2f8d6] (michael-grunder)
+    * Validate CRLF terminators and handle short reads in standalone and cluster
+      replies [a0ded702], [6e136252], [00c0f963] (EJ-Research) (michael-grunder)
+    * Limit nested reply depth, cap array preallocation from server-supplied
+      counts, and fix malformed-reply leaks [690a1098], [01791f23], [34c3fd9f]
+      (michael-grunder)
+    * Harden `CLUSTER SLOTS` and redirection parsing, including oversized
+      hostnames [fbf5affa], [bb9e8769], [8b1280f3] (Ilia Alshanetsky)
+      (michael-grunder)
+    * Validate array replies for cluster scans and `XCLAIM` [f98c0837],
+      [c97d754f] (michael-grunder)
+    * Discard connections after failed or incomplete writes [48a46c71]
+      (michael-grunder)
+    * Fix `GEOSEARCHSTORE` reply handling [4e093bb0] (michael-grunder)
+    * Preserve integer geohashes in `GEOSEARCH` metadata and validate the reply
+      structure [a283471e] (michael-grunder)
+    * Handle inline multibulk values and propagate raw reply read failures
+      correctly [a283471e] (michael-grunder)
+    * Route `FLUSHDB` and `FLUSHALL` to cluster primaries even when replica
+      reads are enabled [b30ced74] (michael-grunder)
+    * Fix crashes when setting `RedisCluster` TCP keepalive and handle missing
+      sockets in `setOption` [997d5645], [cb4acc7d] (michael-grunder)
+    * Use the correct option size when setting `SO_KEEPALIVE` [09d3dbf1]
+      (pkramme)
+    * Allow `getLastError()` and `clearLastError()` after a failed connection
+      without throwing [fc948db8] (Nicolas Grekas)
+    * Accept `null` for `$seeds` in `RedisCluster::__construct` [409508af]
+      (derrickschoen)
+    * Preserve numeric-string hash field names and use the correct format for
+      `zend_long` values [7c1c1259], [fe67b8cb], [b8b29687] (Pavlo Yatsukhnenko)
+      (arshidkv12)
+    * Handle deserialized non-string members when pairing sorted-set values and
+      scores [cab05051] (michael-grunder)
+    * Preserve `INFO` strings that would overflow when parsed as exponent-form
+      numbers [e9e338b5] (Pavlo Yatsukhnenko)
+    * Handle PHP serialization failures for anonymous classes [b83af641]
+      (arshidkv12)
+    * Validate LZ4 decompressed lengths and NUL-terminate decompression buffers
+      for PHP unserializers [2bf673c6], [cf95cd0a] (michael-grunder)
+    * Reject invalid vector attributes in `VSETATTR` [234d1e7c]
+      (michael-grunder)
+    * Prevent backoff option overflow and handle empty keys when prefixing
+      [a2936256] (michael-grunder)
+    * Prevent crashes by disabling cloning of `Redis`, `RedisArray`, and
+      `RedisCluster` objects [6e214c16] (michael-grunder)
+    * Avoid persistent connection ID collisions and fix a connection pool memory
+      leak [730dec06], [d90cfdb6] (michael-grunder)
+    * Prevent undefined behavior in weighted session server selection and
+      overflow in cluster session key lengths [025b0e97], [ae74b64b]
+      (michael-grunder)
+    * Report missing session servers and improve session compression errors
+      [bf2047e0], [453c4788] (michael-grunder)
+    * Fix PHP 8.6 compatibility for session handlers, INI APIs, and `bin2hex`
+      [b8b765e6], [9a170831], [78c1c690], [e3273a90], [dd15a7dd], [f5460cc2]
+      (Rasmus Lerdorf) (michael-grunder) (Andy Postnikov) (Remi Collet)
+    * Fix compiler attribute detection [b192b0e4] (michael-grunder)
+    * Correct `XDELEX` return types in Redis, RedisCluster, and RedisArray stubs
+      [9f4302c0], [8dcaedae] (Pavlo Yatsukhnenko) (michael-grunder)
+
+    Added:
+
+    * Implement `BLESS` key eviction protection commands, including a lazy
+      `RedisBlessScanIterator` for `BLESS SCAN` [4751fdf8] (michael-grunder)
+    * Implement `INCREX` for `Redis` and `RedisCluster` [90fabdf9], [7c186d94]
+      (Simon Hammes) (michael-grunder)
+    * Implement `BITRANGEINTARRAY` [9222d5cc] (michael-grunder)
+    * Add `reconnect()` to `Redis` and `RedisCluster` [a72ec1ab]
+      (michael-grunder)
+    * Add optional `Redis::SERIALIZER_PHPSER` support, including signing with
+      `phpser.key` [b3e890b7] (Ilia Alshanetsky)
+    * Support `AGGREGATE COUNT` in `ZUNION[STORE]` and `ZINTER[STORE]`
+      [810984b5] (michael-grunder)
+    * Implement `HIMPORT` [55f28493] (michael-grunder)
+    * Implement `LMOVEM` and `BLMOVEM` [7419002a] (michael-grunder)
+    * Implement `SUNIONCARD` and `SDIFFCARD` [533de1fe], [e2141f88]
+      (michael-grunder)
+    * Implement `GCRA` with the `TOKENS` option [10b77a42], [5b197316]
+      (michael-grunder)
+    * Implement `MSETEX` for `Redis` and `RedisCluster` [86eabb86], [41922b67]
+      (michael-grunder)
+    * Implement `XDELEX` and `XACKDEL` for `Redis`, `RedisCluster`, and
+      `RedisArray` [635d87d5], [23cc7859], [8f1c07ff] (michael-grunder)
+    * Implement `DELEX` [00c62de2], [93cb9211] (michael-grunder)
+    * Implement `DIGEST` and the local `_digest()` helper, requiring PHP 8.1 or
+      newer for local hashing [e2dd13ce], [107cc7aa] (michael-grunder)
+    * Implement `WAIT` for `RedisCluster` and share command handling with
+      `WAITAOF` [4de4f727] (michael-grunder)
+    * Add `redis.session.lock_release_cmd` to select Lua, `DELEX`, or `DELIFEQ`
+      for session lock release [e39d9b74] (michael-grunder)
+
+    Changed:
+
+    * Enable persistent connections in ZTS builds, with connections reused per
+      thread [b37b2316] (Kevin Dunglas)
+    * Mark connection options and context arguments as `#[\SensitiveParameter]`
+      [671e726e] (Nicolas Grekas)
+    * Use cryptographically random session lock secrets [b112875b] (Ilia
+      Alshanetsky)
+    * Rework TLS context ownership and allocation for connections and cluster
+      nodes [b97951cd] (michael-grunder)
+
+    Documentation:
+
+    * Add RedisArray method annotations and correct PHPDoc parameter, return,
+      nullable, and variadic types [8597d3d7], [5afa8eb7], [9c9d0286],
+      [b742bb8b], [6aea98f6], [26a73f46], [481f12f8], [8894de5a] (Michael
+      Telgmann) (michael-grunder)
+    * Document TLS options and clarify that `connect()` throws on failure
+      [c28430e5], [6efd549a] (michael-grunder)
+    * Document session `read_timeout` and the default `persistent` setting
+      [0340599b], [c99c8634] (Sowmya Mallur) (林博仁 Buo-ren Lin)
+    * Explain transactions inside pipelines and their reply formats [8ef2ee92]
+      (g)
+    * Document `WAIT` and `WAITAOF` [cd4cf653] (michael-grunder)
+    * Document `UNSUBSCRIBE` and `PUNSUBSCRIBE` [6b481b6f] (michael-grunder)
+    * Document class constants, backoff algorithms, and cluster failover
+      strategies [49919b0e], [26cf6d94], [8ef349a2], [0981c2b7]
+      (michael-grunder)
+    * Expand helper method documentation and examples, and correct stub wording
+      and types [d6437f5e], [abce1655], [c17f475c], [399346e5], [f23da62a],
+      [806b7b3f], [1f3fb179] (michael-grunder)
+    * Link API methods to Redis and Valkey command references [a46700cf],
+      [76286d88] (michael-grunder)
+    * Add syntax highlighting to generated API documentation and build it from
+      `develop` [10c0bf0f], [1297c48c], [e460a859], [4cf670fe], [ae69e47a],
+      [d45c4d29], [9edc2425], [38e56d57], [5fe08621], [d5b1576e]
+      (michael-grunder)
+    * Refresh generated API documentation, including new commands and iterator
+      documentation [ecdc290b], [9e9ccbd4], [d4600a28], [df243455], [f5ed1704],
+      [e6d0d119], [4e79159e], [39472124], [362ee55c] (michael-grunder)
+    * Mention Dragonfly support in the README [2b71a968] (michael-grunder)
+
+    Tests/CI:
+
+    * Allow multiple test filters and exclusions, and print commands for
+      rerunning tests [07f620e7], [a2b98330], [2343369b] (michael-grunder)
+    * Improve test diagnostics, fail-fast assertions, and compatibility with
+      subclasses [4baad44b], [4a02f3dd], [2a0569ec], [b0d534e1], [43d72dad],
+      [c92c0422], [506715fe], [e037b7ca], [10ae0080] (michael-grunder)
+    * Reduce timing-test delays and make expiration assertions less sensitive to
+      scheduling [09d496b2], [53ba9b4b], [c7227339], [e5f0df63], [777f7377],
+      [7ae4014c] (michael-grunder)
+    * Fix session and replication test races, and use explicit exit codes for
+      session helpers [bccd60d4], [531b17e5], [3c65094e], [4bccf599]
+      (michael-grunder)
+    * Fix flaky `EXISTS` coverage with deterministic keys [82bf96c3] (武田 憲太郎)
+    * Add numeric-string hash field regression coverage across execution modes
+      [6f42a349], [0ef13108] (michael-grunder) (Till Krüss)
+    * Add `MSETEX` tests and fix expiry assertions [bd4989e0], [a033e40b],
+      [074b7c7f] (michael-grunder)
+    * Add `XDELEX` tests [8b4cfb72] (michael-grunder)
+    * Fix `_digest()` tests on PHP versions before 8.1 and avoid deprecated
+      `is_long()` on PHP 8.6 [0debad4c], [57b584f6] (michael-grunder)
+    * Account for duplicate `ZSCAN` results in scan tests [33ee649c]
+      (michael-grunder)
+    * Skip unsupported `DELEX` options when testing Valkey [88050422] (Remi
+      Collet)
+    * Add PHP 8.5 to macOS and Windows CI, and fix the Homebrew configuration
+      path [ac54591d], [a6313d1b] (Emre Çalışkan)
+    * Migrate Windows CI to `php/php-windows-builder`, use commit SHAs, and make
+      binaries discoverable by PIE [8f8272db], [f14ce600], [de2e1b39] (Pavlo
+      Yatsukhnenko) (michael-grunder)
+    * Refactor CI jobs, install dependencies with PIE, and bound server startup
+      waits [60eb01c4], [a01dec12], [e5c0ef7c], [7119dce1] (michael-grunder)
+    * Replace KeyDB coverage with Dragonfly and test Valkey and Redis unstable
+      builds [8b222585], [a283471e], [b7c382c8], [959dee1c] (michael-grunder)
+    * Require Valgrind runs to pass and fix a flaky Sentinel test [a00d952d],
+      [060a2c5e] (michael-grunder)
+
+    Internal/Performance:
+
+    * Introduce `RedisCmd` command construction and migrate standalone, cluster,
+      and session command builders [2c5ef192], [4f3090f0], [875c088b],
+      [939c8fed], [e81506bd], [b12a64fe] (michael-grunder)
+    * Switch to the Fast Parameter Parsing API [c2d2254e] (Pavlo Yatsukhnenko)
+    * Read multibulk strings directly into `zend_string` buffers and pre-size
+      reply arrays [0c1b8b22], [da514c71], [798aa657] (Ilia Alshanetsky)
+    * Remove a redundant liveness probe when reading bulk replies [640ed13f]
+      (Ilia Alshanetsky)
+    * Skip clock reads when no cluster timeout is set [44f49442] (Ilia
+      Alshanetsky)
+    * Avoid per-command and per-key allocations in cluster writes and RedisArray
+      hashing, and redundant zero-filling during key prefixing [9623a663],
+      [8b746bfc], [b9320359] (Ilia Alshanetsky)
+    * Modernize Zend API usage and array traversal, and replace legacy aliases
+      [8e1c2789], [d24528e1], [7d4fa613], [3401462e], [cd2a3963], [5acaba93]
+      (Niels Dossche) (michael-grunder)
+    * Consolidate scan handling [e64055bd] (michael-grunder)
+    * Consolidate key prefixing [cd7996fb] (michael-grunder)
+    * Improve cluster WATCH bookkeeping and cleanup on failures [4736b167]
+      (michael-grunder)
+    * Refactor command contexts and replace function-like macros with typed
+      helpers [2ce9d949], [bc947026], [910c925f], [5377f588], [a9dd268a],
+      [10e81b33], [d9aea09e] (michael-grunder)
+    * Improve const-correctness, remove unnecessary casts, and restrict internal
+      function linkage [7090338f], [e87e1668], [34e9a4ae], [4366a579],
+      [887c5b19] (Simon Hammes) (michael-grunder)
+    * Modernize session handling and remove obsolete code and fields [738cedd2],
+      [741abf09], [b58ca169], [976e2384], [0017df83], [33a78a45], [4af1e20a],
+      [d596a239] (michael-grunder)
+    * Add `--enable-redis-sanitizers` and `--enable-redis-analyzer` build
+      options [288e231b], [5fea4648] (michael-grunder)
+    * Add agent development instructions and ignore generated dependency and
+      vendor files [ea8a8672], [c8b79b16], [b30fe1d1], [9b17434e]
+      (michael-grunder)
+</notes>
+    </release>
     <release>
       <stability>
         <release>stable</release>
