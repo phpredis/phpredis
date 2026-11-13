@@ -22,10 +22,22 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Preserve the unencoded comparison operand for `SET IFEQ` with serializers and compressors enabled
+  [5cd04301](https://github.com/phpredis/phpredis/commit/5cd04301e53061fe9feebbe6702091ef9ef3a393)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Restore SET option value parsing under associative GET keys, preserving NX, XX, and KEEPTTL flags
+  [355a5c46](https://github.com/phpredis/phpredis/commit/355a5c46758fe6fb6a49ff6bc91d236977b539cd)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix truncated subscriber counts in `PUBSUB NUMSUB` and `PUBSUB SHARDNUMSUB` replies
+  [3ed46779](https://github.com/phpredis/phpredis/commit/3ed4677951cac1c3353c659cb8f82426bedd32b1)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Correct the `RedisCluster::msetex` return type to allow `RedisCluster` in transactions
+  [cceb09d0](https://github.com/phpredis/phpredis/commit/cceb09d009542c9d7cef880605e99e77c631410b)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Preserve 6.x string conversion for command arguments, including false values and PHP floating-point precision
 - Preserve literal SORT STORE destinations in 6.x while retaining cluster slot validation
 - Preserve SET conditional flags and comparison options, and restore expiry validation in SET and MSETEX
-  [caa71011](https://github.com/phpredis/phpredis/commit/caa7101191a4dbede8f620ec3e42fce4dfd51685)
+  [ee9779f2](https://github.com/phpredis/phpredis/commit/ee9779f2e03ad9612bc312eec623a9b2a35abd31)
 - Preserve the 6.3.0 RedisCluster return declarations for compatibility with existing subclasses
   [1da3b6d8](https://github.com/phpredis/phpredis/commit/1da3b6d801c2fd98ec6149edeb2d6f5f076f7e16)
 - Keep object serialization and custom restoration hooks compatible with 6.x while initializing RedisCluster routing safely before its constructor runs
@@ -233,9 +245,10 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
   [86eabb86](https://github.com/phpredis/phpredis/commit/86eabb86eb4efad7bd3daf5735b4205ba6e13231),
   [41922b67](https://github.com/phpredis/phpredis/commit/41922b6740f605869f3a0832d0cece90bef8fc8e)
   ([michael-grunder](https://github.com/michael-grunder))
-- Implement `XDELEX` and `XACKDEL`
+- Implement `XDELEX` and `XACKDEL` for `Redis`, `RedisCluster`, and `RedisArray`
   [635d87d5](https://github.com/phpredis/phpredis/commit/635d87d535e15626b8df5493bfa15bd1a7a661d9),
-  [23cc7859](https://github.com/phpredis/phpredis/commit/23cc785989878d420539a02bdaab44e467bfe486)
+  [23cc7859](https://github.com/phpredis/phpredis/commit/23cc785989878d420539a02bdaab44e467bfe486),
+  [8f1c07ff](https://github.com/phpredis/phpredis/commit/8f1c07ff3e09bfb506978157f7a8480b2ddd3fe9)
   ([michael-grunder](https://github.com/michael-grunder))
 - Implement `DELEX`
   [00c62de2](https://github.com/phpredis/phpredis/commit/00c62de277e8c93ba6c18bfe9b713478ac49dd75),
