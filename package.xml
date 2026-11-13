@@ -203,6 +203,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
       <!-- liblzf -->
       <dir name="tests">
         <file role="test" name="RedisArrayTest.php"/>
+        <file role="test" name="RedisClusterMGetServer.php"/>
         <file role="test" name="RedisClusterTest.php"/>
         <file role="test" name="RedisSentinelTest.php"/>
         <file role="test" name="RedisTest.php"/>
