@@ -1144,6 +1144,31 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testSetIfEqPacking() {
+        if (!$this->minValkeyVersionCheck('8.1.0') &&
+            ($this->is_valkey || !$this->minVersionCheck('8.4.0')))
+            $this->markTestSkipped();
+
+        foreach ($this->getSerializers() as $serializer) {
+            foreach ($this->getCompressors() as $compression) {
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+                $this->redis->setOption(Redis::OPT_COMPRESSION, $compression);
+                $packed = $this->redis->_pack('old');
+
+                $this->assertTrue($this->redis->set('foo', 'old'));
+                if ($packed !== 'old') {
+                    $this->assertFalse($this->redis->set('foo', 'new', ['IFEQ' => 'old']));
+                    $this->assertKeyEquals('old', 'foo');
+                }
+                $this->assertTrue($this->redis->set('foo', 'new', ['IFEQ' => $packed]));
+                $this->assertKeyEquals('new', 'foo');
+            }
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+    }
+
     /* Test Valkey >= 8.1 IFEQ SET option */
     public function testValkeyIfEq() {
         if ( ! $this->is_valkey || ! $this->minVersionCheck('8.1.0'))

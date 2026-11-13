@@ -2421,7 +2421,11 @@ RedisCmd *redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
     redis_cmd_cat_key_zstr(cmd, key);
     redis_cmd_cat_zval(cmd, z_value);
 
-    if (opt.eq.type != REDIS_IF_NONE) {
+    if (opt.eq.type == REDIS_IFEQ) {
+        /* Preserve 6.x SET IFEQ's unencoded comparison operand. */
+        redis_cmd_cat_literal(cmd, "IFEQ");
+        redis_cmd_cat_zval_zstr(cmd, opt.eq.zval);
+    } else if (opt.eq.type != REDIS_IF_NONE) {
         redis_cmd_cat_eq_clause(cmd, opt.eq.type, opt.eq.zval);
     } else if (opt.type != REDIS_SET_NONE) {
         redis_cmd_cat_set_type(cmd, opt.type);
