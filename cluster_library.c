@@ -350,13 +350,14 @@ static int cluster_send_direct(RedisSock *redis_sock, const char *cmd, size_t cm
                                REDIS_REPLY_TYPE type)
 {
     char buf[1024];
+    size_t len;
 
     /* Connect to the socket if we aren't yet and send our command, validate the reply type, and consume the first line */
     if (!cluster_send_payload(redis_sock, cmd, cmd_len)) return -1;
 
     /* A mismatched or incomplete reply leaves unread bytes on the socket */
     if (!cluster_validate_reply_type(redis_sock, type) ||
-        !redis_sock_gets_raw(redis_sock, buf, sizeof(buf)))
+        redis_sock_gets(redis_sock, buf, sizeof(buf), &len) < 0)
     {
         redis_sock_disconnect(redis_sock, 1, 1);
         return -1;

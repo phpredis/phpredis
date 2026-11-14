@@ -1161,8 +1161,12 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
     for (i = 0; i < redis_sock->reply_callback_count; i++) {
         fi = &redis_sock->reply_callback[i];
         if (fi->fun) {
+            zval z_ret = {0};
+
             redis_sock->flags = fi->flags;
-            fi->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, fi->ctx);
+            /* A disconnect can reset mode and put a deferred result in return_value. */
+            fi->fun(execute_data, &z_ret, redis_sock, z_tab, fi->ctx);
+            zval_ptr_dtor(&z_ret);
             redis_sock->flags = flags;
             continue;
         }
