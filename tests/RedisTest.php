@@ -4718,6 +4718,59 @@ class Redis_Test extends TestSuite {
         $redis->close();
     }
 
+    public function testDeferredReplyDisconnectCleanup() {
+        $class = $this->getRedisClass();
+        if ( ! is_a($class, Redis::class, true))
+            $this->markTestSkipped('Exercises PhpRedis RESP2 reply handling');
+
+        $server = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+        $this->assertTrue(is_resource($server));
+        list($host, $port) = explode(':', stream_socket_get_name($server, false));
+        $fields = array_map('strval', range(0, 128));
+        $reply = "*129\r\n" . str_repeat("$1024\r\n" . str_repeat('x', 1024) . "\r\n", 128);
+
+        try {
+            foreach (['connect', 'pconnect'] as $connect) {
+                foreach ([Redis::PIPELINE, Redis::MULTI] as $mode) {
+                    foreach (['mget', 'hmget'] as $command) {
+                        foreach (["$3\r\na", "$3\r\nabcXX"] as $tail) {
+                            $redis = new $class();
+                            $peer = NULL;
+                            try {
+                                $this->assertTrue($redis->$connect($host, (int)$port, 1, NULL, 0, .01));
+                                $peer = stream_socket_accept($server, 1);
+                                $this->assertTrue(is_resource($peer));
+                                $data = ($mode == Redis::MULTI ? "+OK\r\n+QUEUED\r\n*1\r\n" : '') . $reply . $tail;
+                                $this->assertEquals(strlen($data), fwrite($peer, $data));
+
+                                $before = memory_get_usage();
+                                $this->assertThrowsMatch($redis, function ($redis) use ($mode, $command, $fields) {
+                                    $redis->multi($mode);
+                                    if ($command == 'mget') {
+                                        $redis->mget($fields);
+                                    } else {
+                                        $redis->hmget('hash', $fields);
+                                    }
+                                    $redis->exec();
+                                });
+                                /* A lost partial result retains over 128 KiB of strings. */
+                                $this->assertLT(65536, memory_get_usage() - $before);
+                                $this->assertFalse($redis->isConnected());
+                                $this->assertEquals(Redis::ATOMIC, $redis->getMode());
+                            } finally {
+                                if (is_resource($peer))
+                                    fclose($peer);
+                                unset($redis);
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            fclose($server);
+        }
+    }
+
     public function testMultiEmpty()
     {
         $ret = $this->redis->multi()->exec();
