@@ -808,6 +808,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
     ssize_t got;
 
     if (bytes < -1 || bytes > INT_MAX - 2) {
+        redis_sock_disconnect(redis_sock, 1, 1);
         zend_throw_exception_ex(redis_exception_ce, 0,
             "protocol error, invalid bulk length: %d", bytes);
         return NULL;
@@ -834,8 +835,19 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
 
     /* Protect against reading too few bytes */
     if (offset < nbytes) {
-        /* Error or EOF */
+        /* Error, EOF, or timeout. The rest of the payload may still arrive,
+         * so the socket can't be reused for another command. */
+        redis_sock_disconnect(redis_sock, 1, 1);
         REDIS_THROW_EXCEPTION("socket error on read socket", 0);
+        efree(reply);
+        return NULL;
+    }
+
+    /* A body that doesn't end in \r\n means the length didn't match the
+     * payload, so the bytes after it would be read as the next reply. */
+    if (reply[bytes] != '\r' || reply[bytes + 1] != '\n') {
+        redis_sock_disconnect(redis_sock, 1, 1);
+        REDIS_THROW_EXCEPTION("protocol error, bulk reply not terminated by CRLF", 0);
         efree(reply);
         return NULL;
     }
@@ -876,6 +888,7 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
                 errno = 0;
                 n = strtoll(inbuf + 1, &endptr, 10);
                 if (endptr == inbuf + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+                    redis_sock_disconnect(redis_sock, 1, 1);
                     return NULL;
                 }
                 *buf_len = (int)n;
@@ -898,6 +911,8 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
             }
             REDIS_FALLTHROUGH;
         default:
+            /* We don't know where the next reply starts */
+            redis_sock_disconnect(redis_sock, 1, 1);
             zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, got '%c' as reply type byte\n",
                 inbuf[0]
@@ -3854,6 +3869,7 @@ redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
     ssize_t got;
 
     if (bytes < 0 || bytes > INT_MAX - 2) {
+        redis_sock_disconnect(redis_sock, 1, 1);
         zend_throw_exception_ex(redis_exception_ce, 0,
             "protocol error, invalid bulk length: %d", bytes);
         return NULL;
@@ -3877,7 +3893,15 @@ redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
     }
 
     if (offset < nbytes) {
+        redis_sock_disconnect(redis_sock, 1, 1);
         REDIS_THROW_EXCEPTION("socket error on read socket", 0);
+        zend_string_release(zstr);
+        return NULL;
+    }
+
+    if (ZSTR_VAL(zstr)[bytes] != '\r' || ZSTR_VAL(zstr)[bytes + 1] != '\n') {
+        redis_sock_disconnect(redis_sock, 1, 1);
+        REDIS_THROW_EXCEPTION("protocol error, bulk reply not terminated by CRLF", 0);
         zend_string_release(zstr);
         return NULL;
     }
@@ -3917,6 +3941,7 @@ redis_sock_read_zstr(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type)
                 errno = 0;
                 n = strtoll(inbuf + 1, &endptr, 10);
                 if (endptr == inbuf + 1 || errno == ERANGE || n < -1 || n > INT_MAX) {
+                    redis_sock_disconnect(redis_sock, 1, 1);
                     return NULL;
                 }
                 if (n == -1) {
@@ -3941,6 +3966,8 @@ redis_sock_read_zstr(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type)
             }
             REDIS_FALLTHROUGH;
         default:
+            /* We don't know where the next reply starts */
+            redis_sock_disconnect(redis_sock, 1, 1);
             zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, got '%c' as reply type byte\n",
                 inbuf[0]
@@ -4808,6 +4835,8 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
 
     // Attempt to read the reply-type byte
     if((*reply_type = redis_sock_getc(redis_sock)) == EOF) {
+        /* On a timeout the reply may still arrive and be read by the next command */
+        redis_sock_disconnect(redis_sock, 1, 1);
         REDIS_THROW_EXCEPTION( "socket error on read socket", 0);
         return -1;
     }
@@ -4833,6 +4862,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
             errno = 0;
             *reply_info = strtol(inbuf, &endptr, 10);
             if (endptr == inbuf || errno == ERANGE) {
+                redis_sock_disconnect(redis_sock, 1, 1);
                 return -1;
             }
         }
@@ -4841,6 +4871,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         if ((*reply_type == TYPE_BULK && (*reply_info < -1 || *reply_info > INT_MAX - 2)) ||
             (*reply_type == TYPE_MULTIBULK && (*reply_info < -1 || *reply_info > INT_MAX)))
         {
+            redis_sock_disconnect(redis_sock, 1, 1);
             zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, invalid reply length");
             return -1;
@@ -4894,6 +4925,7 @@ redis_read_variant_bulk(RedisSock *redis_sock, long size, zval *z_ret
     int bytes;
 
     if (size < -1 || size > INT_MAX - 2) {
+        redis_sock_disconnect(redis_sock, 1, 1);
         zend_throw_exception_ex(redis_exception_ce, 0,
             "protocol error, invalid bulk length: %ld", size);
         ZVAL_FALSE(z_ret);
