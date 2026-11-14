@@ -635,6 +635,12 @@ class TestSuite
         return array_keys(self::$failed_tests);
     }
 
+    /* Subclasses can wrap setup and test execution without replacing the runner. */
+    protected function runTest(string $name): void {
+        $this->setUp();
+        $this->$name();
+    }
+
     public static function run($class_name, $limit = NULL,
                                ?string $host = NULL, ?int $port = NULL,
                                $auth = NULL, ?int $tls_port = 6378)
@@ -670,8 +676,7 @@ class TestSuite
 
             try {
                 $rt = new $class_name($host, $port, $auth, $tls_port);
-                $rt->setUp();
-                $rt->$name();
+                $rt->runTest($name);
 
                 $result = self::make_success('PASSED');
             } catch (Throwable $e) {
