@@ -128,7 +128,8 @@ static void redis_cmd_finalize(RedisCmd *cmd) {
     smart_string_0(&cmd->s);
 }
 
-void redis_cmd_cat_str(RedisCmd *cmd, const char *str, size_t len) {
+static zend_always_inline void
+redis_cmd_cat_bulk_header(RedisCmd *cmd, size_t len) {
     const RespHeader *hdr;
 
     if (cmd->argc == UINT32_MAX) {
@@ -143,8 +144,26 @@ void redis_cmd_cat_str(RedisCmd *cmd, const char *str, size_t len) {
         smart_string_append_unsigned(&cmd->s, len);
         smart_string_appendl_ex(&cmd->s, ZEND_STRL("\r\n"), 0);
     }
+}
+
+void redis_cmd_cat_str(RedisCmd *cmd, const char *str, size_t len) {
+    redis_cmd_cat_bulk_header(cmd, len);
 
     smart_string_appendl(&cmd->s, str, len);
+    smart_string_appendl_ex(&cmd->s, ZEND_STRL("\r\n"), 0);
+
+    cmd->argc++;
+}
+
+/* Append one bulk argument whose payload is str1 followed by str2. */
+static void
+redis_cmd_cat_str2(RedisCmd *cmd, const char *str1, size_t len1,
+                   const char *str2, size_t len2)
+{
+    redis_cmd_cat_bulk_header(cmd, redis_concat_length(len1, len2));
+
+    smart_string_appendl(&cmd->s, str1, len1);
+    smart_string_appendl(&cmd->s, str2, len2);
     smart_string_appendl_ex(&cmd->s, ZEND_STRL("\r\n"), 0);
 
     cmd->argc++;
@@ -175,6 +194,20 @@ update_slot(RedisCmd *cmd, const char *key, size_t keylen) {
     return cmd->slot == slot ? 1 : 0;
 }
 
+/* Only cluster slot hashing needs prefix and key contiguous in memory, since a
+ * hash tag can span the boundary. Otherwise frame them straight into the
+ * command as one bulk argument instead of building a temporary copy. */
+static zend_always_inline zend_bool
+redis_cmd_cat_key_direct(RedisCmd *cmd, const char *key, size_t len) {
+    zend_string *prefix = cmd->redis_sock->prefix;
+
+    if (prefix == NULL || cmd->redis_sock->type == REDIS_SOCK_CLUSTER)
+        return 0;
+
+    redis_cmd_cat_str2(cmd, ZSTR_VAL(prefix), ZSTR_LEN(prefix), key, len);
+    return 1;
+}
+
 zend_bool redis_cmd_cat_key_str(RedisCmd *cmd, const char *key, size_t len) {
     char *aux = (char*)key;
     int keyfree;
@@ -183,6 +216,9 @@ zend_bool redis_cmd_cat_key_str(RedisCmd *cmd, const char *key, size_t len) {
         redis_cmd_cat_str(cmd, key, len);
         return 1;
     }
+
+    if (redis_cmd_cat_key_direct(cmd, key, len))
+        return 1;
 
     keyfree = redis_key_prefix(cmd->redis_sock, &aux, &len);
 
@@ -214,6 +250,9 @@ zend_bool redis_cmd_cat_key_zstr(RedisCmd *cmd, zend_string *key) {
         return 1;
     }
 
+    if (redis_cmd_cat_key_direct(cmd, ZSTR_VAL(key), ZSTR_LEN(key)))
+        return 1;
+
     key = redis_key_prefix_zstr(cmd->redis_sock, key);
 
     if (!update_slot(cmd, ZSTR_VAL(key), ZSTR_LEN(key))) {
@@ -239,6 +278,9 @@ zend_bool redis_cmd_cat_key_long(RedisCmd *cmd, zend_long lval) {
         redis_cmd_cat_str(cmd, key, len);
         return 1;
     }
+
+    if (redis_cmd_cat_key_direct(cmd, key, len))
+        return 1;
 
     keyfree = redis_key_prefix(cmd->redis_sock, &key, &len);
 
@@ -270,6 +312,9 @@ zend_bool redis_cmd_cat_key_arrkey(RedisCmd *cmd, zend_string *str, zend_ulong i
         redis_cmd_cat_str(cmd, key, len);
         return 1;
     }
+
+    if (redis_cmd_cat_key_direct(cmd, key, len))
+        return 1;
 
     keyfree = redis_key_prefix(cmd->redis_sock, &key, &len);
     if (!update_slot(cmd, key, len)) {
