@@ -196,6 +196,79 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  php-master:
+    name: PHP master (allowed to fail)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - name: Checkout PhpRedis
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update --allow-releaseinfo-change-label
+          sudo apt-get install -y --no-install-recommends build-essential autoconf bison re2c pkg-config liblz4-dev libzstd-dev
+
+      - name: Checkout PHP master
+        id: php-source
+        run: |
+          git clone --depth 1 --branch master https://github.com/php/php-src.git "$RUNNER_TEMP/php-src"
+          sha=$(git -C "$RUNNER_TEMP/php-src" rev-parse HEAD)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "PHP master commit: $sha" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Restore PHP master
+        id: php-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/php-master
+          key: php-master-ubuntu-22.04-${{ runner.arch }}-${{ steps.php-source.outputs.sha }}-cli-session-v1
+
+      - name: Build PHP master
+        if: steps.php-cache.outputs.cache-hit != 'true'
+        run: |
+          cd "$RUNNER_TEMP/php-src"
+          ./buildconf --force
+          ./configure --prefix="$RUNNER_TEMP/php-master" \
+            --disable-all --enable-cli --enable-session --disable-cgi --disable-phpdbg
+          make -j"$(nproc)"
+          make install
+
+      # Keep the PHP build even when PhpRedis is incompatible with it.
+      - name: Save PHP master
+        if: steps.php-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/php-master
+          key: ${{ steps.php-cache.outputs.cache-primary-key }}
+
+      - name: Add PHP master to PATH
+        run: echo "$RUNNER_TEMP/php-master/bin" >> "$GITHUB_PATH"
+
+      - name: Build PhpRedis against PHP master
+        run: |
+          php -n --version | tee -a "$GITHUB_STEP_SUMMARY"
+          phpize
+          ./configure --enable-redis --enable-redis-lzf --enable-redis-lz4 --enable-redis-zstd --with-liblz4
+          make -j"$(nproc)"
+
+      - name: Load PhpRedis
+        run: php -n -dextension="$PWD/.libs/redis.so" --ri redis
+
+      - name: Upload diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-master-build
+          path: |
+            config.log
+            ${{ runner.temp }}/php-src/config.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   unstable:
     name: ${{ matrix.server }} unstable (PHP 8.5, allowed to fail)
     runs-on: ubuntu-22.04
