@@ -463,6 +463,7 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	  // Use built-
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY); // Use igBinary serialize/unserialize
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_MSGPACK);  // Use msgpack serialize/unserialize
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);  // Use JSON to serialize/unserialize
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHPSER);  // Use phpser serialize/unserialize (signed when phpser.key is set)
 
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 
@@ -495,7 +496,8 @@ Parameter value.
 ###### *Example*
 ~~~php
 // return Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP,
-//        Redis::SERIALIZER_IGBINARY, Redis::SERIALIZER_MSGPACK or Redis::SERIALIZER_JSON
+//        Redis::SERIALIZER_IGBINARY, Redis::SERIALIZER_MSGPACK, Redis::SERIALIZER_JSON
+//        or Redis::SERIALIZER_PHPSER
 $redis->getOption(Redis::OPT_SERIALIZER);
 ~~~
 
@@ -3883,6 +3885,7 @@ array(1) {
 ### Streams
 
 * [xAck](#xack) - Acknowledge one or more pending messages
+* [xAckDel](#xackdel) - Acknowledge and conditionally delete stream messages
 * [xAdd](#xadd) - Add a message to a stream
 * [xClaim](#xclaim) - Acquire ownership of a pending message
 * [xDel](#xdel) - Remove a message from a stream
@@ -3912,6 +3915,26 @@ _**Description**_:  Acknowledge one or more messages on behalf of a consumer gro
 ###### *Example*
 ~~~php
 $obj_redis->xAck('stream', 'group1', ['1530063064286-0', '1530063064286-1']);
+~~~
+
+#### xAckDel
+-----
+
+~~~php
+$redis->xackdel(string $key, string $group, array $ids, ?string $mode = null);
+~~~
+
+Acknowledge and conditionally delete stream entries (Redis 8.2+).
+The optional mode is case-insensitive: `KEEPREF` (the default) preserves other
+groups' pending references, `DELREF` removes them, and `ACKED` deletes entries
+only after all consumer groups have read and acknowledged them.
+
+Returns an array with one integer per requested ID: `1` for deleted, `-1` for
+missing, or `2` for acknowledged but retained by `ACKED`. Returns `false` on
+failure, or the Redis/RedisCluster object when queued in a transaction or pipeline.
+
+~~~php
+$redis->xackdel('stream', 'group1', ['1530063064286-0'], 'ACKED');
 ~~~
 
 #### xAdd

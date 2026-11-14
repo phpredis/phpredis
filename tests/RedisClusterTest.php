@@ -44,12 +44,133 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testDoublePipeNoOp() { $this->markTestSkipped(); }
     public function testSwapDB() { $this->markTestSkipped(); }
     public function testConnectException() { $this->markTestSkipped(); }
+    public function testLastErrorAfterFailedConnect() { $this->markTestSkipped(); }
     public function testTlsConnect() { $this->markTestSkipped(); }
     public function testTlsReconnect() { $this->markTestSkipped(); }
     public function testReset() { $this->markTestSkipped(); }
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
     public function testConnectDatabaseSelect() { $this->markTestSkipped(); }
+    /* BLESS SCAN cursors are per node, so RedisCluster needs a key or node */
+    protected function blessScan(?string $directive, ?array $options = null, $node = 'bless') {
+        return $this->redis->bless('SCAN', null, $directive, $options, $node);
+    }
+
+    protected function blessScanAll(string $directive, ?array $options = null): array {
+        $keys = [];
+        foreach ($this->redis->_masters() as $master) {
+            $scan = $this->blessScan($directive, $options, $master);
+            $keys = array_merge($keys, iterator_to_array($scan, false));
+        }
+
+        return $keys;
+    }
+
+    public function testBlessScanRequiresNode() {
+        $this->assertFalse(@$this->redis->bless('SCAN', null, 'NO-EVICT'));
+        $this->assertFalse(@$this->redis->bless('GET', 'key', null, null, 'key'));
+    }
+
+    public function testReconnectPooledConnection() {
+        if (!ini_get('redis.pconnect.pooling_enabled'))
+            $this->markTestSkipped('Requires connection pooling');
+
+        $client = $this->newInstance();
+        $other = $this->newInstance();
+        $masters = $client->_masters();
+        $ids = [];
+        foreach ($masters as $node) {
+            $ids[] = [$client->rawCommand($node, 'CLIENT', 'ID'),
+                      $other->rawCommand($node, 'CLIENT', 'ID')];
+        }
+        unset($other);
+        $this->assertTrue($client->reconnect());
+        foreach ($masters as $i => $node)
+            $this->assertFalse(in_array($client->rawCommand($node, 'CLIENT', 'ID'), $ids[$i]));
+        $client->close();
+    }
+
+    public function testReconnect() {
+        $class = $this->getRedisClusterClass();
+        $masters = $this->redis->_masters();
+        foreach ([false, true] as $persistent) {
+            $client = new $class(NULL, self::$seeds, 2, 2, $persistent, $this->getAuth());
+            try {
+                foreach ([false, true] as $close) {
+                    $ids = [];
+                    foreach ($masters as $node)
+                        $ids[] = $client->rawCommand($node, 'CLIENT', 'ID');
+                    if ($close) {
+                        $client->close();
+                        // Leave some masters disconnected and one connected.
+                        $client->rawCommand($masters[0], 'CLIENT', 'ID');
+                    }
+                    $this->assertTrue($client->reconnect());
+                    foreach ($masters as $i => $node) {
+                        // Inspect first so a lazy connection cannot satisfy the test.
+                        $connected = array_column($this->redis->client($node, 'list'), 'id');
+                        $id = $client->rawCommand($node, 'CLIENT', 'ID');
+                        $this->assertTrue(in_array($id, $connected));
+                        $this->assertNotEquals($ids[$i], $id);
+                    }
+                    $this->assertEquals($masters, $client->_masters());
+                }
+                $client->close();
+                $this->assertTrue($client->reconnect());
+                foreach ($masters as $node) {
+                    $connected = array_column($this->redis->client($node, 'list'), 'id');
+                    $this->assertTrue(in_array($client->rawCommand($node, 'CLIENT', 'ID'), $connected));
+                }
+            } finally {
+                $client->close();
+            }
+        }
+    }
+
+    public function testReconnectNotConnected() {
+        $class = new ReflectionClass($this->getRedisClusterClass());
+        $client = $class->newInstanceWithoutConstructor();
+        $this->assertThrowsMatch($client, function ($client) {
+            $client->reconnect();
+        }, '/^Not connected$/');
+    }
+
+    public function testReconnectFailure() {
+        if (!$this->minVersionCheck('6.0') || $this->is_keydb)
+            $this->markTestSkipped('Requires Redis ACLs');
+
+        $class = $this->getRedisClusterClass();
+        $masters = $this->redis->_masters();
+        $user = uniqid('reconnect-cluster-user-');
+        $client = null;
+        try {
+            foreach ($masters as $node)
+                $this->assertTrue($this->redis->rawCommand($node, 'ACL', 'SETUSER', $user,
+                                                         'on', '>before', '~*', '+@all'));
+            $client = new $class(NULL, self::$seeds, 2, 2, false, [$user, 'before']);
+            foreach ($masters as $node)
+                $this->assertIsInt($client->rawCommand($node, 'CLIENT', 'ID'));
+            $this->assertTrue($this->redis->rawCommand(end($masters), 'ACL', 'SETUSER',
+                                                     $user, 'resetpass', '>after'));
+            $this->assertThrowsMatch($client, function ($client) {
+                $client->reconnect();
+            });
+            foreach ($masters as $node) {
+                $users = array_column($this->redis->client($node, 'list'), 'user');
+                $this->assertFalse(in_array($user, $users));
+            }
+
+            $this->assertTrue($this->redis->rawCommand(end($masters), 'ACL', 'SETUSER',
+                                                     $user, 'resetpass', '>before'));
+            $this->assertTrue($client->reconnect());
+            foreach ($masters as $node)
+                $this->assertIsInt($client->rawCommand($node, 'CLIENT', 'ID'));
+        } finally {
+            if ($client) $client->close();
+            foreach ($masters as $node)
+                $this->redis->rawCommand($node, 'ACL', 'DELUSER', $user);
+        }
+    }
 
     /* These 'directed node' commands work differently in RedisCluster */
     public function testConfig() { $this->markTestSkipped(); }
@@ -274,6 +395,9 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testDirectedCommandsRejectUncoveredSlot() {
+        if ($this->is_dragonfly)
+            $this->markTestSkipped('Dragonfly does not support CLUSTER DELSLOTS');
+
         $class = $this->getRedisClusterClass();
         for ($i = 0; $i < 256; $i++) {
             $key = "{uncovered-directed-$i}key";
@@ -530,8 +654,51 @@ class Redis_Cluster_Test extends Redis_Test {
         $client->del($key);
     }
 
+    public function testReconnectReplicas() {
+        $key = uniqid('explicit-reconnect-replica:', true);
+        if (!($replicas = $this->replicasForKey($key)))
+            $this->markTestSkipped('Requires replicas');
+
+        $nodes = array_map([$this, 'connectToNode'], $replicas);
+        $class = $this->getRedisClusterClass();
+        $client = new $class(NULL, self::$seeds, 1, 1, false, $this->getAuth());
+        $client->setOption(RedisCluster::OPT_SLAVE_FAILOVER,
+                           RedisCluster::FAILOVER_DISTRIBUTE_SLAVES);
+        try {
+            $this->assertTrue($client->set($key, 'value'));
+            $this->assertEquals(count($nodes), $client->rawCommand($key, 'WAIT', count($nodes), 1000));
+            $baseline = [];
+            foreach ($nodes as $i => $node)
+                $baseline[$i] = array_column($node->client('list'), 'id');
+            for ($i = 0; $i < 10 * count($nodes); $i++)
+                $this->assertEquals('value', $client->get($key));
+            $connected = [];
+            foreach ($nodes as $i => $node)
+                $connected[$i] = array_column($node->client('list'), 'id');
+
+            $this->assertTrue($client->reconnect());
+            foreach ($nodes as $i => $node) {
+                $now = array_column($node->client('list'), 'id');
+                $old = array_diff($connected[$i], $baseline[$i]);
+                $this->assertEquals([], array_values(array_intersect($old, $now)));
+                $this->assertEquals(count($old), count(array_diff($now, $connected[$i])));
+            }
+            $moved = $this->movedCount($nodes);
+            for ($i = 0; $i < 10 * count($nodes); $i++)
+                $this->assertEquals('value', $client->get($key));
+            $this->assertEquals($moved, $this->movedCount($nodes));
+        } finally {
+            $client->del($key);
+            $client->close();
+            foreach ($nodes as $node) $node->close();
+        }
+    }
+
     /* Regression test for directed commands in MULTI mode */
     public function testDirectedCommandsInMulti() {
+        if ($this->is_dragonfly)
+            $this->markTestSkipped('Dragonfly does not allow FLUSHDB/FLUSHALL in MULTI');
+
         $key = __METHOD__;
 
         $result = $this->redis
@@ -586,6 +753,10 @@ class Redis_Cluster_Test extends Redis_Test {
         /* We should be in there */
         $this->assertIsString($addr);
 
+        // shortcut: resume self-kill coverage when Dragonfly replies before closing the connection.
+        if ($this->is_dragonfly)
+            return;
+
         /* Kill our own client! */
         $this->assertTrue($this->redis->client($key, 'kill', $addr));
 
@@ -598,7 +769,8 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertIsArray($time, 2);
         foreach ([0, 1] as $key) {
             $this->assertArrayKey($time, $key, function ($value) {
-                return is_string($value) && preg_match('/^[0-9]+$/D', $value);
+                return (is_string($value) || ($this->is_dragonfly && is_int($value))) &&
+                       preg_match('/^[0-9]+$/D', $value);
             });
         }
     }
@@ -688,6 +860,35 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    public function testScanPrefixEmptyPattern() {
+        $prefix = uniqid('scan-prefix:');
+        $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        $this->redis->hSet('hash', $prefix, 'value');
+        $this->redis->sAdd('set', $prefix);
+        $this->redis->zAdd('zset', 1, $prefix);
+        $this->redis->set('', 'value');
+
+        foreach (['hscan' => ['hash', [$prefix => 'value']],
+                  'sscan' => ['set', [$prefix]],
+                  'zscan' => ['zset', [$prefix => 1.0]],
+                  'scan' => ['', [$prefix]]] as $method => [$key, $expected]) {
+            foreach ([[], [null], ['']] as $pattern) {
+                $it = null;
+                $actual = $method === 'scan'
+                    ? $this->redis->scan($it, $key, ...$pattern)
+                    : $this->redis->$method($key, $it, ...$pattern);
+                $this->assertEquals($expected, $actual);
+            }
+        }
+
+        foreach (['hash', 'set', 'zset', ''] as $key) {
+            $this->redis->del($key);
+        }
+    }
+
     // Run some simple tests against the PUBSUB command.  This is problematic, as we
     // can't be sure what's going on in the instance, but we can do some things.
     public function testPubSub() {
@@ -732,6 +933,202 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertFalse($this->redis->msetnx([])); // set ø → FALSE
     }
 
+    public function testMultiKeyConversion() {
+        foreach (['', 'key-conversion:'] as $prefix) {
+            foreach (['del', 'unlink', 'mget'] as $method) {
+                foreach ($method === 'mget' ? [false] : [false, true] as $variadic) {
+                    foreach ([false, true] as $multi) {
+                        // MULTI requires keys on each node to share a slot.
+                        $this->redis->setOption(Redis::OPT_PREFIX, ($multi ? '{key-conversion}:' : '') . $prefix);
+                        $object = new class {
+                            public $tag = '{key-conversion}:object';
+                            public function __toString(): string { return $this->tag; }
+                        };
+                        $number = 123;
+                        $array = explode(',', 'a,b');
+                        $keys = ['{key-conversion}:first', $object, &$number, $array];
+                        $strings = ['{key-conversion}:first', $object->tag, '123', 'Array'];
+                        foreach ($strings as $key)
+                            $this->assertTrue($this->redis->set($key, 'value'));
+
+                        if ($multi) $this->redis->multi();
+                        // Nested arrays retain PHP's usual array-to-string warning.
+                        $result = $variadic ? @$this->redis->$method(...$keys)
+                                            : @$this->redis->$method($keys);
+                        if ($multi) {
+                            $this->assertEquals($this->redis, $result);
+                            $result = $this->redis->exec()[0];
+                        }
+                        $this->assertEquals($method === 'mget' ? array_fill(0, 4, 'value') : 4, $result);
+                        $this->assertEquals('{key-conversion}:object', $object->tag);
+                        $this->assertEquals($object, $keys[1]);
+                        $this->assertEquals(123, $number);
+                        $this->assertEquals(123, $keys[2]);
+                        $this->assertEquals(['a', 'b'], $keys[3]);
+                        $this->assertEquals(['a', 'b'], $array);
+                        $this->redis->del($strings);
+                    }
+                }
+            }
+        }
+    }
+
+    public function testMultiKeyConversionFailure() {
+        foreach (['del', 'unlink', 'mget'] as $method) {
+            foreach ($method === 'mget' ? [false] : [false, true] as $variadic) {
+                foreach ([0, 1, 2] as $position) {
+                    foreach ([null, 'exec', 'discard'] as $finish) {
+                        foreach ([[new stdClass, Error::class], [new class {
+                            public $tag;
+                            public function __toString(): string {
+                                throw new Exception('key conversion failed');
+                            }
+                        }, Exception::class], [['x'], ErrorException::class]] as [$value, $exception]) {
+                            $keys = ['{a}:conversion-1', '{b}:conversion-2', '{a}:conversion-3'];
+                            $keys[$position] = $value;
+                            $error = null;
+                            if ($finish !== null) $this->redis->multi();
+                            try {
+                                $variadic ? $this->redis->$method(...$keys) : $this->redis->$method($keys);
+                            } catch (Throwable $ex) {
+                                $error = $ex;
+                            }
+                            $this->assertEquals($exception, $error === null ? null : get_class($error));
+                            $this->assertEquals($value, $keys[$position]);
+                            if (is_object($value)) {
+                                $value->tag = 'still alive';
+                                $this->assertEquals('still alive', $value->tag);
+                            }
+                            if ($finish !== null)
+                                $this->assertEquals($finish === 'exec' ? [] : true, $this->redis->$finish());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public function testDistributedMultiFailure() {
+        if ( ! $this->minVersionCheck('6.0'))
+            $this->markTestSkipped();
+
+        $allowed = '{' . __METHOD__ . ':0}';
+        $node = $this->redis->rawCommand($allowed, 'CLUSTER', 'MYID');
+        for ($i = 1; $i < 1000; $i++) {
+            $denied = '{' . __METHOD__ . ":$i}";
+            if ($this->redis->rawCommand($denied, 'CLUSTER', 'MYID') !== $node)
+                break;
+        }
+        if ($i == 1000)
+            $this->markTestSkipped('Requires two cluster masters');
+
+        $user = uniqid('phpredis-multi-');
+        $prefix = $user . ':';
+        $class = $this->getRedisClusterClass();
+        try {
+            foreach ($this->redis->_masters() as $master) {
+                $this->assertTrue($this->redis->acl($master, 'SETUSER', $user,
+                    'on', '>' . $user, '+@all', '~' . $prefix . $allowed . '*'));
+            }
+
+            foreach (['del', 'unlink', 'mget', 'mset', 'msetnx'] as $method) {
+                $args = in_array($method, ['mset', 'msetnx'])
+                    ? [$allowed => 'value', $denied => 'value', $allowed . ':tail' => 'value']
+                    : [$allowed, $denied, $allowed . ':tail'];
+
+                foreach (['exec', 'discard', null] as $finish) {
+                    $redis = new $class(NULL, self::$seeds, 2, 2, false, [$user, $user]);
+                    $redis->setOption(Redis::OPT_PREFIX, $prefix);
+                    $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+                    $redis->multi();
+                    // The first node queues a batch before the second node rejects its key.
+                    $this->assertFalse($redis->$method($args));
+                    $this->assertStringContains('NOPERM', $redis->getLastError());
+                    if ($finish !== null)
+                        $this->assertEquals($finish === 'exec' ? [] : true, $redis->$finish());
+                    unset($redis);
+                }
+            }
+        } finally {
+            unset($redis);
+            foreach ($this->redis->_masters() as $master) {
+                $this->redis->acl($master, 'DELUSER', $user);
+            }
+            $this->redis->del($prefix . $allowed, $prefix . $denied, $prefix . $allowed . ':tail');
+        }
+    }
+
+    public function testWatchMultipleSlotsOnSameNode() {
+        $key = uniqid('watch-slots:', true);
+        $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
+        $node = $this->redis->cluster($key, 'MYID');
+        for ($i = 0; $i < 1000; $i++) {
+            $other_key = "$key:$i";
+            if ($this->redis->cluster($other_key, 'KEYSLOT', $other_key) !== $slot &&
+                $this->redis->cluster($other_key, 'MYID') === $node)
+                break;
+        }
+        $this->assertLT(1000, $i);
+
+        $client = $this->newInstance();
+        $client->setOption(Redis::OPT_READ_TIMEOUT, 1);
+        try {
+            $this->assertTrue($client->watch($other_key));
+            // PING routes by slot without adding a second keyed command to Redis's transaction.
+            $client->multi()->ping($key)->get($other_key);
+            $this->redis->set($other_key, 'changed');
+            $this->assertEquals([false, false], $client->exec());
+            $this->assertEquals(['changed'], $client->multi()->get($other_key)->exec());
+        } finally {
+            $client->close();
+            $this->redis->del($key, $other_key);
+        }
+    }
+
+    public function testDistributedMultiResults() {
+        foreach ([['{a}:1', '{a}:2'], ['{a}:1', '{b}:2', '{a}:3']] as $keys) {
+            $values = array_fill_keys($keys, 'value');
+            $calls = [
+                ['mset', $values, true],
+                ['mget', $keys, array_values($values)],
+                ['msetnx', $values, array_fill(0, count($keys), 0)],
+                ['del', $keys, count($keys)],
+                ['msetnx', $values, array_fill(0, count($keys), 1)],
+                ['unlink', $keys, count($keys)],
+            ];
+
+            foreach ([false, true] as $multi) {
+                $this->redis->del($keys);
+                if ($multi) $this->redis->multi();
+                foreach ($calls as [$method, $args, $expected]) {
+                    $result = $this->redis->$method($args);
+                    $this->assertEquals($multi ? $this->redis : $expected, $result);
+                }
+                if ($multi)
+                    $this->assertEquals(array_column($calls, 2), $this->redis->exec());
+            }
+
+            $this->redis->multi();
+            foreach ($calls as [$method, $args]) {
+                $this->redis->$method($args);
+            }
+            $this->assertTrue($this->redis->discard());
+            $this->assertEquals(array_fill(0, count($keys), false), $this->redis->mget($keys));
+
+            $this->redis->watch(...$keys);
+            $this->redis->multi();
+            foreach ($calls as [$method, $args]) {
+                $this->redis->$method($args);
+            }
+            $other = $this->newInstance();
+            $other->mset($values);
+            $result = $this->redis->exec();
+            $this->assertIsArray($result);
+            $this->assertEquals(array_fill(0, count($result), false), $result);
+            $this->redis->del($keys);
+        }
+    }
+
     /* Slowlog needs to take a key or [ip, port], to direct it to a node */
     public function testSlowlog() {
         $key = uniqid() . '-' . rand(1, 1000);
@@ -749,6 +1146,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $this->assertIsArray($info);
         foreach ($info as $k => $value) {
+            if ($this->is_dragonfly && strpos($k, 'unknown_') === 0)
+                continue;
+
             $this->assertStringContains('cmdstat_', $k);
         }
     }

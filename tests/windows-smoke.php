@@ -26,8 +26,8 @@ foreach (['redis', 'rediscluster'] as $handler) {
 }
 
 // The first Windows package has no optional serializer/compression dependencies.
-foreach (['SERIALIZER_IGBINARY', 'SERIALIZER_MSGPACK', 'COMPRESSION_LZF',
-          'COMPRESSION_LZ4', 'COMPRESSION_ZSTD'] as $constant) {
+foreach (['SERIALIZER_IGBINARY', 'SERIALIZER_MSGPACK', 'SERIALIZER_PHPSER',
+          'COMPRESSION_LZF', 'COMPRESSION_LZ4', 'COMPRESSION_ZSTD'] as $constant) {
     if (defined("Redis::$constant")) {
         throw new RuntimeException("Unexpected optional feature $constant");
     }

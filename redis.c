@@ -29,6 +29,7 @@
 #include "redis_sentinel.h"
 #include <ext/spl/spl_exceptions.h>
 #include <zend_exceptions.h>
+#include <zend_interfaces.h>
 #include <ext/standard/info.h>
 #include <ext/hash/php_hash.h>
 
@@ -37,6 +38,11 @@
 #endif
 
 #include "library.h"
+
+#ifdef HAVE_REDIS_PHPSER
+#include <ext/standard/php_versioning.h>
+#include "phpser/php_phpser_api.h"
+#endif
 
 #ifdef HAVE_REDIS_ZSTD
 #include <zstd.h>
@@ -116,6 +122,9 @@ static const zend_module_dep redis_deps[] = {
 #endif
 #ifdef HAVE_REDIS_MSGPACK
      ZEND_MOD_REQUIRED("msgpack")
+#endif
+#ifdef HAVE_REDIS_PHPSER
+     ZEND_MOD_REQUIRED("phpser")
 #endif
 #ifdef HAVE_REDIS_JSON
      ZEND_MOD_REQUIRED("json")
@@ -339,12 +348,320 @@ static void redis_init_object_handlers(void) {
     redis_object_handlers.clone_obj = NULL;
 }
 
+#ifdef HAVE_REDIS_PHPSER
+/* phpser_api_version() does not exist before phpser 0.9.0, so check the
+ * module version before calling into the API. */
+static int
+redis_check_phpser(void)
+{
+    const char *version = zend_get_module_version("phpser");
+
+    if (version == NULL || php_version_compare(version, "0.9.0") < 0) {
+        php_error_docref(NULL, E_CORE_WARNING,
+            "Redis::SERIALIZER_PHPSER requires phpser 0.9.0 or later, found %s",
+            version ? version : "none");
+        return FAILURE;
+    }
+
+    if (phpser_api_version() != PHPSER_API_VERSION) {
+        php_error_docref(NULL, E_CORE_WARNING,
+            "Redis::SERIALIZER_PHPSER requires phpser API version %d, found %u",
+            PHPSER_API_VERSION, phpser_api_version());
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+#endif
+
+/* Lazy BLESS SCAN iterator. It fetches one page at a time through the client's
+ * rawCommand(), so subclass overrides are honored and RedisCluster's directed
+ * command routing is reused. */
+typedef struct redisBlessScan {
+    zval client;        /* Redis or RedisCluster object */
+    zval *argv;         /* Owned rawCommand() arguments */
+    uint32_t argc;
+    uint32_t cursor;    /* Index of the scan cursor in `argv` */
+    zval page;          /* Keys from the last reply */
+    HashPosition pos;
+    zend_long index;    /* Keys consumed so far */
+    zend_bool more;     /* The server has more pages */
+    zend_bool cluster;
+    zend_object std;    /* Must be last */
+} redisBlessScan;
+
+static zend_class_entry *redis_bless_scan_ce;
+static zend_object_handlers redis_bless_scan_handlers;
+
+static void redis_bless_scan_throw(const redisBlessScan *scan, const char *msg) {
+    zend_throw_exception(scan->cluster ? redis_cluster_exception_ce : redis_exception_ce,
+                         msg, 0);
+}
+
+static zend_bool redis_bless_scan_is_atomic(redisBlessScan *scan) {
+    RedisSock *redis_sock;
+
+    if (scan->cluster)
+        return cluster_is_atomic(PHPREDIS_ZVAL_GET_OBJECT(redisCluster, &scan->client));
+
+    redis_sock = redis_sock_get_instance(&scan->client, 1);
+    return redis_sock == NULL || redis_sock_is_atomic(redis_sock);
+}
+
+/* Go through the method table so that subclass overrides are honored. */
+static void redis_bless_scan_call(redisBlessScan *scan, const char *method,
+                                  zval *retval, uint32_t argc, zval *argv)
+{
+    zval name;
+
+    ZVAL_STRING(&name, method);
+    ZVAL_UNDEF(retval);
+    call_user_function(NULL, &scan->client, &name, retval, argc, argv);
+    zval_ptr_dtor(&name);
+}
+
+static void redis_bless_scan_throw_last_error(redisBlessScan *scan) {
+    zval error;
+
+    redis_bless_scan_call(scan, "getLastError", &error, 0, NULL);
+    if (!EG(exception)) {
+        redis_bless_scan_throw(scan, Z_TYPE(error) == IS_STRING && Z_STRLEN(error)
+                                     ? Z_STRVAL(error) : "BLESS SCAN failed");
+    }
+    zval_ptr_dtor(&error);
+}
+
+static zend_bool redis_bless_scan_parse_reply(zval *reply, zval **cursor, zval **keys) {
+    zval *key;
+
+    if (Z_TYPE_P(reply) != IS_ARRAY || zend_hash_num_elements(Z_ARRVAL_P(reply)) != 2)
+        return 0;
+
+    *cursor = zend_hash_index_find(Z_ARRVAL_P(reply), 0);
+    *keys = zend_hash_index_find(Z_ARRVAL_P(reply), 1);
+    if (*cursor == NULL || Z_TYPE_P(*cursor) != IS_STRING ||
+        *keys == NULL || Z_TYPE_P(*keys) != IS_ARRAY)
+    {
+        return 0;
+    }
+
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(*keys), key) {
+        if (Z_TYPE_P(key) != IS_STRING)
+            return 0;
+    } ZEND_HASH_FOREACH_END();
+
+    return 1;
+}
+
+/* Replace the current page with the next one. Any failure throws and ends the
+ * scan, leaving no current key. */
+static zend_bool redis_bless_scan_fetch(redisBlessScan *scan) {
+    zval reply, *cursor, *keys;
+    zend_bool success = 0;
+
+    scan->more = 0;
+    zval_ptr_dtor(&scan->page);
+    ZVAL_UNDEF(&scan->page);
+
+    if (!redis_bless_scan_is_atomic(scan)) {
+        redis_bless_scan_throw(scan, "BLESS SCAN requires atomic mode");
+        return 0;
+    }
+
+    redis_bless_scan_call(scan, "rawCommand", &reply, scan->argc, scan->argv);
+
+    if (EG(exception)) {
+        /* rawCommand() has already reported the problem. */
+    } else if (Z_TYPE(reply) == IS_FALSE) {
+        redis_bless_scan_throw_last_error(scan);
+    } else if (!redis_bless_scan_parse_reply(&reply, &cursor, &keys)) {
+        redis_bless_scan_throw(scan, "Malformed BLESS SCAN reply");
+    } else {
+        zval_ptr_dtor(&scan->argv[scan->cursor]);
+        ZVAL_COPY(&scan->argv[scan->cursor], cursor);
+        /* rawCommand() may have re-entered us, so don't assume `page` is empty */
+        zval_ptr_dtor(&scan->page);
+        ZVAL_COPY(&scan->page, keys);
+        zend_hash_internal_pointer_reset_ex(Z_ARRVAL(scan->page), &scan->pos);
+        scan->more = !zend_string_equals_literal(Z_STR_P(cursor), "0");
+        success = 1;
+    }
+
+    zval_ptr_dtor(&reply);
+    return success;
+}
+
+/* The current key, fetching past any empty pages, or NULL once finished. */
+static zval *redis_bless_scan_current(redisBlessScan *scan) {
+    zval *key;
+
+    for (;;) {
+        if (Z_TYPE(scan->page) == IS_ARRAY &&
+            (key = zend_hash_get_current_data_ex(Z_ARRVAL(scan->page), &scan->pos)))
+        {
+            return key;
+        }
+        if (!scan->more || !redis_bless_scan_fetch(scan))
+            return NULL;
+    }
+}
+
+static redisBlessScan *redis_bless_scan_this(zval *zv) {
+    return PHPREDIS_ZVAL_GET_OBJECT(redisBlessScan, zv);
+}
+
+static zend_object *redis_bless_scan_create(zend_class_entry *ce) {
+    redisBlessScan *scan = zend_object_alloc(sizeof(*scan), ce);
+
+    zend_object_std_init(&scan->std, ce);
+    object_properties_init(&scan->std, ce);
+    scan->std.handlers = &redis_bless_scan_handlers;
+
+    return &scan->std;
+}
+
+static void redis_bless_scan_free(zend_object *object) {
+    redisBlessScan *scan = PHPREDIS_GET_OBJECT(redisBlessScan, object);
+
+    zval_ptr_dtor(&scan->client);
+    zval_ptr_dtor(&scan->page);
+    for (uint32_t i = 0; i < scan->argc; i++)
+        zval_ptr_dtor(&scan->argv[i]);
+    if (scan->argv)
+        efree(scan->argv);
+    zend_object_std_dtor(object);
+}
+
+static zend_function *redis_bless_scan_get_constructor(zend_object *object) {
+    zend_throw_error(NULL, "The \"%s\" class is reserved for internal use and "
+                     "cannot be manually instantiated", ZSTR_VAL(object->ce->name));
+    return NULL;
+}
+
+/* Only the client can lead back to this object; the rest is strings. */
+#if PHP_VERSION_ID < 80000
+static HashTable *redis_bless_scan_get_gc(zval *zv, zval **table, int *n) {
+    zend_object *object = Z_OBJ_P(zv);
+#else
+static HashTable *redis_bless_scan_get_gc(zend_object *object, zval **table, int *n) {
+#endif
+    *table = &(PHPREDIS_GET_OBJECT(redisBlessScan, object))->client;
+    *n = 1;
+
+    return object->properties;
+}
+
+static void redis_bless_scan_register(void) {
+    redis_bless_scan_ce = register_class_RedisBlessScanIterator(zend_ce_iterator);
+    redis_class_deny_serialization(redis_bless_scan_ce);
+    redis_bless_scan_ce->create_object = redis_bless_scan_create;
+
+    memcpy(&redis_bless_scan_handlers, zend_get_std_object_handlers(),
+           sizeof(redis_bless_scan_handlers));
+    redis_bless_scan_handlers.offset = offsetof(redisBlessScan, std);
+    redis_bless_scan_handlers.free_obj = redis_bless_scan_free;
+    redis_bless_scan_handlers.clone_obj = NULL;
+    redis_bless_scan_handlers.get_constructor = redis_bless_scan_get_constructor;
+    redis_bless_scan_handlers.get_gc = redis_bless_scan_get_gc;
+}
+
+/* Builds the rawCommand() arguments: [node,] BLESS <op> 0 <directive> [COUNT n].
+ * Cursors are per node, so RedisCluster passes the endpoint to pin in `node`,
+ * which we take ownership of. */
+void redis_bless_scan_init(zval *dst, zval *client, zend_bool cluster,
+                           const redisBlessArgs *args, zval *node)
+{
+    redisBlessScan *scan;
+    uint32_t i = 0;
+
+    object_init_ex(dst, redis_bless_scan_ce);
+    scan = redis_bless_scan_this(dst);
+
+    ZVAL_COPY(&scan->client, client);
+    scan->cluster = cluster;
+    scan->more = 1;
+    scan->argc = (node != NULL) + 4 + (args->count ? 2 : 0);
+    scan->argv = safe_emalloc(scan->argc, sizeof(*scan->argv), 0);
+
+    if (node)
+        ZVAL_COPY_VALUE(&scan->argv[i++], node);
+    ZVAL_STRINGL(&scan->argv[i++], "BLESS", sizeof("BLESS") - 1);
+    ZVAL_STR_COPY(&scan->argv[i++], args->op);
+    scan->cursor = i;
+    ZVAL_STRINGL(&scan->argv[i++], "0", 1);
+    ZVAL_STR_COPY(&scan->argv[i++], args->directive);
+    if (args->count) {
+        ZVAL_STRINGL(&scan->argv[i++], "COUNT", sizeof("COUNT") - 1);
+        ZVAL_STR(&scan->argv[i++], zend_long_to_str(args->count));
+    }
+    ZEND_ASSERT(i == scan->argc);
+}
+
+PHP_METHOD(RedisBlessScanIterator, current) {
+    zval *key;
+
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    if ((key = redis_bless_scan_current(redis_bless_scan_this(getThis()))))
+        RETURN_ZVAL(key, 1, 0);
+}
+
+PHP_METHOD(RedisBlessScanIterator, key) {
+    redisBlessScan *scan = redis_bless_scan_this(getThis());
+
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    if (redis_bless_scan_current(scan))
+        RETURN_LONG(scan->index);
+}
+
+PHP_METHOD(RedisBlessScanIterator, next) {
+    redisBlessScan *scan = redis_bless_scan_this(getThis());
+
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    if (redis_bless_scan_current(scan) == NULL)
+        return;
+
+    zend_hash_move_forward_ex(Z_ARRVAL(scan->page), &scan->pos);
+    scan->index++;
+}
+
+/* Restart from cursor zero, unless no key has been consumed yet. */
+PHP_METHOD(RedisBlessScanIterator, rewind) {
+    redisBlessScan *scan = redis_bless_scan_this(getThis());
+
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    if (scan->index == 0)
+        return;
+
+    zval_ptr_dtor(&scan->argv[scan->cursor]);
+    ZVAL_STRINGL(&scan->argv[scan->cursor], "0", 1);
+    zval_ptr_dtor(&scan->page);
+    ZVAL_UNDEF(&scan->page);
+    scan->index = 0;
+    scan->more = 1;
+}
+
+PHP_METHOD(RedisBlessScanIterator, valid) {
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    RETURN_BOOL(redis_bless_scan_current(redis_bless_scan_this(getThis())) != NULL);
+}
+
 /**
  * PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(redis)
 {
     struct timeval tv;
+
+#ifdef HAVE_REDIS_PHPSER
+    if (redis_check_phpser() == FAILURE) {
+        return FAILURE;
+    }
+#endif
 
     /* Seed random generator (for RedisCluster failover) */
     gettimeofday(&tv, NULL);
@@ -381,6 +698,9 @@ PHP_MINIT_FUNCTION(redis)
     /* RedisException class */
     redis_exception_ce = register_class_RedisException(spl_ce_RuntimeException);
 
+    /* RedisBlessScanIterator class */
+    redis_bless_scan_register();
+
 #ifdef PHP_SESSION
     php_session_register_module(&ps_mod_redis);
     php_session_register_module(&ps_mod_redis_cluster);
@@ -396,35 +716,20 @@ PHP_MINIT_FUNCTION(redis)
 static const char *
 get_available_serializers(void)
 {
+    return "php"
 #ifdef HAVE_REDIS_JSON
-    #ifdef HAVE_REDIS_IGBINARY
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, json, igbinary, msgpack";
-        #else
-            return "php, json, igbinary";
-        #endif
-    #else
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, json, msgpack";
-        #else
-            return "php, json";
-        #endif
-    #endif
-#else
-    #ifdef HAVE_REDIS_IGBINARY
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, igbinary, msgpack";
-        #else
-            return "php, igbinary";
-        #endif
-    #else
-        #ifdef HAVE_REDIS_MSGPACK
-            return "php, msgpack";
-        #else
-            return "php";
-        #endif
-    #endif
+        ", json"
 #endif
+#ifdef HAVE_REDIS_IGBINARY
+        ", igbinary"
+#endif
+#ifdef HAVE_REDIS_MSGPACK
+        ", msgpack"
+#endif
+#ifdef HAVE_REDIS_PHPSER
+        ", phpser"
+#endif
+        ;
 }
 
 /**
@@ -774,6 +1079,28 @@ PHP_METHOD(Redis, close)
         RETURN_TRUE;
     }
     RETURN_FALSE;
+}
+
+PHP_METHOD(Redis, reconnect)
+{
+    RedisSock *redis_sock;
+
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    redis_sock = redis_sock_get_instance(getThis(), 1);
+    if (redis_sock == NULL || redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
+        REDIS_THROW_EXCEPTION("Not connected", 0);
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_reconnect(redis_sock) != SUCCESS) {
+        if (!EG(exception)) {
+            REDIS_THROW_EXCEPTION(redis_sock->err ? ZSTR_VAL(redis_sock->err) :
+                                  "Failed to reconnect", 0);
+        }
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
 }
 
 PHP_METHOD(Redis, reset)
@@ -1341,8 +1668,8 @@ PHP_METHOD(Redis, getLastError) {
     RedisSock *redis_sock;
 
     // Grab socket
-    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
-        RETURN_FALSE;
+    if ((redis_sock = redis_sock_get_instance(getThis(), 1)) == NULL) {
+        RETURN_NULL();
     }
 
     /* Return our last error or NULL if we don't have one */
@@ -1356,8 +1683,8 @@ PHP_METHOD(Redis, clearLastError) {
     RedisSock *redis_sock;
 
     // Grab socket
-    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
-        RETURN_FALSE;
+    if ((redis_sock = redis_sock_get_instance(getThis(), 1)) == NULL) {
+        RETURN_TRUE;
     }
 
     redis_sock_clear_err(redis_sock);
@@ -1616,7 +1943,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
 
     /* Get our SCAN cursor short circuiting if we're done */
     cursor = redisGetScanCursor(z_cursor, &completed);
-    if (completed)
+    if (EG(exception) || completed)
         RETURN_FALSE;
 
     if(key)
@@ -1648,7 +1975,8 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
 
         if (redis_process_request(redis_sock, cmd) != SUCCESS ||
             redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                      redis_sock, type, &cursor) < 0)
+                                      redis_sock, type, &cursor) < 0 ||
+            Z_TYPE_P(return_value) != IS_ARRAY)
         {
             if (key)
                 zend_string_release(key);
@@ -1707,6 +2035,33 @@ REDIS_METHOD(auth, redis_auth_cmd, redis_boolean_response);
 REDIS_METHOD(bitcount, redis_bitcount_cmd, redis_long_response);
 REDIS_METHOD(bitop, redis_bitop_cmd, redis_long_response);
 REDIS_METHOD(bitpos, redis_bitpos_cmd, redis_long_response);
+REDIS_METHOD(bitrangeintarray, redis_bitrangeintarray_cmd, redis_read_variant_reply);
+
+PHP_METHOD(Redis, bless) {
+    RedisSock *redis_sock;
+    redisBlessArgs args;
+    zend_string *op;
+
+    if ((op = redis_bless_op(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL)
+        RETURN_FALSE;
+
+    if (!zend_string_equals_literal_ci(op, "SCAN")) {
+        redis_process_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_bless_cmd,
+                          redis_read_raw_variant_reply);
+        return;
+    }
+
+    if (redis_bless_parse(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0, &args) != SUCCESS)
+        RETURN_FALSE;
+
+    redis_sock = redis_sock_get_instance(getThis(), 1);
+    if (redis_sock && !redis_sock_is_atomic(redis_sock)) {
+        REDIS_THROW_EXCEPTION("BLESS SCAN requires atomic mode", 0);
+        RETURN_FALSE;
+    }
+
+    redis_bless_scan_init(return_value, getThis(), 0, &args, NULL);
+}
 REDIS_METHOD(brpoplpush, redis_brpoplpush_cmd, redis_string_response);
 REDIS_METHOD(client, redis_client_cmd, redis_client_response);
 REDIS_METHOD(command, redis_command_cmd, redis_command_response);
@@ -1738,6 +2093,7 @@ REDIS_METHOD(himport, redis_himport_cmd, redis_himport_response);
 REDIS_METHOD(hgetex, redis_hgetex_cmd, redis_mbulk_reply_assoc);
 REDIS_METHOD(hsetex, redis_hsetex_cmd, redis_long_response);
 REDIS_METHOD(incr, redis_incr_cmd, redis_long_response);
+REDIS_METHOD(incrEx, redis_increx_cmd, redis_increx_response);
 REDIS_METHOD(info, redis_info_cmd, redis_info_response);
 REDIS_METHOD(lInsert, redis_linsert_cmd, redis_long_response);
 REDIS_METHOD(lPos, redis_lpos_cmd, redis_lpos_response);
@@ -1773,6 +2129,7 @@ REDIS_METHOD(vsetattr, redis_vsetattr_cmd, redis_long_response);
 REDIS_METHOD(vsim, redis_vsim_cmd, redis_zrange_response);
 REDIS_METHOD(waitaof, redis_waitaof_cmd, redis_read_variant_reply);
 REDIS_METHOD(xack, redis_xack_cmd, redis_long_response);
+REDIS_METHOD(xackdel, redis_xackdel_cmd, redis_read_variant_reply);
 REDIS_METHOD(xadd, redis_xadd_cmd, redis_read_variant_reply);
 REDIS_METHOD(xautoclaim, redis_xautoclaim_cmd, redis_xclaim_reply);
 REDIS_METHOD(xclaim, redis_xclaim_cmd, redis_xclaim_reply);

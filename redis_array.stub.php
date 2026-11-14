@@ -15,6 +15,7 @@
  * @method RedisArray|int|false bitcount(string $key, int $start = 0, int $end = -1, bool $bybit = false)
  * @method RedisArray|int|false bitop(string $operation, string $deskey, string $srckey, string ...$other_keys)
  * @method RedisArray|int|false bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false)
+ * @method RedisArray|array|false bitrangeintarray(string $key, int $start, int $end, ?array $options = null)
  * @method RedisArray|array|null|false blPop(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args)
  * @method RedisArray|array|null|false brPop(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args)
  * @method RedisArray|string|false brpoplpush(string $src, string $dst, int|float $timeout)
@@ -203,11 +204,12 @@
  * @method RedisArray|bool watch(array|string $key, string ...$other_keys)
  * @method int|false wait(int $numreplicas, int $timeout)
  * @method int|false xack(string $key, string $group, array $ids)
+ * @method RedisArray|array|false xackdel(string $key, string $group, array $ids, ?string $mode = null)
  * @method RedisArray|string|false xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false)
  * @method RedisArray|bool|array xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false)
  * @method RedisArray|array|bool xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options)
  * @method RedisArray|int|false xdel(string $key, array $ids)
- * @method Relay|array|false xdelex(string $key, array $ids, ?string $mode = null)
+ * @method RedisArray|array|false xdelex(string $key, array $ids, ?string $mode = null)
  * @method mixed xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1)
  * @method RedisArray|int|false xlen(string $key)
  * @method RedisArray|array|false xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null)
@@ -266,7 +268,7 @@ class RedisArray {
 
     public function __call(string $function_name, array $arguments): mixed;
 
-    public function __construct(string|array $name_or_hosts, ?array $options = null);
+    public function __construct(string|array $name_or_hosts, #[\SensitiveParameter] ?array $options = null);
 
     public function _continuum(): bool|array;
 

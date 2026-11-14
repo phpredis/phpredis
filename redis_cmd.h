@@ -78,6 +78,11 @@ redis_cmd_set_ctx_mode(RedisCmd *cmd, RedisCtxMode mode) {
     cmd->ctx.dtor = NULL;
 }
 
+static zend_always_inline void
+redis_cmd_set_ctx_u64(RedisCmd *cmd, uint64_t u64) {
+    redis_cmd_set_ctx(cmd, (void*)(uintptr_t)u64);
+}
+
 void redis_cmd_randslot(RedisCmd *cmd);
 
 static inline void redis_cmd_ctx_efree(void *ptr) {

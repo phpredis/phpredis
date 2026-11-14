@@ -20,6 +20,9 @@ PHP_ARG_ENABLE(redis-json, whether to enable json serializer support,
 PHP_ARG_ENABLE(redis-igbinary, whether to enable igbinary serializer support,
 [  --enable-redis-igbinary Enable igbinary serializer support], no, no)
 
+PHP_ARG_ENABLE(redis-phpser, whether to enable phpser serializer support,
+[  --enable-redis-phpser        Enable phpser serializer support], no, no)
+
 PHP_ARG_ENABLE(redis-msgpack, whether to enable msgpack serializer support,
 [  --enable-redis-msgpack       Enable msgpack serializer support], no, no)
 
@@ -147,6 +150,45 @@ if test "$PHP_REDIS" != "no"; then
     PHP_ADD_INCLUDE($IGBINARY_EXT_DIR)
   else
     IGBINARY_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
+  if test "$PHP_REDIS_PHPSER" != "no"; then
+    AC_MSG_CHECKING([for phpser includes])
+    phpser_inc_path=""
+
+    if test -f "$abs_srcdir/include/php/ext/phpser/php_phpser_api.h"; then
+      phpser_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/phpser/php_phpser_api.h"; then
+      phpser_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/phpser/php_phpser_api.h"; then
+      phpser_inc_path="$phpincludedir"
+    else
+      for i in php php7; do
+        if test -f "$prefix/include/$i/ext/phpser/php_phpser_api.h"; then
+          phpser_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+
+    if test "$phpser_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find php_phpser_api.h])
+    else
+      AC_MSG_RESULT([$phpser_inc_path])
+    fi
+  fi
+
+  AC_MSG_CHECKING([for redis phpser support])
+  if test "$PHP_REDIS_PHPSER" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_REDIS_PHPSER,1,[Whether redis phpser serializer is enabled])
+    PHPSER_EXT_DIR="$phpser_inc_path/ext"
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(redis, phpser)
+    ])
+    PHP_ADD_INCLUDE($PHPSER_EXT_DIR)
+  else
     AC_MSG_RESULT([disabled])
   fi
 

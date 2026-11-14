@@ -10,6 +10,12 @@
 #define CLUSTER_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_cluster_exception_ce, (msg), code)
 
+typedef enum {
+    REDIS_GEOSEARCH_WITHCOORD = 1 << 0,
+    REDIS_GEOSEARCH_WITHDIST  = 1 << 1,
+    REDIS_GEOSEARCH_WITHHASH  = 1 << 2,
+} RedisGeoSearchOptions;
+
 #if PHP_VERSION_ID < 80000
     /* use RedisException when ValueError not available */
     #define REDIS_VALUE_EXCEPTION(m) REDIS_THROW_EXCEPTION(m, 0)
@@ -24,7 +30,7 @@ void redis_free_reply_callbacks(RedisSock *redis_sock);
 PHP_REDIS_API int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass);
 PHP_REDIS_API void redis_with_metadata(zval *zdst, zval *zsrc, zend_long length);
 
-PHP_REDIS_API zend_string *redis_pool_spprintf(RedisSock *redis_sock, const char *fmt, ...);
+PHP_REDIS_API zend_string *redis_pool_spprintf(const RedisSock *redis_sock, const char *fmt, ...);
 
 PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len);
 PHP_REDIS_API int redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t* line_len);
@@ -48,9 +54,10 @@ PHP_REDIS_API RedisSock* redis_sock_create(RedisSockType type, const char *host,
     const char *persistent_id, long retry_interval);
 PHP_REDIS_API int redis_sock_configure(RedisSock *redis_sock, HashTable *opts);
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock);
+PHP_REDIS_API int redis_sock_reconnect(RedisSock *redis_sock);
 PHP_REDIS_API int redis_sock_server_open(RedisSock *redis_sock);
 PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock);
-PHP_REDIS_API zend_string *redis_sock_auth_cmd(RedisSock *redis_sock);
+PHP_REDIS_API zend_string *redis_sock_auth_cmd(const RedisSock *redis_sock);
 PHP_REDIS_API void redis_sock_set_auth(RedisSock *redis_sock, zend_string *user, zend_string *pass);
 PHP_REDIS_API void redis_sock_set_auth_zval(RedisSock *redis_sock, zval *zv);
 PHP_REDIS_API void redis_sock_free_auth(RedisSock *redis_sock);
@@ -67,6 +74,7 @@ PHP_REDIS_API int redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAMETERS, Re
 PHP_REDIS_API int redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
+PHP_REDIS_API int redis_increx_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 
 void redisSetScanCursor(zval *zv, uint64_t cursor);
@@ -130,30 +138,32 @@ redis_sock_write_cmd(RedisSock *redis_sock, RedisCmd *cmd) {
 
 void redis_sock_set_context(RedisSock *redis_sock, HashTable *ht);
 void redis_sock_free_context(RedisSock *redis_sock);
-int redis_sock_set_context_zval(RedisSock *redis_sock, zval *zv);
+int redis_sock_set_context_zval(RedisSock *redis_sock, const zval *zv);
 
-PHP_REDIS_API int redis_sock_set_backoff(RedisSock *redis_sock, zval *options);
+PHP_REDIS_API int redis_sock_set_backoff(RedisSock *redis_sock, const zval *options);
 
 PHP_REDIS_API int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
+redis_serialize(const RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
 /* No prefix: leave the borrowed key unchanged and return 0.
  * Any prefix (including empty): replace it with an owned buffer and return 1. */
 PHP_REDIS_API int
-redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
+redis_key_prefix(const RedisSock *redis_sock, char **key, size_t *key_len);
 /* Return an owned reference; a NULL prefix retains key without concatenating. */
 PHP_REDIS_API zend_string *
-redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key);
+redis_key_prefix_zstr(const RedisSock *redis_sock, zend_string *key);
+
+/* Return 1 on success and 0 on failure. Return -1 on a failure where the input
+ * must not be handed back as a raw string, leaving z_ret undefined. */
+PHP_REDIS_API int
+redis_unserialize(const RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);
 
 PHP_REDIS_API int
-redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);
-
+redis_compress(const RedisSock *redis_sock, char **dst, size_t *dstlen, char *buf, size_t len);
 PHP_REDIS_API int
-redis_compress(RedisSock *redis_sock, char **dst, size_t *dstlen, char *buf, size_t len);
-PHP_REDIS_API int
-redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *src, size_t len);
+redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const char *src, size_t len);
 
-PHP_REDIS_API int redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
-PHP_REDIS_API int redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);
+PHP_REDIS_API int redis_pack(const RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
+PHP_REDIS_API int redis_unpack(const RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);
 
 PHP_REDIS_API int
 redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret);
@@ -184,6 +194,7 @@ PHP_REDIS_API int redis_acl_log_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 PHP_REDIS_API int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, long *reply_info);
 PHP_REDIS_API int redis_read_variant_bulk(RedisSock *redis_sock, long size, zval *z_ret);
 PHP_REDIS_API int redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int status_strings, zval *z_ret);
+PHP_REDIS_API void redis_reply_depth_exceeded(RedisSock *redis_sock);
 PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_read_raw_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
@@ -196,7 +207,8 @@ PHP_REDIS_API int redis_zadd_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 PHP_REDIS_API int redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_set_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
-PHP_REDIS_API int redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock, long long elements, int with_aux_data);
+PHP_REDIS_API int redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
+    long long elements, uintptr_t options);
 PHP_REDIS_API int redis_geosearch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_hrandfield_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_pop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
@@ -244,20 +256,38 @@ PHP_REDIS_API int redis_hello_version_response(INTERNAL_FUNCTION_PARAMETERS, Red
 #define REDIS_CONF_AUTH_STATIC(ht, sstr, user, pass) \
     redis_conf_auth(ht, sstr, sizeof(sstr) - 1, user, pass)
 
-zval *redis_hash_str_find_type(HashTable *ht, const char *key, int keylen, int type);
-void redis_conf_double(HashTable *ht, const char *key, int keylen, double *dval);
-void redis_conf_bool(HashTable *ht, const char *key, int keylen, int *bval);
-void redis_conf_zend_bool(HashTable *ht, const char *key, int keylen, zend_bool *bval);
-void redis_conf_long(HashTable *ht, const char *key, int keylen, zend_long *lval);
-void redis_conf_int(HashTable *ht, const char *key, int keylen, int *ival);
-void redis_conf_string(HashTable *ht, const char *key, size_t keylen, zend_string **sval);
+zval *redis_hash_str_find_type(const HashTable *ht, const char *key, int keylen, int type);
+void redis_conf_double(const HashTable *ht, const char *key, int keylen, double *dval);
+void redis_conf_bool(const HashTable *ht, const char *key, int keylen, int *bval);
+void redis_conf_zend_bool(const HashTable *ht, const char *key, int keylen, zend_bool *bval);
+void redis_conf_long(const HashTable *ht, const char *key, int keylen, zend_long *lval);
+void redis_conf_int(const HashTable *ht, const char *key, int keylen, int *ival);
+void redis_conf_string(const HashTable *ht, const char *key, size_t keylen, zend_string **sval);
 void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret, int copy, int dtor);
-void redis_conf_auth(HashTable *ht, const char *key, size_t keylen, zend_string **user, zend_string **pass);
+void redis_conf_auth(const HashTable *ht, const char *key, size_t keylen, zend_string **user, zend_string **pass);
+
+/* A NULL read can just be a nil element. Tell that apart from a read that
+ * failed, after which there's no point reading any more of the reply. */
+static inline zend_bool redis_sock_read_failed(const RedisSock *redis_sock) {
+    return EG(exception) || redis_sock->stream == NULL ||
+           redis_sock->status == REDIS_SOCK_STATUS_FAILED;
+}
+
+/* Replies nest by recursing, so a bogus reply could overflow the C stack. Real
+ * replies are nowhere near this deep. This matches Relay and hiredis. */
+#define REDIS_REPLY_MAX_DEPTH 1024
+
+/* Server supplied element counts are only a sizing hint. Cap the preallocation
+ * so a bogus count can't trigger a huge (fatal) allocation before any elements
+ * have actually arrived. The array still grows as needed. */
+#define REDIS_REPLY_PRESIZE_MAX 1024
+
+static inline void redis_array_init_reply(zval *z, long long count) {
+    array_init_size(z, count > 0 ? MIN(count, REDIS_REPLY_PRESIZE_MAX) : 0);
+}
 
 static inline char *redis_sock_get_line(RedisSock *redis_sock, char *buf, size_t buf_size, size_t *nread) {
-    char *res;
-
-    res = php_stream_get_line(redis_sock->stream, buf, buf_size, nread);
+    char *const res = php_stream_get_line(redis_sock->stream, buf, buf_size, nread);
     if (res != NULL)
         redis_sock->rxBytes += *nread;
 
@@ -265,9 +295,7 @@ static inline char *redis_sock_get_line(RedisSock *redis_sock, char *buf, size_t
 }
 
 static inline int redis_sock_getc(RedisSock *redis_sock) {
-    int res;
-
-    res = php_stream_getc(redis_sock->stream);
+    const int res = php_stream_getc(redis_sock->stream);
     if (res != EOF)
         redis_sock->rxBytes++;
 
@@ -275,9 +303,7 @@ static inline int redis_sock_getc(RedisSock *redis_sock) {
 }
 
 static inline ssize_t redis_sock_read_raw(RedisSock *redis_sock, char *buf, size_t buf_size) {
-    ssize_t nread;
-
-    nread = php_stream_read(redis_sock->stream, buf, buf_size);
+    const ssize_t nread = php_stream_read(redis_sock->stream, buf, buf_size);
     if (nread > 0)
         redis_sock->rxBytes += nread;
 
@@ -285,9 +311,7 @@ static inline ssize_t redis_sock_read_raw(RedisSock *redis_sock, char *buf, size
 }
 
 static inline ssize_t redis_sock_write_raw(RedisSock *redis_sock, const char *buf, size_t buf_size) {
-    ssize_t nwritten;
-
-    nwritten = php_stream_write(redis_sock->stream, buf, buf_size);
+    const ssize_t nwritten = php_stream_write(redis_sock->stream, buf, buf_size);
     if (nwritten > 0)
         redis_sock->txBytes += nwritten;
 

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 702da70525cb89e3444713287350a4985fe88567 */
+ * Stub hash: b42abfdb0ce51c843caf3f5cb56bc57c4f445200 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -74,6 +74,20 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitpos, 0, 0, 2)
 	ZEND_ARG_INFO(0, bybit)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitrangeintarray, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, start)
+	ZEND_ARG_INFO(0, end)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bless, 0, 0, 1)
+	ZEND_ARG_INFO(0, command)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, directive)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_blPop, 0, 0, 2)
 	ZEND_ARG_INFO(0, key_or_keys)
 	ZEND_ARG_INFO(0, timeout_or_key)
@@ -121,6 +135,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_client, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_close arginfo_class_Redis___destruct
+
+#define arginfo_class_Redis_reconnect arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_command, 0, 0, 0)
 	ZEND_ARG_INFO(0, opt)
@@ -495,6 +511,12 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Redis_incrBy arginfo_class_Redis_append
 
 #define arginfo_class_Redis_incrByFloat arginfo_class_Redis_append
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_incrEx, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_info, 0, 0, 0)
 	ZEND_ARG_VARIADIC_INFO(0, sections)
@@ -897,6 +919,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xack, 0, 0, 3)
 	ZEND_ARG_INFO(0, ids)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xackdel, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, group)
+	ZEND_ARG_INFO(0, ids)
+	ZEND_ARG_INFO(0, mode)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xadd, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, id)
@@ -1091,12 +1120,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zPopMin arginfo_class_Redis_lPop
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRange, 0, 0, 3)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, start)
-	ZEND_ARG_INFO(0, end)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_zRange arginfo_class_Redis_bitrangeintarray
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRangeByLex, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
@@ -1106,7 +1130,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRangeByLex, 0, 0, 3)
 	ZEND_ARG_INFO(0, count)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRangeByScore arginfo_class_Redis_zRange
+#define arginfo_class_Redis_zRangeByScore arginfo_class_Redis_bitrangeintarray
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zrangestore, 0, 0, 4)
 	ZEND_ARG_INFO(0, dstkey)
@@ -1184,6 +1208,16 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_digest arginfo_class_Redis__prefix
 
+#define arginfo_class_RedisBlessScanIterator_current arginfo_class_Redis___destruct
+
+#define arginfo_class_RedisBlessScanIterator_key arginfo_class_Redis___destruct
+
+#define arginfo_class_RedisBlessScanIterator_next arginfo_class_Redis___destruct
+
+#define arginfo_class_RedisBlessScanIterator_rewind arginfo_class_Redis___destruct
+
+#define arginfo_class_RedisBlessScanIterator_valid arginfo_class_Redis___destruct
+
 ZEND_METHOD(Redis, __construct);
 ZEND_METHOD(Redis, __destruct);
 ZEND_METHOD(Redis, _compress);
@@ -1203,6 +1237,8 @@ ZEND_METHOD(Redis, waitaof);
 ZEND_METHOD(Redis, bitcount);
 ZEND_METHOD(Redis, bitop);
 ZEND_METHOD(Redis, bitpos);
+ZEND_METHOD(Redis, bitrangeintarray);
+ZEND_METHOD(Redis, bless);
 ZEND_METHOD(Redis, blPop);
 ZEND_METHOD(Redis, brPop);
 ZEND_METHOD(Redis, brpoplpush);
@@ -1215,6 +1251,7 @@ ZEND_METHOD(Redis, lmpop);
 ZEND_METHOD(Redis, clearLastError);
 ZEND_METHOD(Redis, client);
 ZEND_METHOD(Redis, close);
+ZEND_METHOD(Redis, reconnect);
 ZEND_METHOD(Redis, command);
 ZEND_METHOD(Redis, config);
 ZEND_METHOD(Redis, connect);
@@ -1312,6 +1349,7 @@ ZEND_METHOD(Redis, expirememberat);
 ZEND_METHOD(Redis, incr);
 ZEND_METHOD(Redis, incrBy);
 ZEND_METHOD(Redis, incrByFloat);
+ZEND_METHOD(Redis, incrEx);
 ZEND_METHOD(Redis, info);
 ZEND_METHOD(Redis, isConnected);
 ZEND_METHOD(Redis, keys);
@@ -1419,6 +1457,7 @@ ZEND_METHOD(Redis, unwatch);
 ZEND_METHOD(Redis, watch);
 ZEND_METHOD(Redis, wait);
 ZEND_METHOD(Redis, xack);
+ZEND_METHOD(Redis, xackdel);
 ZEND_METHOD(Redis, xadd);
 ZEND_METHOD(Redis, xautoclaim);
 ZEND_METHOD(Redis, xclaim);
@@ -1479,6 +1518,11 @@ ZEND_METHOD(Redis, zscan);
 ZEND_METHOD(Redis, zunion);
 ZEND_METHOD(Redis, zunionstore);
 ZEND_METHOD(Redis, digest);
+ZEND_METHOD(RedisBlessScanIterator, current);
+ZEND_METHOD(RedisBlessScanIterator, key);
+ZEND_METHOD(RedisBlessScanIterator, next);
+ZEND_METHOD(RedisBlessScanIterator, rewind);
+ZEND_METHOD(RedisBlessScanIterator, valid);
 
 static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, __construct, arginfo_class_Redis___construct, ZEND_ACC_PUBLIC)
@@ -1500,6 +1544,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, bitcount, arginfo_class_Redis_bitcount, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitop, arginfo_class_Redis_bitop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitpos, arginfo_class_Redis_bitpos, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, bitrangeintarray, arginfo_class_Redis_bitrangeintarray, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, bless, arginfo_class_Redis_bless, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, blPop, arginfo_class_Redis_blPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, brPop, arginfo_class_Redis_brPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, brpoplpush, arginfo_class_Redis_brpoplpush, ZEND_ACC_PUBLIC)
@@ -1512,6 +1558,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, clearLastError, arginfo_class_Redis_clearLastError, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, client, arginfo_class_Redis_client, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, close, arginfo_class_Redis_close, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, reconnect, arginfo_class_Redis_reconnect, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, command, arginfo_class_Redis_command, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, config, arginfo_class_Redis_config, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, connect, arginfo_class_Redis_connect, ZEND_ACC_PUBLIC)
@@ -1614,6 +1661,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, incr, arginfo_class_Redis_incr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrBy, arginfo_class_Redis_incrBy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrByFloat, arginfo_class_Redis_incrByFloat, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, incrEx, arginfo_class_Redis_incrEx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, info, arginfo_class_Redis_info, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, isConnected, arginfo_class_Redis_isConnected, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, keys, arginfo_class_Redis_keys, ZEND_ACC_PUBLIC)
@@ -1731,6 +1779,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, watch, arginfo_class_Redis_watch, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, wait, arginfo_class_Redis_wait, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xack, arginfo_class_Redis_xack, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, xackdel, arginfo_class_Redis_xackdel, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xadd, arginfo_class_Redis_xadd, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xautoclaim, arginfo_class_Redis_xautoclaim, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xclaim, arginfo_class_Redis_xclaim, ZEND_ACC_PUBLIC)
@@ -1791,6 +1840,15 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, zunion, arginfo_class_Redis_zunion, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zunionstore, arginfo_class_Redis_zunionstore, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, digest, arginfo_class_Redis_digest, ZEND_ACC_PUBLIC)
+	ZEND_FE_END
+};
+
+static const zend_function_entry class_RedisBlessScanIterator_methods[] = {
+	ZEND_ME(RedisBlessScanIterator, current, arginfo_class_RedisBlessScanIterator_current, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisBlessScanIterator, key, arginfo_class_RedisBlessScanIterator_key, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisBlessScanIterator, next, arginfo_class_RedisBlessScanIterator_next, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisBlessScanIterator, rewind, arginfo_class_RedisBlessScanIterator_rewind, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisBlessScanIterator, valid, arginfo_class_RedisBlessScanIterator_valid, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
 
@@ -1958,6 +2016,14 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string *const_SERIALIZER_JSON_name = zend_string_init_interned("SERIALIZER_JSON", sizeof("SERIALIZER_JSON") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_SERIALIZER_JSON_name, &const_SERIALIZER_JSON_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_SERIALIZER_JSON_name);
+#if defined(HAVE_REDIS_PHPSER)
+
+	zval const_SERIALIZER_PHPSER_value;
+	ZVAL_LONG(&const_SERIALIZER_PHPSER_value, REDIS_SERIALIZER_PHPSER);
+	zend_string *const_SERIALIZER_PHPSER_name = zend_string_init_interned("SERIALIZER_PHPSER", sizeof("SERIALIZER_PHPSER") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_SERIALIZER_PHPSER_name, &const_SERIALIZER_PHPSER_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_SERIALIZER_PHPSER_name);
+#endif
 
 	zval const_COMPRESSION_NONE_value;
 	ZVAL_LONG(&const_COMPRESSION_NONE_value, REDIS_COMPRESSION_NONE);
@@ -2152,6 +2218,22 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string *const_OPT_BACKOFF_CAP_name = zend_string_init_interned("OPT_BACKOFF_CAP", sizeof("OPT_BACKOFF_CAP") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_OPT_BACKOFF_CAP_name, &const_OPT_BACKOFF_CAP_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_OPT_BACKOFF_CAP_name);
+
+	return class_entry;
+}
+
+static zend_class_entry *register_class_RedisBlessScanIterator(zend_class_entry *class_entry_Iterator)
+{
+	zend_class_entry ce, *class_entry;
+
+	INIT_CLASS_ENTRY(ce, "RedisBlessScanIterator", class_RedisBlessScanIterator_methods);
+#if (PHP_VERSION_ID >= 80400)
+	class_entry = zend_register_internal_class_with_flags(&ce, NULL, ZEND_ACC_FINAL);
+#else
+	class_entry = zend_register_internal_class_ex(&ce, NULL);
+	class_entry->ce_flags |= ZEND_ACC_FINAL;
+#endif
+	zend_class_implements(class_entry, 1, class_entry_Iterator);
 
 	return class_entry;
 }

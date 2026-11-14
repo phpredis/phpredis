@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 5b7b25a02bdb32016fb94ca6029dc0d871f32996 */
+ * Stub hash: cd75b3f59285db41ea0f14e3f61030b2fbc945dc */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -73,8 +73,15 @@ static zend_class_entry *register_class_RedisSentinel(void)
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
 #if (PHP_VERSION_ID >= 80100)
 	class_entry->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+#elif (PHP_VERSION_ID >= 80000)
+	class_entry->ce_flags |= 0;
 #endif
 #endif
+
+
+	zend_string *attribute_name_SensitiveParameter_func___construct_arg0_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 0, attribute_name_SensitiveParameter_func___construct_arg0_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func___construct_arg0_0);
 
 	return class_entry;
 }

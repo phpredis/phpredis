@@ -19,12 +19,27 @@ typedef struct subscribeContext {
 } subscribeContext;
 
 /* Construct a raw command */
-RedisCmd *redis_build_raw_cmd(zval *z_args, int argc);
+RedisCmd *redis_build_raw_cmd(const zval *z_args, int argc);
 
 /* Construct a script command */
 RedisCmd *redis_build_script_cmd(int argc, zval *z_args);
 
 typedef RedisCmd * redis_cmd_cb(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+
+/* Validated BLESS arguments. Everything is borrowed from the call frame. */
+typedef struct redisBlessArgs {
+    zend_string *op;
+    zval *key;              /* GET/SET/CLEAR only */
+    zend_string *directive; /* NULL for GET */
+    zend_long count;        /* SCAN COUNT, or 0 */
+    zval *node;             /* RedisCluster SCAN key_or_address */
+    zend_bool scan;
+} redisBlessArgs;
+
+zend_string *redis_bless_op(INTERNAL_FUNCTION_PARAMETERS);
+int redis_bless_parse(INTERNAL_FUNCTION_PARAMETERS, zend_bool cluster, redisBlessArgs *args);
+void redis_bless_scan_init(zval *dst, zval *client, zend_bool cluster,
+                           const redisBlessArgs *args, zval *node);
 
 typedef RedisCmd * redis_kw_cmd_cb(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                    const char *kw, size_t kw_len);
@@ -96,6 +111,7 @@ RedisCmd *redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_incr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_increx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_decr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_delex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
@@ -111,6 +127,9 @@ RedisCmd *redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 RedisCmd *redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_bitrangeintarray_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_bless_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+RedisCmd *redis_cluster_bless_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 RedisCmd *redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
@@ -182,23 +201,23 @@ RedisCmd *redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
  * depending if this is a Redis object or a RedisCluster object. */
 
 void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, redisCluster *c);
+    const RedisSock *redis_sock, const redisCluster *c);
 void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, redisCluster *c);
 void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock);
+    const RedisSock *redis_sock);
 void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock);
+    const RedisSock *redis_sock);
 void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, zend_class_entry *ex);
+    const RedisSock *redis_sock, zend_class_entry *ex);
 void redis_compress_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock);
+    const RedisSock *redis_sock);
 void redis_uncompress_handler(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, zend_class_entry *ex);
+    const RedisSock *redis_sock, zend_class_entry *ex);
 
-void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
-void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
-void redis_digest_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, const RedisSock *redis_sock);
+void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, const RedisSock *redis_sock);
+void redis_digest_handler(INTERNAL_FUNCTION_PARAMETERS, const RedisSock *redis_sock,
     zend_class_entry *exception_ce);
 
 #endif
