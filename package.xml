@@ -74,6 +74,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
       validation in SET and MSETEX [ee9779f2]
     * Preserve the 6.3.0 RedisCluster return declarations for compatibility with
       existing subclasses [1da3b6d8]
+    * Accept boolean and floating-point SCAN cursor initializers as a new scan
+      while preserving exact string cursors above PHP_INT_MAX
     * Keep object serialization and custom restoration hooks compatible with 6.x
       while initializing RedisCluster routing safely before its constructor runs
       [7aed3011]
@@ -460,6 +462,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
       validation in SET and MSETEX [ee9779f2]
     * Preserve the 6.3.0 RedisCluster return declarations for compatibility with
       existing subclasses [1da3b6d8]
+    * Accept boolean and floating-point SCAN cursor initializers as a new scan
+      while preserving exact string cursors above PHP_INT_MAX
     * Keep object serialization and custom restoration hooks compatible with 6.x
       while initializing RedisCluster routing safely before its constructor runs
       [7aed3011]

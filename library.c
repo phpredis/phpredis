@@ -5284,13 +5284,14 @@ void redisSetScanCursor(zval *zv, uint64_t cursor) {
     }
 }
 
-/* Get a Redis SCAN cursor value out of a zval.  These are always taken as a
- * reference argument that that must be `null`, `int`, or `string`.  */
+/* Normalize legacy scalar initializers without narrowing string cursors. */
 uint64_t redisGetScanCursor(zval *zv, zend_bool *was_zero) {
     ZEND_ASSERT(zv != NULL);
 
-    if (Z_TYPE_P(zv) == IS_NULL) {
-        convert_to_long(zv);
+    if (Z_TYPE_P(zv) == IS_NULL || Z_TYPE_P(zv) == IS_FALSE ||
+        Z_TYPE_P(zv) == IS_TRUE || Z_TYPE_P(zv) == IS_DOUBLE)
+    {
+        ZVAL_LONG(zv, 0);
         *was_zero = 0;
         return 0;
     } else if (Z_TYPE_P(zv) == IS_STRING) {
@@ -5301,7 +5302,7 @@ uint64_t redisGetScanCursor(zval *zv, zend_bool *was_zero) {
         return Z_LVAL_P(zv);
     }
 
-    zend_type_error("Scan cursor must be of type int|string|null, %s given", zend_zval_type_name(zv));
+    zend_type_error("Scan cursor must be of type int|float|string|bool|null, %s given", zend_zval_type_name(zv));
     *was_zero = 0;
     return 0;
 }

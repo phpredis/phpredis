@@ -8315,7 +8315,7 @@ class Redis_Test extends TestSuite {
     public function testScanCursorType() {
         $clusterClass = $this->getRedisClusterClass();
         foreach (['scan', 'sscan', 'hscan', 'zscan'] as $method) {
-            foreach ([[], new stdClass, true, false, 1.5] as $cursor) {
+            foreach ([[], new stdClass] as $cursor) {
                 $original = $cursor;
                 try {
                     if ($method !== 'scan') {
@@ -8330,6 +8330,95 @@ class Redis_Test extends TestSuite {
                     $this->assertEquals($original, $cursor);
                 }
             }
+        }
+    }
+
+    public function testScanCursorScalars() {
+        $clusterClass = $this->getRedisClusterClass();
+        $key = '{scan-cursor}:key';
+        $cursors = [null, false, true, 0.0, 1.5, -1.5];
+        /* Relay converts floats to integers before resetting the cursor. */
+        if (is_a($this->getRedisClass(), Redis::class, true))
+            $cursors = array_merge($cursors, [PHP_FLOAT_MAX, INF, NAN]);
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        foreach (['scan', 'sscan', 'hscan', 'zscan'] as $method) {
+            $this->redis->del($key);
+            switch ($method) {
+                case 'scan':
+                    $this->redis->set($key, 'value');
+                    $expected = [$key];
+                    break;
+                case 'sscan':
+                    $this->redis->sAdd($key, 'value');
+                    $expected = ['value'];
+                    break;
+                case 'hscan':
+                    $this->redis->hSet($key, 'field', 'value');
+                    $expected = ['field' => 'value'];
+                    break;
+                case 'zscan':
+                    $this->redis->zAdd($key, 1, 'value');
+                    $expected = ['value' => 1.0];
+                    break;
+            }
+
+            foreach ($cursors as $cursor) {
+                if ($method !== 'scan') {
+                    $result = $this->redis->$method($key, $cursor);
+                } elseif ($this->redis instanceof $clusterClass) {
+                    $result = $this->redis->scan($cursor, $key, $key);
+                } else {
+                    $result = $this->redis->scan($cursor, $key);
+                }
+                $this->assertEquals($expected, $result);
+                $this->assertTrue(is_int($cursor) || is_string($cursor));
+            }
+        }
+        $this->redis->del($key);
+    }
+
+    public function testScanCursorUnsigned() {
+        $class = $this->getRedisClass();
+        if ( ! is_a($class, Redis::class, true))
+            $this->markTestSkipped('Exercises PhpRedis unsigned RESP2 cursors');
+
+        $server = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+        $this->assertTrue(is_resource($server));
+        list($host, $port) = explode(':', stream_socket_get_name($server, false));
+        $redis = new $class();
+        $peer = NULL;
+
+        try {
+            $this->assertTrue($redis->connect($host, (int)$port, 1, NULL, 0, 1));
+            $peer = stream_socket_accept($server, 1);
+            $this->assertTrue(is_resource($peer));
+            stream_set_timeout($peer, 1);
+            $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
+
+            foreach (['scan', 'sscan', 'hscan', 'zscan'] as $method) {
+                $cursor = null;
+                foreach ([PHP_INT_MAX, PHP_INT_SIZE === 8 ? '9223372036854775808' : '2147483648',
+                          '18446744073709551615', 0] as $next) {
+                    $args = $method === 'scan' ? ['SCAN', $cursor ?? 0] : [strtoupper($method), 'key', $cursor ?? 0];
+                    $request = '*' . count($args) . "\r\n";
+                    foreach ($args as $arg) {
+                        $request .= '$' . strlen((string)$arg) . "\r\n$arg\r\n";
+                    }
+                    $reply = '*2' . "\r\n$" . strlen((string)$next) . "\r\n$next\r\n*0\r\n";
+                    $this->assertEquals(strlen($reply), fwrite($peer, $reply));
+                    $this->assertEquals([], $method === 'scan' ? $redis->scan($cursor) : $redis->$method('key', $cursor));
+                    $this->assertEquals($next, $cursor);
+                    $this->assertEquals($request, stream_get_contents($peer, strlen($request)));
+                }
+                foreach ([0, '0'] as $cursor) {
+                    $this->assertFalse($method === 'scan' ? $redis->scan($cursor) : $redis->$method('key', $cursor));
+                }
+            }
+        } finally {
+            $redis->close();
+            if (is_resource($peer)) fclose($peer);
+            fclose($server);
         }
     }
 
