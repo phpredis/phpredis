@@ -54,6 +54,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Fixed:
 
+    * Restore 6.3.0 `bitop()` argument parsing, preserving key conversion and
+      returning false for too few arguments or a non-string operation
+      [3b0f0296] (michael-grunder)
+    * Prevent crashes or incorrect slot errors in `RedisCluster` EVAL commands
+      with invalid key counts, restoring false returns on server rejection
+      [e5e2684f] (michael-grunder)
     * Close connections after incomplete or malformed replies so later commands
       cannot consume leftover reply data [40132ea9], [aa2f4889] (SnowySailor)
     * Release deferred transaction results after a disconnect and reject
@@ -443,6 +449,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Fixed:
 
+    * Restore 6.3.0 `bitop()` argument parsing, preserving key conversion and
+      returning false for too few arguments or a non-string operation
+      [3b0f0296] (michael-grunder)
+    * Prevent crashes or incorrect slot errors in `RedisCluster` EVAL commands
+      with invalid key counts, restoring false returns on server rejection
+      [e5e2684f] (michael-grunder)
     * Close connections after incomplete or malformed replies so later commands
       cannot consume leftover reply data [40132ea9], [aa2f4889] (SnowySailor)
     * Release deferred transaction results after a disconnect and reject

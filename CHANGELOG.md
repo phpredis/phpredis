@@ -22,6 +22,12 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Restore 6.3.0 `bitop()` argument parsing, preserving key conversion and returning false for too few arguments or a non-string operation
+  [3b0f0296](https://github.com/phpredis/phpredis/commit/3b0f02961ba5e8c913071d2c8c2eaf50935f073b)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Prevent crashes or incorrect slot errors in `RedisCluster` EVAL commands with invalid key counts, restoring false returns on server rejection
+  [e5e2684f](https://github.com/phpredis/phpredis/commit/e5e2684f37dd6bb9dedd958799008fa9019a3696)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Close connections after incomplete or malformed replies so later commands cannot consume leftover reply data
   [40132ea9](https://github.com/phpredis/phpredis/commit/40132ea9cd6a805f75ca1fc16e69daeec5d39dc5),
   [aa2f4889](https://github.com/phpredis/phpredis/commit/aa2f488970bd336aa02d2af05ec511706b24a046)
