@@ -22,6 +22,13 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Close connections after incomplete or malformed replies so later commands cannot consume leftover reply data
+  [40132ea9](https://github.com/phpredis/phpredis/commit/40132ea9cd6a805f75ca1fc16e69daeec5d39dc5),
+  [aa2f4889](https://github.com/phpredis/phpredis/commit/aa2f488970bd336aa02d2af05ec511706b24a046)
+  ([SnowySailor](https://github.com/SnowySailor))
+- Release deferred transaction results after a disconnect and reject incomplete cluster transaction replies
+  [af777f50](https://github.com/phpredis/phpredis/commit/af777f50c1ecef7965d044a0d04b61fa3ff0b750)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Preserve the unencoded comparison operand for `SET IFEQ` with serializers and compressors enabled
   [5cd04301](https://github.com/phpredis/phpredis/commit/5cd04301e53061fe9feebbe6702091ef9ef3a393)
   ([michael-grunder](https://github.com/michael-grunder))

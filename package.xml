@@ -54,6 +54,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Fixed:
 
+    * Close connections after incomplete or malformed replies so later commands
+      cannot consume leftover reply data [40132ea9], [aa2f4889] (SnowySailor)
+    * Release deferred transaction results after a disconnect and reject
+      incomplete cluster transaction replies [af777f50] (michael-grunder)
     * Preserve the unencoded comparison operand for `SET IFEQ` with serializers
       and compressors enabled [5cd04301] (michael-grunder)
     * Restore SET option value parsing under associative GET keys, preserving
@@ -436,6 +440,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Fixed:
 
+    * Close connections after incomplete or malformed replies so later commands
+      cannot consume leftover reply data [40132ea9], [aa2f4889] (SnowySailor)
+    * Release deferred transaction results after a disconnect and reject
+      incomplete cluster transaction replies [af777f50] (michael-grunder)
     * Preserve the unencoded comparison operand for `SET IFEQ` with serializers
       and compressors enabled [5cd04301] (michael-grunder)
     * Restore SET option value parsing under associative GET keys, preserving
