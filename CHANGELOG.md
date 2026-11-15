@@ -42,7 +42,9 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
   [cceb09d0](https://github.com/phpredis/phpredis/commit/cceb09d009542c9d7cef880605e99e77c631410b)
   ([michael-grunder](https://github.com/michael-grunder))
 - Preserve 6.x string conversion for command arguments, including false values and PHP floating-point precision
-- Accept boolean and floating-point SCAN cursor initializers as a new scan while preserving exact string cursors above `PHP_INT_MAX`
+- Restore 6.3.0 SCAN cursor compatibility by accepting boolean and floating-point initializers as a new scan while preserving exact string cursors above `PHP_INT_MAX`
+  [59af2e3f](https://github.com/phpredis/phpredis/commit/59af2e3fc89cdafaff8d409e868aa062a5cda9ec)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Preserve literal SORT STORE destinations in 6.x while retaining cluster slot validation
 - Preserve SET conditional flags and comparison options, and restore expiry validation in SET and MSETEX
   [ee9779f2](https://github.com/phpredis/phpredis/commit/ee9779f2e03ad9612bc312eec623a9b2a35abd31)
