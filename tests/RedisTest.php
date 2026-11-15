@@ -7138,6 +7138,15 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    public function testEvalTooFewKeys() {
+        // The server rejects these; RedisCluster must not route them to slot -1
+        foreach ([[[], 1], [['a'], 2], [[], -1]] as [$args, $num_keys]) {
+            $this->assertFalse(@$this->redis->eval('return 1', $args, $num_keys));
+            $this->assertFalse(@$this->redis->eval_ro('return 1', $args, $num_keys));
+            $this->assertFalse(@$this->redis->evalsha(sha1('return 1'), $args, $num_keys));
+        }
+    }
+
     public function testSerialize() {
         $vals = [1, 1.5, 'one', ['here', 'is', 'an', 'array']];
 
