@@ -1727,10 +1727,6 @@ RedisCmd *redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
     redis_cmd_cat_zstr(cmd, lua);
     redis_cmd_cat_long(cmd, num_keys);
 
-    /* Pick a random slot if there are no keys */
-    if (num_keys == 0)
-        redis_cmd_randslot(cmd);
-
     ZEND_HASH_FOREACH_VAL(ht, zv) {
         if (num_keys-- > 0) {
             redis_cmd_try_cat_key_zval(cmd, zv);
@@ -1738,6 +1734,10 @@ RedisCmd *redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
             redis_cmd_cat_zval_zstr(cmd, zv);
         }
     } ZEND_HASH_FOREACH_END();
+
+    /* No key was hashed (num_keys <= 0 or no args), so pick a random slot */
+    if (cmd->slot == -1)
+        redis_cmd_randslot(cmd);
 
     return cmd;
 }
