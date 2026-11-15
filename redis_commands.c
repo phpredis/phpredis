@@ -3435,25 +3435,24 @@ RedisCmd *redis_bitrangeintarray_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
 
 /* BITOP */
 RedisCmd *redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
-    zend_string *op, *dstkey, *srckey;
     RedisCmd *cmd;
     zval *args;
     int argc;
 
-    ZEND_PARSE_PARAMETERS_START(3, -1)
-        Z_PARAM_STR(op)
-        Z_PARAM_STR(dstkey)
-        Z_PARAM_STR(srckey)
+    /* Parse untyped and return false on bad input like 6.3.0 did.
+     * TODO 7.0: Use typed ZPP matching the stub (string keys). */
+    ZEND_PARSE_PARAMETERS_START(0, -1)
         Z_PARAM_VARIADIC('*', args, argc)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
+    if (argc < 3 || Z_TYPE(args[0]) != IS_STRING)
+        return NULL;
+
     cmd = redis_cmd_create_literal(redis_sock, "BITOP");
 
-    redis_cmd_cat_zstr(cmd, op);
-    redis_cmd_cat_key_zstr(cmd, dstkey);
-    redis_cmd_try_cat_key_zstr(cmd, srckey);
+    redis_cmd_cat_zstr(cmd, Z_STR(args[0]));
 
-    for (int i = 0; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         redis_cmd_try_cat_key_zval(cmd, &args[i]);
     }
 

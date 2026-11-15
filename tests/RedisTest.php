@@ -711,6 +711,10 @@ class Redis_Test extends TestSuite {
         @$this->redis->bitop('AND', 'key1', 'key2', 'key3');
         $this->assertNull($this->redis->getLastError());
 
+        // 6.x compatibility: bad arguments return false instead of throwing
+        $this->assertFalse($this->redis->bitop('OR', '{key}1', ...[]));
+        $this->assertFalse($this->redis->bitop(1, '{key}1', '{key}2'));
+
         $this->redis->del('{key}1', '{key}2');
     }
 
