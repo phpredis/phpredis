@@ -1691,7 +1691,7 @@ PHP_REDIS_API int
 cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
                   REDIS_REPLY_TYPE rtype)
 {
-    if (!cluster_slot(c, slot)) {
+    if (slot < 0 || slot >= REDIS_CLUSTER_SLOTS || !cluster_slot(c, slot)) {
         zend_throw_exception_ex(redis_cluster_exception_ce, 0,
             "The slot %d is not covered by any node in this cluster", slot);
         return -1;
@@ -1740,7 +1740,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 {
     int resp, timedout = 0;
 
-    if (!cluster_slot(c, slot)) {
+    if (slot < 0 || slot >= REDIS_CLUSTER_SLOTS || !cluster_slot(c, slot)) {
         zend_throw_exception_ex(redis_cluster_exception_ce, 0,
             "The slot %d is not covered by any node in this cluster", slot);
         return -1;
