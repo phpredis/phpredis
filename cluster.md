@@ -174,6 +174,24 @@ In the case of all commands which need to be directed at a node, the calling con
 1. SLOWLOG
 1. TIME
 
+## Topology recovery
+
+For automatically routed commands, a `MOVED` response triggers one full topology
+refresh per command. Discovery tries known nodes as well as the configured
+seeds. A failed refresh preserves the previous map and follows the validated
+`MOVED` destination for that slot. `ASK` remains a temporary redirect.
+
+A replacement map is built before it is installed. Uncovered slots remain
+unmapped; accessing one attempts discovery once before reporting an error.
+Connections to retained endpoints are reused and retired connections are released.
+When pooling is disabled, shared persistent streams remain available to other objects.
+No extra discovery request is made on the normal command path.
+
+`MOVED` is reported as an exception when `WATCH` or `MULTI` is active. Scripts,
+distributed operations and explicitly directed commands retain their existing
+error handling. Changes that produce no routing or connection error
+are discovered on a subsequent topology refresh; there is no background polling.
+
 ## Session Handler
 You can use the cluster functionality of phpredis to store PHP session information in a Redis cluster as you can with a non cluster-enabled Redis instance.
 

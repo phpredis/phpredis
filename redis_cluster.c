@@ -280,6 +280,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     }
 
     /* Initialize seeds and attempt to map keyspace */
+    if (hash) c->cache_key = zend_string_copy(hash);
     cluster_init_seeds(c, seeds, nseeds);
     if (cluster_map_keyspace(c) == SUCCESS && hash)
         cluster_cache_store(hash, c->nodes);

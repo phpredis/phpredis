@@ -205,14 +205,6 @@ typedef struct redisCluster {
     zend_object std;
 } redisCluster;
 
-static zend_always_inline zend_bool
-cluster_redir_matches(const redisCluster *c, const RedisSock *sock)
-{
-    return sock->port == c->redir_port &&
-           ZSTR_LEN(sock->host) == c->redir_host_len &&
-           memcmp(ZSTR_VAL(sock->host), c->redir_host, c->redir_host_len) == 0;
-}
-
 /* Clear out our "last error" and cluster-down state. */
 static zend_always_inline void
 cluster_clear_error(redisCluster *c)
