@@ -205,14 +205,6 @@ typedef struct redisCluster {
     zend_object std;
 } redisCluster;
 
-static zend_always_inline zend_bool
-cluster_redir_matches(const redisCluster *c, const RedisSock *sock)
-{
-    return sock->port == c->redir_port &&
-           ZSTR_LEN(sock->host) == c->redir_host_len &&
-           memcmp(ZSTR_VAL(sock->host), c->redir_host, c->redir_host_len) == 0;
-}
-
 /* Clear out our "last error" and cluster-down state. */
 static zend_always_inline void
 cluster_clear_error(redisCluster *c)
@@ -372,6 +364,15 @@ long long mstime(void);
 
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot,
     const char *cmd, int cmd_len);
+PHP_REDIS_API short cluster_send_command_ex(redisCluster *c, short slot,
+    const char *cmd, int cmd_len, zend_bool retry_rejected);
+
+static zend_always_inline short
+cluster_send_rcmd_retry(redisCluster *c, RedisCmd *cmd, zend_bool retry_rejected)
+{
+    return cluster_send_command_ex(c, cmd->slot, redis_cmd_str(cmd),
+                                   redis_cmd_len(cmd), retry_rejected);
+}
 
 static zend_always_inline short
 cluster_send_rcmd(redisCluster *c, RedisCmd *cmd)

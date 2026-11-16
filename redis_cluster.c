@@ -110,7 +110,7 @@ cluster_process_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     const RedisCmdCtx ctx = redis_cmd_pop_ctx(cmd);
     const short slot = cmd->slot;
 
-    if (cluster_send_rcmd(c, cmd) < 0 || c->err != NULL) {
+    if (cluster_send_rcmd_retry(c, cmd, 1) < 0 || c->err != NULL) {
         redis_cmd_ctx_free(ctx);
         redis_cmd_free(cmd);
         RETURN_FALSE;
@@ -144,7 +144,7 @@ cluster_process_kw_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     const RedisCmdCtx ctx = redis_cmd_pop_ctx(cmd);
     const short slot = cmd->slot;
 
-    if (cluster_send_rcmd(c, cmd) < 0 || c->err != NULL)
+    if (cluster_send_rcmd_retry(c, cmd, cmd_cb != redis_eval_cmd) < 0 || c->err != NULL)
     {
         redis_cmd_ctx_free(ctx);
         redis_cmd_free(cmd);
@@ -280,6 +280,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     }
 
     /* Initialize seeds and attempt to map keyspace */
+    if (hash) c->cache_key = zend_string_copy(hash);
     cluster_init_seeds(c, seeds, nseeds);
     if (cluster_map_keyspace(c) == SUCCESS && hash)
         cluster_cache_store(hash, c->nodes);

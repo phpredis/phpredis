@@ -1,6 +1,7 @@
 <?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
 
 require_once __DIR__ . "/RedisTest.php";
+require_once __DIR__ . '/ClusterTopologyFixture.php';
 
 /**
  * Most RedisCluster tests should work the same as the standard Redis object
@@ -26,6 +27,364 @@ class Redis_Cluster_Test extends Redis_Test {
 
     private static array  $seed_messages = [];
     private static string $seed_source = '';
+
+    public function testMovedRefreshesWholeTopology() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            $before = [[0, 16383, $nodes[0]]];
+            $after = [[0, 16383, $nodes[1], $nodes[0]]];
+            return [
+                ['CLUSTER SLOTS' => [$before, $after],
+                 'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"]]],
+                ['CLUSTER SLOTS' => [$after], 'GET' => ['value']],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $seed = implode(':', $fixture->nodes[0]);
+            $client = new $class(null, [$seed], 1, 1);
+            $this->assertEquals('value', $client->get('{foo}first'));
+            $this->assertEquals('value', $client->get('{bar}second'));
+            $this->assertEquals([$fixture->nodes[1]], $client->_masters());
+            $calls = json_decode($client->rawCommand($fixture->nodes[1], 'FIXTURE'), true);
+            $this->assertEquals(1, $calls[0]['GET']);
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testMovedBetweenKnownMasters() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            $before = [[0, 8191, $nodes[1]], [8192, 16383, $nodes[0]]];
+            $after = [[0, 16383, $nodes[1], $nodes[0]]];
+            return [
+                ['CLUSTER SLOTS' => [$before, $after],
+                 'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"],
+                           ['error' => "MOVED 9995 {$nodes[1][0]}:{$nodes[1][1]}"]]],
+                ['CLUSTER SLOTS' => [$after], 'GET' => ['value']],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $this->assertEquals('value', $client->get('{foo}'));
+            $this->assertEquals('value', $client->get('{qux}'));
+            $calls = json_decode($client->rawCommand($fixture->nodes[1], 'FIXTURE'), true);
+            $this->assertEquals(1, $calls[0]['GET']);
+            $this->assertEquals([$fixture->nodes[1]], $client->_masters());
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testFailedTopologyRefreshPreservesRouting() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            $before = [[0, 16383, $nodes[0]]];
+            $broken = [[0, 8191, $nodes[1]], ['bad', 16383, $nodes[1]]];
+            return [
+                ['CLUSTER SLOTS' => [$before, $broken],
+                 'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"], 'old-route']],
+                ['GET' => ['new-route']],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $this->assertEquals('new-route', $client->get('{foo}'));
+            $this->assertEquals('old-route', $client->get('{bar}'));
+            $this->assertEquals('new-route', $client->get('{foo}'));
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testTopologyRefreshWithUncoveredSlot() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            $before = [[0, 16383, $nodes[0], $nodes[1]]];
+            $partial = [[0, 8191, $nodes[1]]];
+            return [
+                ['CLUSTER SLOTS' => [$before, $partial],
+                 'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"]]],
+                ['CLUSTER SLOTS' => [$partial], 'GET' => ['covered']],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $this->assertThrowsMatch($client, function ($c) { $c->get('{foo}'); });
+            $this->assertEquals('covered', $client->get('{bar}'));
+            $this->assertThrowsMatch($client, function ($c) { $c->get('{foo}'); });
+            $this->assertEquals('covered', $client->get('{bar}'));
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testAskDoesNotRemapTopology() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            return [
+                ['CLUSTER SLOTS' => [[[0, 16383, $nodes[0]]]],
+                 'GET' => [['error' => "ASK 12182 {$nodes[1][0]}:{$nodes[1][1]}"], 'old-route']],
+                ['GET' => ['asking-route']],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $this->assertEquals('asking-route', $client->get('{foo}'));
+            $this->assertEquals('old-route', $client->get('{foo}'));
+            $calls = json_decode($client->rawCommand($fixture->nodes[0], 'FIXTURE'), true);
+            $this->assertEquals(1, $calls[0]['CLUSTER SLOTS']);
+            $this->assertEquals(1, $calls[1]['ASKING']);
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testMovedDoesNotDiscardWatch() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            return [
+                ['CLUSTER SLOTS' => [[[0, 16383, $nodes[0], $nodes[1]]]],
+                 'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"]]],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $this->assertTrue($client->watch('{bar}'));
+            $this->assertThrowsMatch($client, function ($c) { $c->get('{foo}'); }, '/WATCH/');
+            $this->assertTrue($client->unwatch());
+            $calls = json_decode($client->rawCommand($fixture->nodes[0], 'FIXTURE'), true);
+            $this->assertEquals(1, $calls[0]['UNWATCH']);
+            $this->assertEquals(1, $calls[0]['CLUSTER SLOTS']);
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testTopologyRecoveryAfterUnsentCommand() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            $before = [[0, 16383, $nodes[0], $nodes[1]]];
+            $after = [[0, 16383, $nodes[1]]];
+            return [
+                ['STOP' => [['reply' => 'stopped', 'stop' => true]]],
+                ['CLUSTER SLOTS' => [$after], 'GET' => ['recovered']],
+                ['CLUSTER SLOTS' => [['reply' => $before, 'stop' => true]]],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[2])], 0.3, 0.3);
+            $this->assertEquals('stopped', $client->rawCommand($fixture->nodes[0], 'STOP'));
+            /* Force a fresh connect, so this tests a provably unsent payload. */
+            $client->close();
+            $this->assertEquals('recovered', $client->get('{foo}'));
+            $this->assertEquals([$fixture->nodes[1]], $client->_masters());
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testTopologyRefreshRetriesRejectedCommands() {
+        foreach (['READONLY You cannot write against a read only replica.',
+                  'CLUSTERDOWN The cluster is down'] as $error) {
+            $fixture = new ClusterTopologyFixture(function ($nodes) use ($error) {
+                $before = [[0, 16383, $nodes[0]]];
+                $after = [[0, 16383, $nodes[1]]];
+                return [
+                    ['CLUSTER SLOTS' => [$before, $after], 'INCR' => [['error' => $error]]],
+                    ['CLUSTER SLOTS' => [$after], 'INCR' => [1]],
+                ];
+            });
+            $class = $this->getRedisClusterClass();
+            $client = null;
+            try {
+                $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+                $this->assertEquals(1, $client->incr('{foo}'));
+                $this->assertEquals([$fixture->nodes[1]], $client->_masters());
+                $this->assertNull($client->getLastError());
+            } finally {
+                if ($client) $client->close();
+                $fixture->close();
+            }
+        }
+    }
+
+    public function testTopologyErrorsDoNotReplayScriptsOrDirectedCommands() {
+        $error = 'READONLY returned by the script';
+        $fixture = new ClusterTopologyFixture(function ($nodes) use ($error) {
+            return [['CLUSTER SLOTS' => [[[0, 16383, $nodes[0]]]],
+                     'EVAL' => [['error' => $error]], 'INCR' => [['error' => $error]]]];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $this->assertFalse($client->eval("return redis.error_reply('READONLY returned by the script')", ['{foo}'], 1));
+            $this->assertEquals($error, $client->getLastError());
+            $this->assertFalse($client->rawCommand($fixture->nodes[0], 'INCR', '{foo}'));
+            $calls = json_decode($client->rawCommand($fixture->nodes[0], 'FIXTURE'), true);
+            $this->assertEquals(1, $calls[0]['EVAL']);
+            $this->assertEquals(1, $calls[0]['INCR']);
+            $this->assertEquals(1, $calls[0]['CLUSTER SLOTS']);
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testTopologyDoesNotReplayLostWriteReply() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            return [['CLUSTER SLOTS' => [[[0, 16383, $nodes[0]]]],
+                     'INCR' => [['raw' => '', 'close' => true]], 'GET' => ['1']]];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $this->assertThrowsMatch($client, function ($c) { $c->incr('{foo}'); });
+            $this->assertEquals('1', $client->get('{foo}'));
+            $calls = json_decode($client->rawCommand($fixture->nodes[0], 'FIXTURE'), true);
+            $this->assertEquals(1, $calls[0]['INCR']);
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testTopologyRefreshPreservesConnections() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            $before = [[0, 8191, $nodes[1]], [8192, 16383, $nodes[0]]];
+            $after = [[0, 16383, $nodes[1]]];
+            return [
+                ['CLUSTER SLOTS' => [$before, $after],
+                 'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"]]],
+                ['CLUSTER SLOTS' => [$after], 'GET' => ['value']],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $id = $client->rawCommand($fixture->nodes[1], 'CLIENT', 'ID');
+            $this->assertEquals('value', $client->get('{foo}'));
+            $this->assertEquals($id, $client->rawCommand($fixture->nodes[1], 'CLIENT', 'ID'));
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testTopologyDiscoveryAcceptsEmptyEndpoints() {
+        foreach ([null, ''] as $host) {
+            $fixture = new ClusterTopologyFixture(function ($nodes) use ($host) {
+                return [['CLUSTER SLOTS' => [[[0, 16383, [$host, $nodes[0][1]]]]], 'GET' => ['value']]];
+            });
+            $class = $this->getRedisClusterClass();
+            $client = null;
+            try {
+                $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+                $this->assertEquals('value', $client->get('{foo}'));
+            } finally {
+                if ($client) $client->close();
+                $fixture->close();
+            }
+        }
+    }
+
+    public function testTopologyRecoveryWithAuthenticatedCache() {
+        $cache = ini_get('redis.clusters.cache_slots');
+        ini_set('redis.clusters.cache_slots', '1');
+        try {
+            foreach ([['secret'], ['cluster-user', 'secret']] as $auth) {
+                $fixture = new ClusterTopologyFixture(function ($nodes) use ($auth) {
+                    $before = [[0, 16383, $nodes[0]]];
+                    $after = [[0, 16383, $nodes[1]]];
+                    return [
+                        ['__auth' => $auth, 'CLUSTER SLOTS' => [$before, $after],
+                         'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"]]],
+                        ['__auth' => $auth, 'CLUSTER SLOTS' => [$after], 'GET' => ['value']],
+                    ];
+                });
+                $class = $this->getRedisClusterClass();
+                $client = null;
+                try {
+                    $seed = implode(':', $fixture->nodes[0]);
+                    $credential = count($auth) === 1 ? $auth[0] : $auth;
+                    $first = new $class(null, [$seed], 1, 1, false, $credential);
+                    $first->close();
+                    unset($first);
+                    $client = new $class(null, [$seed], 1, 1, true, $credential);
+                    $this->assertEquals('value', $client->get('{foo}'));
+                    $this->assertEquals('value', $client->get('{bar}'));
+                } finally {
+                    if ($client) $client->close();
+                    $fixture->close();
+                }
+            }
+        } finally {
+            ini_set('redis.clusters.cache_slots', $cache);
+        }
+    }
+
+    public function testTopologyRefreshIsBoundedPerCommand() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            return [
+                ['CLUSTER SLOTS' => [[[0, 16383, $nodes[0]]], [[0, 16383, $nodes[1]]]],
+                 'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"]]],
+                ['CLUSTER SLOTS' => [[[0, 16383, $nodes[1]]]],
+                 'GET' => [['error' => "MOVED 12182 {$nodes[2][0]}:{$nodes[2][1]}"]]],
+                ['GET' => ['value']],
+            ];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $this->assertEquals('value', $client->get('{foo}'));
+            $calls = json_decode($client->rawCommand($fixture->nodes[2], 'FIXTURE'), true);
+            $this->assertEquals(1, $calls[0]['CLUSTER SLOTS']);
+            $this->assertEquals(1, $calls[1]['CLUSTER SLOTS']);
+            $this->assertFalse(isset($calls[2]['CLUSTER SLOTS']));
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
+
+    public function testTopologyMovedDoesNotReplayMulti() {
+        $fixture = new ClusterTopologyFixture(function ($nodes) {
+            return [['CLUSTER SLOTS' => [[[0, 16383, $nodes[0]]]],
+                     'GET' => [['error' => "MOVED 12182 {$nodes[1][0]}:{$nodes[1][1]}"]]]];
+        });
+        $class = $this->getRedisClusterClass();
+        $client = null;
+        try {
+            $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
+            $client->multi();
+            $this->assertThrowsMatch($client, function ($c) { $c->get('{foo}'); }, '/MULTI/');
+            $this->assertTrue($client->discard());
+            $calls = json_decode($client->rawCommand($fixture->nodes[0], 'FIXTURE'), true);
+            $this->assertEquals(1, $calls[0]['GET']);
+            $this->assertEquals(1, $calls[0]['CLUSTER SLOTS']);
+        } finally {
+            if ($client) $client->close();
+            $fixture->close();
+        }
+    }
 
     public function testServerInfo() { $this->markTestSkipped(); }
     public function testServerInfoOldRedis() { $this->markTestSkipped(); }
@@ -423,20 +782,21 @@ class Redis_Cluster_Test extends Redis_Test {
                 throw new RuntimeException('Unable to unassign the test slot');
             }
             $removed = true;
-            /* Map from the owner so the object's slot table contains the hole. */
-            $client = new $class(null, ["{$master[0]}:{$master[1]}"],
-                1, 1, false, $this->getAuth());
-
-            /* GET already has this guard; directed commands must reject the slot too. */
+            /* Directed commands must reject the hole. Test GET last because it
+             * can now refresh from another node's view of the cluster. */
             $commands = [
-                ['get', [$key]],
                 ['ping', [$key]],
                 ['echo', [$key, 'message']],
                 ['info', [$key]],
                 ['client', [$key, 'GETNAME']],
+                ['get', [$key]],
             ];
 
             foreach ([Redis::ATOMIC, Redis::MULTI] as $mode) {
+                if ($client) $client->close();
+                /* Map from the owner so each mode starts with the hole. */
+                $client = new $class(null, ["{$master[0]}:{$master[1]}"],
+                    1, 1, false, $this->getAuth());
                 if ($mode === Redis::MULTI) $client->multi();
                 foreach ($commands as [$method, $args]) {
                     $thrown = false;
