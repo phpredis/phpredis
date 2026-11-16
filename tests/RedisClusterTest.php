@@ -366,11 +366,11 @@ class Redis_Cluster_Test extends Redis_Test {
 
                 $st = microtime(true);
                 $reply = $this->getServerReply($host, $port, 'PING');
-                $et = microtime(true);
+                $endTime = microtime(true);
 
                 TestSuite::errorMessage("  [%s:%d] PING -> %s (%.4f)", $host,
                                         $port, var_export($reply, true),
-                                        $et - $st);
+                                        $endTime - $st);
             }
 
             exit(1);

@@ -133,6 +133,26 @@ php -n \
   you are working on session behavior, do not treat unrelated session setup
   failures as signal for the current change.
 
+#### Variable names and older PHP builds under Valgrind
+
+Prefer descriptive variable names in PHP tests, especially for timing values
+such as `$startTime` and `$endTime`. Keep the `$endTime` names in the standalone
+and cluster tests; do not shorten them back to `$et`.
+
+Older PHP release builds used by CI can hit
+[PHP GH-9068](https://github.com/php/php-src/issues/9068): Valgrind's replacement
+string comparator clobbers registers that the compiled PHP caller expects to
+preserve. The variable name `et` and string literal `'g2'` have the same hash,
+so even `$et = 0; var_dump('g2');` crashes affected PHP 8.2.3 builds under
+Valgrind without PhpRedis or Relay loaded. Adding valid userland test code can
+therefore trigger a crash during compilation, before any tests execute.
+
+Longer names avoid this known collision; they do not fix PHP or guarantee that
+other collisions are impossible. For similar failures, reduce the input and
+verify it against the affected CI image before attributing it to this bug.
+Do not suppress errors or disable Valgrind to get a passing run. Rebuilding CI
+PHP with the upstream fix is the permanent solution.
+
 ### Building in a full PHP source tree
 
 It's possible we are in the `ext/redis` path within a full PHP source tree.
