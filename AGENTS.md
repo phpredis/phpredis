@@ -144,7 +144,7 @@ Older PHP release builds used by CI can hit
 string comparator clobbers registers that the compiled PHP caller expects to
 preserve. The variable name `et` and string literal `'g2'` have the same hash,
 so even `$et = 0; var_dump('g2');` crashes affected PHP 8.2.3 builds under
-Valgrind without PhpRedis or Relay loaded. Adding valid userland test code can
+Valgrind without PhpRedis loaded. Adding valid userland test code can
 therefore trigger a crash during compilation, before any tests execute.
 
 Longer names avoid this known collision; they do not fix PHP or guarantee that
