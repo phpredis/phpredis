@@ -173,56 +173,6 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
-    public function testTopologyRecoveryAfterUnsentCommand() {
-        $fixture = new ClusterTopologyFixture(function ($nodes) {
-            $before = [[0, 16383, $nodes[0], $nodes[1]]];
-            $after = [[0, 16383, $nodes[1]]];
-            return [
-                ['STOP' => [['reply' => 'stopped', 'stop' => true]]],
-                ['CLUSTER SLOTS' => [$after], 'GET' => ['recovered']],
-                ['CLUSTER SLOTS' => [['reply' => $before, 'stop' => true]]],
-            ];
-        });
-        $class = $this->getRedisClusterClass();
-        $client = null;
-        try {
-            $client = new $class(null, [implode(':', $fixture->nodes[2])], 0.3, 0.3);
-            $this->assertEquals('stopped', $client->rawCommand($fixture->nodes[0], 'STOP'));
-            /* Force a fresh connect, so this tests a provably unsent payload. */
-            $client->close();
-            $this->assertEquals('recovered', $client->get('{foo}'));
-            $this->assertEquals([$fixture->nodes[1]], $client->_masters());
-        } finally {
-            if ($client) $client->close();
-            $fixture->close();
-        }
-    }
-
-    public function testTopologyRefreshRetriesRejectedCommands() {
-        foreach (['READONLY You cannot write against a read only replica.',
-                  'CLUSTERDOWN The cluster is down'] as $error) {
-            $fixture = new ClusterTopologyFixture(function ($nodes) use ($error) {
-                $before = [[0, 16383, $nodes[0]]];
-                $after = [[0, 16383, $nodes[1]]];
-                return [
-                    ['CLUSTER SLOTS' => [$before, $after], 'INCR' => [['error' => $error]]],
-                    ['CLUSTER SLOTS' => [$after], 'INCR' => [1]],
-                ];
-            });
-            $class = $this->getRedisClusterClass();
-            $client = null;
-            try {
-                $client = new $class(null, [implode(':', $fixture->nodes[0])], 1, 1);
-                $this->assertEquals(1, $client->incr('{foo}'));
-                $this->assertEquals([$fixture->nodes[1]], $client->_masters());
-                $this->assertNull($client->getLastError());
-            } finally {
-                if ($client) $client->close();
-                $fixture->close();
-            }
-        }
-    }
-
     public function testTopologyErrorsDoNotReplayScriptsOrDirectedCommands() {
         $error = 'READONLY returned by the script';
         $fixture = new ClusterTopologyFixture(function ($nodes) use ($error) {

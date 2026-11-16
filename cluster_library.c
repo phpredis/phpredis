@@ -137,8 +137,6 @@ failure:
 }
 
 
-
-
 /* Recursively free our reply object.  If free_data is non-zero we'll also free
  * the payload data (strings) themselves.  If not, we just free the structs */
 void cluster_free_reply(clusterReply *reply, int free_data) {
@@ -330,21 +328,14 @@ static zend_always_inline zend_bool
 cluster_write_payload(RedisSock *redis_sock, const char *buf, size_t len)
 {
     const ssize_t nwritten = redis_sock_write_raw(redis_sock, buf, len);
-    if (nwritten >= 0 && nwritten == len) return 1;
-
-    /* Never reuse a stream after an incomplete command. */
-    redis_sock_disconnect(redis_sock, 1, 1);
-    return 0;
+    return nwritten >= 0 && nwritten == len;
 }
 
-static zend_always_inline int
+static zend_always_inline zend_bool
 cluster_send_payload(RedisSock *redis_sock, const char *buf, size_t len)
 {
-    zend_bool stateful = redis_sock && (redis_sock->watching || redis_sock->mode != ATOMIC);
-
-    /* Liveness failure can clear WATCH/MULTI. Never silently recover that loss. */
-    if (!cluster_sock_live(redis_sock)) return stateful ? -1 : 0;
-    return cluster_write_payload(redis_sock, buf, len) ? 1 : -1;
+    return cluster_sock_live(redis_sock) &&
+           cluster_write_payload(redis_sock, buf, len);
 }
 
 static zend_always_inline zend_bool
@@ -369,7 +360,7 @@ static int cluster_send_direct(RedisSock *redis_sock, const char *cmd, size_t cm
     size_t len;
 
     /* Connect to the socket if we aren't yet and send our command, validate the reply type, and consume the first line */
-    if (cluster_send_payload(redis_sock, cmd, cmd_len) <= 0) return -1;
+    if (!cluster_send_payload(redis_sock, cmd, cmd_len)) return -1;
 
     /* A mismatched or incomplete reply leaves unread bytes on the socket */
     if (!cluster_validate_reply_type(redis_sock, type) ||
@@ -407,11 +398,12 @@ static int cluster_send_readonly(RedisSock *redis_sock) {
 /* Send a command to a replica, issuing READONLY first if this connection
  * doesn't have it.  Liveness is checked once, before READONLY, because a
  * transparent reconnect after that point would drop it again. */
-static int
+static zend_bool
 cluster_send_replica_payload(RedisSock *redis_sock, const char *buf, size_t len)
 {
-    if (!cluster_sock_live(redis_sock) || cluster_send_readonly(redis_sock) != 0) return 0;
-    return cluster_write_payload(redis_sock, buf, len) ? 1 : -1;
+    return cluster_sock_live(redis_sock) &&
+           cluster_send_readonly(redis_sock) == 0 &&
+           cluster_write_payload(redis_sock, buf, len);
 }
 
 /* Send MULTI to a specific ReidsSock */
@@ -1612,13 +1604,9 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
         redis_sock = cluster_slot_sock(c, c->cmd_slot, nodes[i]);
         if (!redis_sock) continue;
 
-        int sent = nodes[i] == 0 ? cluster_send_payload(redis_sock, cmd, sz)
-                                 : cluster_send_replica_payload(redis_sock, cmd, sz);
-        if (sent < 0) {
-            if (nodes != stack_nodes) efree(nodes);
-            return -2;
-        }
-        if (sent > 0) {
+        if (nodes[i] == 0 ? cluster_send_payload(redis_sock, cmd, sz)
+                          : cluster_send_replica_payload(redis_sock, cmd, sz))
+        {
             c->cmd_sock = redis_sock;
             if (nodes != stack_nodes) efree(nodes);
             return 0;
@@ -1659,7 +1647,6 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
                               int direct)
 {
     const redisClusterNode *seed_node;
-    int sent;
 
     /* First try the socket requested */
     RedisSock *const redis_sock = c->cmd_sock;
@@ -1671,9 +1658,9 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
     /* If in ASK redirection, get/create the node for that host:port, otherwise
      * just use the command socket. */
     if (c->redir_type == REDIR_ASK) {
-        if (cluster_send_asking(redis_sock) < 0) return -1;
-        /* No liveness check/reconnect may discard ASKING before its payload. */
-        return cluster_write_payload(redis_sock, cmd, sz) ? 0 : -2;
+        if (cluster_send_asking(c->cmd_sock) < 0) {
+            return -1;
+        }
     }
 
     /* Attempt to send our command payload to the cluster.  If we're not set up
@@ -1681,18 +1668,21 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
      * error, try the master and then fall back to any slaves.  When we're set
      * up to distribute the commands, try to write to any node on this slot
      * at random. */
-    if (failover == REDIS_FAILOVER_NONE || failover == REDIS_FAILOVER_ERROR) {
-        sent = cluster_send_payload(redis_sock, cmd, sz);
-        if (sent > 0) return 0;
-        if (sent < 0) return -2;
-        if (failover == REDIS_FAILOVER_ERROR) {
-            sent = cluster_dist_write(c, cmd, sz, 1);
-            if (sent != -1) return sent;
-        }
+    if (failover == REDIS_FAILOVER_NONE) {
+        /* Success if we can send our payload to the master */
+        if (cluster_send_payload(redis_sock, cmd, sz)) return 0;
+    } else if (failover == REDIS_FAILOVER_ERROR) {
+        /* Try the master, then fall back to any slaves we may have */
+        if (cluster_send_payload(redis_sock, cmd, sz) ||
+           !cluster_dist_write(c, cmd, sz, 1)) return 0;
     } else {
+        /* Include or exclude master node depending on failover option and
+         * attempt to make our write */
         const int nomaster = failover == REDIS_FAILOVER_DISTRIBUTE_SLAVES;
-        sent = cluster_dist_write(c, cmd, sz, nomaster);
-        if (sent != -1) return sent;
+        if (!cluster_dist_write(c, cmd, sz, nomaster)) {
+            /* We were able to write to a master or slave at random */
+            return 0;
+        }
     }
 
     /* Don't fall back if direct communication with this slot is required. */
@@ -1704,9 +1694,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         if (seed_node == NULL || seed_node->sock == redis_sock || seed_node->slave) continue;
 
         /* Connect to this node if we haven't already and attempt to write our request to this node */
-        sent = cluster_send_payload(seed_node->sock, cmd, sz);
-        if (sent < 0) return -2;
-        if (sent > 0) {
+        if (cluster_send_payload(seed_node->sock, cmd, sz)) {
             c->cmd_slot = seed_node->slot;
             c->cmd_sock = seed_node->sock;
             return 0;
@@ -1797,7 +1785,7 @@ cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
     }
 
     /* Try the slot */
-    if (cluster_sock_write(c, cmd, cmd_len, 1) < 0) {
+    if (cluster_sock_write(c, cmd, cmd_len, 1) == -1) {
         return -1;
     }
     c->flags->txBytes += cmd_len;
@@ -1821,10 +1809,10 @@ cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
 
 /* Send a command to given slot in our cluster.  If we get a MOVED or ASK error
  * we attempt to send the command to the node as directed. */
-PHP_REDIS_API short cluster_send_command_ex(redisCluster *c, short slot, const char *cmd,
-                                            int cmd_len, zend_bool retry_rejected)
+PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
+                                         int cmd_len)
 {
-    int resp, sent, timedout = 0;
+    int resp, timedout = 0;
     zend_bool refreshed = 0;
     const long long msstart = c->waitms ? mstime() : 0;
     const long long deadline = c->waitms ? msstart + c->waitms : 0;
@@ -1866,45 +1854,13 @@ PHP_REDIS_API short cluster_send_command_ex(redisCluster *c, short slot, const c
 
         /* Attempt to deliver our command to the node, and that failing, to any
          * node until we find one that is available. */
-        sent = cluster_sock_write(c, cmd, cmd_len, 0);
-        if (sent < 0) {
+        if (cluster_sock_write(c, cmd, cmd_len, 0) == -1) {
             cluster_cache_clear(c);
-            /* A failed write is ambiguous; only an unsent command may recover. */
-            if (sent == -1 && !refreshed && cluster_can_remap(c) && !EG(exception)) {
-                refreshed = 1;
-                if (cluster_refresh_keyspace(c, NULL, deadline) == SUCCESS && cluster_slot(c, slot)) {
-                    c->cmd_slot = slot;
-                    c->cmd_sock = cluster_slot_master_sock(c, slot);
-                    c->redir_type = REDIR_NONE;
-                    continue;
-                }
-            }
-            if (!EG(exception))
-                CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
+            CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
             return -1;
         }
 
         resp = cluster_check_response(c, &c->reply_type);
-        /* These complete error replies reject an ordinary command before it
-         * executes.  Scripts, distributed operations and directed commands do
-         * not opt in: a script may itself return one of these error strings. */
-        if (resp == 0 && c->err && retry_rejected && !refreshed &&
-            cluster_can_remap(c) &&
-            (c->clusterdown ||
-             (redis_strncmp(ZSTR_VAL(c->err), ZEND_STRL("READONLY ")) == 0 &&
-              c->cmd_sock == cluster_slot_master_sock(c, slot))))
-        {
-            refreshed = 1;
-            cluster_cache_clear(c);
-            if (cluster_refresh_keyspace(c, c->cmd_sock, deadline) == SUCCESS && cluster_slot(c, slot)) {
-                cluster_clear_error(c);
-                c->cmd_slot = slot;
-                c->cmd_sock = cluster_slot_master_sock(c, slot);
-                c->redir_type = REDIR_NONE;
-                continue;
-            }
-            if (EG(exception)) return -1;
-        }
         if (resp <= 0) break;
 
         /* Handle MOVED or ASKING redirection */
@@ -1976,11 +1932,6 @@ PHP_REDIS_API short cluster_send_command_ex(redisCluster *c, short slot, const c
     return 0;
 }
 
-PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
-                                         int cmd_len)
-{
-    return cluster_send_command_ex(c, slot, cmd, cmd_len, 0);
-}
 
 /* RedisCluster response handlers.  These methods all have the same prototype
  * and set the proper return value for the calling cluster method.  These

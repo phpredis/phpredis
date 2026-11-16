@@ -186,15 +186,9 @@ unmapped; accessing one attempts discovery once before reporting an error.
 Connections to retained endpoints are reused and removed connections are closed.
 No extra discovery request is made on the normal command path.
 
-An ordinary command rejected with `READONLY` by its mapped primary, or with
-`CLUSTERDOWN`, may be retried once after discovery within the command timeout.
-A command that could not be sent may also recover through discovery. An
-incomplete write or a lost reply is not automatically replayed: the server may
-already have executed the command.
-
 `MOVED` is reported as an exception when `WATCH` or `MULTI` is active. Scripts,
-distributed operations and explicitly directed commands do not opt into the new
-`READONLY`/`CLUSTERDOWN` retry. Changes that produce no routing or connection error
+distributed operations and explicitly directed commands retain their existing
+error handling. Changes that produce no routing or connection error
 are discovered on a subsequent topology refresh; there is no background polling.
 
 ## Session Handler
