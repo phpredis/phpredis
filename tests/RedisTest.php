@@ -3,6 +3,7 @@
 require_once __DIR__ . '/TestSuite.php';
 require_once __DIR__ . '/SessionHelpers.php';
 
+// shortcut: Avoid $et/'g2' hash collisions until CI PHP has the GH-9068 Valgrind fix.
 class Redis_Test extends TestSuite {
     /**
      * @var Redis
@@ -726,10 +727,10 @@ class Redis_Test extends TestSuite {
 
         $st = microtime(true);
         $this->assertFalse($this->redis->blmpop(.1, [$key1, $key2], 'LEFT'));
-        $et = microtime(true);
+        $endTime = microtime(true);
 
         // Very loose tolerance because CI is run on a potato
-        $this->assertBetween($et - $st, .05, .75);
+        $this->assertBetween($endTime - $st, .05, .75);
     }
 
     function testZmpop() {
@@ -782,9 +783,9 @@ class Redis_Test extends TestSuite {
 
         $st = microtime(true);
         $this->assertFalse($this->redis->bzmpop(.1, [$key1, $key2], 'MIN'));
-        $et = microtime(true);
+        $endTime = microtime(true);
 
-        $this->assertBetween($et - $st, .05, .75);
+        $this->assertBetween($endTime - $st, .05, .75);
     }
 
     public function testBitPos() {
@@ -2157,10 +2158,10 @@ class Redis_Test extends TestSuite {
 
         $st = microtime(true);
         $ret = $this->redis->blmove($list1, $list2, $left, $left, .1);
-        $et = microtime(true);
+        $endTime = microtime(true);
 
         $this->assertFalse($ret);
-        $this->assertGT(.09, $et - $st);
+        $this->assertGT(.09, $endTime - $st);
     }
 
     public function testLmovem() {
@@ -2224,10 +2225,10 @@ class Redis_Test extends TestSuite {
         $ret = $this->redis->blmovem(
             $src, $dst, $left, $right, .1, ['EXACTLY' => [2, 'BULK']]
         );
-        $et = microtime(true);
+        $endTime = microtime(true);
 
         $this->assertEquals([], $ret);
-        $this->assertGT(.09, $et - $st);
+        $this->assertGT(.09, $endTime - $st);
         $this->assertEquals(['three'], $this->redis->lRange($src, 0, -1));
     }
 
@@ -3997,8 +3998,8 @@ class Redis_Test extends TestSuite {
         $this->redis->del('{zs}1', '{zs}2');
         $st = microtime(true) * 1000;
         $this->redis->bzPopMin('{zs}1', '{zs}2', $this->blockingTimeout());
-        $et = microtime(true) * 1000;
-        $this->assertGT(50, $et - $st);
+        $endTime = microtime(true) * 1000;
+        $this->assertGT(50, $endTime - $st);
     }
 
     public function testZPop() {
@@ -9955,9 +9956,9 @@ class Redis_Test extends TestSuite {
 
         $st = microtime(true);
         $this->assertSessionRunnerResult($runner2, false);
-        $et = microtime(true);
+        $endTime = microtime(true);
 
-        $this->assertGTE(.15, $et - $st);
+        $this->assertGTE(.15, $endTime - $st);
     }
 
     public function testSession_defaultLockRetryCount() {
@@ -9984,8 +9985,8 @@ class Redis_Test extends TestSuite {
 
         $st = microtime(true);
         $this->assertSessionRunnerResult($runner2, false);
-        $et = microtime(true);
-        $this->assertBetween($et - $st, .35, 1.25);
+        $endTime = microtime(true);
+        $this->assertBetween($endTime - $st, .35, 1.25);
     }
 
     public function testSession_noUnlockOfOtherProcess() {
@@ -10047,9 +10048,9 @@ class Redis_Test extends TestSuite {
 
         $st = microtime(true);
         $this->assertSessionRunnerResult($runner2);
-        $et = microtime(true);
+        $endTime = microtime(true);
 
-        $this->assertBetween($et - $st, .5, 2);
+        $this->assertBetween($endTime - $st, .5, 2);
     }
 
     public function testMultipleConnect() {
