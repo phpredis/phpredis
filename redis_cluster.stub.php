@@ -157,6 +157,19 @@ class RedisCluster {
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): RedisCluster|int|false;
 
     /**
+     * @see \Redis::bitrangeintarray()
+     */
+    public function bitrangeintarray(string $key, int $start, int $end, ?array $options = null): RedisCluster|array|false;
+
+    /**
+     * @see \Redis::bless()
+     *
+     * SCAN additionally requires `$key_or_address` and stays on the node it selects.
+     * SET, CLEAR and GET route by key; `$key_or_address` is only accepted for SCAN.
+     */
+    public function bless(string $command, string|int|null $key = null, ?string $directive = null, ?array $options = null, array|string|null $key_or_address = null): mixed;
+
+    /**
      * @see \Redis::blPop()
      */
     public function blpop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): RedisCluster|array|null|false;
@@ -709,6 +722,11 @@ class RedisCluster {
     public function incrbyfloat(string $key, float $value): RedisCluster|float|false;
 
     /**
+     * @see \Redis::incrEx()
+     */
+    public function increx(string $key, int|float|null $value = null, ?array $options = null): RedisCluster|array|false;
+
+    /**
      * Retrieve information about a cluster node.  If no sections are passed,
      * Redis will return the default info fields.  Alternatively you may pass a specific
      * section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
@@ -814,7 +832,7 @@ class RedisCluster {
     /**
      * @see \Redis::msetex()
      */
-    public function msetex(array $key_vals, int|float|array|null $expiry = null): Redis|int|false;
+    public function msetex(array $key_vals, int|float|array|null $expiry = null): RedisCluster|int|false;
 
     /**
      * Enter MULTI mode, or non-atomic pipeline mode when passed
@@ -1256,6 +1274,11 @@ class RedisCluster {
      * @see \Redis::xack()
      */
     public function xack(string $key, string $group, array $ids): RedisCluster|int|false;
+
+    /**
+     * @see \Redis::xackdel()
+     */
+    public function xackdel(string $key, string $group, array $ids, ?string $mode = null): RedisCluster|array|false;
 
     /**
      * @see \Redis::xadd()

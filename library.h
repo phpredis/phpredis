@@ -10,6 +10,12 @@
 #define CLUSTER_THROW_EXCEPTION(msg, code) \
     zend_throw_exception(redis_cluster_exception_ce, (msg), code)
 
+typedef enum {
+    REDIS_GEOSEARCH_WITHCOORD = 1 << 0,
+    REDIS_GEOSEARCH_WITHDIST  = 1 << 1,
+    REDIS_GEOSEARCH_WITHHASH  = 1 << 2,
+} RedisGeoSearchOptions;
+
 #if PHP_VERSION_ID < 80000
     /* use RedisException when ValueError not available */
     #define REDIS_VALUE_EXCEPTION(m) REDIS_THROW_EXCEPTION(m, 0)
@@ -68,6 +74,7 @@ PHP_REDIS_API int redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAMETERS, Re
 PHP_REDIS_API int redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
+PHP_REDIS_API int redis_increx_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_mbulk_reply_double(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 
 void redisSetScanCursor(zval *zv, uint64_t cursor);
@@ -187,6 +194,7 @@ PHP_REDIS_API int redis_acl_log_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 PHP_REDIS_API int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, long *reply_info);
 PHP_REDIS_API int redis_read_variant_bulk(RedisSock *redis_sock, long size, zval *z_ret);
 PHP_REDIS_API int redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int status_strings, zval *z_ret);
+PHP_REDIS_API void redis_reply_depth_exceeded(RedisSock *redis_sock);
 PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_read_raw_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
@@ -199,7 +207,8 @@ PHP_REDIS_API int redis_zadd_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 PHP_REDIS_API int redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_set_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
-PHP_REDIS_API int redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock, long long elements, int with_aux_data);
+PHP_REDIS_API int redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
+    long long elements, uintptr_t options);
 PHP_REDIS_API int redis_geosearch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_hrandfield_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
 PHP_REDIS_API int redis_pop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, RedisCmdCtx ctx);
@@ -256,6 +265,26 @@ void redis_conf_int(const HashTable *ht, const char *key, int keylen, int *ival)
 void redis_conf_string(const HashTable *ht, const char *key, size_t keylen, zend_string **sval);
 void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret, int copy, int dtor);
 void redis_conf_auth(const HashTable *ht, const char *key, size_t keylen, zend_string **user, zend_string **pass);
+
+/* A NULL read can just be a nil element. Tell that apart from a read that
+ * failed, after which there's no point reading any more of the reply. */
+static inline zend_bool redis_sock_read_failed(const RedisSock *redis_sock) {
+    return EG(exception) || redis_sock->stream == NULL ||
+           redis_sock->status == REDIS_SOCK_STATUS_FAILED;
+}
+
+/* Replies nest by recursing, so a bogus reply could overflow the C stack. Real
+ * replies are nowhere near this deep. This matches Relay and hiredis. */
+#define REDIS_REPLY_MAX_DEPTH 1024
+
+/* Server supplied element counts are only a sizing hint. Cap the preallocation
+ * so a bogus count can't trigger a huge (fatal) allocation before any elements
+ * have actually arrived. The array still grows as needed. */
+#define REDIS_REPLY_PRESIZE_MAX 1024
+
+static inline void redis_array_init_reply(zval *z, long long count) {
+    array_init_size(z, count > 0 ? MIN(count, REDIS_REPLY_PRESIZE_MAX) : 0);
+}
 
 static inline char *redis_sock_get_line(RedisSock *redis_sock, char *buf, size_t buf_size, size_t *nread) {
     char *const res = php_stream_get_line(redis_sock->stream, buf, buf_size, nread);

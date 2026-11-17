@@ -93,6 +93,7 @@ ra_init_function_table(RedisArray *ra)
     #define ra_add_pure_cmd(cmd) \
         zend_hash_str_add_empty_element(ra->pure_cmds, cmd, sizeof(cmd) - 1);
 
+    ra_add_pure_cmd("BITRANGEINTARRAY");
     ra_add_pure_cmd("EXISTS");
     ra_add_pure_cmd("GET");
     ra_add_pure_cmd("GETBIT");

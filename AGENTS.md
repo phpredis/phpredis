@@ -29,6 +29,13 @@ RedisArray, and RedisSentinel APIs.
   trying more than one formulation. This can be done with `objdump -d` or by
   using specific compiler flags, such as `-S`.
 
+### Commit messages
+
+When committing code, hard-wrap commit message bodies at 80 characters rather
+than relying on display wrapping. Explicit line breaks render more consistently
+across platforms, matching the wrapping often provided by Git editor plugins
+in Vim and Neovim.
+
 ### C style guide
 
 - Do not add casts unless they are required for correctness, ABI compatibility,
@@ -125,6 +132,26 @@ php -n \
 - Session tests can depend on helper scripts and specific `ini` settings. Unless
   you are working on session behavior, do not treat unrelated session setup
   failures as signal for the current change.
+
+#### Variable names and older PHP builds under Valgrind
+
+Prefer descriptive variable names in PHP tests, especially for timing values
+such as `$startTime` and `$endTime`. Keep the `$endTime` names in the standalone
+and cluster tests; do not shorten them back to `$et`.
+
+Older PHP release builds used by CI can hit
+[PHP GH-9068](https://github.com/php/php-src/issues/9068): Valgrind's replacement
+string comparator clobbers registers that the compiled PHP caller expects to
+preserve. The variable name `et` and string literal `'g2'` have the same hash,
+so even `$et = 0; var_dump('g2');` crashes affected PHP 8.2.3 builds under
+Valgrind without PhpRedis loaded. Adding valid userland test code can
+therefore trigger a crash during compilation, before any tests execute.
+
+Longer names avoid this known collision; they do not fix PHP or guarantee that
+other collisions are impossible. For similar failures, reduce the input and
+verify it against the affected CI image before attributing it to this bug.
+Do not suppress errors or disable Valgrind to get a passing run. Rebuilding CI
+PHP with the upstream fix is the permanent solution.
 
 ### Building in a full PHP source tree
 

@@ -131,6 +131,7 @@ typedef struct redisExpiryOptions {
     redisExpiryType type;
     zend_long ttl;
     zend_bool keepttl;
+    zend_bool persist;
 } redisExpiryOptions;
 
 typedef struct redisSetOptions {
@@ -1726,10 +1727,6 @@ RedisCmd *redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
     redis_cmd_cat_zstr(cmd, lua);
     redis_cmd_cat_long(cmd, num_keys);
 
-    /* Pick a random slot if there are no keys */
-    if (num_keys == 0)
-        redis_cmd_randslot(cmd);
-
     ZEND_HASH_FOREACH_VAL(ht, zv) {
         if (num_keys-- > 0) {
             redis_cmd_try_cat_key_zval(cmd, zv);
@@ -1737,6 +1734,10 @@ RedisCmd *redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, co
             redis_cmd_cat_zval_zstr(cmd, zv);
         }
     } ZEND_HASH_FOREACH_END();
+
+    /* No key was hashed (num_keys <= 0 or no args), so pick a random slot */
+    if (cmd->slot == -1)
+        redis_cmd_randslot(cmd);
 
     return cmd;
 }
@@ -2209,8 +2210,6 @@ static zend_bool zstr_to_expiry_type(redisExpiryType *dst, const zend_string *sr
 }
 
 static zend_bool zstr_to_eq_type(redisEqType *dst, const zend_string *src) {
-    *dst = REDIS_IF_NONE;
-
     if (zend_string_equals_literal_ci(src, "IFEQ")) {
         *dst = REDIS_IFEQ;
     } else if (zend_string_equals_literal_ci(src, "IFNE")) {
@@ -2226,20 +2225,26 @@ static zend_bool zstr_to_eq_type(redisEqType *dst, const zend_string *src) {
     return 1;
 }
 
-static void fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
+static int fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
     const zend_string *key;
     zval *zv;
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        ZVAL_DEREF(zv);
         if (key) {
             if (zstr_to_expiry_type(&dst->expiry.type, key)) {
-                dst->expiry.ttl = zval_get_long(zv);
+                if (redis_try_get_expiry(zv, &dst->expiry.ttl) != SUCCESS || dst->expiry.ttl < 1) {
+                    php_error_docref(NULL, E_WARNING,
+                        "EXPIRY is invalid (must be an int, float, or numeric string >= 1)");
+                    return FAILURE;
+                }
+                continue;
             } else if (zstr_to_eq_type(&dst->eq.type, key)) {
                 dst->eq.zval = zv;
-            } else if (zend_string_equals_literal_ci(key, "GET")) {
-                dst->get = zend_is_true(zv);
+                continue;
             }
-        } else if (Z_TYPE_P(zv) == IS_STRING) {
+        }
+        if (Z_TYPE_P(zv) == IS_STRING) {
             key = Z_STR_P(zv);
             if (zend_string_equals_literal_ci(key, "NX")) {
                 dst->type = REDIS_SET_NX;
@@ -2248,11 +2253,17 @@ static void fill_set_options_ht(redisSetOptions *dst, HashTable *ht) {
             } else if (zend_string_equals_literal_ci(key, "GET")) {
                 dst->get = 1;
             } else if (zend_string_equals_literal_ci(key, "KEEPTTL")) {
-                dst->expiry.type = REDIS_EXPIRY_NONE;
                 dst->expiry.keepttl = 1;
             }
         }
     } ZEND_HASH_FOREACH_END();
+
+    if (dst->expiry.type != REDIS_EXPIRY_NONE && dst->expiry.keepttl) {
+        php_error_docref(NULL, E_WARNING, "KEEPTTL can't be combined with an expiry option");
+        return FAILURE;
+    }
+
+    return SUCCESS;
 }
 
 static int
@@ -2265,8 +2276,7 @@ fill_set_options_zval(redisSetOptions *dst, zval *zv, zend_bool legacy_set) {
         return SUCCESS;
 
     if (Z_TYPE_P(zv) == IS_ARRAY) {
-        fill_set_options_ht(dst, Z_ARRVAL_P(zv));
-        return SUCCESS;
+        return fill_set_options_ht(dst, Z_ARRVAL_P(zv));
     } else if (redis_try_get_expiry(zv, &lval) == SUCCESS && lval > 0) {
         if (!legacy_set)
             dst->expiry.type = REDIS_EXPIRY_EX;
@@ -2283,11 +2293,14 @@ fill_set_options_zval(redisSetOptions *dst, zval *zv, zend_bool legacy_set) {
 static void
 redis_cmd_cat_expiry(RedisCmd *cmd, const redisExpiryOptions *e)
 {
-    if (e->type == REDIS_EXPIRY_NONE && !e->keepttl)
+    if (e->type == REDIS_EXPIRY_NONE && !e->keepttl && !e->persist)
         return;
 
     if (e->keepttl) {
         redis_cmd_cat_literal(cmd, "KEEPTTL");
+        return;
+    } else if (e->persist) {
+        redis_cmd_cat_literal(cmd, "PERSIST");
         return;
     } else if (e->type == REDIS_EXPIRY_EX) {
         redis_cmd_cat_literal(cmd, "EX");
@@ -2591,6 +2604,299 @@ RedisCmd *redis_decr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 {
     return redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU,
         TYPE_DECR, redis_sock);
+}
+
+typedef struct redisIncrExNumber {
+    zend_bool set;
+    union {
+        zend_long lval;
+        double dval;
+    } v;
+} redisIncrExNumber;
+
+/* INCREX options.  Every numeric argument (BYINT/BYFLOAT, LBOUND, UBOUND)
+ * shares the type of the increment, so `byfloat` applies to all three. */
+typedef struct redisIncrExOptions {
+    zend_bool byfloat;
+    redisIncrExNumber by;
+    redisIncrExNumber lbound;
+    redisIncrExNumber ubound;
+    redisExpiryOptions expiry;
+    zend_bool saturate;
+    zend_bool enx;
+} redisIncrExOptions;
+
+/* LBOUND and UBOUND must match the increment type, except that integer
+ * bounds are accepted (and widened) when incrementing by a float. */
+static int
+get_increx_bound(redisIncrExNumber *dst, zend_bool byfloat, const char *name,
+                 zval *zv)
+{
+    if (Z_TYPE_P(zv) == IS_LONG) {
+        if (byfloat) {
+            dst->v.dval = Z_LVAL_P(zv);
+        } else {
+            dst->v.lval = Z_LVAL_P(zv);
+        }
+    } else if (Z_TYPE_P(zv) == IS_DOUBLE && byfloat) {
+        dst->v.dval = Z_DVAL_P(zv);
+    } else {
+        php_error_docref(NULL, E_WARNING, "%s must be %s", name,
+                         byfloat ? "an int or float" : "an int");
+        return FAILURE;
+    }
+
+    dst->set = 1;
+
+    return SUCCESS;
+}
+
+static int get_increx_options(redisIncrExOptions *dst, HashTable *ht) {
+    redisExpiryType exptype;
+    zend_string *key;
+    zval *zv;
+
+    if (ht == NULL)
+        return SUCCESS;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        ZVAL_DEREF(zv);
+
+        if (key == NULL) {
+            if (Z_TYPE_P(zv) != IS_STRING)
+                continue;
+
+            key = Z_STR_P(zv);
+            if (zend_string_equals_literal_ci(key, "PERSIST")) {
+                dst->expiry.type = REDIS_EXPIRY_NONE;
+                dst->expiry.persist = 1;
+            } else if (zend_string_equals_literal_ci(key, "SATURATE")) {
+                dst->saturate = 1;
+            } else if (zend_string_equals_literal_ci(key, "ENX")) {
+                dst->enx = 1;
+            }
+        } else if (zstr_to_expiry_type(&exptype, key)) {
+            dst->expiry.type = exptype;
+            dst->expiry.ttl = zval_get_long(zv);
+            dst->expiry.persist = 0;
+        } else if (zend_string_equals_literal_ci(key, "PERSIST")) {
+            dst->expiry.persist = zend_is_true(zv);
+            if (dst->expiry.persist)
+                dst->expiry.type = REDIS_EXPIRY_NONE;
+        } else if (zend_string_equals_literal_ci(key, "SATURATE")) {
+            dst->saturate = zend_is_true(zv);
+        } else if (zend_string_equals_literal_ci(key, "ENX")) {
+            dst->enx = zend_is_true(zv);
+        } else if (zend_string_equals_literal_ci(key, "LBOUND")) {
+            if (get_increx_bound(&dst->lbound, dst->byfloat, "LBOUND", zv) != SUCCESS)
+                return FAILURE;
+        } else if (zend_string_equals_literal_ci(key, "UBOUND")) {
+            if (get_increx_bound(&dst->ubound, dst->byfloat, "UBOUND", zv) != SUCCESS)
+                return FAILURE;
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    if (dst->expiry.type != REDIS_EXPIRY_NONE && dst->expiry.ttl < 1) {
+        php_error_docref(NULL, E_WARNING, "EXPIRE can't be < 1");
+        return FAILURE;
+    } else if (dst->enx && dst->expiry.type == REDIS_EXPIRY_NONE) {
+        php_error_docref(NULL, E_WARNING,
+            "ENX requires one of EX, PX, EXAT, or PXAT");
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+static void
+redis_cmd_cat_increx_arg(RedisCmd *cmd, const char *kw, size_t kwlen,
+                         zend_bool byfloat, const redisIncrExNumber *num)
+{
+    if (!num->set)
+        return;
+
+    redis_cmd_cat_str(cmd, kw, kwlen);
+    if (byfloat) {
+        redis_cmd_cat_double(cmd, num->v.dval);
+    } else {
+        redis_cmd_cat_long(cmd, num->v.lval);
+    }
+}
+
+#define redis_cmd_cat_increx_arg_literal(cmd, kw, byfloat, num) \
+    redis_cmd_cat_increx_arg(cmd, kw, sizeof(kw) - 1, byfloat, num)
+
+/* INCREX key [BYINT n | BYFLOAT f] [LBOUND l] [UBOUND u] [SATURATE]
+ *            [EX s | PX ms | EXAT ts | PXAT ms-ts | PERSIST] [ENX] */
+RedisCmd *redis_increx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
+{
+    redisIncrExOptions opts = {0};
+    HashTable *ht = NULL;
+    zval *zby = NULL;
+    zend_string *key;
+    RedisCmd *cmd;
+
+    ZEND_PARSE_PARAMETERS_START(1, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_OPTIONAL
+#if PHP_VERSION_ID >= 80000
+        Z_PARAM_NUMBER_OR_NULL(zby)
+#else
+        Z_PARAM_ZVAL_OR_NULL(zby)
+#endif
+        Z_PARAM_ARRAY_HT_OR_NULL(ht)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    /* A NULL increment omits BYINT/BYFLOAT entirely (Redis defaults to 1) */
+    if (zby != NULL) {
+        if (Z_TYPE_P(zby) == IS_LONG) {
+            opts.by.v.lval = Z_LVAL_P(zby);
+        } else if (Z_TYPE_P(zby) == IS_DOUBLE) {
+            opts.byfloat = 1;
+            opts.by.v.dval = Z_DVAL_P(zby);
+        } else {
+            php_error_docref(NULL, E_WARNING, "Increment must be an int or float");
+            return NULL;
+        }
+        opts.by.set = 1;
+    }
+
+    if (get_increx_options(&opts, ht) != SUCCESS)
+        return NULL;
+
+    cmd = redis_cmd_create_literal(redis_sock, "INCREX");
+    redis_cmd_cat_key_zstr(cmd, key);
+
+    if (opts.byfloat) {
+        redis_cmd_cat_increx_arg_literal(cmd, "BYFLOAT", 1, &opts.by);
+    } else {
+        redis_cmd_cat_increx_arg_literal(cmd, "BYINT", 0, &opts.by);
+    }
+
+    redis_cmd_cat_increx_arg_literal(cmd, "LBOUND", opts.byfloat, &opts.lbound);
+    redis_cmd_cat_increx_arg_literal(cmd, "UBOUND", opts.byfloat, &opts.ubound);
+    redis_cmd_cat_literal_if(cmd, opts.saturate, "SATURATE");
+    redis_cmd_cat_expiry(cmd, &opts.expiry);
+    redis_cmd_cat_literal_if(cmd, opts.enx, "ENX");
+
+    /* RESP2 sends BYFLOAT results as bulk strings */
+    if (opts.byfloat)
+        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_INCR);
+
+    return cmd;
+}
+
+/* Only peek at the operation; redis_bless_parse enforces the real signature. */
+zend_string *redis_bless_op(INTERNAL_FUNCTION_PARAMETERS) {
+    zend_string *op;
+
+    ZEND_PARSE_PARAMETERS_START(1, -1)
+        Z_PARAM_STR(op)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    return op;
+}
+
+/* BLESS GET key | BLESS SET|CLEAR key directive | BLESS SCAN cursor directive [COUNT n]
+ * RedisCluster additionally takes a key_or_address, which SCAN requires. */
+int redis_bless_parse(INTERNAL_FUNCTION_PARAMETERS, zend_bool cluster, redisBlessArgs *args)
+{
+    HashTable *options = NULL;
+    zend_string *name;
+    zval *value;
+    zend_bool get;
+
+    memset(args, 0, sizeof(*args));
+
+    ZEND_PARSE_PARAMETERS_START(1, cluster ? 5 : 4)
+        Z_PARAM_STR(args->op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(args->key)
+        Z_PARAM_STR_OR_NULL(args->directive)
+        Z_PARAM_ARRAY_HT_OR_NULL(options)
+        Z_PARAM_ZVAL_OR_NULL(args->node)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (args->key && Z_TYPE_P(args->key) != IS_STRING && Z_TYPE_P(args->key) != IS_LONG) {
+        zend_type_error("%s::bless(): Argument #2 ($key) must be of type string|int|null",
+                        cluster ? "RedisCluster" : "Redis");
+        return FAILURE;
+    }
+
+    args->scan = zend_string_equals_literal_ci(args->op, "SCAN");
+    get = zend_string_equals_literal_ci(args->op, "GET");
+
+    if (!args->scan && !get && !zend_string_equals_literal_ci(args->op, "SET") &&
+        !zend_string_equals_literal_ci(args->op, "CLEAR"))
+    {
+        php_error_docref(NULL, E_WARNING, "Unknown BLESS operation '%s'", ZSTR_VAL(args->op));
+        return FAILURE;
+    }
+    if (args->scan ? args->key != NULL : args->key == NULL) {
+        php_error_docref(NULL, E_WARNING, "BLESS %s %s a key", ZSTR_VAL(args->op),
+                         args->scan ? "does not accept" : "requires");
+        return FAILURE;
+    }
+    if (get ? args->directive != NULL : args->directive == NULL) {
+        php_error_docref(NULL, E_WARNING, "BLESS %s %s a directive", ZSTR_VAL(args->op),
+                         get ? "does not accept" : "requires");
+        return FAILURE;
+    }
+    if (!args->scan && ((options && zend_hash_num_elements(options)) || args->node)) {
+        php_error_docref(NULL, E_WARNING, "Options and key_or_address are only supported for BLESS SCAN");
+        return FAILURE;
+    }
+    if (cluster && args->scan && (args->node == NULL ||
+        (Z_TYPE_P(args->node) != IS_STRING && Z_TYPE_P(args->node) != IS_ARRAY)))
+    {
+        php_error_docref(NULL, E_WARNING, "BLESS SCAN requires a key_or_address string or array");
+        return FAILURE;
+    }
+
+    if (options) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(options, name, value) {
+            ZVAL_DEREF(value);
+            if (name == NULL || !zend_string_equals_literal_ci(name, "COUNT")) {
+                php_error_docref(NULL, E_WARNING, "Unknown BLESS SCAN option");
+                return FAILURE;
+            }
+            if (Z_TYPE_P(value) != IS_LONG || Z_LVAL_P(value) < 1) {
+                php_error_docref(NULL, E_WARNING, "COUNT must be a positive integer");
+                return FAILURE;
+            }
+            args->count = Z_LVAL_P(value);
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    return SUCCESS;
+}
+
+/* GET, SET and CLEAR. SCAN never gets here, it's handled by RedisBlessScanIterator. */
+static RedisCmd *
+redis_bless_cmd_ex(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zend_bool cluster)
+{
+    redisBlessArgs args;
+    RedisCmd *cmd;
+
+    if (redis_bless_parse(INTERNAL_FUNCTION_PARAM_PASSTHRU, cluster, &args) != SUCCESS)
+        return NULL;
+
+    ZEND_ASSERT(!args.scan);
+
+    cmd = redis_cmd_create_literal(redis_sock, "BLESS");
+    redis_cmd_cat_zstr(cmd, args.op);
+    redis_cmd_cat_key_zval(cmd, args.key);
+    redis_cmd_cat_zstr_if(cmd, args.directive != NULL, args.directive);
+
+    return cmd;
+}
+
+RedisCmd *redis_bless_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    return redis_bless_cmd_ex(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 0);
+}
+
+RedisCmd *redis_cluster_bless_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    return redis_bless_cmd_ex(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1);
 }
 
 typedef enum xdelExMode {
@@ -3059,6 +3365,66 @@ RedisCmd *redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 
     /* Finally, BIT or BYTE if we were passed that argument */
     redis_cmd_cat_literal_if(cmd, !!bybit, "BIT");
+
+    return cmd;
+}
+
+/* BITRANGEINTARRAY key start end [BYTE | BIT] [LIMIT count] [ZEROS] */
+RedisCmd *redis_bitrangeintarray_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
+{
+    zend_string *key, *name;
+    zend_long start, end, limit = -1;
+    zend_bool bybit = 0, zeros = 0;
+    HashTable *options = NULL;
+    RedisCmd *cmd;
+    zval *zv;
+
+    ZEND_PARSE_PARAMETERS_START(3, 4)
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(start)
+        Z_PARAM_LONG(end)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(options)
+    ZEND_PARSE_PARAMETERS_END_EX(return NULL);
+
+    if (options) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(options, name, zv) {
+            ZVAL_DEREF(zv);
+            if (name && zend_string_equals_literal_ci(name, "LIMIT")) {
+                if (Z_TYPE_P(zv) == IS_LONG) {
+                    limit = Z_LVAL_P(zv);
+                } else if (Z_TYPE_P(zv) != IS_STRING ||
+                           is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv),
+                                             &limit, NULL, 0) != IS_LONG) {
+                    limit = -1;
+                }
+                if (limit < 0) {
+                    php_error_docref(NULL, E_WARNING, "LIMIT must be a non-negative integer");
+                    return NULL;
+                }
+            } else if (!name && Z_TYPE_P(zv) == IS_STRING &&
+                       zend_string_equals_literal_ci(Z_STR_P(zv), "BIT")) {
+                bybit = 1;
+            } else if (!name && Z_TYPE_P(zv) == IS_STRING &&
+                       zend_string_equals_literal_ci(Z_STR_P(zv), "BYTE")) {
+                bybit = 0;
+            } else if (!name && Z_TYPE_P(zv) == IS_STRING &&
+                       zend_string_equals_literal_ci(Z_STR_P(zv), "ZEROS")) {
+                zeros = 1;
+            } else {
+                php_error_docref(NULL, E_WARNING, "Invalid BITRANGEINTARRAY option");
+                return NULL;
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    cmd = redis_cmd_fmt(redis_sock, "BITRANGEINTARRAY", "Kll", key, start, end);
+    redis_cmd_cat_literal_if(cmd, bybit, "BIT");
+    if (limit >= 0) {
+        redis_cmd_cat_literal(cmd, "LIMIT");
+        redis_cmd_cat_long(cmd, limit);
+    }
+    redis_cmd_cat_literal_if(cmd, zeros, "ZEROS");
 
     return cmd;
 }
@@ -4563,6 +4929,7 @@ RedisCmd *
 redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 {
     zval *position, *shape, *z_ele;
+    uint64_t response_options = 0;
     geoSearchOptions sopts = {0};
     const zend_string *zkey, *zstr;
     zend_string *key, *unit;
@@ -4637,9 +5004,14 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
         redis_cmd_cat_literal_if(cmd, gopts.any, "ANY");
     }
 
-    if (gopts.withcoord + gopts.withdist + gopts.withhash > 0) {
-        redis_cmd_set_ctx_mode(cmd, REDIS_CTX_GEO_WITHMETA);
-    }
+    if (gopts.withcoord)
+        response_options |= REDIS_GEOSEARCH_WITHCOORD;
+    if (gopts.withdist)
+        response_options |= REDIS_GEOSEARCH_WITHDIST;
+    if (gopts.withhash)
+        response_options |= REDIS_GEOSEARCH_WITHHASH;
+
+    redis_cmd_set_ctx_u64(cmd, response_options);
 
     return cmd;
 }
@@ -5788,7 +6160,7 @@ static xdelExMode zstr_to_xdelex_mode(const zend_string *s) {
     else if (zend_string_equals_literal_ci(s, "ACKED"))
         return REDIS_XDELEX_ACKED;
 
-    php_error_docref(NULL, E_WARNING, "Unknown mode '%s'", ZSTR_VAL(s));
+    php_error_docref(NULL, E_WARNING, "Invalid mode '%s'", ZSTR_VAL(s));
 
     return REDIS_XDELEX_NONE;
 }
@@ -5854,11 +6226,12 @@ redis_xackdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
         Z_PARAM_STR(group)
         Z_PARAM_ARRAY_HT(ids)
         Z_PARAM_OPTIONAL
-        Z_PARAM_STR(mode)
+        Z_PARAM_STR_OR_NULL(mode)
     ZEND_PARSE_PARAMETERS_END_EX(return NULL);
 
     if (zend_hash_num_elements(ids) == 0) {
-        php_error_docref(NULL, E_WARNING, "At least one ID must be specified");
+        php_error_docref(NULL, E_WARNING,
+            "Must pass at least one ID to acknowledge and delete");
         return NULL;
     }
 

@@ -55,7 +55,8 @@ class PhpSpawner {
             }
         }
 
-        return $cmd . ' ' . __DIR__ . '/' . $script . ' ';
+        // Keep diagnostics out of session data and prevent "headers already sent" errors.
+        return $cmd . ' -ddisplay_errors=stderr ' . __DIR__ . '/' . $script . ' ';
     }
 }
 
@@ -261,7 +262,7 @@ class Runner {
     }
 
     public function output(?int $timeout = NULL): ?string {
-        if ($this->output) {
+        if ($this->output !== NULL) {
             return $this->output;
         }
 

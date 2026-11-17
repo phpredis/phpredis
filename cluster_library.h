@@ -182,9 +182,8 @@ typedef struct redisCluster {
     clusterFoldItem *multi_head;
     clusterFoldItem *multi_curr;
 
-    /* When we issue EXEC to nodes, we need to keep track of how many replies
-     * we have, as this can fail for various reasons (EXECABORT, watch, etc.) */
-    char multi_len[REDIS_CLUSTER_SLOTS];
+    /* EXEC success or failure, indexed by each master's representative slot. */
+    signed char multi_len[REDIS_CLUSTER_SLOTS];
 
     /* Variable to store MULTI response */
     zval multi_resp;
@@ -486,6 +485,8 @@ PHP_REDIS_API void cluster_hrandfield_resp(INTERNAL_FUNCTION_PARAMETERS, redisCl
 PHP_REDIS_API void cluster_zdiff_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_zadd_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    RedisCmdCtx ctx);
+PHP_REDIS_API void cluster_increx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);
 PHP_REDIS_API void cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     RedisCmdCtx ctx);

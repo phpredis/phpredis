@@ -44,6 +44,11 @@ if (interface_exists('SessionHandlerInterface')) {
             return $this->handler->close();
         }
 
+        public function create_sid(): string
+        {
+            return $this->handler->create_sid();
+        }
+
         public function destroy($session_id)
         {
             return $this->handler->destroy($session_id);

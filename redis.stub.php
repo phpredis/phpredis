@@ -881,6 +881,52 @@ class Redis {
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): Redis|int|false;
 
     /**
+     * Return absolute bit offsets in an inclusive range (Redis 8.12+).
+     * Bounds use BYTE units by default; negative bounds count from the end.
+     * Options accept 'BYTE', 'BIT', 'ZEROS', and 'LIMIT' => count (zero returns []).
+     * The last unit wins. BYTE limits finish the last byte, returning up to seven extra offsets.
+     *
+     * @param string     $key     The string or bitmap key to read.
+     * @param int        $start   The inclusive start of the range.
+     * @param int        $end     The inclusive end of the range.
+     * @param array|null $options Range units, result limit, and whether to return zero bits.
+     *
+     * @return Redis|array|false Ascending bit offsets, or an empty array for an empty range or missing key.
+     *
+     * @example $redis->bitrangeintarray('bitmap', 0, -1, ['BIT', 'LIMIT' => 10]);
+     */
+    public function bitrangeintarray(string $key, int $start, int $end, ?array $options = null): Redis|array|false;
+
+    /**
+     * Manage Redis 8.12 key eviction protection.
+     *
+     * SET and CLEAR require a directive (NO-EVICT) and return 1 when changed or 0 otherwise.
+     * GET takes no directive and returns the active flags. Missing keys are server errors.
+     * SCAN requires a directive and a null key. It returns a lazy RedisBlessScanIterator of
+     * key names, starting at cursor zero. Keys retain their prefixes and, as with SCAN, may
+     * be returned more than once. Iteration errors throw.
+     * SCAN requires atomic mode both when creating the iterator and fetching pages.
+     * Options accepts ['COUNT' => positive integer] for SCAN only.
+     *
+     * @param string          $command   GET, SET, CLEAR or SCAN.
+     * @param string|int|null $key       Required for SET, CLEAR and GET; omit for SCAN.
+     * @param string|null     $directive The flag to set, clear or scan for (e.g. NO-EVICT).
+     * @param array|null      $options   ['COUNT' => int] for SCAN.
+     *
+     * @return Redis|int|array|RedisBlessScanIterator|false
+     *
+     * @see https://redis.io/docs/latest/commands/bless/
+     *
+     * @example
+     * $redis->bless('SET', 'session:42', 'NO-EVICT');
+     * $redis->bless('GET', 'session:42');
+     * foreach ($redis->bless('SCAN', null, 'NO-EVICT', ['COUNT' => 100]) as $key) {
+     *     echo "$key\n";
+     * }
+     */
+    public function bless(string $command, string|int|null $key = null, ?string $directive = null, ?array $options = null): mixed;
+
+    /**
      * Pop an element off the beginning of a Redis list or lists, potentially blocking up to a specified
      * timeout.  This method may be called in two distinct ways, of which examples are provided below.
      *
@@ -2735,6 +2781,34 @@ class Redis {
      * $redis->incrbyfloat('tau', 3.1415926);
      */
     public function incrByFloat(string $key, float $value): Redis|float|false;
+
+    /**
+     * Increments the numeric value of a key by a number and optionally sets its expiration time.
+     *
+     * This is an atomic operation combining incrementing with optional upper/lower bounds,
+     * saturation, and expiration control. Returns an array with the new value and the
+     * actual increment applied.
+     *
+     * @param string          $key     The key to increment.
+     * @param int|float|null  $value   The amount to increment by. An int sends BYINT, a float
+     *                                 sends BYFLOAT, and null lets Redis use its default of 1.
+     * @param null|array      $options An optional array of options:
+     *                                 'EX'|'PX'|'EXAT'|'PXAT' => int,
+     *                                 'PERSIST', 'SATURATE', 'ENX' (or as keys => bool),
+     *                                 'LBOUND'|'UBOUND' => int (or int|float when $value is a float).
+     *
+     * @return Redis|array|false  Returns an array of [new_value, actual_increment] or false on error.
+     *
+     * @see https://redis.io/docs/latest/commands/increx/
+     *
+     * @example
+     * $redis->del('mycounter');
+     * $redis->incrEx('mycounter');
+     * $redis->incrEx('mycounter', 5);
+     * $redis->incrEx('mycounter', 1, ['EX' => 100]);
+     * $redis->incrEx('mycounter', 1, ['UBOUND' => 100, 'SATURATE', 'EX' => 60, 'ENX']);
+     */
+    public function incrEx(string $key, int|float|null $value = null, ?array $options = null): Redis|array|false;
 
     /**
      * Retrieve information about the connected redis-server.  If no arguments are passed to
@@ -4806,6 +4880,23 @@ class Redis {
     public function xack(string $key, string $group, array $ids): int|false;
 
     /**
+     * Acknowledge and conditionally delete one or more stream entries.
+     *
+     * @param string      $key   The stream to modify.
+     * @param string      $group The consumer group to acknowledge entries for.
+     * @param array       $ids   One or more message IDs.
+     * @param string|null $mode  KEEPREF (default) preserves other groups' pending references;
+     *                          DELREF removes them; ACKED deletes only after all groups acknowledge.
+     *
+     * @return Redis|array|false One result per ID: 1 if deleted, -1 if missing,
+     *                          or 2 if acknowledged but retained by ACKED.
+     *                          Returns Redis when queued, or false on failure.
+     *
+     * @see https://redis.io/docs/latest/commands/xackdel/
+     */
+    public function xackdel(string $key, string $group, array $ids, ?string $mode = null): Redis|array|false;
+
+    /**
      * Append a message to a stream.
      *
      * @param string $key        The stream name.
@@ -6092,5 +6183,27 @@ class Redis {
 }
 
 
+
+/**
+ * Lazy iterator returned by `Redis::bless('SCAN', ...)` and `RedisCluster::bless('SCAN', ...)`.
+ *
+ * @not-serializable
+ */
+final class RedisBlessScanIterator implements Iterator {
+    /** Returns the current key name, or `null` when the scan has finished. */
+    public function current(): mixed;
+
+    /** Returns the position of the current key, or `null` when the scan has finished. */
+    public function key(): mixed;
+
+    /** Moves to the next key. */
+    public function next(): void;
+
+    /** Restarts the scan if any keys have been consumed. */
+    public function rewind(): void;
+
+    /** Returns whether there is a current key, fetching pages as needed. */
+    public function valid(): bool;
+}
 
 class RedisException extends RuntimeException {}

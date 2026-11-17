@@ -133,8 +133,10 @@ class Redis_Sentinel_Test extends TestSuite
         foreach ($clients as $client) {
             $this->assertArrayKey($client, 'cmd');
             $this->assertArrayKey($client, 'id');
+            $this->assertArrayKey($client, 'name');
 
-            if ($client['cmd'] !== $cmd)
+            /* Sentinel peers also send PINGs on their named connections. */
+            if ($client['cmd'] !== $cmd || strpos($client['name'], 'sentinel-') === 0)
                 continue;
 
             $result[] = $client['id'];
@@ -162,15 +164,15 @@ class Redis_Sentinel_Test extends TestSuite
             $this->assertTrue($sentinel->ping());
 
             $clients = $this->getClients($redis, 'ping');
-            $this->assertArrayKey($clients, 0);
+            $this->assertIsArray($clients, 1);
 
             /* Capture the ping client */
             $id ??= $clients[0];
 
+            /* The same client should have been reused */
+            $this->assertArrayKeyEquals($clients, 0, $id);
+
             unset($sentinel);
         }
-
-        /* The same client should have been reused */
-        $this->assertArrayKeyEquals($clients, 0, $id);
     }
 }
