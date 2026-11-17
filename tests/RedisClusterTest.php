@@ -146,6 +146,9 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     private function keysOnDistinctMasters($prefix, $count = 2) {
+        if (count($this->redis->_masters()) < $count)
+            $this->markTestSkipped("Requires $count cluster masters");
+
         $keys = [];
 
         for ($i = 0; $i < 256 && count($keys) < $count; $i++) {
@@ -2218,7 +2221,7 @@ class Redis_Cluster_Test extends Redis_Test {
             ['get', [$k['control']], '6.2'],
         ];
         $cases = array_values(array_filter($cases, function ($case) {
-            return $this->minVersionCheck($case[2]);
+            return $this->minVersionCheck($case[2]) && $this->haveCommand($case[0]);
         }));
         $nullOption = $this->redis->getOption(Redis::OPT_NULL_MULTIBULK_AS_NULL);
         try {
@@ -2257,6 +2260,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $this->redis->del([$zset, $missing, $control]);
         $this->redis->zadd($zset, 1, 'present');
+        $haveObject = $this->haveCommand('OBJECT');
 
         foreach ([false, true] as $nested) {
             $pipe = $this->redis->pipeline();
@@ -2264,14 +2268,16 @@ class Redis_Cluster_Test extends Redis_Test {
             $pipe->set($control, 'ok')
                 ->zrank($zset, 'missing')
                 ->zrevrank($zset, 'missing')
-                ->zrank($missing, 'missing')
-                ->object('refcount', $missing)
-                ->object('idletime', $missing)
-                ->zrank($zset, 'present')
-                ->get($control);
+                ->zrank($missing, 'missing');
+            $expected = [true, false, false, false];
+            if ($haveObject) {
+                $pipe->object('refcount', $missing)->object('idletime', $missing);
+                $expected = array_merge($expected, [false, false]);
+            }
+            $pipe->zrank($zset, 'present')->get($control);
             if ($nested) $pipe->exec();
 
-            $expected = [true, false, false, false, false, false, 0, 'ok'];
+            $expected = array_merge($expected, [0, 'ok']);
             $this->assertEquals($nested ? [$expected] : $expected, $pipe->exec());
             $this->assertEquals('ok', $this->redis->get($control));
         }
@@ -2451,7 +2457,7 @@ class Redis_Cluster_Test extends Redis_Test {
         try {
             foreach ($masters as $master) {
                 $this->assertTrue($this->redis->acl(
-                    $master, 'SETUSER', $user, 'reset', 'on', ">$pass",
+                    $master, 'SETUSER', $user, 'on', ">$pass",
                     "~$allowed*", '+@all'
                 ));
             }
@@ -2711,7 +2717,6 @@ class Redis_Cluster_Test extends Redis_Test {
 
     public function testPipelineFailedTopologyRefreshCanRecover() {
         $class = $this->getRedisClusterClass();
-        /* Denying individual ACL subcommands requires Redis 7.0. */
         if (!$this->minVersionCheck('7.0')) $this->markTestSkipped();
 
         $cacheSlots = ini_get('redis.clusters.cache_slots');
@@ -2727,7 +2732,7 @@ class Redis_Cluster_Test extends Redis_Test {
         try {
             foreach ($masters as $master) {
                 $this->assertTrue($this->redis->acl(
-                    $master, 'SETUSER', $user, 'reset', 'on', ">$pass", '~*', '+@all'
+                    $master, 'SETUSER', $user, 'on', ">$pass", '~*', '+@all'
                 ));
             }
             $restricted = new $class(
@@ -2746,7 +2751,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
             foreach ($masters as $master) {
                 $this->assertTrue($this->redis->acl(
-                    $master, 'SETUSER', $user, '-cluster|slots'
+                    $master, 'SETUSER', $user, '-cluster'
                 ));
             }
             foreach ([1, 2] as $attempt) {
@@ -2763,7 +2768,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
             foreach ($masters as $master) {
                 $this->assertTrue($this->redis->acl(
-                    $master, 'SETUSER', $user, '+cluster|slots'
+                    $master, 'SETUSER', $user, '+cluster'
                 ));
             }
             $this->assertEquals(
@@ -3027,6 +3032,9 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     private function emptySlotKey($prefix) {
+        if (count($this->redis->_masters()) < 2)
+            $this->markTestSkipped('Requires two cluster masters for slot migration');
+
         for ($i = 0; $i < 256; $i++) {
             $key = "{{$prefix}-$i}key";
             $slot = $this->redis->cluster($key, 'KEYSLOT', $key);
@@ -3277,7 +3285,7 @@ class Redis_Cluster_Test extends Redis_Test {
         try {
             foreach ($masters as $master) {
                 $this->assertTrue($this->redis->acl(
-                    $master, 'SETUSER', $user, 'reset', 'on', ">$pass", '~*',
+                    $master, 'SETUSER', $user, 'on', ">$pass", '~*',
                     '+@all', '-mset', '-msetnx', '-del', '-unlink'
                 ));
             }
@@ -3385,7 +3393,7 @@ class Redis_Cluster_Test extends Redis_Test {
         try {
             foreach ($masters as $master) {
                 $this->assertTrue($this->redis->acl($master, 'SETUSER', $user,
-                    'reset', 'on', ">$pass", "~$allowed*", '+@all'));
+                    'on', ">$pass", "~$allowed*", '+@all'));
             }
             $restricted = new $class(null, self::$seeds, 1, 1, false, [$user, $pass]);
             $this->redis->del($keys);
