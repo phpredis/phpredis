@@ -117,7 +117,7 @@ print_r($obj_cluster->exec());
 ```
 
 ## Pipelining
-The RedisCluster class does not support pipelining as there is no way to detect whether the keys still live where our map indicates that they do and would therefore be inherently unsafe.  It would be possible to implement this support as an option if there is demand for such a feature.
+`RedisCluster` does not expose a general pipelining API. `MGET` can pipeline its internal slot batches as described below.
 
 ## Multiple key commands
 Redis cluster does allow commands that operate on multiple keys, but only if all of those keys hash to the same slot.  Note that it is not enough that the keys are all on the same node, but must actually hash to the exact same hash slot.
@@ -135,6 +135,8 @@ $obj_cluster->mget(["{hash1}key1","{hash1}key2","{hash1}key3","otherkey"]);
 ```
 
 This operation can also be done in MULTI mode transparently.
+
+`MGET` sends its slot batches over the mapped master connections before reading replies. This applies outside `MULTI` with the default `OPT_SLAVE_FAILOVER` value, `FAILOVER_NONE`. Results keep the input key order. Watched connections and other failover modes keep sequential execution.
 
 ## Directed node commands
 There are a variety of commands which have to be directed at a specific node.  In the case of these commands, the caller can either pass a key (which will be hashed and used to direct our command), or an array with host:port.
