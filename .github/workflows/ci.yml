@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # shortcut: PHP 8.6 fixes are unreleased; remove the pin once an igbinary release includes #408 and #419.
+  IGBINARY_REF: 2b1f5d62e3037b07c2a46499ac32091cdb41fb40
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
@@ -80,7 +84,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
         server: ['redis', 'dragonfly', 'valkey']
 
     steps:
@@ -94,7 +98,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: json, igbinary, msgpack, :redis
+          extensions: >-
+            json, ${{ matrix.php == '8.6' && format('igbinary-igbinary/igbinary@{0}', env.IGBINARY_REF) || 'igbinary' }}, msgpack, :redis
           coverage: none
           tools: none
       - name: Install system dependencies
@@ -146,6 +151,7 @@ jobs:
 
       - name: Build phpredis
         run: |
+          php --ri igbinary
           phpize
           ./configure \
             --enable-redis-lzf \
@@ -302,7 +308,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -324,20 +330,25 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: json, :redis
+          extensions: >-
+            ${{ matrix.php == '8.6' && format('json, igbinary-igbinary/igbinary@{0}, :redis', env.IGBINARY_REF) || 'json, :redis' }}
           coverage: none
           tools: none
-      - name: Install dependencies
+      - name: Install released igbinary
+        if: matrix.php != '8.6'
         run: |
           # Igbinary currently only publishes an RC release on Packagist.
           "${{ steps.pie.outputs.php }}" "${{ steps.pie.outputs.path }}" install --no-interaction \
             --with-php-config="$(command -v php-config)" --with-phpize-path="$(command -v phpize)" \
             'igbinary/igbinary:^3.2@RC'
+      - name: Install msgpack
+        run: |
           "${{ steps.pie.outputs.php }}" "${{ steps.pie.outputs.path }}" install --no-interaction \
             --with-php-config="$(command -v php-config)" --with-phpize-path="$(command -v phpize)" \
             msgpack/msgpack-php
       - name: Build phpredis
         run: |
+          php --ri igbinary
           phpize
           ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
           make -j"$(sysctl -n hw.logicalcpu)"
