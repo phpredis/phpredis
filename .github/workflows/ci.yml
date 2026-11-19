@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # shortcut: PHP 8.6 fixes are unreleased; remove the pin once an igbinary release includes #408 and #419.
+  IGBINARY_REF: 2b1f5d62e3037b07c2a46499ac32091cdb41fb40
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
@@ -80,7 +84,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
         server: ['redis', 'dragonfly', 'valkey']
 
     steps:
@@ -94,7 +98,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: json, igbinary, msgpack, :redis
+          extensions: >-
+            json, ${{ matrix.php == '8.6' && format('igbinary-igbinary/igbinary@{0}', env.IGBINARY_REF) || 'igbinary' }}, msgpack, :redis
           coverage: none
           tools: none
       - name: Install system dependencies
@@ -146,6 +151,7 @@ jobs:
 
       - name: Build phpredis
         run: |
+          php --ri igbinary
           phpize
           ./configure \
             --enable-redis-lzf \
@@ -248,15 +254,26 @@ jobs:
       - name: Add PHP master to PATH
         run: echo "$RUNNER_TEMP/php-master/bin" >> "$GITHUB_PATH"
 
+      - name: Build igbinary against PHP master
+        run: |
+          git clone https://github.com/igbinary/igbinary.git "$RUNNER_TEMP/igbinary"
+          cd "$RUNNER_TEMP/igbinary"
+          git checkout --detach "$IGBINARY_REF"
+          phpize
+          ./configure --enable-igbinary --with-php-config="$(command -v php-config)"
+          make -j"$(nproc)"
+          make install
+          php -n -dextension=igbinary.so --ri igbinary
+
       - name: Build PhpRedis against PHP master
         run: |
           php -n --version | tee -a "$GITHUB_STEP_SUMMARY"
           phpize
-          ./configure --enable-redis --enable-redis-lzf --enable-redis-lz4 --enable-redis-zstd --with-liblz4
+          ./configure --enable-redis --enable-redis-igbinary --enable-redis-lzf --enable-redis-lz4 --enable-redis-zstd --with-liblz4
           make -j"$(nproc)"
 
       - name: Load PhpRedis
-        run: php -n -dextension="$PWD/.libs/redis.so" --ri redis
+        run: php -n -dextension=igbinary.so -dextension="$PWD/.libs/redis.so" --ri redis
 
       - name: Upload diagnostics
         if: ${{ !cancelled() }}
@@ -266,6 +283,7 @@ jobs:
           path: |
             config.log
             ${{ runner.temp }}/php-src/config.log
+            ${{ runner.temp }}/igbinary/config.log
           if-no-files-found: ignore
           retention-days: 7
 
@@ -375,7 +393,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -397,20 +415,25 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: json, :redis
+          extensions: >-
+            ${{ matrix.php == '8.6' && format('json, igbinary-igbinary/igbinary@{0}, :redis', env.IGBINARY_REF) || 'json, :redis' }}
           coverage: none
           tools: none
-      - name: Install dependencies
+      - name: Install released igbinary
+        if: matrix.php != '8.6'
         run: |
           # Igbinary currently only publishes an RC release on Packagist.
           "${{ steps.pie.outputs.php }}" "${{ steps.pie.outputs.path }}" install --no-interaction \
             --with-php-config="$(command -v php-config)" --with-phpize-path="$(command -v phpize)" \
             'igbinary/igbinary:^3.2@RC'
+      - name: Install msgpack
+        run: |
           "${{ steps.pie.outputs.php }}" "${{ steps.pie.outputs.path }}" install --no-interaction \
             --with-php-config="$(command -v php-config)" --with-phpize-path="$(command -v phpize)" \
             msgpack/msgpack-php
       - name: Build phpredis
         run: |
+          php --ri igbinary
           phpize
           ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
           make -j"$(sysctl -n hw.logicalcpu)"
