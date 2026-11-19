@@ -390,6 +390,9 @@ jobs:
   macos:
     runs-on: macos-latest
     timeout-minutes: 30
+    env:
+      # shortcut: msgpack's PHP 8.6 fix is unreleased; remove the pin once a release includes msgpack/msgpack-php#185.
+      MSGPACK_REF: 4e72cb36e2d707307e8e7ac0b5d7c834fb39ac8e
     strategy:
       fail-fast: false
       matrix:
@@ -416,7 +419,9 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: >-
-            ${{ matrix.php == '8.6' && format('json, igbinary-igbinary/igbinary@{0}, :redis', env.IGBINARY_REF) || 'json, :redis' }}
+            ${{ matrix.php == '8.6' &&
+                format('json, igbinary-igbinary/igbinary@{0}, msgpack-msgpack/msgpack-php@{1}, :redis', env.IGBINARY_REF, env.MSGPACK_REF)
+                || 'json, :redis' }}
           coverage: none
           tools: none
       - name: Install released igbinary
@@ -426,7 +431,8 @@ jobs:
           "${{ steps.pie.outputs.php }}" "${{ steps.pie.outputs.path }}" install --no-interaction \
             --with-php-config="$(command -v php-config)" --with-phpize-path="$(command -v phpize)" \
             'igbinary/igbinary:^3.2@RC'
-      - name: Install msgpack
+      - name: Install released msgpack
+        if: matrix.php != '8.6'
         run: |
           "${{ steps.pie.outputs.php }}" "${{ steps.pie.outputs.path }}" install --no-interaction \
             --with-php-config="$(command -v php-config)" --with-phpize-path="$(command -v phpize)" \
@@ -434,6 +440,7 @@ jobs:
       - name: Build phpredis
         run: |
           php --ri igbinary
+          php --ri msgpack
           phpize
           ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
           make -j"$(sysctl -n hw.logicalcpu)"
