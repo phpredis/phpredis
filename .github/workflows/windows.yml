@@ -13,11 +13,11 @@ permissions:
 
 jobs:
   windows:
-    runs-on: windows-2022
+    runs-on: ${{ matrix.php == '8.6' && 'windows-2025-vs2026' || 'windows-2022' }}
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
         ts: [nts, ts]
     env:
       # Branch names can contain slashes, which break the builder's filenames.
@@ -49,7 +49,13 @@ jobs:
           PHP_VERSION: ${{ matrix.php }}
           THREAD_SAFETY: ${{ matrix.ts }}
         run: |
-          $compiler = if ([version]$env:PHP_VERSION -ge [version]'8.4') { 'vs17' } else { 'vs16' }
+          $compiler = if ([version]$env:PHP_VERSION -ge [version]'8.6') {
+              'vs18'
+          } elseif ([version]$env:PHP_VERSION -ge [version]'8.4') {
+              'vs17'
+          } else {
+              'vs16'
+          }
           $name = "php_redis-$env:EXTENSION_REF-$env:PHP_VERSION-$env:THREAD_SAFETY-$compiler-x86_64"
           $archives = @(Get-ChildItem artifacts -Filter '*.zip' -File)
           if ($archives.Count -ne 1 -or $archives[0].BaseName -cne $name) {
