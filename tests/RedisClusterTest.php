@@ -48,6 +48,7 @@ class Redis_Cluster_Test extends Redis_Test {
      * such as sortAsc, or sortDesc and other commands such as SELECT are
      * simply invalid in Redis Cluster */
     public function testPipelinePublish() { $this->markTestSkipped(); }
+    public function testShardSubscribe() { $this->markTestSkipped(); }
     public function testSortAsc()  { $this->markTestSkipped(); }
     public function testSortDesc() { $this->markTestSkipped(); }
     public function testWait()     { $this->markTestSkipped(); }

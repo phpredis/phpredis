@@ -1586,7 +1586,8 @@ redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, const c
     // Iterate over channels
     ZEND_HASH_FOREACH_VAL(ht_chan, z_chan) {
         if (!redis_cmd_cat_key_zval(cmd, z_chan) ||
-            (shardslot != REDIS_CLUSTER_SLOTS && cmd->slot != shardslot))
+            (redis_sock->type == REDIS_SOCK_CLUSTER &&
+             shardslot != REDIS_CLUSTER_SLOTS && cmd->slot != shardslot))
         {
             php_error_docref(NULL, E_WARNING, "All shard channels needs to belong to a single slot");
             redis_cmd_free(cmd);

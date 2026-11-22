@@ -331,6 +331,90 @@ class Redis_Test extends TestSuite {
         $this->assertGT(-1, $ret[0] ?? -1);
     }
 
+    protected function checkSubscription($redis, $method, $channels, $prefix, $host, $port) {
+        if (!function_exists('pcntl_fork') || !function_exists('stream_socket_pair'))
+            $this->markTestSkipped('Subscription callbacks require a publisher process');
+
+        $redis->setOption(Redis::OPT_PREFIX, $prefix);
+        $redis->setOption(Redis::OPT_READ_TIMEOUT, 1);
+        $pipes = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, 0);
+        $this->assertTrue(is_array($pipes));
+        $pid = pcntl_fork();
+        if ($pid == -1) {
+            fclose($pipes[0]);
+            fclose($pipes[1]);
+            throw new RuntimeException('Unable to fork subscription publisher');
+        }
+
+        if ($pid == 0) {
+            fclose($pipes[0]);
+            stream_set_blocking($pipes[1], false);
+            try {
+                $class = $this->getRedisClass();
+                $publisher = new $class();
+                $publisher->connect($host, $port, 2);
+                if ($this->getAuth()) $publisher->auth($this->getAuth());
+                $publish = $method === 'ssubscribe' ? 'spublish' : 'publish';
+                $deadline = microtime(true) + 5;
+                do {
+                    foreach ($channels as $channel)
+                        $publisher->rawCommand($publish, $prefix . rtrim($channel, '*'), 'payload');
+                    usleep(10000);
+                    fread($pipes[1], 1);
+                } while (!feof($pipes[1]) && microtime(true) < $deadline);
+                exit(0);
+            } catch (Throwable $e) {
+                fwrite(STDERR, $e->getMessage() . "\n");
+                exit(1);
+            }
+        }
+
+        fclose($pipes[1]);
+        $received = [];
+        $unsubscribe = ['subscribe' => 'unsubscribe', 'psubscribe' => 'punsubscribe',
+                        'ssubscribe' => 'sunsubscribe'][$method];
+        try {
+            $redis->$method($channels, function (...$args) use (&$received, $channels, $unsubscribe) {
+                $channel = $args[count($args) - 2];
+                $received[$channel] = $args[count($args) - 1];
+                if (count($received) === count($channels)) $args[0]->$unsubscribe($channels);
+            });
+        } catch (RedisClusterException $e) {
+            /* RedisCluster keeps reading after the last unsubscribe. */
+            if (count($received) !== count($channels) || strpos($e->getMessage(), 'read error') === false)
+                throw $e;
+        } finally {
+            $redis->close();
+            fclose($pipes[0]);
+            pcntl_waitpid($pid, $status);
+        }
+
+        $this->assertTrue(pcntl_wifexited($status));
+        $this->assertEquals(0, pcntl_wexitstatus($status));
+        $expected = [];
+        foreach ($channels as $channel)
+            $expected[$prefix . rtrim($channel, '*')] = 'payload';
+        ksort($expected);
+        ksort($received);
+        $this->assertEquals($expected, $received);
+    }
+
+    public function testShardSubscribe() {
+        if ($this->is_dragonfly || !$this->haveCommand('SSUBSCRIBE'))
+            $this->markTestSkipped();
+
+        foreach (['', 'prefix:'] as $prefix) {
+            foreach ([['{subscription}:one'], ['{subscription}:one', '{subscription}:two']] as $channels) {
+                $class = $this->getRedisClass();
+                $redis = new $class();
+                $redis->connect($this->getHost(), $this->getPort(), 2);
+                if ($this->getAuth()) $redis->auth($this->getAuth());
+                $this->checkSubscription($redis, 'ssubscribe', $channels, $prefix,
+                                         $this->getHost(), $this->getPort());
+            }
+        }
+    }
+
     // Run some simple tests against the PUBSUB command.  This is problematic, as we
     // can't be sure what's going on in the instance, but we can do some things.
     public function testPubSub() {
