@@ -8848,6 +8848,38 @@ class Redis_Test extends TestSuite {
         return $ids;
     }
 
+    public function testXAddNumericFields() {
+        if (!$this->minVersionCheck('5.0'))
+            $this->markTestSkipped();
+
+        $fields = [-1 => 'negative', PHP_INT_MIN => 'minimum', 0 => 'zero',
+                   PHP_INT_MAX => 'maximum', 'field' => 'text'];
+        $modes = [null];
+        if ($this->haveMulti()) $modes[] = Redis::MULTI;
+        if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+        $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
+        $key = 'numeric-stream-fields';
+        try {
+            foreach ($this->getSerializers() as $testSerializer) {
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $testSerializer);
+                foreach ($modes as $mode) {
+                    $this->redis->del($key);
+                    if ($mode !== null) $this->redis->multi($mode);
+                    $id = $this->redis->xAdd($key, '1-0', $fields);
+                    if ($mode !== null) {
+                        $this->assertEquals(['1-0'], $this->redis->exec());
+                    } else {
+                        $this->assertEquals('1-0', $id);
+                    }
+                    $this->assertEquals(['1-0' => $fields], $this->redis->xRange($key, '-', '+'));
+                }
+            }
+        } finally {
+            $this->redis->del($key);
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+        }
+    }
+
     public function testXAdd() {
         if ( ! $this->minVersionCheck('5.0'))
             $this->markTestSkipped();

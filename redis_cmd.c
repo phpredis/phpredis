@@ -154,7 +154,7 @@ void redis_cmd_cat_arrkey(RedisCmd *cmd, zend_string *str, zend_ulong idx) {
     if (str) {
         redis_cmd_cat_zstr(cmd, str);
     } else {
-        redis_cmd_cat_ulong(cmd, idx);
+        redis_cmd_cat_long(cmd, idx);
     }
 }
 
