@@ -1585,7 +1585,10 @@ redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, const c
 
     // Iterate over channels
     ZEND_HASH_FOREACH_VAL(ht_chan, z_chan) {
-        if (!redis_cmd_cat_key_zval(cmd, z_chan) ||
+        if (shardslot == REDIS_CLUSTER_SLOTS) {
+            /* Global Pub/Sub channels and patterns can span hash slots. */
+            redis_cmd_cat_channel_zval(cmd, z_chan);
+        } else if (!redis_cmd_cat_key_zval(cmd, z_chan) ||
             (redis_sock->type == REDIS_SOCK_CLUSTER &&
              shardslot != REDIS_CLUSTER_SLOTS && cmd->slot != shardslot))
         {

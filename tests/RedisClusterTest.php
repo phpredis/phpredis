@@ -8,6 +8,25 @@ require_once __DIR__ . "/RedisTest.php";
  * where we're validating specific cluster mechanisms
  */
 class Redis_Cluster_Test extends Redis_Test {
+    public function testSubscribeAcrossSlots() {
+        $node = $this->redis->_masters()[0];
+        foreach (['subscribe', 'psubscribe'] as $method) {
+            foreach (['', 'prefix:'] as $prefix) {
+                $channels = ['subscription:one', 'subscription:two'];
+                if ($method === 'psubscribe')
+                    $channels = array_map(function ($channel) { return $channel . '*'; }, $channels);
+                $this->assertNotEquals(
+                    $this->redis->rawCommand($node, 'CLUSTER', 'KEYSLOT', $prefix . $channels[0]),
+                    $this->redis->rawCommand($node, 'CLUSTER', 'KEYSLOT', $prefix . $channels[1])
+                );
+                $class = $this->getRedisClusterClass();
+                $redis = new $class(null, self::$seeds, 1, 1, false, $this->getAuth());
+                $this->checkSubscription($redis, $method, $channels, $prefix,
+                                         $node[0], $node[1]);
+            }
+        }
+    }
+
     public function testClusterSerializationHooks() {
         if ($this->getRedisClusterClass() !== RedisCluster::class)
             $this->markTestSkipped('PhpRedis 6.x preserves custom serialization hooks');
