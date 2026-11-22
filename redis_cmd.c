@@ -259,7 +259,7 @@ zend_bool redis_cmd_cat_key_arrkey(RedisCmd *cmd, zend_string *str, zend_ulong i
     size_t len;
 
     if (str == NULL) {
-        key = zend_print_ulong_to_buf(buf + sizeof(buf) - 1, idx);
+        key = zend_print_long_to_buf(buf + sizeof(buf) - 1, idx);
         len = buf + sizeof(buf) - 1 - key;
     } else {
         key = ZSTR_VAL(str);

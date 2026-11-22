@@ -9166,6 +9166,45 @@ class Redis_Test extends TestSuite {
         $this->assertFalse(@$this->redis->xRead([]));
     }
 
+    public function testXReadNumericStreamNames() {
+        if (!$this->minVersionCheck('5.0'))
+            $this->markTestSkipped();
+
+        $modes = [null];
+        if ($this->haveMulti()) $modes[] = Redis::MULTI;
+        if ($this->havePipeline()) $modes[] = Redis::PIPELINE;
+        $prefix = $this->redis->getOption(Redis::OPT_PREFIX);
+        try {
+            foreach (['', 'numeric-stream:'] as $testPrefix) {
+                $this->redis->setOption(Redis::OPT_PREFIX, $testPrefix);
+                foreach ([-1, PHP_INT_MIN, 0, PHP_INT_MAX, 'stream-name'] as $stream) {
+                    $this->redis->del((string)$stream);
+                    try {
+                        $this->assertEquals('1-0', $this->redis->xAdd((string)$stream, '1-0', ['field' => 'value']));
+                        $expected = [$testPrefix . $stream => ['1-0' => ['field' => 'value']]];
+                        foreach ($modes as $mode) {
+                            $group = 'group-' . ($mode ?? 'atomic');
+                            $this->assertTrue($this->redis->xGroup('CREATE', (string)$stream, $group, '0'));
+                            if ($mode !== null) $this->redis->multi($mode);
+                            $read = $this->redis->xRead([$stream => '0']);
+                            $groupRead = $this->redis->xReadGroup($group, 'consumer', [$stream => '>']);
+                            if ($mode !== null) {
+                                $this->assertEquals([$expected, $expected], $this->redis->exec());
+                            } else {
+                                $this->assertEquals($expected, $read);
+                                $this->assertEquals($expected, $groupRead);
+                            }
+                        }
+                    } finally {
+                        $this->redis->del((string)$stream);
+                    }
+                }
+            }
+        } finally {
+            $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+        }
+    }
+
     public function testXRead() {
         if ( ! $this->minVersionCheck('5.0'))
             $this->markTestSkipped();
