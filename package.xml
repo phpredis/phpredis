@@ -54,6 +54,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Fixed:
 
+    * Preserve signed numeric field names in `XADD`, restoring 6.3.0 behavior
+      for negative fields and integer boundaries [8cb76f62] (michael-grunder)
+    * Preserve signed numeric stream names in `XREAD` and `XREADGROUP`,
+      including prefixes and cluster routing [687c3e0f] (michael-grunder)
+    * Allow `RedisCluster` `SUBSCRIBE` and `PSUBSCRIBE` channels and patterns
+      to span hash slots while preserving prefixes [8d92f078]
+      (michael-grunder)
+    * Fix incorrect cluster slot validation in standalone `SSUBSCRIBE`
+      commands [938a2ca2] (michael-grunder)
     * Restore 6.3.0 `bitop()` argument parsing, preserving key conversion and
       returning false for too few arguments or a non-string operation
       [3b0f0296] (michael-grunder)
@@ -246,6 +255,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Tests/CI:
 
+    * Add PHP 8.6 to Linux, macOS, and Windows CI builds, using pinned
+      igbinary and msgpack commits where needed [06e02248], [b5eb0dde]
+      (michael-grunder)
+    * Add an allowed-to-fail PHP master build and extension loading check to
+      the release branch [de491b3e] (michael-grunder)
     * Allow multiple test filters and exclusions, and print commands for
       rerunning tests [07f620e7], [a2b98330], [2343369b] (michael-grunder)
     * Improve test diagnostics, fail-fast assertions, and compatibility with
@@ -449,6 +463,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Fixed:
 
+    * Preserve signed numeric field names in `XADD`, restoring 6.3.0 behavior
+      for negative fields and integer boundaries [8cb76f62] (michael-grunder)
+    * Preserve signed numeric stream names in `XREAD` and `XREADGROUP`,
+      including prefixes and cluster routing [687c3e0f] (michael-grunder)
+    * Allow `RedisCluster` `SUBSCRIBE` and `PSUBSCRIBE` channels and patterns
+      to span hash slots while preserving prefixes [8d92f078]
+      (michael-grunder)
+    * Fix incorrect cluster slot validation in standalone `SSUBSCRIBE`
+      commands [938a2ca2] (michael-grunder)
     * Restore 6.3.0 `bitop()` argument parsing, preserving key conversion and
       returning false for too few arguments or a non-string operation
       [3b0f0296] (michael-grunder)
@@ -641,6 +664,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     Tests/CI:
 
+    * Add PHP 8.6 to Linux, macOS, and Windows CI builds, using pinned
+      igbinary and msgpack commits where needed [06e02248], [b5eb0dde]
+      (michael-grunder)
+    * Add an allowed-to-fail PHP master build and extension loading check to
+      the release branch [de491b3e] (michael-grunder)
     * Allow multiple test filters and exclusions, and print commands for
       rerunning tests [07f620e7], [a2b98330], [2343369b] (michael-grunder)
     * Improve test diagnostics, fail-fast assertions, and compatibility with

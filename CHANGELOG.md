@@ -22,6 +22,18 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Fixed
 
+- Preserve signed numeric field names in `XADD`, restoring 6.3.0 behavior for negative fields and integer boundaries
+  [8cb76f62](https://github.com/phpredis/phpredis/commit/8cb76f62b11c2676ab5c271ccbadca5be63221b4)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Preserve signed numeric stream names in `XREAD` and `XREADGROUP`, including prefixes and cluster routing
+  [687c3e0f](https://github.com/phpredis/phpredis/commit/687c3e0ff834e19d7466463c8862781755226d59)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Allow `RedisCluster` `SUBSCRIBE` and `PSUBSCRIBE` channels and patterns to span hash slots while preserving prefixes
+  [8d92f078](https://github.com/phpredis/phpredis/commit/8d92f07870ac25c71b7d4fe24be9d0e248834c70)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix incorrect cluster slot validation in standalone `SSUBSCRIBE` commands
+  [938a2ca2](https://github.com/phpredis/phpredis/commit/938a2ca258329c67c09513a559a257469c695a73)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Restore 6.3.0 `bitop()` argument parsing, preserving key conversion and returning false for too few arguments or a non-string operation
   [3b0f0296](https://github.com/phpredis/phpredis/commit/3b0f02961ba5e8c913071d2c8c2eaf50935f073b)
   ([michael-grunder](https://github.com/michael-grunder))
@@ -375,6 +387,13 @@ Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection API
 
 ## Tests/CI
 
+- Add PHP 8.6 to Linux, macOS, and Windows CI builds, using pinned igbinary and msgpack commits where needed
+  [06e02248](https://github.com/phpredis/phpredis/commit/06e02248ef37c0e783c5d7a9d50b36bc6bef4730),
+  [b5eb0dde](https://github.com/phpredis/phpredis/commit/b5eb0dde7a6e540bc7eca56ca9ddb3928efb4f93)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add an allowed-to-fail PHP master build and extension loading check to the release branch
+  [de491b3e](https://github.com/phpredis/phpredis/commit/de491b3e43da2995414b231961f565eeb512b6d6)
+  ([michael-grunder](https://github.com/michael-grunder))
 - Allow multiple test filters and exclusions, and print commands for rerunning tests
   [07f620e7](https://github.com/phpredis/phpredis/commit/07f620e767739676fa34f75a48a2a7d8d3aa2d0c),
   [a2b98330](https://github.com/phpredis/phpredis/commit/a2b983304a272e1190f8ae1dab7ed870e356fc7d),
