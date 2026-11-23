@@ -36,6 +36,29 @@ than relying on display wrapping. Explicit line breaks render more consistently
 across platforms, matching the wrapping often provided by Git editor plugins
 in Vim and Neovim.
 
+### Publishing PECL releases
+
+PECL uploads can reject valid UTF-8 release notes with `SQLSTATE[22007]`,
+`1366 Incorrect string value`, and a reference to `releases.releasenotes`.
+The accompanying "Invalid datetime format" text is misleading: this can be
+a server-side character encoding limitation, not an XML or release date error.
+For 6.4.0RC1, a non-ASCII contributor name triggered this failure; ASCII notes
+allowed the release to be published.
+
+- Keep release notes in `package.xml` ASCII-safe, including the matching notes
+  under `<changelog>`. Use contributors' ASCII GitHub handles when their names
+  contain non-ASCII characters, and use straight quotes and apostrophes.
+- Preserve Unicode names in `CHANGELOG.md`, Git history, and annotated tags;
+  the PECL workaround belongs in the package metadata.
+- XML character references do not work around this issue: the XML parser
+  decodes them back into Unicode before the database insert.
+- After editing `package.xml`, regenerate the upload archive with
+  `pecl package package.xml`. Check the parsed notes inside the resulting
+  archive for non-ASCII characters and verify that the current release notes
+  and their changelog entry agree, allowing for packaging whitespace changes.
+  Valid XML and successful local packaging alone do not guarantee PECL will
+  accept the notes.
+
 ### C style guide
 
 - Do not add casts unless they are required for correctness, ABI compatibility,
