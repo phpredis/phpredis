@@ -3062,11 +3062,11 @@ static void redis_cmd_cat_hash_fields(RedisCmd *cmd, HashTable *ht) {
 void redis_cmd_ctx_hash_dtor(void *ptr) {
     HashTable *ht = ptr;
 
-    if (GC_REFCOUNT(ht) == 1) {
-        zend_hash_destroy(ht);
-        FREE_HASHTABLE(ht);
-    } else {
-        GC_DELREF(ht);
+    /* The reply loops hand this table out as the reply, which may have been
+     * released already and left the table in the GC root buffer.
+     * zend_array_destroy() takes it out of the buffer before freeing it. */
+    if (GC_DELREF(ht) == 0) {
+        zend_array_destroy(ht);
     }
 }
 

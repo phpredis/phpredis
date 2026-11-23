@@ -4806,6 +4806,58 @@ class Redis_Test extends TestSuite {
         $redis->close();
     }
 
+    /* HMGET, HGETEX and HGETDEL replies share their table with the command
+       context. A pipeline that fails after such a reply was decoded releases
+       the reply first, which leaves the table in the GC root buffer, so the
+       context must not free the table behind the collector's back. */
+    public function testPipelineHashReadFailedMultiBlock() {
+        if ( ! $this->havePipeline())
+            $this->markTestSkipped();
+
+        $commands = ['hmget'];
+        if ($this->minVersionCheck('8.0'))
+            array_push($commands, 'hgetex', 'hgetdel');
+
+        foreach ($commands as $command) {
+            $redis = new Redis([
+                'host' => $this->getHost(),
+                'port' => $this->getPort(),
+            ]);
+
+            if ($this->getAuth())
+                $this->assertTrue($redis->auth($this->getAuth()));
+
+            $redis->del('pipeline-hash-read');
+            $redis->hset('pipeline-hash-read', 'field', 'value');
+
+            /* The server refuses to queue the unknown command, so reading the
+               MULTI block fails after the hash read's reply was decoded. */
+            $pipe = $redis->pipeline();
+            $pipe->$command('pipeline-hash-read', ['field']);
+            $pipe->multi();
+            $pipe->rawCommand('PHPREDIS-UNKNOWN-COMMAND');
+            $pipe->exec();
+            $this->assertFalse($pipe->exec());
+
+            /* The reply to EXEC is still unread, so don't reuse the socket. */
+            $redis->close();
+
+            /* Walks the root buffer, where a freed table would still be. */
+            gc_collect_cycles();
+        }
+
+        $redis = new Redis([
+            'host' => $this->getHost(),
+            'port' => $this->getPort(),
+        ]);
+
+        if ($this->getAuth())
+            $this->assertTrue($redis->auth($this->getAuth()));
+
+        $redis->del('pipeline-hash-read');
+        $redis->close();
+    }
+
     public function testDeferredReplyDisconnectCleanup() {
         $class = $this->getRedisClass();
         if ( ! is_a($class, Redis::class, true))
@@ -4849,6 +4901,11 @@ class Redis_Test extends TestSuite {
                                 if (is_resource($peer))
                                     fclose($peer);
                                 unset($redis);
+                                /* The disconnect hands the hash read's reply to
+                                   the reply loop, which releases it before the
+                                   context; nothing freed may stay in the GC root
+                                   buffer. */
+                                gc_collect_cycles();
                             }
                         }
                     }
