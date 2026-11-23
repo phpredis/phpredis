@@ -3484,6 +3484,9 @@ PHP_METHOD(RedisCluster, rawcommand) {
     /* Free argument array */
     efree(z_args);
 
+    /* We can't know if a raw command writes, so always send it to the master */
+    c->readonly = 0;
+
     /* Direct the command */
     const REDIS_REPLY_TYPE rtype = cluster_is_atomic(c) ? TYPE_EOF : TYPE_LINE;
     if (cluster_send_slot_cmd(c, cmd->slot, cmd, rtype) < 0) {

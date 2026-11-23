@@ -537,6 +537,33 @@ class Redis_Cluster_Test extends Redis_Test {
         );
     }
 
+    /* Regression test for GH #3017 */
+    public function testDirectedRawCommandUsesMaster() {
+        $masters = $this->redis->_masters();
+        $this->assertArrayKey($masters, 0, 'is_array');
+        $master = $masters[0];
+
+        $this->assertTrue(
+            $this->redis->setOption(
+                RedisCluster::OPT_SLAVE_FAILOVER,
+                RedisCluster::FAILOVER_DISTRIBUTE_SLAVES
+            )
+        );
+
+        /* A read must not leave the next raw command readonly */
+        $this->redis->get('foo');
+
+        /* Should succeed being sent to the primary */
+        $this->assertTrue($this->redis->rawCommand($master, 'FLUSHDB'));
+
+        $this->assertTrue(
+            $this->redis->setOption(
+                RedisCluster::OPT_SLAVE_FAILOVER,
+                RedisCluster::FAILOVER_NONE
+            )
+        );
+    }
+
     /* Regression test for setting TCP_KEEPALIVE on the hostless cluster flags socket */
     public function testSetTcpKeepaliveOption() {
         $this->assertTrue(
