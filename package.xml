@@ -105,7 +105,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Clear the cluster slot cache when nodes are unreachable [52e90650] (Victor
       Kislov)
     * Handle `RedisCluster` directed commands on uncovered slots [1351c824]
-      (Ebubekir Yiğit)
+      (ebubekiryigit)
     * Fix `RedisCluster` directed commands in `MULTI` mode and reject `UNWATCH`
       during a transaction [e13d5d0c], [a1d93cab] (michael-grunder)
     * Fix cluster transaction result bookkeeping across slots belonging to the
@@ -233,7 +233,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Document TLS options and clarify that `connect()` throws on failure
       [c28430e5], [6efd549a] (michael-grunder)
     * Document session `read_timeout` and the default `persistent` setting
-      [0340599b], [c99c8634] (Sowmya Mallur) (林博仁 Buo-ren Lin)
+      [0340599b], [c99c8634] (Sowmya Mallur) (brlin-tw)
     * Explain transactions inside pipelines and their reply formats [8ef2ee92]
       (g)
     * Document `WAIT` and `WAITAOF` [cd4cf653] (michael-grunder)
@@ -273,9 +273,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix session and replication test races, and use explicit exit codes for
       session helpers [bccd60d4], [531b17e5], [3c65094e], [4bccf599]
       (michael-grunder)
-    * Fix flaky `EXISTS` coverage with deterministic keys [82bf96c3] (武田 憲太郎)
+    * Fix flaky `EXISTS` coverage with deterministic keys [82bf96c3] (KentarouTakeda)
     * Add numeric-string hash field regression coverage across execution modes
-      [6f42a349], [0ef13108] (michael-grunder) (Till Krüss)
+      [6f42a349], [0ef13108] (michael-grunder) (tillkruss)
     * Add `MSETEX` tests and fix expiry assertions [bd4989e0], [a033e40b],
       [074b7c7f] (michael-grunder)
     * Add `XDELEX` tests [8b4cfb72] (michael-grunder)
@@ -286,7 +286,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Skip unsupported `DELEX` options when testing Valkey [88050422] (Remi
       Collet)
     * Add PHP 8.5 to macOS and Windows CI, and fix the Homebrew configuration
-      path [ac54591d], [a6313d1b] (Emre Çalışkan)
+      path [ac54591d], [a6313d1b] (thecaliskan)
     * Migrate Windows CI to `php/php-windows-builder`, use commit SHAs, and make
       binaries discoverable by PIE [8f8272db], [f14ce600], [de2e1b39] (Pavlo
       Yatsukhnenko) (michael-grunder)
@@ -516,7 +516,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Clear the cluster slot cache when nodes are unreachable [52e90650] (Victor
       Kislov)
     * Handle `RedisCluster` directed commands on uncovered slots [1351c824]
-      (Ebubekir Yiğit)
+      (ebubekiryigit)
     * Fix `RedisCluster` directed commands in `MULTI` mode and reject `UNWATCH`
       during a transaction [e13d5d0c], [a1d93cab] (michael-grunder)
     * Fix cluster transaction result bookkeeping across slots belonging to the
@@ -644,7 +644,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Document TLS options and clarify that `connect()` throws on failure
       [c28430e5], [6efd549a] (michael-grunder)
     * Document session `read_timeout` and the default `persistent` setting
-      [0340599b], [c99c8634] (Sowmya Mallur) (林博仁 Buo-ren Lin)
+      [0340599b], [c99c8634] (Sowmya Mallur) (brlin-tw)
     * Explain transactions inside pipelines and their reply formats [8ef2ee92]
       (g)
     * Document `WAIT` and `WAITAOF` [cd4cf653] (michael-grunder)
@@ -684,9 +684,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix session and replication test races, and use explicit exit codes for
       session helpers [bccd60d4], [531b17e5], [3c65094e], [4bccf599]
       (michael-grunder)
-    * Fix flaky `EXISTS` coverage with deterministic keys [82bf96c3] (武田 憲太郎)
+    * Fix flaky `EXISTS` coverage with deterministic keys [82bf96c3] (KentarouTakeda)
     * Add numeric-string hash field regression coverage across execution modes
-      [6f42a349], [0ef13108] (michael-grunder) (Till Krüss)
+      [6f42a349], [0ef13108] (michael-grunder) (tillkruss)
     * Add `MSETEX` tests and fix expiry assertions [bd4989e0], [a033e40b],
       [074b7c7f] (michael-grunder)
     * Add `XDELEX` tests [8b4cfb72] (michael-grunder)
@@ -697,7 +697,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Skip unsupported `DELEX` options when testing Valkey [88050422] (Remi
       Collet)
     * Add PHP 8.5 to macOS and Windows CI, and fix the Homebrew configuration
-      path [ac54591d], [a6313d1b] (Emre Çalışkan)
+      path [ac54591d], [a6313d1b] (thecaliskan)
     * Migrate Windows CI to `php/php-windows-builder`, use commit SHAs, and make
       binaries discoverable by PIE [8f8272db], [f14ce600], [de2e1b39] (Pavlo
       Yatsukhnenko) (michael-grunder)
@@ -771,7 +771,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     --- 6.3.0 ---
 
     This release introduces support for dozens of new commands, including hash
-    field expiration, Valkey’s DELIFEQ, and Redis vector set commands. It also
+    field expiration, Valkey's DELIFEQ, and Redis vector set commands. It also
     includes many bug fixes and performance improvements.
 
     Fixed:
