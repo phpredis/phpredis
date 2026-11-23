@@ -22,7 +22,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <email>p.yatsukhnenko@gmail.com</email>
     <active>yes</active>
   </lead>
-  <date>2026-11-13</date>
+  <date>2026-11-22</date>
   <version>
     <release>6.4.0RC1</release>
     <api>6.2.0</api>
@@ -46,6 +46,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Ty - https://github.com/karock
 
     --- 6.4.0RC1 ---
+
+    https://github.com/phpredis/phpredis/releases/tag/6.4.0RC1
 
     Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection
     APIs, an optional phpser serializer, and persistent connections for ZTS
@@ -440,7 +442,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
         <release>6.4.0RC1</release>
         <api>6.2.0</api>
       </version>
-      <date>2026-11-13</date>
+      <date>2026-11-22</date>
       <notes>
 
     --- Sponsors ---
@@ -455,6 +457,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Ty - https://github.com/karock
 
     --- 6.4.0RC1 ---
+
+    https://github.com/phpredis/phpredis/releases/tag/6.4.0RC1
 
     Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection
     APIs, an optional phpser serializer, and persistent connections for ZTS
