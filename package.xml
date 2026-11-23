@@ -22,7 +22,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     <email>p.yatsukhnenko@gmail.com</email>
     <active>yes</active>
   </lead>
-  <date>2026-11-22</date>
+  <date>2026-11-23</date>
   <version>
     <release>6.4.0RC1</release>
     <api>6.2.0</api>
@@ -442,7 +442,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
         <release>6.4.0RC1</release>
         <api>6.2.0</api>
       </version>
-      <date>2026-11-22</date>
+      <date>2026-11-23</date>
       <notes>
 
     --- Sponsors ---
