@@ -5,6 +5,30 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [6.4.0RC2] - Unreleased
+
+This release candidate fixes two issues found after 6.4.0RC1. See [6.4.0RC1](#640rc1---2026-11-23-github-pecl) for the full list of changes since 6.3.0.
+
+### Sponsors :sparkling_heart:
+
+- [A-VISION Advisering en Begeleiding B.V.](https://github.com/A-VISION-BV)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Boring Observability](https://github.com/boring-o11y)
+- [Geoffrey Hoffman](https://github.com/phpguru)
+- [Open LMS](https://github.com/open-lms-open-source)
+- [Salvatore Sanfilippo](https://github.com/antirez)
+- [Scott Helme](https://github.com/ScottHelme)
+- [Ty](https://github.com/karock)
+
+## Fixed
+
+- Prevent heap corruption during garbage collection after failed pipelines, transactions, or disconnected hash reads involving `HMGET`, `HGETEX`, or `HGETDEL`
+  [bc6dea1d](https://github.com/phpredis/phpredis/commit/bc6dea1ddc7b0aa956477d519684cd68e6330417)
+  ([Marcin Gil](https://github.com/marcing))
+- Fix premature `RedisCluster` redirection timeouts on Windows and 32-bit builds by keeping the redirect timer in a `long long`
+  [9cd5a6dd](https://github.com/phpredis/phpredis/commit/9cd5a6dd4c08ccf212e589bd9f5ff678d5c54507)
+  ([Marcin Gil](https://github.com/marcing))
+
 # [6.4.0RC1] - 2026-11-23 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/6.4.0RC1), [PECL](https://pecl.php.net/package/redis/6.4.0RC1))
 
 Changes since 6.3.0 add new Redis and Valkey commands, explicit reconnection APIs, an optional phpser serializer, and persistent connections for ZTS builds. They also improve protocol validation, cluster reliability, session handling, and performance.
