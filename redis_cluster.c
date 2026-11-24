@@ -25,6 +25,7 @@
 #include "crc16.h"
 #include "redis_cluster.h"
 #include "redis_commands.h"
+#include "redis_readonly_commands.h"
 #include <ext/spl/spl_exceptions.h>
 #include <zend_exceptions.h>
 #include "library.h"
@@ -2446,6 +2447,9 @@ static void cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
         RETURN_FALSE;
     }
 
+    /* Node-directed admin commands always go to the primary */
+    c->readonly = 0;
+
     // Construct our command
     cmd = redis_cmd_create(NULL, kw, kwlen);
 
@@ -2541,6 +2545,8 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
     if (slot < 0) {
         RETURN_FALSE;
     }
+
+    c->readonly = 0;
 
     cmd = redis_cmd_create(NULL, kw, kw_len);
 
@@ -2954,6 +2960,8 @@ PHP_METHOD(RedisCluster, client) {
     const short slot = cluster_cmd_get_slot(c, z_node);
     if (slot < 0) RETURN_FALSE;
 
+    c->readonly = 0;
+
     /* Our return type and reply callback is different for all subcommands */
     if (zend_string_equals_literal_ci(op, "LIST")) {
         rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;
@@ -3051,6 +3059,8 @@ PHP_METHOD(RedisCluster, script) {
         efree(z_args);
         RETURN_FALSE;
     }
+
+    c->readonly = 0;
 
     /* Send it off */
     if (cluster_send_slot_cmd(c, slot, cmd, TYPE_EOF) < 0) {
@@ -3480,6 +3490,9 @@ PHP_METHOD(RedisCluster, rawcommand) {
         efree(z_args);
         RETURN_FALSE;
     }
+
+    c->readonly = cluster_is_atomic(c) &&
+        redis_readonly_command(Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1])) != NULL;
 
     /* Free argument array */
     efree(z_args);

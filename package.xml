@@ -176,6 +176,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
       <file role="src" name="redis_array_impl.h"/>
       <file role="src" name="redis_cluster.c"/>
       <file role="src" name="redis_cluster.h"/>
+      <file role="src" name="redis_readonly_commands.h"/>
       <file role="src" name="redis_cluster.stub.php"/>
       <file role="src" name="redis_cluster_arginfo.h"/>
       <file role="src" name="redis_cluster_legacy_arginfo.h"/>

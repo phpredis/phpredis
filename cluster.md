@@ -92,6 +92,57 @@ With the exception of commands that are directed to a specific node, each comman
 3.  Redis cluster returns to us a `CLUSTERDOWN` error, in which case a `RedisClusterException` is raised.
 4.  We receive a valid response, in which case the data is returned to the caller.
 
+## Raw command routing
+
+`rawCommand()` classifies each command using a case-insensitive allowlist of known
+readonly commands. These commands follow `OPT_SLAVE_FAILOVER`, including when
+the routing argument is a primary's `[host, port]` address. All other commands
+go to the selected primary. Commands inside `MULTI` always go to primaries.
+The classification does not depend on previously executed commands.
+
+The allowlist is conservative: unknown commands, unlisted module commands,
+administrative command families, and commands that can write depending on their
+arguments go to primaries. For example, `SORT_RO` is eligible for replica routing,
+but `SORT` is not, even without `STORE`. This replaces the previous behavior where
+raw commands inherited the readonly classification left by an earlier command.
+Applications may therefore see different load distribution and read freshness.
+Raw commands still do not automatically follow `MOVED` or `ASK` replies.
+
+### Maintaining the readonly allowlist
+
+Readonly commands are tagged in `redis_cluster.stub.php` method docblocks:
+
+```php
+/**
+ * @see \Redis::get()
+ * @redis-readonly
+ */
+public function get(string $key): mixed;          // Infers GET from the method name.
+
+/**
+ * @redis-readonly GET
+ */
+public function getWithMeta(string $key): RedisCluster|array|false;  // Explicit command.
+```
+
+Untagged methods are treated as writes and go to primaries. Use `@redis-readonly`
+only when the command is safe for replica routing for all arguments. The tag is
+build metadata only: it is not visible at runtime and does not change the
+implementation of named methods.
+
+Releases ship the generated `redis_readonly_commands.h`, so `phpize` and normal
+extension builds never regenerate it or require gperf. After changing tags,
+regenerate it with PHP 8 or later (with tokenizer) and GNU gperf 3.3:
+
+```sh
+php .github/scripts/generate-readonly-commands.php
+php .github/scripts/test-readonly-commands.php
+```
+
+Commit the stub and `redis_readonly_commands.h`. CI runs
+`php .github/scripts/generate-readonly-commands.php --check` and tests exact
+membership in the generated C lookup.
+
 ## Transactions
 The RedisCluster class fully supports MULTI ... EXEC transactions, including commands such as MGET and MSET which operate on multiple keys.  There are considerations that must be taken into account here however.
 
