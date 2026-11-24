@@ -1470,6 +1470,95 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals(['A', 'B', 'C', 'D'], $this->redis->lrange('mylist', 0, -1));
     }
 
+    public function testRawCommandRouting() {
+        $key = '{raw-command-routing}:key';
+        if (!($replicas = $this->replicasForKey($key)))
+            $this->markTestSkipped('Requires replicas');
+
+        $nodes = array_map([$this, 'connectToNode'], $replicas);
+        $primaryId = $this->redis->rawCommand($key, 'CLUSTER', 'MYID');
+        $primary = null;
+        foreach ($this->redis->_masters() as $master) {
+            if ($this->redis->rawCommand($master, 'CLUSTER', 'MYID') === $primaryId) {
+                $primary = $master;
+                break;
+            }
+        }
+        $this->assertIsArray($primary);
+        $getCount = function () use ($nodes) {
+            $count = 0;
+            foreach ($nodes as $node) {
+                $stats = $node->info('commandstats');
+                if (preg_match('/calls=(\d+)/', $stats['cmdstat_get'] ?? '', $match))
+                    $count += (int)$match[1];
+            }
+            return $count;
+        };
+
+        $previous = $this->redis->getOption(RedisCluster::OPT_SLAVE_FAILOVER);
+        try {
+            foreach ([RedisCluster::FAILOVER_NONE, RedisCluster::FAILOVER_ERROR,
+                      RedisCluster::FAILOVER_DISTRIBUTE,
+                      RedisCluster::FAILOVER_DISTRIBUTE_SLAVES] as $mode) {
+                $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER, $mode);
+                foreach ([$key, $primary] as $target) {
+                    foreach ([false, true] as $precedingRead) {
+                        $this->assertTrue($this->redis->set($key, 'value'));
+                        $this->assertEquals(count($replicas),
+                            $this->redis->rawCommand($key, 'WAIT', count($replicas), 1000));
+                        if ($precedingRead) $this->redis->get($key);
+
+                        $before = $getCount();
+                        $this->assertEquals('value', $this->redis->rawCommand($target, 'gEt', $key));
+                        $reads = $getCount() - $before;
+                        if ($mode === RedisCluster::FAILOVER_DISTRIBUTE_SLAVES) {
+                            $this->assertEquals(1, $reads);
+                        } elseif ($mode === RedisCluster::FAILOVER_DISTRIBUTE) {
+                            $this->assertTrue($reads === 0 || $reads === 1);
+                        } else {
+                            $this->assertEquals(0, $reads);
+                        }
+
+                        /* A raw read must not make a subsequent raw write readonly. */
+                        $this->assertTrue($this->redis->rawCommand($target, 'SET', $key, 'updated'));
+                        $this->redis->get($key);
+                        $this->assertTrue($this->redis->rawCommand($target, 'SET', $key, 'value'));
+                        if ($this->minVersionCheck('6.2.0')) {
+                            $this->redis->get($key);
+                            $this->assertEquals('value', $this->redis->rawCommand($target, 'GETDEL', $key));
+                        }
+
+                        /* ROLE is deliberately outside the readonly allowlist. */
+                        $this->redis->get($key);
+                        $role = $this->redis->rawCommand($target, 'ROLE');
+                        $this->assertEquals('master', $role[0]);
+
+                        /* Named node-directed commands must not inherit it either. */
+                        $this->redis->get($key);
+                        $this->assertEquals('master', $this->redis->role($target)[0]);
+                        $this->redis->get($key);
+                        $this->assertEquals($primaryId, $this->redis->cluster($target, 'MYID'));
+                    }
+                }
+            }
+
+            /* MULTI must use the primary even for a recognized readonly command. */
+            $this->redis->set($key, 'transaction');
+            $this->redis->get($key);
+            $before = $getCount();
+            $this->redis->multi();
+            $this->redis->rawCommand($key, 'GET', $key);
+            $this->redis->rawCommand($key, 'SET', $key, 'after');
+            $this->assertEquals(['transaction', true], $this->redis->exec());
+            $this->assertEquals($before, $getCount());
+        } finally {
+            if ($this->redis->getMode() === Redis::MULTI) $this->redis->discard();
+            $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER, $previous);
+            $this->redis->del($key);
+            foreach ($nodes as $node) $node->close();
+        }
+    }
+
     protected function rawCommandArray($key, $args) {
         array_unshift($args, $key);
         return call_user_func_array([$this->redis, 'rawCommand'], $args);

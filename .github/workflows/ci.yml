@@ -17,6 +17,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  readonly-commands:
+    name: Generated readonly command lookup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: tokenizer, :redis
+          coverage: none
+      - name: Build gperf 3.3
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSLO https://ftp.gnu.org/gnu/gperf/gperf-3.3.tar.gz
+          echo 'fd87e0aba7e43ae054837afd6cd4db03a3f2693deb3619085e6ed9d8d9604ad8  gperf-3.3.tar.gz' | sha256sum -c -
+          tar -xzf gperf-3.3.tar.gz
+          cd gperf-3.3
+          ./configure --prefix="$RUNNER_TEMP/gperf"
+          make -j"$(nproc)"
+          make install
+          echo "$RUNNER_TEMP/gperf/bin" >> "$GITHUB_PATH"
+      - name: Check generated lookup and metadata
+        run: |
+          php .github/scripts/generate-readonly-commands.php --check
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' php .github/scripts/test-readonly-commands.php
+
   configured-deps:
     name: configured-deps (8.3)
     runs-on: ubuntu-latest

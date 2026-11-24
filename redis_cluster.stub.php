@@ -134,6 +134,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::bitcount()
+     * @redis-readonly
      */
     public function bitcount(string $key, int $start = 0, int $end = -1, bool $bybit = false): RedisCluster|bool|int;
 
@@ -153,11 +154,13 @@ class RedisCluster {
      * @param int    $end   Where in the string to stop looking.
      * @param bool   $bybit If true, Redis will treat $start and $end as BIT values and not bytes, so if start
      *                      were 0 and end were 2, Redis would search the first three bits.
+     * @redis-readonly
      */
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): RedisCluster|int|false;
 
     /**
      * @see \Redis::bitrangeintarray()
+     * @redis-readonly
      */
     public function bitrangeintarray(string $key, int $start, int $end, ?array $options = null): RedisCluster|array|false;
 
@@ -350,6 +353,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::dump()
+     * @redis-readonly
      */
     public function dump(string $key): RedisCluster|string|false;
 
@@ -365,6 +369,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::eval_ro()
+     * @redis-readonly
      */
     public function eval_ro(string $script, array $args = [], int $num_keys = 0): mixed;
 
@@ -375,6 +380,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::evalsha_ro()
+     * @redis-readonly
      */
     public function evalsha_ro(string $script_sha, array $args = [], int $num_keys = 0): mixed;
 
@@ -385,6 +391,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::exists()
+     * @redis-readonly
      */
     public function exists(mixed $key, mixed ...$other_keys): RedisCluster|int|bool;
 
@@ -405,11 +412,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::expiretime()
+     * @redis-readonly
      */
     public function expiretime(string $key): RedisCluster|int|false;
 
     /**
      * @see \Redis::pexpiretime()
+     * @redis-readonly
      */
     public function pexpiretime(string $key): RedisCluster|int|false;
 
@@ -430,16 +439,19 @@ class RedisCluster {
 
     /**
      * @see \Redis::geodist()
+     * @redis-readonly
      */
     public function geodist(string $key, string $src, string $dest, ?string $unit = null): RedisCluster|float|false;
 
     /**
      * @see \Redis::geohash()
+     * @redis-readonly
      */
     public function geohash(string $key, string $member, string ...$other_members): RedisCluster|array|false;
 
     /**
      * @see \Redis::geopos()
+     * @redis-readonly
      */
     public function geopos(string $key, string $member, string ...$other_members): RedisCluster|array|false;
 
@@ -450,6 +462,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::georadius_ro()
+     * @redis-readonly
      */
     public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): mixed;
 
@@ -460,11 +473,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::georadiusbymember_ro()
+     * @redis-readonly
      */
     public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): mixed;
 
     /**
      * @see https://redis.io/commands/geosearch
+     * @redis-readonly
      */
     public function geosearch(string $key, array|string $position, array|int|float $shape, string $unit, array $options = []): RedisCluster|array;
 
@@ -475,6 +490,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::get()
+     * @redis-readonly
      */
     public function get(string $key): mixed;
 
@@ -485,6 +501,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::getWithMeta()
+     * @redis-readonly GET
      */
     public function getWithMeta(string $key): RedisCluster|array|false;
 
@@ -495,6 +512,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::getBit()
+     * @redis-readonly
      */
     public function getbit(string $key, int $value): RedisCluster|int|false;
 
@@ -515,11 +533,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::getRange()
+     * @redis-readonly
      */
     public function getrange(string $key, int $start, int $end): RedisCluster|string|false;
 
     /**
      * @see \Redis::lcs()
+     * @redis-readonly
      */
     public function lcs(string $key1, string $key2, ?array $options = null): RedisCluster|string|array|int|false;
 
@@ -545,21 +565,25 @@ class RedisCluster {
 
     /**
      * @see \Redis::hExists()
+     * @redis-readonly
      */
     public function hexists(string $key, string $member): RedisCluster|bool;
 
     /**
      * @see \Redis::hGet()
+     * @redis-readonly
      */
     public function hget(string $key, string $member): mixed;
 
     /**
      * @see \Redis::hGetAll()
+     * @redis-readonly
      */
     public function hgetall(string $key): RedisCluster|array|false;
 
     /**
      * @see \Redis::hGetWithMeta()
+     * @redis-readonly HGET
      */
     public function hgetWithMeta(string $key, string $member): mixed;
 
@@ -575,16 +599,19 @@ class RedisCluster {
 
     /**
      * @see \Redis::hKeys()
+     * @redis-readonly
      */
     public function hkeys(string $key): RedisCluster|array|false;
 
     /**
      * @see \Redis::hLen()
+     * @redis-readonly
      */
     public function hlen(string $key): RedisCluster|int|false;
 
     /**
      * @see \Redis::hMget()
+     * @redis-readonly
      */
     public function hmget(string $key, array $keys): RedisCluster|array|false;
 
@@ -619,6 +646,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::hscan()
+     * @redis-readonly
      */
     public function hscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): array|bool;
 
@@ -634,6 +662,7 @@ class RedisCluster {
 
     /**
      * @see https://redis.io/commands/hrandfield
+     * @redis-readonly
      */
     public function hrandfield(string $key, ?array $options = null): RedisCluster|string|array;
 
@@ -649,6 +678,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::hStrLen()
+     * @redis-readonly
      */
     public function hstrlen(string $key, string $field): RedisCluster|int|false;
 
@@ -678,21 +708,25 @@ class RedisCluster {
 
     /**
      * @see \Redis::httl()
+     * @redis-readonly
      */
     public function httl(string $key, array $fields): RedisCluster|array|false;
 
     /**
      * @see \Redis::hpttl()
+     * @redis-readonly
      */
     public function hpttl(string $key, array $fields): RedisCluster|array|false;
 
     /**
      * @see \Redis::hexpiretime()
+     * @redis-readonly
      */
     public function hexpiretime(string $key, array $fields): RedisCluster|array|false;
 
     /**
      * @see \Redis::hpexpiretime()
+     * @redis-readonly
      */
     public function hpexpiretime(string $key, array $fields): RedisCluster|array|false;
 
@@ -703,6 +737,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::hVals()
+     * @redis-readonly
      */
     public function hvals(string $key): RedisCluster|array|false;
 
@@ -746,6 +781,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::keys()
+     * @redis-readonly
      */
     public function keys(string $pattern): RedisCluster|array|false;
 
@@ -756,11 +792,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::lindex()
+     * @redis-readonly LINDEX
      */
     public function lget(string $key, int $index): RedisCluster|string|bool;
 
     /**
      * @see \Redis::lindex()
+     * @redis-readonly
      */
     public function lindex(string $key, int $index): mixed;
 
@@ -771,6 +809,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::lLen()
+     * @redis-readonly
      */
     public function llen(string $key): RedisCluster|int|bool;
 
@@ -781,6 +820,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::lPos()
+     * @redis-readonly
      */
     public function lpos(string $key, mixed $value, ?array $options = null): RedisCluster|null|bool|int|array;
 
@@ -796,6 +836,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::lrange()
+     * @redis-readonly
      */
     public function lrange(string $key, int $start, int $end): RedisCluster|array|false;
 
@@ -816,6 +857,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::mget()
+     * @redis-readonly
      */
     public function mget(array $keys): RedisCluster|array|false;
 
@@ -867,6 +909,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::pfcount()
+     * @redis-readonly
      */
     public function pfcount(string $key): RedisCluster|int|false;
 
@@ -902,6 +945,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::pttl()
+     * @redis-readonly
      */
     public function pttl(string $key): RedisCluster|int|false;
 
@@ -922,6 +966,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::randomKey()
+     * @redis-readonly
      */
     public function randomkey(string|array $key_or_address): RedisCluster|bool|string;
 
@@ -987,11 +1032,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::scan()
+     * @redis-readonly
      */
     public function scan(null|int|string &$iterator, string|array $key_or_address, ?string $pattern = null, int $count = 0): bool|array;
 
     /**
      * @see \Redis::scard()
+     * @redis-readonly
      */
     public function scard(string $key): RedisCluster|int|false;
 
@@ -1002,6 +1049,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::sDiff()
+     * @redis-readonly
      */
     public function sdiff(string $key, string ...$other_keys): RedisCluster|array|false;
 
@@ -1042,21 +1090,25 @@ class RedisCluster {
 
     /**
      * @see \Redis::sInter()
+     * @redis-readonly
      */
     public function sinter(array|string $key, string ...$other_keys): RedisCluster|array|false;
 
     /**
      * @see \Redis::sintercard()
+     * @redis-readonly
      */
     public function sintercard(array $keys, int $limit = -1): RedisCluster|int|false;
 
     /**
      * @see \Redis::sunioncard()
+     * @redis-readonly
      */
     public function sunioncard(array $keys, ?array $options = null): RedisCluster|int|false;
 
     /**
      * @see \Redis::sdiffcard()
+     * @redis-readonly
      */
     public function sdiffcard(array $keys, ?array $options = null): RedisCluster|int|false;
 
@@ -1067,11 +1119,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::sismember()
+     * @redis-readonly
      */
     public function sismember(string $key, mixed $value): RedisCluster|bool;
 
     /**
      * @see \Redis::sMisMember()
+     * @redis-readonly
      */
     public function smismember(string $key, string $member, string ...$other_members): RedisCluster|array|false;
 
@@ -1082,6 +1136,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::sMembers()
+     * @redis-readonly
      */
     public function smembers(string $key): RedisCluster|array|false;
 
@@ -1097,6 +1152,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::sort_ro()
+     * @redis-readonly
      */
     public function sort_ro(string $key, ?array $options = null): RedisCluster|array|bool|int|string;
 
@@ -1107,6 +1163,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::sRandMember()
+     * @redis-readonly
      */
     public function srandmember(string $key, int $count = 0): RedisCluster|string|array|false;
 
@@ -1117,11 +1174,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::sscan()
+     * @redis-readonly
      */
     public function sscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
     /**
      * @see \Redis::strlen()
+     * @redis-readonly
      */
     public function strlen(string $key): RedisCluster|int|false;
 
@@ -1132,6 +1191,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::sUnion()
+     * @redis-readonly
      */
     public function sunion(string $key, string ...$other_keys): RedisCluster|bool|array;
 
@@ -1147,11 +1207,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::ttl()
+     * @redis-readonly
      */
     public function ttl(string $key): RedisCluster|int|false;
 
     /**
      * @see \Redis::type()
+     * @redis-readonly
      */
     public function type(string $key): RedisCluster|int|false;
 
@@ -1182,21 +1244,25 @@ class RedisCluster {
 
     /**
      * @see \Redis::vsim()
+     * @redis-readonly
      */
     public function vsim(string $key, mixed $member, array|null $options = null): RedisCluster|array|false;
 
     /**
      * @see \Redis::vcard()
+     * @redis-readonly
      */
     public function vcard(string $key): RedisCluster|int|false;
 
     /**
      * @see \Redis::vdim()
+     * @redis-readonly
      */
     public function vdim(string $key): RedisCluster|int|false;
 
     /**
      * @see \Redis::vinfo()
+     * @redis-readonly
      */
     public function vinfo(string $key): RedisCluster|array|false;
 
@@ -1207,16 +1273,19 @@ class RedisCluster {
      * @param mixed  $member The member to check for.
      *
      * @return RedisCluster|bool true if the member exists, false if it does not.
+     * @redis-readonly
      */
     public function vismember(string $key, mixed $member): RedisCluster|bool;
 
     /**
      * @see \Redis::vemb()
+     * @redis-readonly
      */
     public function vemb(string $key, mixed $member, bool $raw = false): RedisCluster|array|false;
 
     /**
      * @see \Redis::vrandmember()
+     * @redis-readonly
      */
     public function vrandmember(string $key, int $count = 0): RedisCluster|array|string|false;
 
@@ -1229,6 +1298,7 @@ class RedisCluster {
      * @param int    $count      An optional maximum number of elements to return.
      *
      * @return RedisCluster|array|false An array of elements in the specified range.
+     * @redis-readonly
      */
     public function vrange(string $key, string $min, string $max, int $count = -1): RedisCluster|array|false;
 
@@ -1240,11 +1310,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::vlinks()
+     * @redis-readonly
      */
     public function vlinks(string $key, mixed $member, bool $withscores = false): RedisCluster|array|false;
 
     /**
      * @see \Redis::vgetattr()
+     * @redis-readonly
      */
     public function vgetattr(string $key, mixed $member, bool $decode = true): RedisCluster|array|string|false;
 
@@ -1308,21 +1380,25 @@ class RedisCluster {
 
     /**
      * @see \Redis::xlen()
+     * @redis-readonly
      */
     public function xlen(string $key): RedisCluster|int|false;
 
     /**
      * @see \Redis::xpending()
+     * @redis-readonly
      */
     public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null): RedisCluster|array|false;
 
     /**
      * @see \Redis::xrange()
+     * @redis-readonly
      */
     public function xrange(string $key, string $start, string $end, int $count = -1): RedisCluster|bool|array;
 
     /**
      * @see \Redis::xread()
+     * @redis-readonly
      */
     public function xread(array $streams, int $count = -1, int $block = -1): RedisCluster|bool|array;
 
@@ -1333,6 +1409,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::xrevrange()
+     * @redis-readonly
      */
     public function xrevrange(string $key, string $start, string $end, int $count = -1): RedisCluster|bool|array;
 
@@ -1348,11 +1425,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::zCard()
+     * @redis-readonly
      */
     public function zcard(string $key): RedisCluster|int|false;
 
     /**
      * @see \Redis::zCount()
+     * @redis-readonly
      */
     public function zcount(string $key, string $start, string $end): RedisCluster|int|false;
 
@@ -1368,11 +1447,13 @@ class RedisCluster {
 
     /**
      * @see \Redis::zintercard()
+     * @redis-readonly
      */
     public function zintercard(array $keys, int $limit = -1): RedisCluster|int|false;
 
     /**
      * @see \Redis::zLexCount()
+     * @redis-readonly
      */
     public function zlexcount(string $key, string $min, string $max): RedisCluster|int|false;
 
@@ -1388,6 +1469,7 @@ class RedisCluster {
 
     /**
      * @see \Redis::zRange()
+     * @redis-readonly
      */
     public function zrange(string $key, mixed $start, mixed $end, array|bool|null $options = null): RedisCluster|array|bool;
 
@@ -1399,21 +1481,25 @@ class RedisCluster {
 
     /**
      * @see https://redis.io/commands/zrandmember
+     * @redis-readonly
      */
     public function zrandmember(string $key, ?array $options = null): RedisCluster|string|array;
 
     /**
      * @see \Redis::zRangeByLex()
+     * @redis-readonly
      */
     public function zrangebylex(string $key, string $min, string $max, int $offset = -1, int $count = -1): RedisCluster|array|false;
 
     /**
      * @see \Redis::zRangeByScore()
+     * @redis-readonly
      */
     public function zrangebyscore(string $key, string $start, string $end, array $options = []): RedisCluster|array|false;
 
     /**
      * @see \Redis::zRank()
+     * @redis-readonly
      */
     public function zrank(string $key, mixed $member): RedisCluster|int|false;
 
@@ -1439,36 +1525,43 @@ class RedisCluster {
 
     /**
      * @see \Redis::zRevRange()
+     * @redis-readonly
      */
     public function zrevrange(string $key, string $min, string $max, ?array $options = null): RedisCluster|bool|array;
 
     /**
      * @see \Redis::zRevRangeByLex()
+     * @redis-readonly
      */
     public function zrevrangebylex(string $key, string $max, string $min, int $offset = -1, int $count = -1): RedisCluster|array|false;
 
     /**
      * @see \Redis::zRevRangeByScore()
+     * @redis-readonly
      */
     public function zrevrangebyscore(string $key, string $min, string $max, ?array $options = null): RedisCluster|bool|array;
 
     /**
      * @see \Redis::zRevRank()
+     * @redis-readonly
      */
     public function zrevrank(string $key, mixed $member): RedisCluster|int|false;
 
     /**
      * @see \Redis::zscan()
+     * @redis-readonly
      */
     public function zscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): RedisCluster|bool|array;
 
     /**
      * @see \Redis::zScore()
+     * @redis-readonly
      */
     public function zscore(string $key, mixed $member): RedisCluster|float|false;
 
     /**
      * @see https://redis.io/commands/zmscore
+     * @redis-readonly
      */
     public function zmscore(string $key, mixed $member, mixed ...$other_members): RedisCluster|array|false;
 
@@ -1479,6 +1572,7 @@ class RedisCluster {
 
     /**
      * @see https://redis.io/commands/zinter
+     * @redis-readonly
      */
     public function zinter(array $keys, ?array $weights = null, ?array $options = null): RedisCluster|array|false;
 
@@ -1489,16 +1583,19 @@ class RedisCluster {
 
     /**
      * @see https://redis.io/commands/zunion
+     * @redis-readonly
      */
     public function zunion(array $keys, ?array $weights = null, ?array $options = null): RedisCluster|array|false;
 
     /**
      * @see https://redis.io/commands/zdiff
+     * @redis-readonly
      */
     public function zdiff(array $keys, ?array $options = null): RedisCluster|array|false;
 
     /**
      * @see https://redis.io/commands/digest
+     * @redis-readonly
      */
     public function digest(string $key): RedisCluster|string|false;
 }
