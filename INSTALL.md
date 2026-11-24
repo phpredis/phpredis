@@ -65,7 +65,9 @@ a different installation, including PHP 8.0.
 The initial Windows packages include the PHP serializer and Redis session
 handlers. They do not include igbinary, msgpack, JSON serialization, or
 LZF/LZ4/Zstd compression. Configure options cannot add features to a prebuilt
-DLL. Use `php --ri redis` to inspect the installed extension's features.
+DLL. Zstd compression is available when the
+[zstd extension](https://pecl.php.net/package/zstd) is loaded as well. Use
+`php --ri redis` to inspect the installed extension's features.
 
 Older releases may not have GitHub Windows assets. For manual installation,
 the [PECL DLL downloads](https://pecl.php.net/package/redis) and
