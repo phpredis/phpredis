@@ -188,6 +188,12 @@ static int session_compression_type(void) {
     if(redis_strncasecmp(compression, ZEND_STRL("zstd")) == 0) {
         return REDIS_COMPRESSION_ZSTD;
     }
+#else
+    if(redis_strncasecmp(compression, ZEND_STRL("zstd")) == 0 &&
+       redis_zstd_ext_available())
+    {
+        return REDIS_COMPRESSION_ZSTD;
+    }
 #endif
 #ifdef HAVE_REDIS_LZ4
     if(redis_strncasecmp(compression, ZEND_STRL("lz4")) == 0) {
@@ -201,7 +207,9 @@ static int session_compression_type(void) {
     {
         php_error_docref(NULL, E_NOTICE,
             "redis.session.compression: '%s' compression is not available. "
-            "Rebuild phpredis with %s support.", compression, compression);
+            "Rebuild phpredis with %s support%s.", compression, compression,
+            strcasecmp(compression, "zstd") == 0
+                ? " or load the zstd extension" : "");
     } else {
         php_error_docref(NULL, E_NOTICE,
             "redis.session.compression: '%s' is invalid", compression);

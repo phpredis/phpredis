@@ -172,4 +172,33 @@ redis_class_deny_serialization(zend_class_entry *ce)
 #endif
 }
 
+/* Call a function already resolved, without a lookup by name. Unlike
+ * zend_call_known_function() this fails quietly outside of a request. */
+static inline void
+redis_call_known_function(zend_function *fn, zval *retval, uint32_t argc,
+                          zval *argv)
+{
+    zend_fcall_info fci;
+    zend_fcall_info_cache fcc;
+
+    fci.size = sizeof(fci);
+    ZVAL_UNDEF(&fci.function_name);
+    fci.object = NULL;
+    fci.retval = retval;
+    fci.params = argv;
+    fci.param_count = argc;
+#if PHP_VERSION_ID >= 80000
+    fci.named_params = NULL;
+#else
+    fci.no_separation = 1;
+#endif
+
+    fcc.function_handler = fn;
+    fcc.calling_scope = NULL;
+    fcc.called_scope = NULL;
+    fcc.object = NULL;
+
+    zend_call_function(&fci, &fcc);
+}
+
 #endif // PHP_REDIS_COMPAT_H

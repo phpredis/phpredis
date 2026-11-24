@@ -157,6 +157,12 @@ redis_key_prefix_zstr(const RedisSock *redis_sock, zend_string *key);
 PHP_REDIS_API int
 redis_unserialize(const RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);
 
+#ifndef HAVE_REDIS_ZSTD
+void redis_zstd_ext_minit(zend_class_entry *ce);
+int redis_zstd_ext_available(void);
+const char *redis_zstd_ext_version(void);
+#endif
+
 PHP_REDIS_API int
 redis_compress(const RedisSock *redis_sock, char **dst, size_t *dstlen, char *buf, size_t len);
 PHP_REDIS_API int
