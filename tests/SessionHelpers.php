@@ -10,7 +10,9 @@ class PhpSpawner {
 
         /* Determine if we need to specifically add extensions */
         $extensions = array_filter(
-            ['igbinary', 'msgpack', 'json', 'redis'],
+            /* zstd: sessions compress through it when phpredis has no libzstd */
+            array_merge(['igbinary', 'msgpack', 'json'],
+                        extension_loaded('zstd') ? ['zstd'] : [], ['redis']),
             function ($module) use ($modules) {
                 return strpos($modules, $module) === false;
             }

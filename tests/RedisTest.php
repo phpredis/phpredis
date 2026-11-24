@@ -6665,6 +6665,100 @@ class Redis_Test extends TestSuite {
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 9);
     }
 
+    /* Data that is not a zstd frame phpredis can decode comes back as stored,
+     * without a warning or an exception, whichever zstd provider is in use. */
+    public function testCompressionZSTDInvalid() {
+        if ( ! defined('Redis::COMPRESSION_ZSTD'))
+            $this->markTestSkipped();
+
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD);
+        $frame = $this->redis->_compress(str_repeat('phpredis', 200));
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+
+        $values = [
+            'plain'           => 'just a string',
+            'magic only'      => "\x28\xb5\x2f\xfd",
+            'magic + garbage' => "\x28\xb5\x2f\xfdgarbage",
+            'truncated frame' => substr($frame, 0, -3),
+            /* a valid frame holding 'abc' that does not declare its size */
+            'no content size' => hex2bin('28b52ffd0000190000616263'),
+            /* the frame of an empty value with something after it */
+            'empty + junk'    => hex2bin('28b52ffd2000010000') . 'x',
+        ];
+
+        set_error_handler(function ($errno, $errstr) {
+            throw new ErrorException($errstr, 0, $errno);
+        });
+
+        try {
+            foreach ($values as $name => $value) {
+                $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+                $this->redis->set('badzstd', $value);
+                $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD);
+                error_clear_last();
+                $this->assertEquals($value, $this->redis->get('badzstd'), $name);
+                $this->assertNull(error_get_last());
+                $this->assertThrowsMatch($value, function ($value) {
+                    $this->redis->_uncompress($value);
+                }, '/Invalid compressed data or uncompression error/');
+            }
+
+            /* the empty frame, with and without its checksum, is the empty value */
+            foreach (['28b52ffd2000010000', '28b52ffd240001000099e9d851'] as $hex) {
+                $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+                $this->redis->set('badzstd', hex2bin($hex));
+                $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD);
+                $this->assertEquals('', $this->redis->get('badzstd'), $hex);
+            }
+        } finally {
+            restore_error_handler();
+            $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+            $this->redis->del('badzstd');
+        }
+    }
+
+    /* Levels outside the range are clamped rather than refused. */
+    public function testCompressionZSTDLevels() {
+        if ( ! defined('Redis::COMPRESSION_ZSTD'))
+            $this->markTestSkipped();
+
+        $this->assertLTE(Redis::COMPRESSION_ZSTD_DEFAULT, Redis::COMPRESSION_ZSTD_MIN);
+        $this->assertLTE(Redis::COMPRESSION_ZSTD_MAX, Redis::COMPRESSION_ZSTD_DEFAULT);
+
+        $value = str_repeat('phpredis zstd levels ', 100);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD);
+        try {
+            foreach ([-5, 0, Redis::COMPRESSION_ZSTD_MAX + 100] as $level) {
+                error_clear_last();
+                $this->redis->setOption(Redis::OPT_COMPRESSION_LEVEL, $level);
+                $this->redis->set('zstdlevel', $value);
+                $this->assertNull(error_get_last());
+                $this->assertKeyEquals($value, 'zstdlevel');
+            }
+        } finally {
+            $this->redis->setOption(Redis::OPT_COMPRESSION_LEVEL, 0);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+            $this->redis->del('zstdlevel');
+        }
+    }
+
+    /* Frames written by the zstd extension and by phpredis are the same. */
+    public function testCompressionZSTDInterop() {
+        if ( ! defined('Redis::COMPRESSION_ZSTD') || ! function_exists('zstd_compress'))
+            $this->markTestSkipped();
+
+        $value = str_repeat('interop ', 500);
+
+        $this->redis->set('zstdinterop', zstd_compress($value));
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD);
+        $this->assertKeyEquals($value, 'zstdinterop');
+
+        $this->redis->set('zstdinterop', $value);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+        $this->assertEquals($value, zstd_uncompress($this->redis->get('zstdinterop')));
+        $this->redis->del('zstdinterop');
+    }
+
     public function testCompressionLZ4() {
         if ( ! defined('Redis::COMPRESSION_LZ4'))
             $this->markTestSkipped();
