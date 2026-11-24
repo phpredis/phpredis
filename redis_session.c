@@ -195,9 +195,9 @@ static int session_compression_type(void) {
     }
 #endif
 
-    if (strcasecmp(compression, "lzf") ||
-        strcasecmp(compression, "zstd") ||
-        strcasecmp(compression, "lz4"))
+    if (strcasecmp(compression, "lzf") == 0 ||
+        strcasecmp(compression, "zstd") == 0 ||
+        strcasecmp(compression, "lz4") == 0)
     {
         php_error_docref(NULL, E_NOTICE,
             "redis.session.compression: '%s' compression is not available. "
