@@ -202,6 +202,106 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  zstd-ext:
+    name: Zstd through the zstd extension (PHP ${{ matrix.php }} ${{ matrix.ts }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.0', '8.5']
+        ts: ['nts']
+        include:
+          - php: '8.5'
+            ts: 'ts'
+    env:
+      phpts: ${{ matrix.ts }}
+      PHPREDIS_TEST_SUITES: Redis RedisArray RedisCluster
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, zstd, :redis
+          coverage: none
+          tools: none
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update --allow-releaseinfo-change-label
+          sudo apt-get install -y --no-install-recommends valgrind
+
+      - name: Install Redis
+        env:
+          REDIS_PPA_URI: "packages.redis.io/deb"
+          REDIS_PPA_KEY: "packages.redis.io/gpg"
+        run: |
+          curl -fsSL "https://$REDIS_PPA_KEY" | \
+            sudo gpg --dearmor -o /usr/share/keyrings/redis.gpg
+          echo "deb [signed-by=/usr/share/keyrings/redis.gpg] https://$REDIS_PPA_URI $(lsb_release -cs) main" | \
+            sudo tee /etc/apt/sources.list.d/redis.list
+          sudo apt-get update --allow-releaseinfo-change-label
+          sudo apt-get install -y --no-install-recommends redis
+
+      # No --enable-redis-zstd: zstd comes from the zstd extension. The ini is
+      # named to load before the zstd extension, ZEND_MOD_OPTIONAL reorders.
+      - name: Build phpredis
+        run: |
+          phpize
+          ./configure
+          make -j"$(nproc)"
+          sudo make install
+          echo 'extension = redis.so' | sudo tee "$(php-config --ini-dir)"/10-redis.ini
+
+      - name: Check the zstd provider
+        run: |
+          php -r 'exit(PHP_ZTS == ("${{ matrix.ts }}" === "ts") ? 0 : 1);'
+          php -r 'exit(defined("Redis::COMPRESSION_ZSTD") ? 0 : 1);'
+          # redis listed first: ZEND_MOD_OPTIONAL starts zstd before it;
+          # 7.4 may ship json, which redis requires, as an extension
+          json=$(php -n -r 'echo extension_loaded("json") ? "" : "-d extension=json";')
+          php -n $json -d extension=redis -d extension=zstd \
+            -r 'exit(defined("Redis::COMPRESSION_ZSTD") ? 0 : 1);'
+          php --ri redis | grep -E 'Zstd provider => zstd extension'
+          php -d disable_functions=zstd_compress -r \
+            'exit((new Redis())->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD) === false ? 0 : 1);'
+
+      - name: Stop default servers
+        run: |
+          if systemctl cat redis-server >/dev/null 2>&1; then
+            sudo systemctl stop redis-server
+          fi
+
+      - name: Start standalone, TLS, cluster and Sentinel servers
+        id: servers
+        run: bash .github/scripts/start-servers.sh redis
+
+      - name: Run tests
+        run: bash .github/scripts/run-tests.sh php
+
+      - name: Run tests using valgrind
+        if: ${{ !cancelled() && steps.servers.outcome == 'success' }}
+        run: |
+          bash .github/scripts/run-tests.sh valgrind \
+            --suppressions=tests/vg.supp --error-exitcode=1 php
+        env:
+          USE_ZEND_ALLOC: 0
+
+      - name: Upload diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: zstd-ext-php-${{ matrix.php }}-${{ matrix.ts }}
+          path: |
+            config.log
+            ${{ runner.temp }}/phpredis-tests/**/*.log
+            ${{ runner.temp }}/phpredis-servers/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   php-master:
     name: PHP master (allowed to fail)
     runs-on: ubuntu-22.04
