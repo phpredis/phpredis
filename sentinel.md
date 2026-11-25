@@ -12,10 +12,10 @@ Redis Sentinel also provides other collateral tasks such as monitoring, notifica
 
 *host*: String, IP address or hostname  
 *port*: Int (optional, default is 26379)  
-*timeout*: Float, value in seconds (optional, default is 0 meaning unlimited)  
+*timeout*: Float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 *persistent*: String, persistent connection id (optional, default is NULL meaning not persistent)  
 *retry_interval*: Int, value in milliseconds (optional, default is 0)  
-*read_timeout*: Float, value in seconds (optional, default is 0 meaning unlimited)  
+*read_timeout*: Float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout, -1 means no limit)  
 *auth*:String, or an Array with one or two elements, used to authenticate with the redis-sentinel. (optional, default is NULL meaning NOAUTH)
 
 ##### *Examples for version 6.0 or later*
