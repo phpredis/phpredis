@@ -114,6 +114,28 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    /* OPT_READ_TIMEOUT must reach node connections that are already open */
+    public function testReadTimeoutOpenConnections() {
+        $key = uniqid('read-timeout:', true);
+        $class = $this->getRedisClusterClass();
+        $client = new $class(NULL, self::$seeds, 5, 5, false, $this->getAuth());
+        try {
+            foreach ($client->_masters() as $master)
+                $this->assertTrue($client->ping($master));
+
+            $this->assertTrue($client->setOption(Redis::OPT_READ_TIMEOUT, 1));
+            $this->assertEquals(1.0, $client->getOption(Redis::OPT_READ_TIMEOUT));
+            $this->assertReadTimesOut($client, $key);
+
+            /* Zero means default_socket_timeout, as it does for a new connection */
+            $this->assertTrue($client->setOption(Redis::OPT_READ_TIMEOUT, 0));
+            foreach ($client->_masters() as $master)
+                $this->assertTrue($client->ping($master));
+        } finally {
+            $client->close();
+        }
+    }
+
     public function testReconnect() {
         $class = $this->getRedisClusterClass();
         $masters = $this->redis->_masters();

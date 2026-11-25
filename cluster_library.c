@@ -1377,6 +1377,31 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force) {
     } ZEND_HASH_FOREACH_END();
 }
 
+/* Give every seed and node our read timeout, applying it at once to the ones
+ * that are connected, as Redis::setOption() does for its stream.  c->waitms
+ * keeps its value: for a negative read timeout the constructor's formula gives
+ * a negative limit, which ends the redirect loop after the first MOVED or ASK. */
+PHP_REDIS_API void cluster_set_read_timeout(redisCluster *c) {
+    const redisClusterNode *node, *slave;
+    RedisSock *seed;
+
+    ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
+        redis_sock_set_read_timeout(seed, c->flags->read_timeout);
+    } ZEND_HASH_FOREACH_END();
+
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node == NULL) continue;
+
+        redis_sock_set_read_timeout(node->sock, c->flags->read_timeout);
+
+        if (node->slaves) {
+            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+                redis_sock_set_read_timeout(slave->sock, c->flags->read_timeout);
+            } ZEND_HASH_FOREACH_END();
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
 PHP_REDIS_API int cluster_reconnect(redisCluster *c) {
     const redisClusterNode *node, *slave;
     RedisSock **socks;
