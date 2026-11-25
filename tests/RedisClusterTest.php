@@ -175,7 +175,6 @@ class Redis_Cluster_Test extends Redis_Test {
     /* These 'directed node' commands work differently in RedisCluster */
     public function testConfig() { $this->markTestSkipped(); }
     public function testFlushDB() { $this->markTestSkipped(); }
-    public function testFunction() { $this->markTestSkipped(); }
 
     /* Session locking is currently not supported in RedisCluster.
        The biggest issue is the distributed nature of Redis Cluster. */
@@ -1307,6 +1306,105 @@ class Redis_Cluster_Test extends Redis_Test {
         $result = $this->redis->exec();
 
         $this->assertNull($result[0]);
+    }
+
+    private function requireFunctions() {
+        if ($this->is_dragonfly)
+            $this->markTestSkipped('Dragonfly does not support Redis function libraries');
+
+        if ( ! $this->minVersionCheck('7.0') || ! $this->haveCommand('FUNCTION'))
+            $this->markTestSkipped();
+    }
+
+    /* RedisCluster has no FUNCTION method, so load the library on every master
+     * through rawCommand() */
+    private function loadFunctionLibrary(string $name, string $body) {
+        foreach ($this->redis->_masters() as $master) {
+            $this->assertEquals($name, $this->redis->rawCommand($master, 'FUNCTION', 'LOAD',
+                                                               'REPLACE', "#!lua name=$name\n$body"));
+        }
+    }
+
+    private function deleteFunctionLibrary(string $name) {
+        foreach ($this->redis->_masters() as $master)
+            $this->redis->rawCommand($master, 'FUNCTION', 'DELETE', $name);
+    }
+
+    /* FCALL and FCALL_RO are routed by their first key, or to any node when
+     * they have none */
+    public function testFunction() {
+        $this->requireFunctions();
+
+        $keys = [];
+        for ($i = 0; $i < 10; $i++)
+            $keys[] = uniqid("fcall:$i:", true);
+
+        try {
+            $this->loadFunctionLibrary('phpredis_test_fcall',
+                "redis.register_function('phpredis_test_fcall_get', " .
+                "function(keys) return redis.call('GET', keys[1]) end)\n" .
+                "redis.register_function{function_name='phpredis_test_fcall_get_ro', flags={'no-writes'}, " .
+                "callback=function(keys) return redis.call('GET', keys[1]) end}\n" .
+                "redis.register_function{function_name='phpredis_test_fcall_echo', flags={'no-writes'}, " .
+                "callback=function(keys, args) return args[1] end}");
+
+            foreach ($keys as $key) {
+                $this->assertTrue($this->redis->set($key, "value:$key"));
+                $this->assertEquals("value:$key", $this->redis->fcall('phpredis_test_fcall_get', [$key]));
+                $this->assertEquals("value:$key", $this->redis->fcall_ro('phpredis_test_fcall_get_ro', [$key]));
+            }
+
+            $this->assertEquals('foo', $this->redis->fcall('phpredis_test_fcall_echo', [], ['foo']));
+            $this->assertEquals('foo', $this->redis->fcall_ro('phpredis_test_fcall_echo', [], ['foo']));
+            $this->assertFalse(@$this->redis->fcall('phpredis_test_fcall_get', ['{a}:key', '{b}:key']));
+        } finally {
+            $this->redis->del($keys);
+            $this->deleteFunctionLibrary('phpredis_test_fcall');
+        }
+    }
+
+    /* FCALL_RO may be served by a replica, FCALL never is */
+    public function testFunctionReadonlyRouting() {
+        $this->requireFunctions();
+
+        $key = '{fcall-ro-routing}:key';
+        if ( ! ($replicas = $this->replicasForKey($key)))
+            $this->markTestSkipped('Requires replicas');
+
+        $nodes = array_map([$this, 'connectToNode'], $replicas);
+        $calls = function (string $command) use ($nodes) {
+            $count = 0;
+            foreach ($nodes as $node) {
+                $stats = $node->info('commandstats');
+                if (preg_match('/calls=(\d+)/', $stats["cmdstat_$command"] ?? '', $match))
+                    $count += (int)$match[1];
+            }
+            return $count;
+        };
+
+        $previous = $this->redis->getOption(RedisCluster::OPT_SLAVE_FAILOVER);
+        try {
+            $this->loadFunctionLibrary('phpredis_test_fcall_ro',
+                "redis.register_function{function_name='phpredis_test_fcall_peek', flags={'no-writes'}, " .
+                "callback=function(keys) return redis.call('GET', keys[1]) end}");
+
+            /* The library and the value reach the replicas asynchronously */
+            $this->assertTrue($this->redis->set($key, 'value'));
+            $this->assertEquals(count($replicas),
+                $this->redis->rawCommand($key, 'WAIT', count($replicas), 1000));
+
+            $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER,
+                                    RedisCluster::FAILOVER_DISTRIBUTE_SLAVES);
+            $before = [$calls('fcall_ro'), $calls('fcall')];
+            $this->assertEquals('value', $this->redis->fcall_ro('phpredis_test_fcall_peek', [$key]));
+            $this->assertEquals('value', $this->redis->fcall('phpredis_test_fcall_peek', [$key]));
+            $this->assertEquals([$before[0] + 1, $before[1]], [$calls('fcall_ro'), $calls('fcall')]);
+        } finally {
+            $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER, $previous);
+            $this->redis->del($key);
+            $this->deleteFunctionLibrary('phpredis_test_fcall_ro');
+            foreach ($nodes as $node) $node->close();
+        }
     }
 
     /* Cluster specific introspection stuff */

@@ -1137,6 +1137,10 @@ redis_fcall_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, const char 
         } ZEND_HASH_FOREACH_END();
     }
 
+    /* No keys, so pick a random slot */
+    if (cmd->slot == -1)
+        redis_cmd_randslot(cmd);
+
     return cmd;
 }
 
