@@ -58,6 +58,8 @@ Because Redis cluster is intended to provide high availability, timeouts do not 
 
 The way RedisCluster handles user specified timeout values is that every time a command is sent to the cluster, we record the time at the start of the request and then again every time we have to re-issue the command to a different node (either because Redis cluster responded with MOVED/ASK or because we failed to communicate with a given node).  Once we detect having been in the command loop for longer than our specified timeout, an error is raised.
 
+The read timeout applies to every node connection. `setOption(Redis::OPT_READ_TIMEOUT, $timeout)` changes it for all of them, including connections that are already open; 0 uses PHP's `default_socket_timeout` and -1 means no limit. The time limit of the command loop is computed once, from the timeout and read timeout given to the constructor.
+
 ## Keyspace map
 As previously described, RedisCluster makes an initial mapping of every master (and any slaves) on construction, which it uses to determine which nodes to direct a given command.  However, one of the core functionalities of Redis cluster is that this keyspace can change while the cluster is running.
 

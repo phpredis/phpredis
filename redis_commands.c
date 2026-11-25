@@ -7614,6 +7614,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_TRUE;
         case REDIS_OPT_READ_TIMEOUT:
             redis_sock_set_read_timeout(redis_sock, zval_get_double(val));
+            if (c) cluster_set_read_timeout(c);
             RETURN_TRUE;
         case REDIS_OPT_TCP_KEEPALIVE:
 
