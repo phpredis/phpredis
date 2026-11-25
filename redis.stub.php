@@ -128,7 +128,9 @@ class Redis {
     public const OPT_PREFIX = UNKNOWN;
 
     /**
-     * Used to set the read timeout for the connection.
+     * Used to set the read timeout for the connection, in seconds. 0 uses PHP's
+     * default_socket_timeout and -1 means no limit, also when it is set on a
+     * connection that is already open.
      *
      * @var int
      * @cvalue REDIS_OPT_READ_TIMEOUT
@@ -1196,13 +1198,16 @@ class Redis {
      * @param int         $port           The Redis server port.  Defaults to
      *                                    6379.
      * @param float       $timeout        The connection timeout in seconds.
-     *                                    Defaults to 0 (no timeout).
+     *                                    Defaults to 0, which uses PHP's
+     *                                    default_socket_timeout.
      * @param string|null $persistent_id  If set, a persistent connection will
      *                                    be made with this ID.
      * @param int         $retry_interval The number of milliseconds to wait
      *                                    between connection attempts.
      * @param float       $read_timeout   The read timeout in seconds.
-     *                                    Defaults to 0 (no timeout).
+     *                                    Defaults to 0, which uses PHP's
+     *                                    default_socket_timeout. -1 means
+     *                                    no limit.
      * @param array|null  $context        An optional stream context to use
      *                                    when connecting.
      *                                    See `\Redis::__construct()` for more
@@ -4230,7 +4235,7 @@ class Redis {
      * | OPT_SCAN        | enum | Redis::SCAN_RETRY, or Redis::SCAN_NORETRY.  Whether PhpRedis should automatically SCAN again when zero keys but a nonzero iterator are returned. |
      * | OPT_SERIALIZER  | enum | Set the automatic data serializer.<br>`Redis::SERIALIZER_NONE`<br>`Redis::SERIALIZER_PHP`<br>`Redis::SERIALIZER_IGBINARY`<br>`Redis::SERIALIZER_MSGPACK`, `Redis::SERIALIZER_JSON`<br>`Redis::SERIALIZER_PHPSER`|
      * | OPT_PREFIX | string | A string PhpRedis will use to prefix every key we read or write. |
-     * | OPT_READ_TIMEOUT | float | How long PhpRedis will block for a response from Redis before throwing a 'read error on connection' exception. |
+     * | OPT_READ_TIMEOUT | float | How long PhpRedis will block for a response from Redis before throwing a 'read error on connection' exception. 0 uses PHP's default_socket_timeout and -1 means no limit, also on a connection that is already open. |
      * | OPT_TCP_KEEPALIVE | bool |   Set or disable TCP_KEEPALIVE on the connection. |
      * | OPT_COMPRESSION | enum | Set the compression algorithm<br>`Redis::COMPRESSION_NONE`<br>`Redis::COMPRESSION_LZF`<br>`Redis::COMPRESSION_LZ4`<br> `Redis::COMPRESSION_ZSTD` |
      * | OPT_REPLY_LITERAL | bool | If set to true, PhpRedis will return the literal string Redis returns for LINE replies (e.g. '+OK'), rather than `true`. |

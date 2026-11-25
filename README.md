@@ -467,6 +467,10 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHPSER);  // Use phps
 
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 
+/* Read timeout in seconds, applied at once to an open connection. 0 uses PHP's
+   default_socket_timeout and -1 means no limit. */
+$redis->setOption(Redis::OPT_READ_TIMEOUT, 2.5);
+
 /* Options for the SCAN family of commands, indicating whether to abstract
    empty results from the user. If set to SCAN_NORETRY (the default), phpredis
    will just issue one SCAN command at a time, sometimes returning an empty

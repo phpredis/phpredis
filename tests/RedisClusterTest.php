@@ -51,6 +51,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testInvalidAuthArgs() { $this->markTestSkipped(); }
     public function testScanErrors() { $this->markTestSkipped(); }
     public function testConnectDatabaseSelect() { $this->markTestSkipped(); }
+    public function testPersistentReadTimeoutWithoutPool() { $this->markTestSkipped(); }
     /* BLESS SCAN cursors are per node, so RedisCluster needs a key or node */
     protected function blessScan(?string $directive, ?array $options = null, $node = 'bless') {
         return $this->redis->bless('SCAN', null, $directive, $options, $node);
@@ -88,6 +89,29 @@ class Redis_Cluster_Test extends Redis_Test {
         foreach ($masters as $i => $node)
             $this->assertFalse(in_array($client->rawCommand($node, 'CLIENT', 'ID'), $ids[$i]));
         $client->close();
+    }
+
+    /* A pooled node connection must use the read timeout of the object taking
+     * it, not the one of its last user. */
+    public function testPooledReadTimeout() {
+        if (!ini_get('redis.pconnect.pooling_enabled'))
+            $this->markTestSkipped('Requires connection pooling');
+
+        $key = uniqid('pooled-read-timeout:', true);
+        $class = $this->getRedisClusterClass();
+
+        /* Freeing the object hands every node connection back to the pool */
+        $first = new $class(NULL, self::$seeds, 5, 5, true, $this->getAuth());
+        foreach ($first->_masters() as $master)
+            $this->assertTrue($first->ping($master));
+        unset($first);
+
+        $second = new $class(NULL, self::$seeds, 5, 1, true, $this->getAuth());
+        try {
+            $this->assertReadTimesOut($second, $key);
+        } finally {
+            $second->close();
+        }
     }
 
     public function testReconnect() {
