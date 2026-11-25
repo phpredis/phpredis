@@ -3416,12 +3416,36 @@ alloc_stream_context(const RedisSock *redis_sock) {
     return ctx;
 }
 
+/* Apply our read timeout to the stream.  Zero means PHP's
+ * default_socket_timeout, which is what a new stream starts with. */
+static void
+redis_sock_apply_read_timeout(RedisSock *redis_sock)
+{
+    struct timeval tv;
+
+    tv.tv_sec  = (time_t)redis_sock->read_timeout;
+    tv.tv_usec = (int)((redis_sock->read_timeout - tv.tv_sec) * 1000000);
+    if (tv.tv_sec == 0 && tv.tv_usec == 0)
+        tv.tv_sec = zend_ini_long_literal("default_socket_timeout");
+
+    php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &tv);
+}
+
+/* Set our read timeout, applying it at once if we are connected */
+PHP_REDIS_API void
+redis_sock_set_read_timeout(RedisSock *redis_sock, double read_timeout)
+{
+    redis_sock->read_timeout = read_timeout;
+    if (redis_sock->stream)
+        redis_sock_apply_read_timeout(redis_sock);
+}
+
 /**
  * redis_sock_connect
  */
 static int redis_sock_connect_impl(RedisSock *redis_sock, zend_bool fresh)
 {
-    struct timeval tv, read_tv, *tv_ptr = NULL;
+    struct timeval tv, *tv_ptr = NULL;
     zend_string *persistent_id = NULL, *estr = NULL;
     char host[1024], scheme[8];
     const char *pos, *address;
@@ -3468,6 +3492,9 @@ static int redis_sock_connect_impl(RedisSock *redis_sock, zend_bool fresh)
             if (!fresh && zend_llist_count(&p->list) > 0) {
                 redis_sock->stream = *(php_stream **)zend_llist_get_last(&p->list);
                 zend_llist_remove_tail(&p->list);
+
+                /* The stream still has the read timeout of its last user */
+                redis_sock_apply_read_timeout(redis_sock);
 
                 if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
                     return SUCCESS;
@@ -3543,13 +3570,7 @@ static int redis_sock_connect_impl(RedisSock *redis_sock, zend_bool fresh)
 
     php_stream_auto_cleanup(redis_sock->stream);
 
-    read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
-    read_tv.tv_usec = (int)((redis_sock->read_timeout - read_tv.tv_sec) * 1000000);
-
-    if (read_tv.tv_sec != 0 || read_tv.tv_usec != 0) {
-        php_stream_set_option(redis_sock->stream,PHP_STREAM_OPTION_READ_TIMEOUT,
-            0, &read_tv);
-    }
+    redis_sock_apply_read_timeout(redis_sock);
     php_stream_set_option(redis_sock->stream,
         PHP_STREAM_OPTION_WRITE_BUFFER, PHP_STREAM_BUFFER_NONE, NULL);
 

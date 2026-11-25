@@ -7540,7 +7540,6 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     zend_long val_long, option;
     zval *val;
     zend_string *val_str;
-    struct timeval read_tv;
     int tcp_keepalive = 0;
     const php_netstream_data_t *sock;
 
@@ -7614,15 +7613,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             }
             RETURN_TRUE;
         case REDIS_OPT_READ_TIMEOUT:
-            redis_sock->read_timeout = zval_get_double(val);
-            if (redis_sock->stream) {
-                read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
-                read_tv.tv_usec = (int)((redis_sock->read_timeout -
-                                         read_tv.tv_sec) * 1000000);
-                php_stream_set_option(redis_sock->stream,
-                                      PHP_STREAM_OPTION_READ_TIMEOUT, 0,
-                                      &read_tv);
-            }
+            redis_sock_set_read_timeout(redis_sock, zval_get_double(val));
             RETURN_TRUE;
         case REDIS_OPT_TCP_KEEPALIVE:
 
