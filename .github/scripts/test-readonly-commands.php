@@ -43,13 +43,13 @@ foreach ([
 }
 
 $readonly = redisReadonlyCommands(file_get_contents(__DIR__ . '/../../redis_cluster.stub.php'));
-foreach (['GET', 'HGET', 'MGET', 'SORT_RO', 'EVAL_RO', 'GEORADIUS_RO'] as $command)
+foreach (['GET', 'HGET', 'MGET', 'SORT_RO', 'EVAL_RO', 'FCALL_RO', 'GEORADIUS_RO'] as $command)
     check(in_array($command, $readonly, true), "$command should be readonly");
-foreach (['SET', 'GETDEL', 'GETEX', 'SORT', 'EVAL', 'GEORADIUS', 'XREADGROUP', 'ACL'] as $command)
+foreach (['SET', 'GETDEL', 'GETEX', 'SORT', 'EVAL', 'FCALL', 'GEORADIUS', 'XREADGROUP', 'ACL'] as $command)
     check(!in_array($command, $readonly, true), "$command must not be readonly");
 /* Writes the C test uses as near-miss negatives for the exact lookup. */
 $commands = array_fill_keys($readonly, true) +
-            array_fill_keys(['SET', 'GETDEL', 'GETEX', 'SORT', 'EVAL', 'GEORADIUS', 'XREADGROUP', 'ACL'], false);
+            array_fill_keys(['SET', 'GETDEL', 'GETEX', 'SORT', 'EVAL', 'FCALL', 'GEORADIUS', 'XREADGROUP', 'ACL'], false);
 
 /* Test the generated C against exact membership, including arbitrary binary input. */
 $c = '#include "' . realpath(__DIR__ . '/../../redis_readonly_commands.h') . '"' . "\n";

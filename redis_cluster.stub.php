@@ -423,6 +423,17 @@ class RedisCluster {
     public function pexpiretime(string $key): RedisCluster|int|false;
 
     /**
+     * @see \Redis::fcall()
+     */
+    public function fcall(string $fn, array $keys = [], array $args = []): mixed;
+
+    /**
+     * @see \Redis::fcall_ro()
+     * @redis-readonly
+     */
+    public function fcall_ro(string $fn, array $keys = [], array $args = []): mixed;
+
+    /**
      * @see \Redis::flushAll()
      */
     public function flushall(string|array $key_or_address, bool $async = false): RedisCluster|bool;

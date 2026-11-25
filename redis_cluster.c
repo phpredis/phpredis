@@ -1985,6 +1985,18 @@ PHP_METHOD(RedisCluster, evalsha) {
 PHP_METHOD(RedisCluster, evalsha_ro) {
     CLUSTER_PROCESS_KW_CMD("EVALSHA_RO", redis_eval_cmd, cluster_variant_raw_resp, 1);
 }
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::fcall(string fn, [array keys, array args]) */
+PHP_METHOD(RedisCluster, fcall) {
+    CLUSTER_PROCESS_KW_CMD("FCALL", redis_fcall_cmd, cluster_variant_raw_resp, 0);
+}
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::fcall_ro(string fn, [array keys, array args]) */
+PHP_METHOD(RedisCluster, fcall_ro) {
+    CLUSTER_PROCESS_KW_CMD("FCALL_RO", redis_fcall_cmd, cluster_variant_raw_resp, 1);
+}
 
 /* }}} */
 /* Commands that do not interact with Redis, but just report stuff about
