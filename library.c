@@ -4242,18 +4242,159 @@ static uint8_t crc8(const unsigned char *input, size_t len) {
 #endif
 
 #ifndef HAVE_REDIS_ZSTD
-/* Without libzstd, zstd goes through the zstd extension's PHP functions when
- * that extension was loaded at startup. Both write standard frames carrying
- * their content size, so values move between the two kinds of build as they
- * are. Set at MINIT and only read afterwards. */
+/* Without libzstd at build time, MINIT picks one provider for zstd: a shared
+ * libzstd found at runtime, otherwise the zstd extension's PHP functions when
+ * that extension was loaded at startup. All of them write standard frames
+ * carrying their content size, so values move between builds and providers
+ * as they are. Set at MINIT and only read afterwards. */
 static int redis_zstd_ext_on;
 static zend_module_entry *redis_zstd_ext_module;
 static zend_string *redis_zstd_ext_compress_name;
 static zend_string *redis_zstd_ext_uncompress_name;
-static zend_long redis_zstd_ext_level_default;
-static zend_long redis_zstd_ext_level_max;
+static zend_long redis_zstd_level_default;
+static zend_long redis_zstd_level_min;
+static zend_long redis_zstd_level_max;
+static char redis_zstd_provider_name[64];
 
 #define REDIS_ZSTD_FRAME_MAGIC "\x28\xb5\x2f\xfd"
+
+/* The lookup needs dlopen() with RTLD_NOLOAD and RTLD_DEFAULT. Left out on
+ * Windows, where PHP ships no libzstd and LoadLibrary() of a bare name also
+ * searches the current directory and PATH, and on macOS, where dlopen() of a
+ * bare name also searches the current directory. ELF loaders search only
+ * LD_LIBRARY_PATH, RUNPATH and the system's library directories. */
+#if ZEND_EXTENSIONS_SUPPORT && !defined(PHP_WIN32) && !defined(__APPLE__)
+#include <dlfcn.h>
+#if defined(RTLD_NOLOAD) && defined(RTLD_DEFAULT)
+#define REDIS_ZSTD_LIBRARY "libzstd.so.1"
+#endif
+#endif
+
+#ifdef REDIS_ZSTD_LIBRARY
+/* The libzstd functions a libzstd build calls, all from one handle. */
+static struct redis_zstd_lib_api {
+    unsigned (*versionNumber)(void);
+    size_t (*compressBound)(size_t);
+    size_t (*compress)(void *, size_t, const void *, size_t, int);
+    size_t (*decompress)(void *, size_t, const void *, size_t);
+    unsigned (*isError)(size_t);
+    unsigned long long (*getFrameContentSize)(const void *, size_t);
+    int (*minCLevel)(void);
+    int (*maxCLevel)(void);
+} redis_zstd_lib;
+static void *redis_zstd_lib_handle;
+
+/* The libzstd branches of redis_compress() and redis_uncompress() run as
+ * they are, calling through the table under the library's own names. */
+#define ZSTD_compressBound       redis_zstd_lib.compressBound
+#define ZSTD_compress            redis_zstd_lib.compress
+#define ZSTD_decompress          redis_zstd_lib.decompress
+#define ZSTD_isError             redis_zstd_lib.isError
+#define ZSTD_getFrameContentSize redis_zstd_lib.getFrameContentSize
+#define ZSTD_maxCLevel           redis_zstd_lib.maxCLevel
+#define ZSTD_CONTENTSIZE_UNKNOWN (0ULL - 1)
+#define ZSTD_CONTENTSIZE_ERROR   (0ULL - 2)
+
+/* ZSTD_minCLevel() needs 1.4.0; another major version may change the ABI */
+#define REDIS_ZSTD_LIB_VERSION_MIN 10400
+#define REDIS_ZSTD_LIB_VERSION_END 20000
+
+/* Some builds of libzstd (Debian's, Alpine's) call their own exported
+ * functions through the PLT or GOT, and those are looked up in the global
+ * scope first. Loaded after another copy of zstd went global (a zstd
+ * extension built with its bundled sources exports one), part of its calls
+ * would land in that copy, which may be another version. So a library
+ * already loaded is used only when no copy is global or its symbols are the
+ * global ones, and one is loaded only when no copy is global. */
+static void *
+redis_zstd_lib_open(void)
+{
+    void *global = dlsym(RTLD_DEFAULT, "ZSTD_versionNumber");
+    void *handle;
+
+    handle = dlopen(REDIS_ZSTD_LIBRARY, RTLD_NOW | RTLD_LOCAL | RTLD_NOLOAD);
+    if (handle != NULL) {
+        if (global == NULL || global == dlsym(handle, "ZSTD_versionNumber"))
+            return handle;
+        dlclose(handle);
+        return NULL;
+    }
+
+    if (global != NULL)
+        return NULL;
+
+    return dlopen(REDIS_ZSTD_LIBRARY, RTLD_NOW | RTLD_LOCAL);
+}
+
+#define REDIS_ZSTD_SYMBOL(field) \
+    {"ZSTD_" #field, offsetof(struct redis_zstd_lib_api, field)}
+
+/* All symbols and a version in range, or the library is not used. */
+static int
+redis_zstd_lib_load(void)
+{
+    static const struct {
+        const char *name;
+        size_t offset;
+    } symbols[] = {
+        REDIS_ZSTD_SYMBOL(versionNumber),
+        REDIS_ZSTD_SYMBOL(compressBound),
+        REDIS_ZSTD_SYMBOL(compress),
+        REDIS_ZSTD_SYMBOL(decompress),
+        REDIS_ZSTD_SYMBOL(isError),
+        REDIS_ZSTD_SYMBOL(getFrameContentSize),
+        REDIS_ZSTD_SYMBOL(minCLevel),
+        REDIS_ZSTD_SYMBOL(maxCLevel),
+    };
+    struct redis_zstd_lib_api api = {0};
+    void *handle, *symbol;
+    unsigned version;
+    size_t i;
+
+    if ((handle = redis_zstd_lib_open()) == NULL)
+        return 0;
+
+    for (i = 0; i < sizeof(symbols) / sizeof(symbols[0]); i++) {
+        if ((symbol = dlsym(handle, symbols[i].name)) == NULL) {
+            dlclose(handle);
+            return 0;
+        }
+        /* POSIX makes a function's dlsym() result callable through a
+         * function pointer; memcpy stores it without an aliasing cast. */
+        memcpy((char *)&api + symbols[i].offset, &symbol, sizeof(symbol));
+    }
+
+    version = api.versionNumber();
+    if (version < REDIS_ZSTD_LIB_VERSION_MIN ||
+        version >= REDIS_ZSTD_LIB_VERSION_END)
+    {
+        dlclose(handle);
+        return 0;
+    }
+
+    redis_zstd_lib = api;
+    redis_zstd_lib_handle = handle;
+
+    /* the values a libzstd build declares; ZSTD_CLEVEL_DEFAULT is 3 in every
+     * release */
+    redis_zstd_level_default = 3;
+    redis_zstd_level_min = api.minCLevel();
+    redis_zstd_level_max = api.maxCLevel();
+    snprintf(redis_zstd_provider_name, sizeof(redis_zstd_provider_name),
+             "libzstd %u.%u.%u (runtime)", version / 10000,
+             version / 100 % 100, version % 100);
+
+    return 1;
+}
+
+#undef REDIS_ZSTD_SYMBOL
+#else
+static int
+redis_zstd_lib_load(void)
+{
+    return 0;
+}
+#endif
 
 /* The extension's own function, never a userland one of the same name or
  * one disable_functions switched off (removed from the table on 8.0+, left
@@ -4278,22 +4419,15 @@ redis_zstd_ext_function(HashTable *table, zend_string *name)
     return fn;
 }
 
-void
-redis_zstd_ext_minit(zend_class_entry *ce)
+static int
+redis_zstd_ext_load(void)
 {
     zval *level_default, *level_max;
-
-    /* nothing may survive from an earlier startup of the same process */
-    redis_zstd_ext_on = 0;
-    redis_zstd_ext_compress_name = NULL;
-    redis_zstd_ext_uncompress_name = NULL;
-    redis_zstd_ext_level_default = 0;
-    redis_zstd_ext_level_max = 0;
 
     redis_zstd_ext_module =
         zend_hash_str_find_ptr(&module_registry, ZEND_STRL("zstd"));
     if (redis_zstd_ext_module == NULL)
-        return;
+        return 0;
 
     level_default =
         zend_get_constant_str(ZEND_STRL("ZSTD_COMPRESS_LEVEL_DEFAULT"));
@@ -4301,7 +4435,7 @@ redis_zstd_ext_minit(zend_class_entry *ce)
     if (level_default == NULL || Z_TYPE_P(level_default) != IS_LONG ||
         level_max == NULL || Z_TYPE_P(level_max) != IS_LONG)
     {
-        return;
+        return 0;
     }
 
     redis_zstd_ext_compress_name =
@@ -4313,27 +4447,71 @@ redis_zstd_ext_minit(zend_class_entry *ce)
         redis_zstd_ext_function(CG(function_table),
                                 redis_zstd_ext_uncompress_name) == NULL)
     {
-        return;
+        return 0;
     }
 
-    redis_zstd_ext_level_default = Z_LVAL_P(level_default);
-    redis_zstd_ext_level_max = Z_LVAL_P(level_max);
     redis_zstd_ext_on = 1;
 
-    /* The same constants a libzstd build declares from redis.stub.php; levels
-     * below 1 turn into the default there, so the minimum is 1. */
+    /* levels below 1 turn into the default, as in a libzstd build, so the
+     * minimum is 1 */
+    redis_zstd_level_default = Z_LVAL_P(level_default);
+    redis_zstd_level_min = 1;
+    redis_zstd_level_max = Z_LVAL_P(level_max);
+    snprintf(redis_zstd_provider_name, sizeof(redis_zstd_provider_name),
+             "zstd extension %s", redis_zstd_ext_module->version);
+
+    return 1;
+}
+
+void
+redis_zstd_minit(zend_class_entry *ce)
+{
+    /* nothing may survive from an earlier startup of the same process */
+    redis_zstd_ext_on = 0;
+    redis_zstd_ext_module = NULL;
+    redis_zstd_ext_compress_name = NULL;
+    redis_zstd_ext_uncompress_name = NULL;
+    redis_zstd_level_default = 0;
+    redis_zstd_level_min = 0;
+    redis_zstd_level_max = 0;
+    redis_zstd_provider_name[0] = '\0';
+
+    if (!redis_zstd_lib_load() && !redis_zstd_ext_load())
+        return;
+
+    /* the constants a libzstd build declares from redis.stub.php */
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD"),
                                      REDIS_COMPRESSION_ZSTD);
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_DEFAULT"),
-                                     redis_zstd_ext_level_default);
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MIN"), 1);
+                                     redis_zstd_level_default);
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MIN"),
+                                     redis_zstd_level_min);
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MAX"),
-                                     redis_zstd_ext_level_max);
+                                     redis_zstd_level_max);
+}
+
+void
+redis_zstd_mshutdown(void)
+{
+#ifdef REDIS_ZSTD_LIBRARY
+    void *handle = redis_zstd_lib_handle;
+
+    /* cleared first, so nothing calls into the library once it is closed */
+    redis_zstd_lib_handle = NULL;
+    memset(&redis_zstd_lib, 0, sizeof(redis_zstd_lib));
+    if (handle != NULL)
+        dlclose(handle);
+#endif
 }
 
 int
-redis_zstd_ext_available(void)
+redis_zstd_available(void)
 {
+#ifdef REDIS_ZSTD_LIBRARY
+    if (redis_zstd_lib_handle != NULL)
+        return 1;
+#endif
+
     return redis_zstd_ext_on &&
         redis_zstd_ext_function(EG(function_table),
                                 redis_zstd_ext_compress_name) != NULL &&
@@ -4342,9 +4520,9 @@ redis_zstd_ext_available(void)
 }
 
 const char *
-redis_zstd_ext_version(void)
+redis_zstd_provider(void)
 {
-    return redis_zstd_ext_on ? redis_zstd_ext_module->version : NULL;
+    return redis_zstd_provider_name;
 }
 
 /* The content size a frame header declares (RFC 8878, 3.1.1). Only frames
@@ -4497,9 +4675,9 @@ redis_zstd_ext_compress(const RedisSock *redis_sock, char **dst, size_t *dstlen,
      * maximum (the extension refuses a level outside its range) */
     level = redis_sock->compression_level;
     if (level < 1)
-        level = redis_zstd_ext_level_default;
-    else if (level > redis_zstd_ext_level_max)
-        level = redis_zstd_ext_level_max;
+        level = redis_zstd_level_default;
+    else if (level > redis_zstd_level_max)
+        level = redis_zstd_level_max;
 
     ZVAL_STRINGL(&argv[0], buf, len);
     ZVAL_LONG(&argv[1], level);
@@ -4572,8 +4750,13 @@ redis_compress(const RedisSock *redis_sock, char **dst, size_t *dstlen, char *bu
 #endif
             break;
         case REDIS_COMPRESSION_ZSTD:
+#if defined(HAVE_REDIS_ZSTD) || defined(REDIS_ZSTD_LIBRARY)
 #ifdef HAVE_REDIS_ZSTD
             {
+#else
+            /* the libzstd branch, through the table, when one was loaded */
+            if (redis_zstd_lib_handle != NULL) {
+#endif
                 char *data;
                 size_t size;
                 int level;
@@ -4600,7 +4783,8 @@ redis_compress(const RedisSock *redis_sock, char **dst, size_t *dstlen, char *bu
                 }
                 efree(data);
             }
-#else
+#endif
+#ifndef HAVE_REDIS_ZSTD
             if (redis_zstd_ext_compress(redis_sock, dst, dstlen, buf, len))
                 return 1;
 #endif
@@ -4693,8 +4877,13 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
 #endif
             break;
         case REDIS_COMPRESSION_ZSTD:
+#if defined(HAVE_REDIS_ZSTD) || defined(REDIS_ZSTD_LIBRARY)
 #ifdef HAVE_REDIS_ZSTD
             {
+#else
+            /* the libzstd branch, through the table, when one was loaded */
+            if (redis_zstd_lib_handle != NULL) {
+#endif
                 char *data;
                 unsigned long long zlen;
 
@@ -4713,7 +4902,8 @@ redis_uncompress(const RedisSock *redis_sock, char **dst, size_t *dstlen, const 
                 *dst = data;
                 return 1;
             }
-#else
+#endif
+#ifndef HAVE_REDIS_ZSTD
             if (redis_zstd_ext_uncompress(dst, dstlen, src, len))
                 return 1;
 #endif

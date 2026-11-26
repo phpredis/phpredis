@@ -190,7 +190,7 @@ static int session_compression_type(void) {
     }
 #else
     if(redis_strncasecmp(compression, ZEND_STRL("zstd")) == 0 &&
-       redis_zstd_ext_available())
+       redis_zstd_available())
     {
         return REDIS_COMPRESSION_ZSTD;
     }

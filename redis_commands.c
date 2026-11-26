@@ -7587,7 +7587,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 || val_long == REDIS_COMPRESSION_ZSTD
 #else
                 || (val_long == REDIS_COMPRESSION_ZSTD &&
-                    redis_zstd_ext_available())
+                    redis_zstd_available())
 #endif
 #ifdef HAVE_REDIS_LZ4
                 || val_long == REDIS_COMPRESSION_LZ4
