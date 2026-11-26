@@ -132,6 +132,17 @@ redis.session.compression = zstd
 redis.session.compression_level = 3
 ~~~
 
+Each value needs phpredis built with that library (`--enable-redis-lzf`,
+`--enable-redis-zstd`, `--enable-redis-lz4`). A build without libzstd still
+offers zstd, for sessions and for `Redis::OPT_COMPRESSION` alike, when it finds
+one of two providers at startup: the system's shared libzstd 1.4.0 or later
+(`libzstd.so.1`, on Linux and other ELF systems), otherwise the
+[zstd extension](https://pecl.php.net/package/zstd) when it is loaded. If the
+zstd extension carries its own copy of zstd (the PECL default) and libzstd is
+not loaded yet, the extension is used rather than a second copy of zstd.
+`php --ri redis` names the provider in a `Zstd provider` row. All of them write
+the same standard zstd frames.
+
 ### Running the unit tests
 
 phpredis uses a small custom unit test suite for testing functionality of the various classes.  To run tests, simply do the following:

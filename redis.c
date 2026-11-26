@@ -132,6 +132,10 @@ static const zend_module_dep redis_deps[] = {
 #ifdef PHP_SESSION
      ZEND_MOD_REQUIRED("session")
 #endif
+#ifndef HAVE_REDIS_ZSTD
+     /* its constants exist at our MINIT only when it starts first */
+     ZEND_MOD_OPTIONAL("zstd")
+#endif
      ZEND_MOD_END
 };
 
@@ -144,7 +148,11 @@ zend_module_entry redis_module_entry = {
      "redis",
      NULL,
      PHP_MINIT(redis),
+#ifndef HAVE_REDIS_ZSTD
+     PHP_MSHUTDOWN(redis),
+#else
      NULL,
+#endif
      NULL,
      NULL,
      PHP_MINFO(redis),
@@ -676,6 +684,9 @@ PHP_MINIT_FUNCTION(redis)
     /* Redis class */
     redis_ce = register_class_Redis();
     redis_ce->create_object = create_redis_object;
+#ifndef HAVE_REDIS_ZSTD
+    redis_zstd_minit(redis_ce);
+#endif
     redis_class_deny_serialization(redis_ce);
 
     /* Redis object handler initialization */
@@ -712,6 +723,16 @@ PHP_MINIT_FUNCTION(redis)
 
     return SUCCESS;
 }
+
+#ifndef HAVE_REDIS_ZSTD
+PHP_MSHUTDOWN_FUNCTION(redis)
+{
+    /* closes a libzstd loaded at MINIT */
+    redis_zstd_mshutdown();
+
+    return SUCCESS;
+}
+#endif
 
 static const char *
 get_available_serializers(void)
@@ -755,6 +776,13 @@ PHP_MINFO_FUNCTION(redis)
         smart_str_appends(&names, ", ");
     }
     smart_str_appends(&names, "zstd");
+#else
+    if (redis_zstd_available()) {
+        if (names.s) {
+            smart_str_appends(&names, ", ");
+        }
+        smart_str_appends(&names, "zstd");
+    }
 #endif
 #ifdef HAVE_REDIS_LZ4
     if (names.s) {
@@ -766,6 +794,11 @@ PHP_MINFO_FUNCTION(redis)
         smart_str_0(&names);
         php_info_print_table_row(2, "Available compression", ZSTR_VAL(names.s));
     }
+#ifndef HAVE_REDIS_ZSTD
+    if (redis_zstd_available()) {
+        php_info_print_table_row(2, "Zstd provider", redis_zstd_provider());
+    }
+#endif
     smart_str_free(&names);
     php_info_print_table_end();
 

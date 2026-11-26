@@ -229,6 +229,171 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  zstd-runtime:
+    name: Zstd without libzstd at build time (PHP ${{ matrix.php }} ${{ matrix.ts }}, ${{ matrix.provider }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.0', '8.5']
+        ts: ['nts']
+        provider: ['library', 'extension']
+        include:
+          - php: '8.5'
+            ts: 'ts'
+            provider: 'library'
+          - php: '8.5'
+            ts: 'ts'
+            provider: 'extension'
+    env:
+      phpts: ${{ matrix.ts }}
+      PHPREDIS_TEST_SUITES: Redis RedisArray RedisCluster
+      ZSTD_EXT_VERSION: '0.19.1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, :redis
+          coverage: none
+          tools: none
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update --allow-releaseinfo-change-label
+          sudo apt-get install -y --no-install-recommends valgrind
+
+      - name: Install Redis
+        env:
+          REDIS_PPA_URI: "packages.redis.io/deb"
+          REDIS_PPA_KEY: "packages.redis.io/gpg"
+        run: |
+          curl -fsSL "https://$REDIS_PPA_KEY" | \
+            sudo gpg --dearmor -o /usr/share/keyrings/redis.gpg
+          echo "deb [signed-by=/usr/share/keyrings/redis.gpg] https://$REDIS_PPA_URI $(lsb_release -cs) main" | \
+            sudo tee /etc/apt/sources.list.d/redis.list
+          sudo apt-get update --allow-releaseinfo-change-label
+          sudo apt-get install -y --no-install-recommends redis
+
+      # Built as PECL builds it by default, from its own copy of zstd, which it
+      # exports. Loaded before libzstd, it makes phpredis use the extension
+      # rather than load libzstd next to that copy.
+      - name: Build the zstd extension
+        if: matrix.provider == 'extension'
+        run: |
+          mkdir "$RUNNER_TEMP/zstd"
+          curl -fsSL --retry 3 "https://pecl.php.net/get/zstd-$ZSTD_EXT_VERSION.tgz" | \
+            tar -xz -C "$RUNNER_TEMP/zstd" --strip-components=1
+          cd "$RUNNER_TEMP/zstd"
+          phpize
+          ./configure
+          make -j"$(nproc)"
+          sudo make install
+
+      # No --enable-redis-zstd: zstd comes from the runner's libzstd or from
+      # the zstd extension. The ini is named to load before the zstd
+      # extension, ZEND_MOD_OPTIONAL reorders.
+      - name: Build phpredis
+        run: |
+          phpize
+          ./configure
+          make -j"$(nproc)"
+          sudo make install
+          echo 'extension = redis.so' | sudo tee "$(php-config --ini-dir)"/10-redis.ini
+
+      # The extension leg runs PHP without its ini, so no other extension
+      # (curl, for one) loads libzstd first; the session tests' child
+      # processes get the same arguments.
+      - name: Choose the PHP arguments
+        run: |
+          # 7.4 may ship json, which redis requires, as an extension
+          json=$(php -n -r 'echo extension_loaded("json") ? "" : "-d extension=json";')
+          echo "JSON_EXT=$json" >> "$GITHUB_ENV"
+          if [ "${{ matrix.provider }}" = extension ]; then
+            args="-n $json -d extension=zstd -d extension=redis"
+            echo "ZSTD_PHP_ARGS=$args" >> "$GITHUB_ENV"
+            echo "TEST_PHP_ARGS=$args" >> "$GITHUB_ENV"
+          fi
+
+      - name: Check the zstd provider
+        run: |
+          php -r 'exit(PHP_ZTS == ("${{ matrix.ts }}" === "ts") ? 0 : 1);'
+          php $ZSTD_PHP_ARGS -r 'exit(defined("Redis::COMPRESSION_ZSTD") ? 0 : 1);'
+          if [ "${{ matrix.provider }}" = library ]; then
+            # with the ini (libzstd may already be loaded) and without
+            php --ri redis | grep -E 'Zstd provider => libzstd [0-9.]+ \(runtime\)'
+            php -n $JSON_EXT -d extension=redis --ri redis | \
+              grep -E 'Zstd provider => libzstd [0-9.]+ \(runtime\)'
+            # a libzstd older than 1.4.0, or one lacking a function, is refused
+            stub="$RUNNER_TEMP/zstd-stub"
+            mkdir -p "$stub/old" "$stub/incomplete"
+            cat > "$stub/stub.c" <<'EOF'
+          #include <stddef.h>
+          unsigned ZSTD_versionNumber(void) { return STUB_VERSION; }
+          size_t ZSTD_compressBound(size_t n) { return 0; }
+          size_t ZSTD_compress(void *d, size_t c, const void *s, size_t n, int l) { return 0; }
+          size_t ZSTD_decompress(void *d, size_t c, const void *s, size_t n) { return 0; }
+          unsigned ZSTD_isError(size_t r) { return 1; }
+          unsigned long long ZSTD_getFrameContentSize(const void *s, size_t n) { return 0; }
+          #ifndef STUB_NO_MIN
+          int ZSTD_minCLevel(void) { return 0; }
+          #endif
+          int ZSTD_maxCLevel(void) { return 0; }
+          EOF
+            cc -shared -fPIC -DSTUB_VERSION=10308 -Wl,-soname,libzstd.so.1 \
+              -o "$stub/old/libzstd.so.1" "$stub/stub.c"
+            cc -shared -fPIC -DSTUB_VERSION=10507 -DSTUB_NO_MIN -Wl,-soname,libzstd.so.1 \
+              -o "$stub/incomplete/libzstd.so.1" "$stub/stub.c"
+            for dir in old incomplete; do
+              LD_LIBRARY_PATH="$stub/$dir" php -n $JSON_EXT -d extension=redis \
+                -r 'exit(defined("Redis::COMPRESSION_ZSTD") ? 1 : 0);'
+            done
+          else
+            php $ZSTD_PHP_ARGS --ri redis | grep -E 'Zstd provider => zstd extension'
+            # redis listed first: ZEND_MOD_OPTIONAL starts zstd before it
+            php -n $JSON_EXT -d extension=redis -d extension=zstd \
+              -r 'exit(defined("Redis::COMPRESSION_ZSTD") ? 0 : 1);'
+            php $ZSTD_PHP_ARGS -d disable_functions=zstd_compress -r \
+              'exit((new Redis())->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD) === false ? 0 : 1);'
+          fi
+
+      - name: Stop default servers
+        run: |
+          if systemctl cat redis-server >/dev/null 2>&1; then
+            sudo systemctl stop redis-server
+          fi
+
+      - name: Start standalone, TLS, cluster and Sentinel servers
+        id: servers
+        run: bash .github/scripts/start-servers.sh redis
+
+      - name: Run tests
+        run: bash .github/scripts/run-tests.sh php $ZSTD_PHP_ARGS
+
+      - name: Run tests using valgrind
+        if: ${{ !cancelled() && steps.servers.outcome == 'success' }}
+        run: |
+          bash .github/scripts/run-tests.sh valgrind \
+            --suppressions=tests/vg.supp --error-exitcode=1 php $ZSTD_PHP_ARGS
+        env:
+          USE_ZEND_ALLOC: 0
+
+      - name: Upload diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: zstd-${{ matrix.provider }}-php-${{ matrix.php }}-${{ matrix.ts }}
+          path: |
+            config.log
+            ${{ runner.temp }}/phpredis-tests/**/*.log
+            ${{ runner.temp }}/phpredis-servers/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   php-master:
     name: PHP master (allowed to fail)
     runs-on: ubuntu-22.04
