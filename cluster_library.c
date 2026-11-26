@@ -322,12 +322,18 @@ cluster_sock_live(RedisSock *redis_sock)
     return redis_check_eof(redis_sock, 0, 1) == 0;
 }
 
-/* Require a complete write; leave retry decisions to the caller. */
+/* Require a complete write; leave retry decisions to the caller.  After an
+ * incomplete one the server holds part of the command, which the next command
+ * on this connection would complete, so the connection must go. */
 static zend_always_inline zend_bool
 cluster_write_payload(RedisSock *redis_sock, const char *buf, size_t len)
 {
     const ssize_t nwritten = redis_sock_write_raw(redis_sock, buf, len);
-    return nwritten >= 0 && nwritten == len;
+    if (nwritten >= 0 && nwritten == len)
+        return 1;
+
+    redis_sock_disconnect(redis_sock, 1, 1);
+    return 0;
 }
 
 static zend_always_inline zend_bool
