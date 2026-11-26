@@ -7511,7 +7511,7 @@ class Redis_Test extends TestSuite {
         $this->assertThrowsMatch($client, function ($client) use ($key) {
             $client->blPop([$key], 4);
         });
-        $this->assertLT(2.5, microtime(true) - $startTime);
+        $this->assertBetween(microtime(true) - $startTime, 0.8, 2.5);
     }
 
     private function newPersistentInstance(float $read_timeout, $persistent = true) {
