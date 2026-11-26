@@ -1611,4 +1611,35 @@ class RedisCluster {
     public function digest(string $key): RedisCluster|string|false;
 }
 
-class RedisClusterException extends RuntimeException {}
+class RedisClusterException extends RuntimeException {
+    /**
+     * The command reached no server, so it was not applied.  For a command sent
+     * in parts (a pipeline, MULTI, keys in several cluster slots, several
+     * RedisArray hosts), this and the other codes describe the part that
+     * failed; earlier parts may have been applied.
+     *
+     * @var int
+     * @cvalue REDIS_ERR_NOT_SENT
+     */
+    public const ERR_NOT_SENT = UNKNOWN;
+
+    /**
+     * The command was sent but its reply is missing or incomplete (read error,
+     * read timeout, connection closed while reading), so it may or may not
+     * have been applied.
+     *
+     * @var int
+     * @cvalue REDIS_ERR_NO_REPLY
+     */
+    public const ERR_NO_REPLY = UNKNOWN;
+
+    /**
+     * The cluster redirected the command and it was not followed (redirect
+     * time limit, MULTI while resharding, CLUSTERDOWN, a redirect for a raw
+     * or node-directed command).
+     *
+     * @var int
+     * @cvalue REDIS_ERR_REDIRECTED
+     */
+    public const ERR_REDIRECTED = UNKNOWN;
+}

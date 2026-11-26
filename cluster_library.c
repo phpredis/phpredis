@@ -1717,11 +1717,21 @@ PHP_REDIS_API short cluster_find_slot(const redisCluster *c, const char *host,
     return -1;
 }
 
+/* Throw a cluster exception, keeping its code for callers that throw again */
+static void cluster_throw_code(redisCluster *c, const char *msg, int code) {
+    c->fail_code = code;
+    CLUSTER_THROW_EXCEPTION(msg, code);
+}
+
 /* Send a command to a specific slot */
 PHP_REDIS_API int
 cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
                   REDIS_REPLY_TYPE rtype)
 {
+    int resp;
+
+    c->fail_code = 0;
+
     if (slot < 0 || slot >= REDIS_CLUSTER_SLOTS || !cluster_slot(c, slot)) {
         zend_throw_exception_ex(redis_cluster_exception_ce, 0,
             "The slot %d is not covered by any node in this cluster", slot);
@@ -1736,19 +1746,24 @@ cluster_send_slot(redisCluster *c, short slot, const char *cmd, int cmd_len,
      * send it to this node yet */
     if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
         if (cluster_send_multi(c, slot) == -1) {
-            CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
+            cluster_throw_code(c, "Unable to enter MULTI mode on requested slot",
+                               REDIS_ERR_NOT_SENT);
             return -1;
         }
     }
 
     /* Try the slot */
     if (cluster_sock_write(c, cmd, cmd_len, 1) == -1) {
+        c->fail_code = REDIS_ERR_NOT_SENT;
         return -1;
     }
     c->flags->txBytes += cmd_len;
 
-    /* Check our response */
-    if (cluster_check_response(c, &c->reply_type) != 0) return -1;
+    /* Check our response: 1 is a MOVED or ASK we don't follow here */
+    if ((resp = cluster_check_response(c, &c->reply_type)) != 0) {
+        c->fail_code = resp > 0 ? REDIS_ERR_REDIRECTED : REDIS_ERR_NO_REPLY;
+        return -1;
+    }
 
     if (rtype != TYPE_EOF && rtype != c->reply_type) {
         /* Our caller won't read the payload of a reply it didn't expect */
@@ -1770,6 +1785,8 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                                          int cmd_len)
 {
     int resp, timedout = 0;
+
+    c->fail_code = 0;
 
     if (slot < 0 || slot >= REDIS_CLUSTER_SLOTS || !cluster_slot(c, slot)) {
         zend_throw_exception_ex(redis_cluster_exception_ce, 0,
@@ -1794,7 +1811,8 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
             /* We have to fail if we can't send MULTI to the node */
             if (cluster_send_multi(c, slot) == -1) {
-                CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
+                cluster_throw_code(c, "Unable to enter MULTI mode on requested slot",
+                                   REDIS_ERR_NOT_SENT);
                 return -1;
             }
         }
@@ -1804,7 +1822,8 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         if (cluster_sock_write(c, cmd, cmd_len, 0) == -1) {
             /* We have to abort, as no nodes are reachable */
             cluster_cache_clear(c);
-            CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
+            cluster_throw_code(c, "Can't communicate with any node in the cluster",
+                               REDIS_ERR_NOT_SENT);
             return -1;
         }
 
@@ -1818,7 +1837,8 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         if (resp == 1) {
            /* Abort if we're in a transaction as it will be invalid */
            if (c->flags->mode == MULTI) {
-               CLUSTER_THROW_EXCEPTION("Can't process MULTI sequence when cluster is resharding", 0);
+               cluster_throw_code(c, "Can't process MULTI sequence when cluster is resharding",
+                                  REDIS_ERR_REDIRECTED);
                return -1;
            }
 
@@ -1830,7 +1850,8 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                c->cmd_sock = cluster_slot_master_sock(c, slot);
                /* Verify slot is valid after update */
                if (!c->cmd_sock) {
-                   CLUSTER_THROW_EXCEPTION("Socket for slot is NULL after MOVED redirection", 0);
+                   cluster_throw_code(c, "Socket for slot is NULL after MOVED redirection",
+                                      REDIS_ERR_REDIRECTED);
                    return -1;
                }
            } else if (c->redir_type == REDIR_ASK) {
@@ -1838,7 +1859,8 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                c->cmd_sock = cluster_get_asking_sock(c);
                /* Verify socket from ASK redirection */
                if (!c->cmd_sock) {
-                   CLUSTER_THROW_EXCEPTION("Socket is NULL after ASK redirection", 0);
+                   cluster_throw_code(c, "Socket is NULL after ASK redirection",
+                                      REDIS_ERR_REDIRECTED);
                    return -1;
                }
            }
@@ -1851,7 +1873,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     // If we've detected the cluster is down, throw an exception
     if (c->clusterdown) {
         cluster_cache_clear(c);
-        CLUSTER_THROW_EXCEPTION("The Redis Cluster is down (CLUSTERDOWN)", 0);
+        cluster_throw_code(c, "The Redis Cluster is down (CLUSTERDOWN)", REDIS_ERR_REDIRECTED);
         return -1;
     } else if (timedout || resp == -1) {
         // Make sure the socket is reconnected, it such that it is in a clean state
@@ -1859,9 +1881,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         cluster_cache_clear(c);
 
         if (timedout) {
-            CLUSTER_THROW_EXCEPTION("Timed out attempting to find data in the correct node!", 0);
+            cluster_throw_code(c, "Timed out attempting to find data in the correct node!",
+                               REDIS_ERR_REDIRECTED);
         } else {
-            CLUSTER_THROW_EXCEPTION("Error processing response from Redis node!", 0);
+            cluster_throw_code(c, "Error processing response from Redis node!",
+                               REDIS_ERR_NO_REPLY);
         }
 
         return -1;
@@ -2600,6 +2624,10 @@ cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                   REDIS_SCAN_TYPE type, uint64_t *cursor)
 {
     char *pit;
+    int resp;
+
+    /* Set only where a read fails, a reply of another shape keeps 0 */
+    c->fail_code = 0;
 
     // We always want to see a MULTIBULK response with two elements
     if (c->reply_type != TYPE_MULTIBULK || c->reply_len != 2)
@@ -2608,9 +2636,10 @@ cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     }
 
     // Read the BULK size
-    if (cluster_check_response(c, &c->reply_type) ||
+    if ((resp = cluster_check_response(c, &c->reply_type)) != 0 ||
         c->reply_type != TYPE_BULK)
     {
+        if (resp < 0) c->fail_code = REDIS_ERR_NO_REPLY;
         return FAILURE;
     }
 
@@ -2626,6 +2655,7 @@ cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     // We'll need another MULTIBULK response for the payload
     if (cluster_check_response(c, &c->reply_type) < 0) {
+        c->fail_code = REDIS_ERR_NO_REPLY;
         return FAILURE;
     }
 

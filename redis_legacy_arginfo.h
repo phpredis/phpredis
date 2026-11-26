@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: f634e8d600e2a198043cca54cd6f8b49a4715ba1 */
+ * Stub hash: e6d16369f4c56338b2aaafd882a3215a2232c219 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -2248,6 +2248,24 @@ static zend_class_entry *register_class_RedisException(zend_class_entry *class_e
 #else
 	class_entry = zend_register_internal_class_ex(&ce, class_entry_RuntimeException);
 #endif
+
+	zval const_ERR_NOT_SENT_value;
+	ZVAL_LONG(&const_ERR_NOT_SENT_value, REDIS_ERR_NOT_SENT);
+	zend_string *const_ERR_NOT_SENT_name = zend_string_init_interned("ERR_NOT_SENT", sizeof("ERR_NOT_SENT") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_ERR_NOT_SENT_name, &const_ERR_NOT_SENT_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_ERR_NOT_SENT_name);
+
+	zval const_ERR_NO_REPLY_value;
+	ZVAL_LONG(&const_ERR_NO_REPLY_value, REDIS_ERR_NO_REPLY);
+	zend_string *const_ERR_NO_REPLY_name = zend_string_init_interned("ERR_NO_REPLY", sizeof("ERR_NO_REPLY") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_ERR_NO_REPLY_name, &const_ERR_NO_REPLY_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_ERR_NO_REPLY_name);
+
+	zval const_ERR_REDIRECTED_value;
+	ZVAL_LONG(&const_ERR_REDIRECTED_value, REDIS_ERR_REDIRECTED);
+	zend_string *const_ERR_REDIRECTED_name = zend_string_init_interned("ERR_REDIRECTED", sizeof("ERR_REDIRECTED") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_ERR_REDIRECTED_name, &const_ERR_REDIRECTED_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_ERR_REDIRECTED_name);
 
 	return class_entry;
 }

@@ -2469,7 +2469,7 @@ static void cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
     if (cluster_send_slot_cmd(c, slot, cmd,
                              cluster_is_atomic(c) ? reply_type : TYPE_LINE) < 0)
     {
-        CLUSTER_THROW_EXCEPTION("Unable to send command at a specific node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at a specific node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
@@ -2512,7 +2512,7 @@ cluster_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
 
     // Kick off our command
     if (cluster_send_slot_cmd(c, slot, cmd, reply_type) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send command at a specific node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at a specific node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
@@ -2569,7 +2569,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw
 
     /* Send it off */
     if (cluster_send_slot_cmd(c, slot, cmd, TYPE_EOF) < 0) {
-        CLUSTER_THROW_EXCEPTION("Couldn't send command to node", 0);
+        CLUSTER_THROW_EXCEPTION("Couldn't send command to node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
@@ -2642,7 +2642,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         // Send it off
         if (cluster_send_rcmd(c, cmd) == FAILURE)
         {
-            CLUSTER_THROW_EXCEPTION("Couldn't send SCAN command", 0);
+            CLUSTER_THROW_EXCEPTION("Couldn't send SCAN command", c->fail_code);
             if (pat_free) efree(pat);
             redis_cmd_free(cmd);
             RETURN_FALSE;
@@ -2652,7 +2652,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         if (cluster_scan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, type,
                               &cursor) == FAILURE)
         {
-            CLUSTER_THROW_EXCEPTION("Couldn't read SCAN response", 0);
+            CLUSTER_THROW_EXCEPTION("Couldn't read SCAN response", c->fail_code);
             if (pat_free) efree(pat);
             redis_cmd_free(cmd);
             RETURN_FALSE;
@@ -2731,7 +2731,7 @@ PHP_METHOD(RedisCluster, acl) {
     /* Kick off our command */
     if (cluster_send_slot_cmd(c, cmd->slot, cmd, TYPE_EOF) < 0) {
         redis_cmd_free(cmd);
-        CLUSTER_THROW_EXCEPTION("Unabler to send ACL command", 0);
+        CLUSTER_THROW_EXCEPTION("Unabler to send ACL command", c->fail_code);
         RETURN_FALSE;
     }
 
@@ -2804,7 +2804,7 @@ PHP_METHOD(RedisCluster, scan) {
         // Send it to the node in question
         if (cluster_send_rcmd_ex(c, slot, cmd) < 0)
         {
-            CLUSTER_THROW_EXCEPTION("Couldn't send SCAN to node", 0);
+            CLUSTER_THROW_EXCEPTION("Couldn't send SCAN to node", c->fail_code);
             redis_cmd_free(cmd);
             RETURN_FALSE;
         }
@@ -2812,7 +2812,7 @@ PHP_METHOD(RedisCluster, scan) {
         if (cluster_scan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, TYPE_SCAN,
                               &cursor) == FAILURE || Z_TYPE_P(return_value) != IS_ARRAY)
         {
-            CLUSTER_THROW_EXCEPTION("Couldn't process SCAN response from node", 0);
+            CLUSTER_THROW_EXCEPTION("Couldn't process SCAN response from node", c->fail_code);
             redis_cmd_free(cmd);
             RETURN_FALSE;
         }
@@ -2933,7 +2933,7 @@ PHP_METHOD(RedisCluster, info) {
 
     const REDIS_REPLY_TYPE rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot_cmd(c, slot, cmd, rtype) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send INFO command to specific node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send INFO command to specific node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
@@ -3000,7 +3000,7 @@ PHP_METHOD(RedisCluster, client) {
 
     /* Attempt to write our command */
     if (cluster_send_slot_cmd(c, slot, cmd, rtype) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send CLIENT command to specific node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send CLIENT command to specific node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
@@ -3076,7 +3076,7 @@ PHP_METHOD(RedisCluster, script) {
 
     /* Send it off */
     if (cluster_send_slot_cmd(c, slot, cmd, TYPE_EOF) < 0) {
-        CLUSTER_THROW_EXCEPTION("Couldn't send command to node", 0);
+        CLUSTER_THROW_EXCEPTION("Couldn't send command to node", c->fail_code);
         redis_cmd_free(cmd);
         efree(z_args);
         RETURN_FALSE;
@@ -3211,7 +3211,7 @@ void cluster_gen_wait_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw,
     c->readonly = 0;
 
     if (cluster_send_slot_cmd(c, cmd->slot, cmd, reply_type) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
@@ -3267,7 +3267,7 @@ PHP_METHOD(RedisCluster, ping) {
     const REDIS_REPLY_TYPE rtype = cluster_is_atomic(c) && arg != NULL ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot_cmd(c, slot, cmd, rtype) < 0) {
         CLUSTER_THROW_EXCEPTION(
-            "Unable to send command at the specified node", 0);
+            "Unable to send command at the specified node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
@@ -3459,7 +3459,7 @@ PHP_METHOD(RedisCluster, echo) {
     const REDIS_REPLY_TYPE rtype = cluster_is_atomic(c) ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot_cmd(c, slot, cmd, rtype) < 0) {
         CLUSTER_THROW_EXCEPTION(
-            "Unable to send command at the specified node", 0);
+            "Unable to send command at the specified node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }
@@ -3512,7 +3512,7 @@ PHP_METHOD(RedisCluster, rawcommand) {
     /* Direct the command */
     const REDIS_REPLY_TYPE rtype = cluster_is_atomic(c) ? TYPE_EOF : TYPE_LINE;
     if (cluster_send_slot_cmd(c, cmd->slot, cmd, rtype) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send command to the specified node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send command to the specified node", c->fail_code);
         redis_cmd_free(cmd);
         RETURN_FALSE;
     }

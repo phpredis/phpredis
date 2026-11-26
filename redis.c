@@ -233,13 +233,14 @@ redis_sock_get_instance(zval *id, int no_throw)
     }
     // Throw an exception unless we've been requested not to
     if (!no_throw) {
-        REDIS_THROW_EXCEPTION("Redis server went away", 0);
+        REDIS_THROW_EXCEPTION("Redis server went away", REDIS_ERR_NOT_SENT);
     }
     return NULL;
 }
 
 static zend_never_inline ZEND_COLD void redis_sock_throw_exception(RedisSock *redis_sock) {
     char *errmsg = NULL;
+    int code = 0;
     if (redis_sock->status == REDIS_SOCK_STATUS_AUTHENTICATED) {
         if (redis_sock->err != NULL) {
             spprintf(&errmsg, 0, "Could not select database %ld '%s'", redis_sock->dbNumber, ZSTR_VAL(redis_sock->err));
@@ -258,8 +259,10 @@ static zend_never_inline ZEND_COLD void redis_sock_throw_exception(RedisSock *re
         } else {
             spprintf(&errmsg, 0, "Redis server %s:%d went away", ZSTR_VAL(redis_sock->host), redis_sock->port);
         }
+        /* We could not connect, so the command was not sent */
+        code = REDIS_ERR_NOT_SENT;
     }
-    REDIS_THROW_EXCEPTION(errmsg, 0);
+    REDIS_THROW_EXCEPTION(errmsg, code);
     efree(errmsg);
 }
 

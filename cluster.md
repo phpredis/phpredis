@@ -60,6 +60,11 @@ The way RedisCluster handles user specified timeout values is that every time a 
 
 The read timeout applies to every node connection. `setOption(Redis::OPT_READ_TIMEOUT, $timeout)` changes it for all of them, including connections that are already open; 0 uses PHP's `default_socket_timeout` and -1 means no limit. The time limit of the command loop is computed once, from the timeout and read timeout given to the constructor.
 
+## Exception codes
+`RedisClusterException` has the same codes as `RedisException`, with the same values: `ERR_NOT_SENT` when the command reached no node, `ERR_NO_REPLY` when it was sent but its reply is missing or incomplete (including a read timeout), and `ERR_REDIRECTED` when the cluster redirected it and the redirect was not followed: the redirect time limit was reached, the cluster is resharding inside `MULTI`, a node answered `CLUSTERDOWN`, or a raw or node-directed command was redirected. Every other error has the code `0`. Messages are unchanged.
+
+The code describes the command that failed. A command over keys in several slots (`del`, `unlink`, `mset`, `msetnx`, `mget`, `exists`, `touch`, ...) is sent as one command per slot, and the commands for the slots before the failing one may have been applied; inside `MULTI` the code describes the command that failed, not the transaction.
+
 ## Keyspace map
 As previously described, RedisCluster makes an initial mapping of every master (and any slaves) on construction, which it uses to determine which nodes to direct a given command.  However, one of the core functionalities of Redis cluster is that this keyspace can change while the cluster is running.
 
