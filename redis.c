@@ -1476,6 +1476,44 @@ redis_response_enqueued(RedisSock *redis_sock)
     return ret;
 }
 
+/* Read the reply to a command queued in a pipelined MULTI block: +QUEUED, or
+ * an error if the server refused to queue it.  The first error is handled
+ * like any other error reply, later ones are only read.  Any other reply
+ * means the server is no longer queueing, so we disconnect. */
+static int
+redis_read_queued_reply(RedisSock *redis_sock, int *refused)
+{
+    char inbuf[4096], *resp;
+    int resp_len, ok;
+    size_t len;
+
+    if (*refused) {
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0)
+            return FAILURE;
+        ok = *inbuf == TYPE_ERR ||
+             redis_strncmp(inbuf, ZEND_STRL("+QUEUED")) == 0;
+    } else if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL) {
+        /* A failed read has already disconnected us */
+        if (redis_sock->stream == NULL)
+            return FAILURE;
+        /* Otherwise a whole reply was read: an error, or a nil or empty line
+         * the server never sends here.  Each counts as a refusal and EXEC
+         * answers for the block. */
+        *refused = 1;
+        return SUCCESS;
+    } else {
+        ok = redis_strncmp(resp, ZEND_STRL("+QUEUED")) == 0;
+        efree(resp);
+    }
+
+    if (!ok) {
+        redis_sock_disconnect(redis_sock, 1, 1);
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
 PHP_REDIS_API int
 redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
                                            RedisSock *redis_sock, zval *z_tab)
@@ -1498,22 +1536,48 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
             continue;
         }
         size_t len;
-        char inbuf[255];
+        /* EXEC's error line can quote the error that aborted the block */
+        char inbuf[4096], *resp;
+        int resp_len, refused = 0;
 
-        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
-            redis_strncmp(inbuf, ZEND_STRL("+OK")) != 0)
+        /* After a refused MULTI the replies no longer have the block's shape
+         * (the server may refuse every command, run them on their own or
+         * queue them into another transaction), so we can't skip them. */
+        if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL ||
+            redis_strncmp(resp, ZEND_STRL("+OK")) != 0)
         {
+            if (resp) efree(resp);
+            if (redis_sock->stream) redis_sock_disconnect(redis_sock, 1, 1);
             return FAILURE;
         }
+        efree(resp);
 
-        while (redis_sock->reply_callback[++i].fun) {
-            if (redis_response_enqueued(redis_sock) != SUCCESS) {
+        while (++i < redis_sock->reply_callback_count &&
+               redis_sock->reply_callback[i].fun)
+        {
+            if (redis_read_queued_reply(redis_sock, &refused) != SUCCESS) {
                 return FAILURE;
             }
         }
 
+        /* The block was cut short (e.g. by close()) and EXEC was never sent */
+        if (i == redis_sock->reply_callback_count) {
+            redis_sock_disconnect(redis_sock, 1, 1);
+            return FAILURE;
+        }
+
         if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
             return FAILURE;
+        }
+
+        /* EXEC aborted, e.g. because the server refused a queued command,
+         * whose error we keep */
+        if (*inbuf == TYPE_ERR) {
+            if (!refused) {
+                redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
+            }
+            add_next_index_bool(z_tab, 0);
+            continue;
         }
 
         zval z_ret;

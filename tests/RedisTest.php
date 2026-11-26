@@ -4600,16 +4600,15 @@ class Redis_Test extends TestSuite {
             $redis->del('pipeline-hash-read');
             $redis->hset('pipeline-hash-read', 'field', 'value');
 
-            /* The server refuses to queue the unknown command, so reading the
-               MULTI block fails after the hash read's reply was decoded. */
+            /* The server refuses the nested MULTI, so reading the MULTI block
+               fails after the hash read's reply was decoded. */
             $pipe = $redis->pipeline();
             $pipe->$command('pipeline-hash-read', ['field']);
+            $pipe->rawCommand('MULTI');
             $pipe->multi();
-            $pipe->rawCommand('PHPREDIS-UNKNOWN-COMMAND');
             $pipe->exec();
             $this->assertFalse($pipe->exec());
 
-            /* The reply to EXEC is still unread, so don't reuse the socket. */
             $redis->close();
 
             /* Walks the root buffer, where a freed table would still be. */
@@ -4626,6 +4625,116 @@ class Redis_Test extends TestSuite {
 
         $redis->del('pipeline-hash-read');
         $redis->close();
+    }
+
+    private function assertEchoesInStep($redis) {
+        for ($i = 0; $i < 4; $i++) {
+            $this->assertEquals("echo-$i", $redis->echo("echo-$i"));
+        }
+    }
+
+    /* A command the server refuses to queue aborts its pipelined MULTI block,
+       but every reply of the block must still be read, or later commands get
+       the replies of earlier ones. */
+    public function testPipelineMultiRefusedCommand() {
+        if ( ! $this->havePipeline())
+            $this->markTestSkipped();
+
+        $this->redis->del('pipeline-refused');
+
+        /* Wrong arity is refused at queue time, without throwing. */
+        $ret = $this->redis->pipeline()
+            ->echo('before')
+            ->multi()
+                ->rawCommand('GET')
+                ->set('pipeline-refused', 'value')
+                ->rawCommand('GET')
+            ->exec()
+            ->echo('after')
+            ->exec();
+
+        $this->assertEquals(['before', false, 'after'], $ret);
+        $this->assertStringContains('wrong number of arguments', $this->redis->getLastError());
+        $this->assertKeyMissing('pipeline-refused');
+        $this->assertEchoesInStep($this->redis);
+    }
+
+    /* Same, for refusals that throw: a queued command, and MULTI itself. */
+    public function testPipelineMultiRefusedCommandThrows() {
+        if ( ! $this->havePipeline() || ! $this->minVersionCheck('6.0') || $this->is_dragonfly)
+            $this->markTestSkipped();
+
+        $this->assertTrue($this->redis->acl('SETUSER', 'pipeline-noset', 'on', '>noset', '~*', '+@all', '-set'));
+        $this->assertTrue($this->redis->acl('SETUSER', 'pipeline-nomulti', 'on', '>nomulti', '~*', '+@all', '-multi'));
+
+        $pipeline = function ($r) {
+            $r->pipeline()
+                ->multi()->set('pipeline-refused', 'value')->echo('queued')->exec()
+                ->echo('after')
+                ->exec();
+        };
+
+        try {
+            $redis = $this->newInstance();
+            $this->assertTrue($redis->auth(['pipeline-noset', 'noset']));
+            $this->assertThrowsMatch($redis, $pipeline, '/^NOPERM/');
+            $this->assertTrue($redis->isConnected());
+            $this->assertEchoesInStep($redis);
+
+            /* The refused MULTI closes the connection, see below */
+            $redis = $this->newInstance();
+            $this->assertTrue($redis->auth(['pipeline-nomulti', 'nomulti']));
+            $this->assertThrowsMatch($redis, $pipeline, '/^NOPERM/');
+            $this->assertFalse($redis->isConnected());
+            $this->assertEchoesInStep($redis);
+        } finally {
+            $this->redis->acl('DELUSER', 'pipeline-noset', 'pipeline-nomulti');
+            $this->redis->del('pipeline-refused');
+        }
+    }
+
+    /* When MULTI itself is refused the replies no longer have the block's
+       shape (here the commands are queued into the outer transaction and the
+       block's EXEC runs it), so they can't be skipped and the connection is
+       closed instead. */
+    public function testPipelineMultiRefused() {
+        if ( ! $this->havePipeline())
+            $this->markTestSkipped();
+
+        $redis = $this->newInstance();
+
+        $ret = $redis->pipeline()
+            ->rawCommand('MULTI')
+            ->multi()->echo('queued')->exec()
+            ->echo('after')
+            ->exec();
+
+        /* The reason the server gave for refusing MULTI */
+        $this->assertFalse($ret);
+        $this->assertIsString($redis->getLastError());
+        $this->assertFalse($redis->isConnected());
+        $this->assertEchoesInStep($redis);
+    }
+
+    /* close() inside a pipelined MULTI block can leave the block buffered
+       without EXEC.  Reading its replies must stop at the last queued command
+       instead of reading past the reply callbacks and waiting for an EXEC
+       reply that never comes. */
+    public function testPipelineMultiWithoutExec() {
+        if ( ! $this->havePipeline())
+            $this->markTestSkipped();
+
+        $redis = $this->newInstance();
+        $redis->setOption(Redis::OPT_READ_TIMEOUT, 1);
+
+        $redis->pipeline()->multi();
+        for ($i = 0; $i < 7; $i++) {
+            $redis->echo("queued-$i");
+        }
+        $redis->close();
+
+        $this->assertFalse($redis->pipeline()->echo('after')->exec());
+        $this->assertEchoesInStep($redis);
     }
 
     public function testDeferredReplyDisconnectCleanup() {
