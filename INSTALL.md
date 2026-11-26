@@ -37,6 +37,7 @@ If you would like to use the msgpack serializer, run configure with `--enable-re
 If you would like to use the [phpser](https://github.com/iliaal/phpser) serializer, run configure with `--enable-redis-phpser` (note: Requires phpser >= 0.9.0 and PHP >= 8.2). Load phpser before redis (`extension=phpser.so` above `extension=redis.so`).
 When `phpser.key` is set to a key of at least 32 bytes, `Redis::SERIALIZER_PHPSER` values are HMAC-signed for the `redis` context and verified before decoding. While `phpser.key` is set, a value that fails verification or does not decode is returned as `false`, never as its raw bytes, so plain values written by other clients or by `INCR` read back as `false` unless `Redis::OPT_PACK_IGNORE_NUMBERS` is enabled for numeric values. Without `phpser.key`, such values are returned as strings, as with igbinary and the PHP serializer.
 The extension also may compress data before sending it to Redis server, if you run configure with `--enable-redis-lzf`. If you want to use lzf library pre-installed into your system use `--with-liblzf` configuration option to specify the path where to search files.
+`--enable-redis-zstd` links libzstd. Without it, zstd is still available when phpredis finds `libzstd.so.1` (1.4.0 or later) at startup, or when the [zstd extension](https://pecl.php.net/package/zstd) is loaded; see [Session compression](./README.md#session-compression).
 `make install` copies `redis.so` to an appropriate location, but you still need to enable the module in the PHP config file. To do so, either edit your php.ini or add a redis.ini file in `/etc/php5/conf.d` with the following contents: `extension=redis.so`.
 
 You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
@@ -65,9 +66,9 @@ a different installation, including PHP 8.0.
 The initial Windows packages include the PHP serializer and Redis session
 handlers. They do not include igbinary, msgpack, JSON serialization, or
 LZF/LZ4/Zstd compression. Configure options cannot add features to a prebuilt
-DLL. Zstd compression is available when the
-[zstd extension](https://pecl.php.net/package/zstd) is loaded as well. Use
-`php --ri redis` to inspect the installed extension's features.
+DLL. These builds do not look for a zstd DLL; zstd compression is available
+when the [zstd extension](https://pecl.php.net/package/zstd) is loaded as well.
+Use `php --ri redis` to inspect the installed extension's features.
 
 Older releases may not have GitHub Windows assets. For manual installation,
 the [PECL DLL downloads](https://pecl.php.net/package/redis) and
