@@ -364,7 +364,15 @@ redis_error_throw(const RedisSock *redis_sock)
         !redis_sock_errcmp(redis_sock, ZEND_STRL("BUSYGROUP")) &&
         !redis_sock_errcmp(redis_sock, ZEND_STRL("NOGROUP")))
     {
-        REDIS_THROW_EXCEPTION(ZSTR_VAL(redis_sock->err), 0);
+        /* A cluster node that redirects us or is down did not run the command.
+         * A pipeline or transaction holds other commands, so it keeps 0. */
+        const int redirected = redis_sock_is_atomic(redis_sock) &&
+                               (redis_sock_errcmp(redis_sock, ZEND_STRL("MOVED ")) ||
+                                redis_sock_errcmp(redis_sock, ZEND_STRL("ASK ")) ||
+                                redis_sock_errcmp(redis_sock, ZEND_STRL("CLUSTERDOWN")));
+
+        REDIS_THROW_EXCEPTION(ZSTR_VAL(redis_sock->err),
+                              redirected ? REDIS_ERR_REDIRECTED : 0);
     }
 }
 
@@ -401,6 +409,13 @@ read_mbulk_header(RedisSock *redis_sock, int *nelem)
     return SUCCESS;
 }
 
+/* The exception code for a failed redis_check_eof().  Only the write path may
+ * reconnect, so only it passes no_retry = 0: its command was not sent.  Every
+ * reader passes no_retry = 1, after its command was sent. */
+static zend_always_inline int redis_check_eof_code(zend_bool no_retry) {
+    return no_retry ? REDIS_ERR_NO_REPLY : REDIS_ERR_NOT_SENT;
+}
+
 PHP_REDIS_API int
 redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
 {
@@ -409,7 +424,7 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
 
     if (!redis_sock || !redis_sock->stream || redis_sock->status == REDIS_SOCK_STATUS_FAILED) {
         if (!no_throw) {
-            REDIS_THROW_EXCEPTION( "Connection closed", 0);
+            REDIS_THROW_EXCEPTION( "Connection closed", redis_check_eof_code(no_retry));
         }
         return -1;
     }
@@ -475,7 +490,7 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
     redis_sock_disconnect(redis_sock, 1, 1);
     redis_sock->status = REDIS_SOCK_STATUS_FAILED;
     if (!no_throw) {
-        REDIS_THROW_EXCEPTION( errmsg, 0);
+        REDIS_THROW_EXCEPTION( errmsg, redis_check_eof_code(no_retry));
     }
     return -1;
 }
@@ -838,7 +853,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
         /* Error, EOF, or timeout. The rest of the payload may still arrive,
          * so the socket can't be reused for another command. */
         redis_sock_disconnect(redis_sock, 1, 1);
-        REDIS_THROW_EXCEPTION("socket error on read socket", 0);
+        REDIS_THROW_EXCEPTION("socket error on read socket", REDIS_ERR_NO_REPLY);
         efree(reply);
         return NULL;
     }
@@ -3915,7 +3930,7 @@ redis_sock_read_bulk_zstr(RedisSock *redis_sock, int bytes)
 
     if (offset < nbytes) {
         redis_sock_disconnect(redis_sock, 1, 1);
-        REDIS_THROW_EXCEPTION("socket error on read socket", 0);
+        REDIS_THROW_EXCEPTION("socket error on read socket", REDIS_ERR_NO_REPLY);
         zend_string_release(zstr);
         return NULL;
     }
@@ -4825,7 +4840,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
         redis_sock_disconnect(redis_sock, 1, 1);
 
         // Throw a read error exception
-        REDIS_THROW_EXCEPTION(buf, 0);
+        REDIS_THROW_EXCEPTION(buf, REDIS_ERR_NO_REPLY);
         return FAILURE;
     }
 
@@ -4858,7 +4873,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
     if((*reply_type = redis_sock_getc(redis_sock)) == EOF) {
         /* On a timeout the reply may still arrive and be read by the next command */
         redis_sock_disconnect(redis_sock, 1, 1);
-        REDIS_THROW_EXCEPTION( "socket error on read socket", 0);
+        REDIS_THROW_EXCEPTION( "socket error on read socket", REDIS_ERR_NO_REPLY);
         return -1;
     }
 

@@ -136,6 +136,43 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    /* The codes a stable cluster can produce: the other redirect cases need a
+     * slot that moves, and a command that is not sent needs a node that is down */
+    public function testExceptionCodes() {
+        $this->assertEquals([1, 2, 3], [RedisClusterException::ERR_NOT_SENT,
+                                        RedisClusterException::ERR_NO_REPLY,
+                                        RedisClusterException::ERR_REDIRECTED]);
+
+        $key = uniqid('exception-codes:', true);
+        $class = $this->getRedisClusterClass();
+        $client = new $class(NULL, self::$seeds, 5, 5, false, $this->getAuth());
+        try {
+            $client->setOption(Redis::OPT_READ_TIMEOUT, 1);
+
+            /* Sent to every primary: the owner of the key blocks past the read
+             * timeout, the others redirect it */
+            $codes = [];
+            foreach ($client->_masters() as $master) {
+                try {
+                    $client->rawCommand($master, 'BLPOP', $key, 3);
+                    $codes[] = 0;
+                } catch (RedisClusterException $ex) {
+                    $codes[] = $ex->getCode();
+                }
+            }
+            sort($codes);
+            $expected = array_fill(0, count($codes) - 1, RedisClusterException::ERR_REDIRECTED);
+            array_unshift($expected, RedisClusterException::ERR_NO_REPLY);
+            $this->assertEquals($expected, $codes);
+
+            $this->assertExceptionCode($client, function ($client) use ($key) {
+                $client->blPop([$key], 3);
+            }, RedisClusterException::ERR_NO_REPLY);
+        } finally {
+            $client->close();
+        }
+    }
+
     public function testReconnect() {
         $class = $this->getRedisClusterClass();
         $masters = $this->redis->_masters();

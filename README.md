@@ -231,6 +231,25 @@ phpredis throws a [RedisException](#class-redisexception) object if it can't rea
 if the Redis service is down, or if the Redis host is overloaded. In any other problematic case that does not involve an
 unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
+The exception code tells whether the command may have been applied, so a caller can decide whether to retry it:
+
+* `RedisException::ERR_NOT_SENT`: the command reached no server (for example the connection was lost or could not be made before the command was written), so it was not applied.
+* `RedisException::ERR_NO_REPLY`: the command was sent but its reply is missing or incomplete (a read error, a read timeout, the connection closed while reading), so it may or may not have been applied.
+* `RedisException::ERR_REDIRECTED`: a cluster node answered `MOVED`, `ASK` or `CLUSTERDOWN`, so the command did not run. `Redis` only sees this when it talks to a cluster node directly; for `RedisCluster` see [cluster.md](cluster.md#exception-codes).
+* `0`: any other error. The messages are unchanged.
+
+The code describes the part that failed. A pipeline, a `MULTI` block, a `RedisCluster` command over keys in several slots (`del`, `unlink`, `mset`, `msetnx`, `mget`, `exists`, `touch`, ...), which sends one command per slot, and a `RedisArray` call over several hosts are sent in parts, and the parts before the failing one may have been applied. The retry below is only safe for a single command to a single server:
+
+~~~php
+try {
+    $redis->incr('counter');
+} catch (RedisException $e) {
+    if ($e->getCode() === RedisException::ERR_NOT_SENT) {
+        $redis->incr('counter'); // nothing was applied, retrying is safe
+    }
+}
+~~~
+
 #### Predefined constants
 -----
 _**Description**_: Available Redis Constants

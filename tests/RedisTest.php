@@ -7573,6 +7573,55 @@ class Redis_Test extends TestSuite {
         }
     }
 
+    /* $cb must throw a RedisException or RedisClusterException with $code */
+    protected function assertExceptionCode($arg, callable $cb, int $code) {
+        try {
+            $cb($arg);
+        } catch (RedisException | RedisClusterException $ex) {
+            $this->assertEquals($code, $ex->getCode());
+            return;
+        }
+
+        $this->assert('[no exception]');
+    }
+
+    public function testExceptionCodes() {
+        $this->assertEquals([1, 2, 3], [RedisException::ERR_NOT_SENT,
+                                        RedisException::ERR_NO_REPLY,
+                                        RedisException::ERR_REDIRECTED]);
+
+        /* The connect failed, so the next command is not sent */
+        $class = $this->getRedisClass();
+        $redis = new $class();
+        try {
+            $redis->connect('/tmp/phpredis-no-such-socket.sock');
+        } catch (RedisException $ex) {
+        }
+        $this->assertExceptionCode($redis, function ($redis) {
+            $redis->ping();
+        }, RedisException::ERR_NOT_SENT);
+
+        /* The connection is gone before the command is written and may not
+           be reopened */
+        $client = $this->newInstance();
+        $client->setOption(Redis::OPT_MAX_RETRIES, 0);
+        $this->assertTrue(in_array($this->redis->rawCommand('CLIENT', 'KILL', 'ID',
+                                   (string)$client->client('id')), [true, 1], true));
+        /* Give the close time to reach us */
+        usleep(100000);
+        $this->assertExceptionCode($client, function ($redis) {
+            $redis->ping();
+        }, RedisException::ERR_NOT_SENT);
+
+        /* The command was sent, its reply never came */
+        $client = $this->newInstance();
+        $client->setOption(Redis::OPT_READ_TIMEOUT, 1);
+        $this->assertExceptionCode($client, function ($redis) {
+            $redis->blPop([uniqid('exception-codes:', true)], 3);
+        }, RedisException::ERR_NO_REPLY);
+        $client->close();
+    }
+
     public function testReconnectFailure() {
         if (!$this->minVersionCheck('6.0') || $this->is_keydb)
             $this->markTestSkipped('Requires Redis ACLs');

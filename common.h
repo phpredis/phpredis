@@ -147,6 +147,11 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_BACKOFF_CAP         14
 #define REDIS_OPT_PACK_IGNORE_NUMBERS 15
 
+/* Exception codes, the ERR_* constants of RedisException and RedisClusterException */
+#define REDIS_ERR_NOT_SENT   1
+#define REDIS_ERR_NO_REPLY   2
+#define REDIS_ERR_REDIRECTED 3
+
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
 #define REDIS_FAILOVER_ERROR             1

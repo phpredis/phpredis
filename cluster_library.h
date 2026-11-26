@@ -179,6 +179,10 @@ typedef struct redisCluster {
     /* The last ERROR we encountered */
     zend_string *err;
 
+    /* Why the last cluster_send_slot() or cluster_send_command() failed, as
+     * an exception code for callers that throw their own exception, or 0 */
+    int fail_code;
+
     /* The slot our command is operating on, as well as it's socket */
     unsigned short cmd_slot;
     RedisSock *cmd_sock;
