@@ -84,6 +84,11 @@ $obj_cluster->setOption(
 $obj_cluster->setOption(
     RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_DISTRIBUTE_SLAVES
 );
+
+// Prefer reading from replicas, falling back to master only when no replicas are available
+$obj_cluster->setOption(
+    RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_PREFER_REPLICA
+);
 ```
 
 ## Main command loop
